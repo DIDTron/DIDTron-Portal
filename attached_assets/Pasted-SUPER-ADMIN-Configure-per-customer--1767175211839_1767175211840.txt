@@ -1,0 +1,26 @@
+SUPER ADMIN: Configure per-customer
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  AUTHENTICATION SETTINGS - Customer: ACME Corp                              │
+│                                                                              │
+│  Authentication Type:                                                        │
+│    ● Username/Password Registration                                         │
+│    ○ IP Authentication (Static IP only)                                    │
+│    ○ Both (IP + Credentials)                                                │
+│                                                                              │
+│  Authorized IPs (for IP Auth):                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  203.0.113.45/32      [Primary Office]                    [Remove] │    │
+│  │  198.51.100.0/24      [Data Center]                       [Remove] │    │
+│  │  [+ Add IP/CIDR]                                                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  SIP Credentials:                                                            │
+│    Username: CUST12345                                                      │
+│    Password: [Auto-generated secure]              [Regenerate]              │
+│    Tech Prefix: (optional)                                                  │
+│                                                                              │
+│  Channel Limits:                                                             │
+│    Max Concurrent Calls: [50] or [Unlimited ▼]                              │
+│    CPS Limit (Calls/Second): [10]                                           │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘

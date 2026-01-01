@@ -1,150 +1,187 @@
-# ConnexCS Customer Portal - Design Guidelines
+# DIDTron Communications - Design Guidelines
 
 ## Design Approach
-**System-Based with Reference**: Combining Linear's clean dashboard aesthetic with Stripe's professional B2B polish. This is an enterprise telecom platform requiring clarity, trust, and technical sophistication.
+**Enterprise SaaS Dashboard System**: Professional B2B wholesale VoIP platform combining Stripe's enterprise polish with Linear's information density. Four distinct portals unified by cohesive design language with portal-specific accent variations.
 
 ## Design Principles
-- **Enterprise credibility**: Professional, polished, and trustworthy
-- **Technical clarity**: Complex features made accessible
-- **Dashboard-first thinking**: Information hierarchy optimized for data density
-- **Automation-forward**: Highlight automation capabilities prominently
+- **Enterprise-grade professionalism**: Trustworthy, polished, telecommunications-focused
+- **Information density**: Dashboard-first layouts optimizing for data visibility
+- **Portal differentiation**: Subtle accent variations maintaining brand cohesion
+- **Dark mode native**: Designed for extended monitoring sessions
 
 ## Typography
-- **Headings**: Inter or DM Sans (600-700 weight)
-- **Body**: Inter (400-500 weight)
-- **Code/Technical**: JetBrains Mono for API examples, technical specs
-- **Scale**: text-xs to text-6xl with clear hierarchy (h1: text-4xl/5xl, h2: text-3xl, h3: text-xl)
+- **Headings**: Open Sans (600-700 weight) - professional, highly legible
+- **Body**: Open Sans (400-500 weight)
+- **Monospace**: Menlo for technical data, API endpoints, SIP addresses
+- **Hierarchy**: h1: text-4xl lg:text-5xl, h2: text-3xl, h3: text-2xl, h4: text-xl, body: text-base
 
 ## Layout System
-**Spacing Units**: Use Tailwind's 4, 6, 8, 12, 16, 20, 24 units
-- Section padding: py-16 md:py-24
+**Spacing Units**: Tailwind 4, 6, 8, 12, 16, 24
+- Section padding: py-12 md:py-20
 - Component spacing: gap-6 md:gap-8
-- Container: max-w-7xl with px-4 md:px-8
+- Container: max-w-7xl with px-6 md:px-8
+- Dashboard cards: p-6
+- Table cells: px-4 py-3
 
-## Page Structure
+## Portal-Specific Accents
+**Main Marketing**: Blue #2563EB throughout  
+**Customer Portal**: Blue primary with blue accent highlights  
+**Carrier Portal**: Teal accents (chart-2 from theme) for differentiation  
+**Super Admin**: Indigo accents for administrative hierarchy
+
+## Marketing Website Structure
 
 ### Hero Section
-**Full-width split layout** (not centered):
-- Left: Value proposition, CTA buttons, trust indicators ("Powering 500+ telecom businesses")
-- Right: Dashboard preview screenshot or animated API visualization
-- Height: min-h-[600px] with natural flow
-- Background: Subtle gradient or geometric pattern overlay
+**Full-width split layout**:
+- Left (50%): Bold headline "Enterprise VoIP Wholesale Platform", subheading, two CTAs ("Start Free Trial" + "View Pricing"), trust line ("Trusted by 200+ carriers worldwide")
+- Right (50%): Large dashboard screenshot showing real-time call metrics interface
+- Height: min-h-[700px] with gradient overlay background
+- Include subtle grid pattern background
 
-### Services Showcase (Multi-column)
-3-column grid (lg:grid-cols-3 md:grid-cols-2) featuring:
-- Voice routing automation
-- Script Forge integrations
-- ISA capabilities
-- API management
-- Real-time analytics
-Each card: Icon, title, description, "Learn more" link
+### Platform Capabilities (3-column grid)
+Cards showcasing:
+- Wholesale voice termination
+- DID number management  
+- Real-time call routing
+- Carrier interconnection
+- Billing & invoicing automation
+- Advanced analytics & reporting
 
-### Integration Gallery
-4-column grid showcasing ConnexCS integrations with logos and connection indicators
+Each card: Icon (24px), title, 2-line description, underline link
 
-### Automation Features Section
-2-column layout alternating image/content:
-- Script Forge automation examples
-- ISA scripting capabilities
-- Webhook integrations
-- Custom workflow demonstrations
+### Portal Showcase (4-column)
+Visual cards for each portal with screenshots:
+- Customer portal preview
+- Carrier portal preview
+- Admin portal preview
+- API documentation portal
 
-### API Documentation Preview
-Single column with code snippet carousel showing API examples, syntax-highlighted
+### Real-Time Monitoring Section
+2-column alternating layout:
+- Live call statistics dashboard mockup
+- Network status monitoring interface
+- Quality metrics visualization
+- Fraud detection alerts
 
-### Pricing/Plans Table
-Comparison table with 3-4 tiers, feature checkmarks, prominent CTAs
+### Pricing Table
+3-tier comparison (Starter, Professional, Enterprise):
+- Feature checkmarks per tier
+- Prominent CTAs
+- "Contact Sales" for Enterprise
+
+### Integration Partners
+4-column logo grid with border cards showing VoIP/telecom integrations
 
 ### Trust Section
-3-column grid: Customer logos, testimonials with company names, uptime statistics
+3-column: Customer testimonials with company logos, uptime statistics (99.99%), compliance badges
 
 ## Component Library
 
 ### Navigation
-Sticky header with:
+Fixed header with subtle border-bottom:
 - Logo left
-- Main nav center (Products, Integrations, API, Docs, Pricing)
+- Main nav center (Platform, Portals, Pricing, API, Docs, Support)
 - Login + "Get Started" CTA right
-- Subtle shadow on scroll
+- Height: h-16
 
-### Cards
-- Border: border border-gray-200
+### Dashboard Cards
+- Border: border with theme border color
+- Rounded: rounded-lg (0.875rem from theme)
 - Padding: p-6
-- Hover: Subtle lift (shadow transition)
-- Icons: 24px, positioned top-left
+- Flat design: No shadow elevation
+- Hover: Subtle border color change only
 
-### Buttons
-Primary: Bold, rounded-lg, px-6 py-3
-Secondary: Outlined with border-2
-Text: Underline decoration on hover
+### Data Tables
+- Header row: Sticky with border-b-2
+- Alternating rows: Subtle background variation
+- Cell padding: px-4 py-3
+- Sortable column indicators
+- Row hover: Background highlight
+- Compact mode option for dense data
 
 ### Forms
-- Input fields: border-2, rounded-lg, px-4 py-3
-- Labels: text-sm font-medium above inputs
-- Validation states with inline messaging
+- Input fields: border, rounded-lg, px-4 py-3, focus ring
+- Labels: text-sm font-medium mb-2
+- Inline validation with icon + message
+- Field groups with proper spacing (space-y-4)
 
-### Dashboard Preview Components
-- Metric cards with large numbers
-- Mini charts/graphs
-- Status indicators (online/offline dots)
-- Table previews with alternating rows
+### Monitoring Widgets
+- Metric cards: Large number display (text-3xl) + trend indicator
+- Status indicators: Colored dots (8px) + label
+- Mini charts: Sparklines for trends
+- Alert badges: Rounded-full with counts
+
+### Buttons
+- Primary: Solid background, rounded-lg, px-6 py-3, font-medium
+- Secondary: Border-2, rounded-lg, px-6 py-3
+- Ghost: Transparent with hover background
+- On images: Backdrop-blur-md background overlay
+
+### Filters & Search
+- Search bar: Leading icon, rounded-lg, w-full md:w-96
+- Filter dropdowns: Border, rounded-lg
+- Active filter chips: Removable with X icon
 
 ### Footer
 4-column layout:
-- Column 1: Logo + tagline
-- Column 2: Product links
-- Column 3: Resources (Docs, API, Support)
-- Column 4: Contact info + social links
-- Bottom bar: Legal links, copyright
+- Company info + logo
+- Products (Portal links)
+- Resources (Docs, API, Status Page)
+- Contact (Support, Sales, Social links)
+- Bottom bar: Copyright, legal links
 
 ## Images
 
 ### Hero Image
-Large dashboard screenshot or isometric illustration of telecom infrastructure/network visualization showing ConnexCS platform in action. Position: right side of split hero, approximately 50% width on desktop.
+Large, high-fidelity dashboard screenshot showing DIDTron platform interface with real-time call statistics, graphs, and monitoring data. Position: right 50% of hero section. Should display professional data visualization with charts and metrics.
 
 ### Feature Images
-- Automation workflow diagrams
-- Script Forge interface screenshots
-- API documentation interface
-- Real-time dashboard analytics views
-
-### Integration Logos
-Actual ConnexCS integration partner logos (from their docs) in a grid
+- Portal interface screenshots for each section
+- Network topology diagrams
+- Real-time monitoring dashboards
+- Call routing flow visualizations
+- Analytics reporting interfaces
 
 ### Background Treatments
-Subtle grid patterns, dot matrices, or circuit-board-inspired graphics for section backgrounds (low opacity)
+- Subtle dot grid patterns (low opacity) for section backgrounds
+- Gradient overlays on hero (dark to transparent)
+- Telecommunications-themed geometric patterns
 
-## Special Considerations
+## Dashboard-Specific Elements
 
-### Technical Audience
-- Include code snippets prominently
-- Show actual API examples
-- Display technical metrics (latency, uptime, throughput)
-- Use technical terminology confidently
+### Metrics Display
+- Large number typography for KPIs (text-4xl font-bold)
+- Percentage changes with color indicators
+- Time range selectors (24h, 7d, 30d, Custom)
 
-### Dashboard Elements
-Portal sections should preview:
-- Connection status indicators
-- Real-time call statistics
-- Account balance/usage meters
-- Quick action buttons
+### Status Indicators
+- Online/Offline dots: 8px rounded-full
+- Health status: Green/Yellow/Red with labels
+- Real-time badges: "LIVE" pulsing indicator
 
-### Trust Signals Throughout
-- Security badges
-- Compliance certifications (ISO, SOC2 if applicable)
-- Uptime guarantees
-- Customer count
+### Data Visualization
+- Line charts for call volume trends
+- Bar charts for geographic distribution
+- Donut charts for resource utilization
+- Heatmaps for peak traffic periods
 
-### Responsive Behavior
-- Desktop: Multi-column layouts with sidebars
-- Tablet: 2-column maximum
-- Mobile: Stack everything, maintain button prominence
+## Responsive Behavior
+- Desktop: Multi-column dashboards, side-by-side data views
+- Tablet: 2-column maximum, stacked cards
+- Mobile: Single column, collapsible table views, bottom sheet filters
+- Navigation: Hamburger menu on mobile with slide-out drawer
 
 ## Animation
-Minimal, purposeful only:
-- Fade-in on scroll for section reveals
+Minimal and purposeful only:
+- Fade-in on scroll for marketing sections
 - Number counting for statistics
-- Subtle hover states on cards
-- NO distracting motion graphics
+- Skeleton loading states for dashboard data
+- NO decorative animations
+- Smooth transitions on interactive elements (150ms)
 
-This creates a professional, enterprise-grade platform that positions your ConnexCS reseller portal as a sophisticated, trustworthy solution for telecom businesses.
+## Accessibility
+- High contrast ratios in both light/dark modes
+- Focus indicators on all interactive elements
+- Keyboard navigation support throughout
+- Screen reader labels for data visualizations
+- ARIA labels for dashboard metrics
