@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Phone, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { login } from "@/lib/auth";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -20,13 +21,22 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const result = await login(email, password);
       toast({
-        title: "Login functionality",
-        description: "Authentication will be implemented in Phase 2.",
+        title: "Welcome back!",
+        description: `Signed in as ${result.user.email}`,
       });
-    }, 1000);
+      setLocation("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

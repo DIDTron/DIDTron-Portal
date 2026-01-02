@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Phone, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { register } from "@/lib/auth";
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -33,16 +34,39 @@ export default function Register() {
       });
       return;
     }
+
+    if (formData.password.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 8 characters.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Registration functionality",
-        description: "Full registration will be implemented in Phase 2.",
+    try {
+      const result = await register({
+        email: formData.email,
+        password: formData.password,
+        companyName: formData.companyName,
+        customerType: formData.customerType,
       });
-    }, 1000);
+      toast({
+        title: "Account created!",
+        description: `Welcome to DIDTron, ${result.user.email}`,
+      });
+      setLocation("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description: error.message || "Could not create account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -112,7 +136,7 @@ export default function Register() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Create a strong password"
+                  placeholder="Create a strong password (min 8 chars)"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
