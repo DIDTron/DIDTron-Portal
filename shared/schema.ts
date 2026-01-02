@@ -129,7 +129,7 @@ export const customers = pgTable("customers", {
   postalCode: text("postal_code"),
   taxId: text("tax_id"),
   referralCode: text("referral_code").unique(),
-  referredBy: varchar("referred_by").references(() => customers.id),
+  referredBy: varchar("referred_by"),
   connexcsCustomerId: text("connexcs_customer_id"),
   kycStatus: kycStatusEnum("kyc_status").default("not_started"),
   lowBalanceThreshold1: decimal("low_balance_threshold_1", { precision: 12, scale: 4 }).default("50"),
@@ -981,7 +981,508 @@ export const webhookDeliveries = pgTable("webhook_deliveries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ==================== CURRENCIES & FX RATES ====================
+
+export const currencies = pgTable("currencies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  symbol: text("symbol"),
+  decimals: integer("decimals").default(2),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const fxRates = pgTable("fx_rates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  baseCurrency: text("base_currency").notNull().default("USD"),
+  quoteCurrency: text("quote_currency").notNull(),
+  rate: decimal("rate", { precision: 18, scale: 8 }).notNull(),
+  source: text("source").default("openexchangerates"),
+  effectiveAt: timestamp("effective_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const customerCurrencySettings = pgTable("customer_currency_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  displayCurrency: text("display_currency").default("USD"),
+  hedgeSpreadPercent: decimal("hedge_spread_percent", { precision: 5, scale: 2 }).default("2"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const ledgerEntries = pgTable("ledger_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  type: text("type").notNull(),
+  description: text("description"),
+  baseAmount: decimal("base_amount", { precision: 14, scale: 6 }).notNull(),
+  baseCurrency: text("base_currency").default("USD"),
+  displayAmount: decimal("display_amount", { precision: 14, scale: 6 }),
+  displayCurrency: text("display_currency"),
+  fxRateId: varchar("fx_rate_id").references(() => fxRates.id),
+  fxRateUsed: decimal("fx_rate_used", { precision: 18, scale: 8 }),
+  referenceType: text("reference_type"),
+  referenceId: varchar("reference_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const currencyReconciliations = pgTable("currency_reconciliations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reconciliationDate: timestamp("reconciliation_date").notNull(),
+  customerId: varchar("customer_id").references(() => customers.id),
+  connexcsTotal: decimal("connexcs_total", { precision: 14, scale: 6 }),
+  didtronTotal: decimal("didtron_total", { precision: 14, scale: 6 }),
+  variance: decimal("variance", { precision: 14, scale: 6 }),
+  variancePercent: decimal("variance_percent", { precision: 8, scale: 4 }),
+  fxGainLoss: decimal("fx_gain_loss", { precision: 14, scale: 6 }),
+  status: text("status").default("pending"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ==================== SIP TESTER ====================
+
+export const sipTestTypeEnum = pgEnum("sip_test_type", [
+  "quick", "quality", "pdd", "dtmf", "cli", "codec", "capacity", 
+  "failover", "fax", "tls_srtp", "nat", "registration", "media_path", "e911"
+]);
+
+export const sipTestStatusEnum = pgEnum("sip_test_status", [
+  "pending", "running", "completed", "failed", "timeout"
+]);
+
+export const sipTestResultEnum = pgEnum("sip_test_result", [
+  "pass", "fail", "partial", "inconclusive"
+]);
+
+export const sipTestConfigs = pgTable("sip_test_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  testType: sipTestTypeEnum("test_type").default("quick"),
+  destinations: text("destinations").array(),
+  cliNumber: text("cli_number"),
+  carrierId: varchar("carrier_id").references(() => carriers.id),
+  customerId: varchar("customer_id").references(() => customers.id),
+  provider: text("provider").default("connexcs"),
+  isAdvancedMode: boolean("is_advanced_mode").default(false),
+  advancedSettings: jsonb("advanced_settings"),
+  alertThresholds: jsonb("alert_thresholds"),
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const sipTestSchedules = pgTable("sip_test_schedules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  configId: varchar("config_id").references(() => sipTestConfigs.id).notNull(),
+  name: text("name").notNull(),
+  cronExpression: text("cron_expression").notNull(),
+  timezone: text("timezone").default("UTC"),
+  portalType: text("portal_type").default("admin"),
+  customerId: varchar("customer_id").references(() => customers.id),
+  isActive: boolean("is_active").default(true),
+  lastRunAt: timestamp("last_run_at"),
+  nextRunAt: timestamp("next_run_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const sipTestResults = pgTable("sip_test_results", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  configId: varchar("config_id").references(() => sipTestConfigs.id),
+  scheduleId: varchar("schedule_id").references(() => sipTestSchedules.id),
+  testType: sipTestTypeEnum("test_type").notNull(),
+  destination: text("destination"),
+  cliSent: text("cli_sent"),
+  cliReceived: text("cli_received"),
+  status: sipTestStatusEnum("status").default("pending"),
+  result: sipTestResultEnum("result"),
+  pddMs: integer("pdd_ms"),
+  mosScore: decimal("mos_score", { precision: 3, scale: 2 }),
+  jitterMs: decimal("jitter_ms", { precision: 10, scale: 2 }),
+  packetLossPercent: decimal("packet_loss_percent", { precision: 5, scale: 2 }),
+  latencyMs: integer("latency_ms"),
+  sipResponseCode: integer("sip_response_code"),
+  sipTrace: text("sip_trace"),
+  rtpStats: jsonb("rtp_stats"),
+  codecNegotiated: text("codec_negotiated"),
+  dtmfResult: text("dtmf_result"),
+  failoverTime: integer("failover_time"),
+  errorMessage: text("error_message"),
+  aiAnalysis: text("ai_analysis"),
+  aiSuggestions: text("ai_suggestions").array(),
+  provider: text("provider").default("connexcs"),
+  providerTestId: text("provider_test_id"),
+  durationMs: integer("duration_ms"),
+  testedAt: timestamp("tested_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const sipTestSyncPermissions = pgTable("sip_test_sync_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sourcePortal: text("source_portal").notNull(),
+  targetPortal: text("target_portal").notNull(),
+  testType: sipTestTypeEnum("test_type"),
+  canViewResults: boolean("can_view_results").default(true),
+  canViewTrace: boolean("can_view_trace").default(false),
+  canViewAiAnalysis: boolean("can_view_ai_analysis").default(true),
+  customerId: varchar("customer_id").references(() => customers.id),
+  carrierId: varchar("carrier_id").references(() => carriers.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const sipTestAlerts = pgTable("sip_test_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  configId: varchar("config_id").references(() => sipTestConfigs.id),
+  resultId: varchar("result_id").references(() => sipTestResults.id),
+  alertType: text("alert_type").notNull(),
+  metric: text("metric"),
+  threshold: decimal("threshold", { precision: 10, scale: 4 }),
+  actualValue: decimal("actual_value", { precision: 10, scale: 4 }),
+  severity: alertSeverityEnum("severity").default("warning"),
+  message: text("message"),
+  notificationsSent: jsonb("notifications_sent"),
+  acknowledgedBy: varchar("acknowledged_by").references(() => users.id),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ==================== CLASS 4 SOFTSWITCH ENHANCEMENTS ====================
+
+export const class4Customers = pgTable("class4_customers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentCustomerId: varchar("parent_customer_id").references(() => customers.id).notNull(),
+  name: text("name").notNull(),
+  code: text("code").notNull(),
+  companyName: text("company_name"),
+  billingEmail: text("billing_email"),
+  technicalEmail: text("technical_email"),
+  balance: decimal("balance", { precision: 14, scale: 6 }).default("0"),
+  creditLimit: decimal("credit_limit", { precision: 14, scale: 6 }).default("0"),
+  billingType: billingTypeEnum("billing_type").default("prepaid"),
+  displayCurrency: text("display_currency").default("USD"),
+  status: customerStatusEnum("status").default("active"),
+  connexcsCustomerId: text("connexcs_customer_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const class4Carriers = pgTable("class4_carriers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentCustomerId: varchar("parent_customer_id").references(() => customers.id).notNull(),
+  name: text("name").notNull(),
+  code: text("code").notNull(),
+  sipHost: text("sip_host"),
+  sipPort: integer("sip_port").default(5060),
+  techPrefix: text("tech_prefix"),
+  maxChannels: integer("max_channels"),
+  maxCps: integer("max_cps"),
+  failoverIps: text("failover_ips").array(),
+  status: routeStatusEnum("status").default("active"),
+  connexcsCarrierId: text("connexcs_carrier_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const class4ProviderRateCards = pgTable("class4_provider_rate_cards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentCustomerId: varchar("parent_customer_id").references(() => customers.id).notNull(),
+  carrierId: varchar("carrier_id").references(() => class4Carriers.id).notNull(),
+  name: text("name").notNull(),
+  currency: text("currency").default("USD"),
+  effectiveDate: timestamp("effective_date"),
+  expiryDate: timestamp("expiry_date"),
+  isActive: boolean("is_active").default(true),
+  connexcsRateCardId: text("connexcs_rate_card_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const class4ProviderRates = pgTable("class4_provider_rates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  rateCardId: varchar("rate_card_id").references(() => class4ProviderRateCards.id).notNull(),
+  prefix: text("prefix").notNull(),
+  destination: text("destination"),
+  rate: decimal("rate", { precision: 12, scale: 8 }).notNull(),
+  connectionFee: decimal("connection_fee", { precision: 10, scale: 6 }).default("0"),
+  billingIncrement: integer("billing_increment").default(1),
+  minDuration: integer("min_duration").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const class4CustomerRateCards = pgTable("class4_customer_rate_cards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentCustomerId: varchar("parent_customer_id").references(() => customers.id).notNull(),
+  class4CustomerId: varchar("class4_customer_id").references(() => class4Customers.id),
+  name: text("name").notNull(),
+  sourceRateCardId: varchar("source_rate_card_id").references(() => class4ProviderRateCards.id),
+  markupType: text("markup_type").default("percentage"),
+  markupValue: decimal("markup_value", { precision: 10, scale: 4 }).default("10"),
+  profitAssuranceEnabled: boolean("profit_assurance_enabled").default(true),
+  currency: text("currency").default("USD"),
+  isActive: boolean("is_active").default(true),
+  connexcsRateCardId: text("connexcs_rate_card_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const class4CustomerRates = pgTable("class4_customer_rates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  rateCardId: varchar("rate_card_id").references(() => class4CustomerRateCards.id).notNull(),
+  prefix: text("prefix").notNull(),
+  destination: text("destination"),
+  buyRate: decimal("buy_rate", { precision: 12, scale: 8 }),
+  sellRate: decimal("sell_rate", { precision: 12, scale: 8 }).notNull(),
+  connectionFee: decimal("connection_fee", { precision: 10, scale: 6 }).default("0"),
+  billingIncrement: integer("billing_increment").default(1),
+  profit: decimal("profit", { precision: 12, scale: 8 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const class4LcrRules = pgTable("class4_lcr_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentCustomerId: varchar("parent_customer_id").references(() => customers.id).notNull(),
+  name: text("name").notNull(),
+  prefix: text("prefix"),
+  strategy: text("strategy").default("lcr"),
+  carrierIds: text("carrier_ids").array(),
+  carrierPriorities: jsonb("carrier_priorities"),
+  qualityThresholds: jsonb("quality_thresholds"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const class4RoutingRules = pgTable("class4_routing_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentCustomerId: varchar("parent_customer_id").references(() => customers.id).notNull(),
+  name: text("name").notNull(),
+  prefix: text("prefix"),
+  cliRules: jsonb("cli_rules"),
+  dncEnabled: boolean("dnc_enabled").default(false),
+  dncListId: varchar("dnc_list_id"),
+  priority: integer("priority").default(1),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const class4Cdrs = pgTable("class4_cdrs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentCustomerId: varchar("parent_customer_id").references(() => customers.id).notNull(),
+  class4CustomerId: varchar("class4_customer_id").references(() => class4Customers.id),
+  class4CarrierId: varchar("class4_carrier_id").references(() => class4Carriers.id),
+  callId: text("call_id"),
+  callerNumber: text("caller_number"),
+  calledNumber: text("called_number"),
+  startTime: timestamp("start_time"),
+  answerTime: timestamp("answer_time"),
+  endTime: timestamp("end_time"),
+  duration: integer("duration"),
+  billableSeconds: integer("billable_seconds"),
+  buyRate: decimal("buy_rate", { precision: 12, scale: 8 }),
+  sellRate: decimal("sell_rate", { precision: 12, scale: 8 }),
+  buyCost: decimal("buy_cost", { precision: 14, scale: 6 }),
+  sellCost: decimal("sell_cost", { precision: 14, scale: 6 }),
+  profit: decimal("profit", { precision: 14, scale: 6 }),
+  sipResponseCode: integer("sip_response_code"),
+  hangupCause: text("hangup_cause"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ==================== AI VOICE AGENT ====================
+
+export const aiVoiceAgentStatusEnum = pgEnum("ai_voice_agent_status", [
+  "draft", "active", "paused", "disabled"
+]);
+
+export const aiVoiceAgents = pgTable("ai_voice_agents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").default("inbound"),
+  voiceId: text("voice_id"),
+  voiceProvider: text("voice_provider").default("openai"),
+  systemPrompt: text("system_prompt"),
+  greetingMessage: text("greeting_message"),
+  fallbackMessage: text("fallback_message"),
+  maxCallDuration: integer("max_call_duration").default(600),
+  status: aiVoiceAgentStatusEnum("status").default("draft"),
+  didId: varchar("did_id").references(() => dids.id),
+  webhookUrl: text("webhook_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const aiVoiceFlows = pgTable("ai_voice_flows", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentId: varchar("agent_id").references(() => aiVoiceAgents.id).notNull(),
+  name: text("name").notNull(),
+  flowData: jsonb("flow_data"),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const aiVoiceTrainingData = pgTable("ai_voice_training_data", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentId: varchar("agent_id").references(() => aiVoiceAgents.id).notNull(),
+  category: text("category"),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const aiVoiceCampaigns = pgTable("ai_voice_campaigns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  agentId: varchar("agent_id").references(() => aiVoiceAgents.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  contactList: jsonb("contact_list"),
+  scheduledAt: timestamp("scheduled_at"),
+  maxConcurrentCalls: integer("max_concurrent_calls").default(5),
+  callsCompleted: integer("calls_completed").default(0),
+  callsTotal: integer("calls_total").default(0),
+  status: text("status").default("draft"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const aiVoiceCallLogs = pgTable("ai_voice_call_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentId: varchar("agent_id").references(() => aiVoiceAgents.id).notNull(),
+  campaignId: varchar("campaign_id").references(() => aiVoiceCampaigns.id),
+  callId: text("call_id"),
+  callerNumber: text("caller_number"),
+  calledNumber: text("called_number"),
+  direction: text("direction"),
+  duration: integer("duration"),
+  transcript: text("transcript"),
+  summary: text("summary"),
+  sentiment: text("sentiment"),
+  outcome: text("outcome"),
+  tokensUsed: integer("tokens_used"),
+  cost: decimal("cost", { precision: 10, scale: 6 }),
+  recordingUrl: text("recording_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ==================== CMS & WHITE-LABEL ====================
+
+export const cmsPortals = pgTable("cms_portals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(),
+  name: text("name").notNull(),
+  customerId: varchar("customer_id").references(() => customers.id),
+  domain: text("domain"),
+  subdomain: text("subdomain"),
+  themeId: varchar("theme_id"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const cmsThemes = pgTable("cms_themes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  colors: jsonb("colors"),
+  typography: jsonb("typography"),
+  spacing: jsonb("spacing"),
+  borderRadius: text("border_radius").default("md"),
+  logoUrl: text("logo_url"),
+  faviconUrl: text("favicon_url"),
+  isDefault: boolean("is_default").default(false),
+  customerId: varchar("customer_id").references(() => customers.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const cmsPages = pgTable("cms_pages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  portalId: varchar("portal_id").references(() => cmsPortals.id).notNull(),
+  slug: text("slug").notNull(),
+  title: text("title").notNull(),
+  metaDescription: text("meta_description"),
+  metaKeywords: text("meta_keywords"),
+  content: jsonb("content"),
+  isPublished: boolean("is_published").default(false),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const cmsMenus = pgTable("cms_menus", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  portalId: varchar("portal_id").references(() => cmsPortals.id).notNull(),
+  name: text("name").notNull(),
+  location: text("location").default("header"),
+  items: jsonb("items"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const cmsMediaLibrary = pgTable("cms_media_library", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  url: text("url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  altText: text("alt_text"),
+  folder: text("folder"),
+  size: integer("size"),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const tenantBranding = pgTable("tenant_branding", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  companyName: text("company_name"),
+  logoUrl: text("logo_url"),
+  faviconUrl: text("favicon_url"),
+  primaryColor: text("primary_color"),
+  secondaryColor: text("secondary_color"),
+  customDomain: text("custom_domain"),
+  customDomainVerified: boolean("custom_domain_verified").default(false),
+  emailFromName: text("email_from_name"),
+  emailFromAddress: text("email_from_address"),
+  footerText: text("footer_text"),
+  termsUrl: text("terms_url"),
+  privacyUrl: text("privacy_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== INSERT SCHEMAS ====================
+
+export const insertCurrencySchema = createInsertSchema(currencies).omit({ id: true, createdAt: true });
+export const insertFxRateSchema = createInsertSchema(fxRates).omit({ id: true, createdAt: true });
+export const insertLedgerEntrySchema = createInsertSchema(ledgerEntries).omit({ id: true, createdAt: true });
+export const insertSipTestConfigSchema = createInsertSchema(sipTestConfigs).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSipTestScheduleSchema = createInsertSchema(sipTestSchedules).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSipTestResultSchema = createInsertSchema(sipTestResults).omit({ id: true, createdAt: true });
+export const insertClass4CustomerSchema = createInsertSchema(class4Customers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertClass4CarrierSchema = createInsertSchema(class4Carriers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertClass4ProviderRateCardSchema = createInsertSchema(class4ProviderRateCards).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertClass4CustomerRateCardSchema = createInsertSchema(class4CustomerRateCards).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceAgentSchema = createInsertSchema(aiVoiceAgents).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceCampaignSchema = createInsertSchema(aiVoiceCampaigns).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsPortalSchema = createInsertSchema(cmsPortals).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsThemeSchema = createInsertSchema(cmsThemes).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsPageSchema = createInsertSchema(cmsPages).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertTenantBrandingSchema = createInsertSchema(tenantBranding).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertCustomerCategorySchema = createInsertSchema(customerCategories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerGroupSchema = createInsertSchema(customerGroups).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1066,3 +1567,59 @@ export type Voicemail = typeof voicemails.$inferSelect;
 export type CallRecording = typeof callRecordings.$inferSelect;
 export type AiAgentAction = typeof aiAgentActions.$inferSelect;
 export type SocialPost = typeof socialPosts.$inferSelect;
+
+// Currency types
+export type InsertCurrency = z.infer<typeof insertCurrencySchema>;
+export type Currency = typeof currencies.$inferSelect;
+export type InsertFxRate = z.infer<typeof insertFxRateSchema>;
+export type FxRate = typeof fxRates.$inferSelect;
+export type InsertLedgerEntry = z.infer<typeof insertLedgerEntrySchema>;
+export type LedgerEntry = typeof ledgerEntries.$inferSelect;
+export type CustomerCurrencySettings = typeof customerCurrencySettings.$inferSelect;
+export type CurrencyReconciliation = typeof currencyReconciliations.$inferSelect;
+
+// SIP Tester types
+export type InsertSipTestConfig = z.infer<typeof insertSipTestConfigSchema>;
+export type SipTestConfig = typeof sipTestConfigs.$inferSelect;
+export type InsertSipTestSchedule = z.infer<typeof insertSipTestScheduleSchema>;
+export type SipTestSchedule = typeof sipTestSchedules.$inferSelect;
+export type InsertSipTestResult = z.infer<typeof insertSipTestResultSchema>;
+export type SipTestResult = typeof sipTestResults.$inferSelect;
+export type SipTestSyncPermission = typeof sipTestSyncPermissions.$inferSelect;
+export type SipTestAlert = typeof sipTestAlerts.$inferSelect;
+
+// Class 4 Softswitch types
+export type InsertClass4Customer = z.infer<typeof insertClass4CustomerSchema>;
+export type Class4Customer = typeof class4Customers.$inferSelect;
+export type InsertClass4Carrier = z.infer<typeof insertClass4CarrierSchema>;
+export type Class4Carrier = typeof class4Carriers.$inferSelect;
+export type InsertClass4ProviderRateCard = z.infer<typeof insertClass4ProviderRateCardSchema>;
+export type Class4ProviderRateCard = typeof class4ProviderRateCards.$inferSelect;
+export type Class4ProviderRate = typeof class4ProviderRates.$inferSelect;
+export type InsertClass4CustomerRateCard = z.infer<typeof insertClass4CustomerRateCardSchema>;
+export type Class4CustomerRateCard = typeof class4CustomerRateCards.$inferSelect;
+export type Class4CustomerRate = typeof class4CustomerRates.$inferSelect;
+export type Class4LcrRule = typeof class4LcrRules.$inferSelect;
+export type Class4RoutingRule = typeof class4RoutingRules.$inferSelect;
+export type Class4Cdr = typeof class4Cdrs.$inferSelect;
+
+// AI Voice Agent types
+export type InsertAiVoiceAgent = z.infer<typeof insertAiVoiceAgentSchema>;
+export type AiVoiceAgent = typeof aiVoiceAgents.$inferSelect;
+export type AiVoiceFlow = typeof aiVoiceFlows.$inferSelect;
+export type AiVoiceTrainingData = typeof aiVoiceTrainingData.$inferSelect;
+export type InsertAiVoiceCampaign = z.infer<typeof insertAiVoiceCampaignSchema>;
+export type AiVoiceCampaign = typeof aiVoiceCampaigns.$inferSelect;
+export type AiVoiceCallLog = typeof aiVoiceCallLogs.$inferSelect;
+
+// CMS & White-label types
+export type InsertCmsPortal = z.infer<typeof insertCmsPortalSchema>;
+export type CmsPortal = typeof cmsPortals.$inferSelect;
+export type InsertCmsTheme = z.infer<typeof insertCmsThemeSchema>;
+export type CmsTheme = typeof cmsThemes.$inferSelect;
+export type InsertCmsPage = z.infer<typeof insertCmsPageSchema>;
+export type CmsPage = typeof cmsPages.$inferSelect;
+export type CmsMenu = typeof cmsMenus.$inferSelect;
+export type CmsMediaItem = typeof cmsMediaLibrary.$inferSelect;
+export type InsertTenantBranding = z.infer<typeof insertTenantBrandingSchema>;
+export type TenantBranding = typeof tenantBranding.$inferSelect;

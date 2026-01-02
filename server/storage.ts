@@ -16,7 +16,18 @@ import {
   type Did, type InsertDid,
   type SipTrunk, type InsertSipTrunk,
   type Extension, type InsertExtension,
-  type Ticket, type InsertTicket
+  type Ticket, type InsertTicket,
+  type Currency, type InsertCurrency,
+  type FxRate, type InsertFxRate,
+  type LedgerEntry, type InsertLedgerEntry,
+  type SipTestConfig, type InsertSipTestConfig,
+  type SipTestResult, type InsertSipTestResult,
+  type SipTestSchedule, type InsertSipTestSchedule,
+  type Class4Customer, type InsertClass4Customer,
+  type Class4Carrier, type InsertClass4Carrier,
+  type AiVoiceAgent, type InsertAiVoiceAgent,
+  type CmsTheme, type InsertCmsTheme,
+  type TenantBranding, type InsertTenantBranding
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -138,6 +149,63 @@ export interface IStorage {
 
   // Dashboard Stats
   getCategoryStats(): Promise<{ categoryId: string; customerCount: number; revenue: number }[]>;
+
+  // Currencies
+  getCurrencies(): Promise<Currency[]>;
+  getCurrency(id: string): Promise<Currency | undefined>;
+  createCurrency(currency: InsertCurrency): Promise<Currency>;
+
+  // FX Rates
+  getFxRates(quoteCurrency?: string): Promise<FxRate[]>;
+  getLatestFxRate(quoteCurrency: string): Promise<FxRate | undefined>;
+  createFxRate(rate: InsertFxRate): Promise<FxRate>;
+
+  // SIP Test Configs
+  getSipTestConfigs(customerId?: string): Promise<SipTestConfig[]>;
+  getSipTestConfig(id: string): Promise<SipTestConfig | undefined>;
+  createSipTestConfig(config: InsertSipTestConfig): Promise<SipTestConfig>;
+  updateSipTestConfig(id: string, data: Partial<InsertSipTestConfig>): Promise<SipTestConfig | undefined>;
+  deleteSipTestConfig(id: string): Promise<boolean>;
+
+  // SIP Test Results
+  getSipTestResults(configId?: string): Promise<SipTestResult[]>;
+  getSipTestResult(id: string): Promise<SipTestResult | undefined>;
+  createSipTestResult(result: InsertSipTestResult): Promise<SipTestResult>;
+
+  // SIP Test Schedules
+  getSipTestSchedules(configId?: string): Promise<SipTestSchedule[]>;
+  createSipTestSchedule(schedule: InsertSipTestSchedule): Promise<SipTestSchedule>;
+  updateSipTestSchedule(id: string, data: Partial<InsertSipTestSchedule>): Promise<SipTestSchedule | undefined>;
+  deleteSipTestSchedule(id: string): Promise<boolean>;
+
+  // Class 4 Customers
+  getClass4Customers(parentCustomerId: string): Promise<Class4Customer[]>;
+  getClass4Customer(id: string): Promise<Class4Customer | undefined>;
+  createClass4Customer(customer: InsertClass4Customer): Promise<Class4Customer>;
+  updateClass4Customer(id: string, data: Partial<InsertClass4Customer>): Promise<Class4Customer | undefined>;
+
+  // Class 4 Carriers
+  getClass4Carriers(parentCustomerId: string): Promise<Class4Carrier[]>;
+  getClass4Carrier(id: string): Promise<Class4Carrier | undefined>;
+  createClass4Carrier(carrier: InsertClass4Carrier): Promise<Class4Carrier>;
+  updateClass4Carrier(id: string, data: Partial<InsertClass4Carrier>): Promise<Class4Carrier | undefined>;
+
+  // AI Voice Agents
+  getAiVoiceAgents(customerId: string): Promise<AiVoiceAgent[]>;
+  getAiVoiceAgent(id: string): Promise<AiVoiceAgent | undefined>;
+  createAiVoiceAgent(agent: InsertAiVoiceAgent): Promise<AiVoiceAgent>;
+  updateAiVoiceAgent(id: string, data: Partial<InsertAiVoiceAgent>): Promise<AiVoiceAgent | undefined>;
+
+  // CMS Themes
+  getCmsThemes(): Promise<CmsTheme[]>;
+  getCmsTheme(id: string): Promise<CmsTheme | undefined>;
+  createCmsTheme(theme: InsertCmsTheme): Promise<CmsTheme>;
+  updateCmsTheme(id: string, data: Partial<InsertCmsTheme>): Promise<CmsTheme | undefined>;
+
+  // Tenant Branding
+  getTenantBranding(customerId: string): Promise<TenantBranding | undefined>;
+  createTenantBranding(branding: InsertTenantBranding): Promise<TenantBranding>;
+  updateTenantBranding(id: string, data: Partial<InsertTenantBranding>): Promise<TenantBranding | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -158,6 +226,16 @@ export class MemStorage implements IStorage {
   private sipTrunks: Map<string, SipTrunk>;
   private extensions: Map<string, Extension>;
   private tickets: Map<string, Ticket>;
+  private currencies: Map<string, Currency>;
+  private fxRates: Map<string, FxRate>;
+  private sipTestConfigs: Map<string, SipTestConfig>;
+  private sipTestResults: Map<string, SipTestResult>;
+  private sipTestSchedules: Map<string, SipTestSchedule>;
+  private class4Customers: Map<string, Class4Customer>;
+  private class4Carriers: Map<string, Class4Carrier>;
+  private aiVoiceAgents: Map<string, AiVoiceAgent>;
+  private cmsThemes: Map<string, CmsTheme>;
+  private tenantBrandings: Map<string, TenantBranding>;
 
   constructor() {
     this.users = new Map();
@@ -177,6 +255,16 @@ export class MemStorage implements IStorage {
     this.sipTrunks = new Map();
     this.extensions = new Map();
     this.tickets = new Map();
+    this.currencies = new Map();
+    this.fxRates = new Map();
+    this.sipTestConfigs = new Map();
+    this.sipTestResults = new Map();
+    this.sipTestSchedules = new Map();
+    this.class4Customers = new Map();
+    this.class4Carriers = new Map();
+    this.aiVoiceAgents = new Map();
+    this.cmsThemes = new Map();
+    this.tenantBrandings = new Map();
 
     this.seedDefaultData();
   }
@@ -976,7 +1064,8 @@ export class MemStorage implements IStorage {
   // Dashboard Stats
   async getCategoryStats(): Promise<{ categoryId: string; customerCount: number; revenue: number }[]> {
     const stats: Map<string, { customerCount: number; revenue: number }> = new Map();
-    for (const customer of this.customers.values()) {
+    const customerArray = Array.from(this.customers.values());
+    for (const customer of customerArray) {
       if (customer.categoryId) {
         const existing = stats.get(customer.categoryId) || { customerCount: 0, revenue: 0 };
         existing.customerCount++;
@@ -984,6 +1073,397 @@ export class MemStorage implements IStorage {
       }
     }
     return Array.from(stats.entries()).map(([categoryId, data]) => ({ categoryId, ...data }));
+  }
+
+  // Currencies
+  async getCurrencies(): Promise<Currency[]> {
+    return Array.from(this.currencies.values());
+  }
+
+  async getCurrency(id: string): Promise<Currency | undefined> {
+    return this.currencies.get(id);
+  }
+
+  async createCurrency(currency: InsertCurrency): Promise<Currency> {
+    const id = randomUUID();
+    const now = new Date();
+    const c: Currency = {
+      id,
+      code: currency.code,
+      name: currency.name,
+      symbol: currency.symbol ?? null,
+      decimals: currency.decimals ?? 2,
+      isActive: currency.isActive ?? true,
+      createdAt: now
+    };
+    this.currencies.set(id, c);
+    return c;
+  }
+
+  // FX Rates
+  async getFxRates(quoteCurrency?: string): Promise<FxRate[]> {
+    const rates = Array.from(this.fxRates.values());
+    if (quoteCurrency) return rates.filter(r => r.quoteCurrency === quoteCurrency);
+    return rates;
+  }
+
+  async getLatestFxRate(quoteCurrency: string): Promise<FxRate | undefined> {
+    const rates = Array.from(this.fxRates.values())
+      .filter(r => r.quoteCurrency === quoteCurrency)
+      .sort((a, b) => (b.effectiveAt?.getTime() || 0) - (a.effectiveAt?.getTime() || 0));
+    return rates[0];
+  }
+
+  async createFxRate(rate: InsertFxRate): Promise<FxRate> {
+    const id = randomUUID();
+    const now = new Date();
+    const r: FxRate = {
+      id,
+      baseCurrency: rate.baseCurrency ?? "USD",
+      quoteCurrency: rate.quoteCurrency,
+      rate: rate.rate,
+      source: rate.source ?? "openexchangerates",
+      effectiveAt: rate.effectiveAt ?? now,
+      createdAt: now
+    };
+    this.fxRates.set(id, r);
+    return r;
+  }
+
+  // SIP Test Configs
+  async getSipTestConfigs(customerId?: string): Promise<SipTestConfig[]> {
+    const configs = Array.from(this.sipTestConfigs.values());
+    if (customerId) return configs.filter(c => c.customerId === customerId);
+    return configs;
+  }
+
+  async getSipTestConfig(id: string): Promise<SipTestConfig | undefined> {
+    return this.sipTestConfigs.get(id);
+  }
+
+  async createSipTestConfig(config: InsertSipTestConfig): Promise<SipTestConfig> {
+    const id = randomUUID();
+    const now = new Date();
+    const c: SipTestConfig = {
+      id,
+      name: config.name,
+      description: config.description ?? null,
+      testType: config.testType ?? "quick",
+      destinations: config.destinations ?? null,
+      cliNumber: config.cliNumber ?? null,
+      carrierId: config.carrierId ?? null,
+      customerId: config.customerId ?? null,
+      provider: config.provider ?? "connexcs",
+      isAdvancedMode: config.isAdvancedMode ?? false,
+      advancedSettings: config.advancedSettings ?? null,
+      alertThresholds: config.alertThresholds ?? null,
+      isActive: config.isActive ?? true,
+      createdBy: config.createdBy ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.sipTestConfigs.set(id, c);
+    return c;
+  }
+
+  async updateSipTestConfig(id: string, data: Partial<InsertSipTestConfig>): Promise<SipTestConfig | undefined> {
+    const config = this.sipTestConfigs.get(id);
+    if (!config) return undefined;
+    const updated = { ...config, ...data, updatedAt: new Date() };
+    this.sipTestConfigs.set(id, updated);
+    return updated;
+  }
+
+  async deleteSipTestConfig(id: string): Promise<boolean> {
+    return this.sipTestConfigs.delete(id);
+  }
+
+  // SIP Test Results
+  async getSipTestResults(configId?: string): Promise<SipTestResult[]> {
+    const results = Array.from(this.sipTestResults.values());
+    if (configId) return results.filter(r => r.configId === configId);
+    return results;
+  }
+
+  async getSipTestResult(id: string): Promise<SipTestResult | undefined> {
+    return this.sipTestResults.get(id);
+  }
+
+  async createSipTestResult(result: InsertSipTestResult): Promise<SipTestResult> {
+    const id = randomUUID();
+    const now = new Date();
+    const r: SipTestResult = {
+      id,
+      configId: result.configId ?? null,
+      scheduleId: result.scheduleId ?? null,
+      testType: result.testType,
+      destination: result.destination ?? null,
+      cliSent: result.cliSent ?? null,
+      cliReceived: result.cliReceived ?? null,
+      status: result.status ?? "pending",
+      result: result.result ?? null,
+      pddMs: result.pddMs ?? null,
+      mosScore: result.mosScore ?? null,
+      jitterMs: result.jitterMs ?? null,
+      packetLossPercent: result.packetLossPercent ?? null,
+      latencyMs: result.latencyMs ?? null,
+      sipResponseCode: result.sipResponseCode ?? null,
+      sipTrace: result.sipTrace ?? null,
+      rtpStats: result.rtpStats ?? null,
+      codecNegotiated: result.codecNegotiated ?? null,
+      dtmfResult: result.dtmfResult ?? null,
+      failoverTime: result.failoverTime ?? null,
+      errorMessage: result.errorMessage ?? null,
+      aiAnalysis: result.aiAnalysis ?? null,
+      aiSuggestions: result.aiSuggestions ?? null,
+      provider: result.provider ?? "connexcs",
+      providerTestId: result.providerTestId ?? null,
+      durationMs: result.durationMs ?? null,
+      testedAt: result.testedAt ?? now,
+      createdAt: now
+    };
+    this.sipTestResults.set(id, r);
+    return r;
+  }
+
+  // SIP Test Schedules
+  async getSipTestSchedules(configId?: string): Promise<SipTestSchedule[]> {
+    const schedules = Array.from(this.sipTestSchedules.values());
+    if (configId) return schedules.filter(s => s.configId === configId);
+    return schedules;
+  }
+
+  async createSipTestSchedule(schedule: InsertSipTestSchedule): Promise<SipTestSchedule> {
+    const id = randomUUID();
+    const now = new Date();
+    const s: SipTestSchedule = {
+      id,
+      configId: schedule.configId,
+      name: schedule.name,
+      cronExpression: schedule.cronExpression,
+      timezone: schedule.timezone ?? "UTC",
+      portalType: schedule.portalType ?? "admin",
+      customerId: schedule.customerId ?? null,
+      isActive: schedule.isActive ?? true,
+      lastRunAt: schedule.lastRunAt ?? null,
+      nextRunAt: schedule.nextRunAt ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.sipTestSchedules.set(id, s);
+    return s;
+  }
+
+  async updateSipTestSchedule(id: string, data: Partial<InsertSipTestSchedule>): Promise<SipTestSchedule | undefined> {
+    const schedule = this.sipTestSchedules.get(id);
+    if (!schedule) return undefined;
+    const updated = { ...schedule, ...data, updatedAt: new Date() };
+    this.sipTestSchedules.set(id, updated);
+    return updated;
+  }
+
+  async deleteSipTestSchedule(id: string): Promise<boolean> {
+    return this.sipTestSchedules.delete(id);
+  }
+
+  // Class 4 Customers
+  async getClass4Customers(parentCustomerId: string): Promise<Class4Customer[]> {
+    return Array.from(this.class4Customers.values()).filter(c => c.parentCustomerId === parentCustomerId);
+  }
+
+  async getClass4Customer(id: string): Promise<Class4Customer | undefined> {
+    return this.class4Customers.get(id);
+  }
+
+  async createClass4Customer(customer: InsertClass4Customer): Promise<Class4Customer> {
+    const id = randomUUID();
+    const now = new Date();
+    const c: Class4Customer = {
+      id,
+      parentCustomerId: customer.parentCustomerId,
+      name: customer.name,
+      code: customer.code,
+      companyName: customer.companyName ?? null,
+      billingEmail: customer.billingEmail ?? null,
+      technicalEmail: customer.technicalEmail ?? null,
+      balance: customer.balance ?? "0",
+      creditLimit: customer.creditLimit ?? "0",
+      billingType: customer.billingType ?? "prepaid",
+      displayCurrency: customer.displayCurrency ?? "USD",
+      status: customer.status ?? "active",
+      connexcsCustomerId: customer.connexcsCustomerId ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.class4Customers.set(id, c);
+    return c;
+  }
+
+  async updateClass4Customer(id: string, data: Partial<InsertClass4Customer>): Promise<Class4Customer | undefined> {
+    const customer = this.class4Customers.get(id);
+    if (!customer) return undefined;
+    const updated = { ...customer, ...data, updatedAt: new Date() };
+    this.class4Customers.set(id, updated);
+    return updated;
+  }
+
+  // Class 4 Carriers
+  async getClass4Carriers(parentCustomerId: string): Promise<Class4Carrier[]> {
+    return Array.from(this.class4Carriers.values()).filter(c => c.parentCustomerId === parentCustomerId);
+  }
+
+  async getClass4Carrier(id: string): Promise<Class4Carrier | undefined> {
+    return this.class4Carriers.get(id);
+  }
+
+  async createClass4Carrier(carrier: InsertClass4Carrier): Promise<Class4Carrier> {
+    const id = randomUUID();
+    const now = new Date();
+    const c: Class4Carrier = {
+      id,
+      parentCustomerId: carrier.parentCustomerId,
+      name: carrier.name,
+      code: carrier.code,
+      sipHost: carrier.sipHost ?? null,
+      sipPort: carrier.sipPort ?? 5060,
+      techPrefix: carrier.techPrefix ?? null,
+      maxChannels: carrier.maxChannels ?? null,
+      maxCps: carrier.maxCps ?? null,
+      failoverIps: carrier.failoverIps ?? null,
+      status: carrier.status ?? "active",
+      connexcsCarrierId: carrier.connexcsCarrierId ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.class4Carriers.set(id, c);
+    return c;
+  }
+
+  async updateClass4Carrier(id: string, data: Partial<InsertClass4Carrier>): Promise<Class4Carrier | undefined> {
+    const carrier = this.class4Carriers.get(id);
+    if (!carrier) return undefined;
+    const updated = { ...carrier, ...data, updatedAt: new Date() };
+    this.class4Carriers.set(id, updated);
+    return updated;
+  }
+
+  // AI Voice Agents
+  async getAiVoiceAgents(customerId: string): Promise<AiVoiceAgent[]> {
+    return Array.from(this.aiVoiceAgents.values()).filter(a => a.customerId === customerId);
+  }
+
+  async getAiVoiceAgent(id: string): Promise<AiVoiceAgent | undefined> {
+    return this.aiVoiceAgents.get(id);
+  }
+
+  async createAiVoiceAgent(agent: InsertAiVoiceAgent): Promise<AiVoiceAgent> {
+    const id = randomUUID();
+    const now = new Date();
+    const a: AiVoiceAgent = {
+      id,
+      customerId: agent.customerId,
+      name: agent.name,
+      description: agent.description ?? null,
+      type: agent.type ?? "inbound",
+      voiceId: agent.voiceId ?? null,
+      voiceProvider: agent.voiceProvider ?? "openai",
+      systemPrompt: agent.systemPrompt ?? null,
+      greetingMessage: agent.greetingMessage ?? null,
+      fallbackMessage: agent.fallbackMessage ?? null,
+      maxCallDuration: agent.maxCallDuration ?? 600,
+      status: agent.status ?? "draft",
+      didId: agent.didId ?? null,
+      webhookUrl: agent.webhookUrl ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiVoiceAgents.set(id, a);
+    return a;
+  }
+
+  async updateAiVoiceAgent(id: string, data: Partial<InsertAiVoiceAgent>): Promise<AiVoiceAgent | undefined> {
+    const agent = this.aiVoiceAgents.get(id);
+    if (!agent) return undefined;
+    const updated = { ...agent, ...data, updatedAt: new Date() };
+    this.aiVoiceAgents.set(id, updated);
+    return updated;
+  }
+
+  // CMS Themes
+  async getCmsThemes(): Promise<CmsTheme[]> {
+    return Array.from(this.cmsThemes.values());
+  }
+
+  async getCmsTheme(id: string): Promise<CmsTheme | undefined> {
+    return this.cmsThemes.get(id);
+  }
+
+  async createCmsTheme(theme: InsertCmsTheme): Promise<CmsTheme> {
+    const id = randomUUID();
+    const now = new Date();
+    const t: CmsTheme = {
+      id,
+      name: theme.name,
+      description: theme.description ?? null,
+      colors: theme.colors ?? null,
+      typography: theme.typography ?? null,
+      spacing: theme.spacing ?? null,
+      borderRadius: theme.borderRadius ?? "md",
+      logoUrl: theme.logoUrl ?? null,
+      faviconUrl: theme.faviconUrl ?? null,
+      isDefault: theme.isDefault ?? false,
+      customerId: theme.customerId ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.cmsThemes.set(id, t);
+    return t;
+  }
+
+  async updateCmsTheme(id: string, data: Partial<InsertCmsTheme>): Promise<CmsTheme | undefined> {
+    const theme = this.cmsThemes.get(id);
+    if (!theme) return undefined;
+    const updated = { ...theme, ...data, updatedAt: new Date() };
+    this.cmsThemes.set(id, updated);
+    return updated;
+  }
+
+  // Tenant Branding
+  async getTenantBranding(customerId: string): Promise<TenantBranding | undefined> {
+    return Array.from(this.tenantBrandings.values()).find(b => b.customerId === customerId);
+  }
+
+  async createTenantBranding(branding: InsertTenantBranding): Promise<TenantBranding> {
+    const id = randomUUID();
+    const now = new Date();
+    const b: TenantBranding = {
+      id,
+      customerId: branding.customerId,
+      companyName: branding.companyName ?? null,
+      logoUrl: branding.logoUrl ?? null,
+      faviconUrl: branding.faviconUrl ?? null,
+      primaryColor: branding.primaryColor ?? null,
+      secondaryColor: branding.secondaryColor ?? null,
+      customDomain: branding.customDomain ?? null,
+      customDomainVerified: branding.customDomainVerified ?? false,
+      emailFromName: branding.emailFromName ?? null,
+      emailFromAddress: branding.emailFromAddress ?? null,
+      footerText: branding.footerText ?? null,
+      termsUrl: branding.termsUrl ?? null,
+      privacyUrl: branding.privacyUrl ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.tenantBrandings.set(id, b);
+    return b;
+  }
+
+  async updateTenantBranding(id: string, data: Partial<InsertTenantBranding>): Promise<TenantBranding | undefined> {
+    const branding = this.tenantBrandings.get(id);
+    if (!branding) return undefined;
+    const updated = { ...branding, ...data, updatedAt: new Date() };
+    this.tenantBrandings.set(id, updated);
+    return updated;
   }
 }
 

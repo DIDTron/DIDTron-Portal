@@ -14,7 +14,17 @@ import {
   insertMonitoringRuleSchema,
   insertAlertSchema,
   insertDidCountrySchema,
-  insertTicketSchema
+  insertTicketSchema,
+  insertSipTestConfigSchema,
+  insertSipTestResultSchema,
+  insertSipTestScheduleSchema,
+  insertClass4CustomerSchema,
+  insertClass4CarrierSchema,
+  insertCurrencySchema,
+  insertFxRateSchema,
+  insertAiVoiceAgentSchema,
+  insertCmsThemeSchema,
+  insertTenantBrandingSchema
 } from "@shared/schema";
 
 export async function registerRoutes(
@@ -639,6 +649,397 @@ export async function registerRoutes(
       res.json(stats);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch category stats" });
+    }
+  });
+
+  // ==================== CURRENCIES ====================
+
+  app.get("/api/currencies", async (req, res) => {
+    try {
+      const currencies = await storage.getCurrencies();
+      res.json(currencies);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch currencies" });
+    }
+  });
+
+  app.post("/api/currencies", async (req, res) => {
+    try {
+      const parsed = insertCurrencySchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const currency = await storage.createCurrency(parsed.data);
+      res.status(201).json(currency);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create currency" });
+    }
+  });
+
+  // ==================== FX RATES ====================
+
+  app.get("/api/fx-rates", async (req, res) => {
+    try {
+      const quoteCurrency = req.query.quoteCurrency as string | undefined;
+      const rates = await storage.getFxRates(quoteCurrency);
+      res.json(rates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch FX rates" });
+    }
+  });
+
+  app.get("/api/fx-rates/latest/:currency", async (req, res) => {
+    try {
+      const rate = await storage.getLatestFxRate(req.params.currency);
+      if (!rate) return res.status(404).json({ error: "FX rate not found" });
+      res.json(rate);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch FX rate" });
+    }
+  });
+
+  app.post("/api/fx-rates", async (req, res) => {
+    try {
+      const parsed = insertFxRateSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const rate = await storage.createFxRate(parsed.data);
+      res.status(201).json(rate);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create FX rate" });
+    }
+  });
+
+  // ==================== SIP TEST CONFIGS ====================
+
+  app.get("/api/sip-tests/configs", async (req, res) => {
+    try {
+      const customerId = req.query.customerId as string | undefined;
+      const configs = await storage.getSipTestConfigs(customerId);
+      res.json(configs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch SIP test configs" });
+    }
+  });
+
+  app.get("/api/sip-tests/configs/:id", async (req, res) => {
+    try {
+      const config = await storage.getSipTestConfig(req.params.id);
+      if (!config) return res.status(404).json({ error: "Config not found" });
+      res.json(config);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch SIP test config" });
+    }
+  });
+
+  app.post("/api/sip-tests/configs", async (req, res) => {
+    try {
+      const parsed = insertSipTestConfigSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const config = await storage.createSipTestConfig(parsed.data);
+      res.status(201).json(config);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create SIP test config" });
+    }
+  });
+
+  app.patch("/api/sip-tests/configs/:id", async (req, res) => {
+    try {
+      const config = await storage.updateSipTestConfig(req.params.id, req.body);
+      if (!config) return res.status(404).json({ error: "Config not found" });
+      res.json(config);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update SIP test config" });
+    }
+  });
+
+  app.delete("/api/sip-tests/configs/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSipTestConfig(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Config not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete SIP test config" });
+    }
+  });
+
+  // ==================== SIP TEST RESULTS ====================
+
+  app.get("/api/sip-tests/results", async (req, res) => {
+    try {
+      const configId = req.query.configId as string | undefined;
+      const results = await storage.getSipTestResults(configId);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch SIP test results" });
+    }
+  });
+
+  app.get("/api/sip-tests/results/:id", async (req, res) => {
+    try {
+      const result = await storage.getSipTestResult(req.params.id);
+      if (!result) return res.status(404).json({ error: "Result not found" });
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch SIP test result" });
+    }
+  });
+
+  app.post("/api/sip-tests/results", async (req, res) => {
+    try {
+      const parsed = insertSipTestResultSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const result = await storage.createSipTestResult(parsed.data);
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create SIP test result" });
+    }
+  });
+
+  // ==================== SIP TEST SCHEDULES ====================
+
+  app.get("/api/sip-tests/schedules", async (req, res) => {
+    try {
+      const configId = req.query.configId as string | undefined;
+      const schedules = await storage.getSipTestSchedules(configId);
+      res.json(schedules);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch SIP test schedules" });
+    }
+  });
+
+  app.post("/api/sip-tests/schedules", async (req, res) => {
+    try {
+      const parsed = insertSipTestScheduleSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const schedule = await storage.createSipTestSchedule(parsed.data);
+      res.status(201).json(schedule);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create SIP test schedule" });
+    }
+  });
+
+  app.patch("/api/sip-tests/schedules/:id", async (req, res) => {
+    try {
+      const schedule = await storage.updateSipTestSchedule(req.params.id, req.body);
+      if (!schedule) return res.status(404).json({ error: "Schedule not found" });
+      res.json(schedule);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update SIP test schedule" });
+    }
+  });
+
+  app.delete("/api/sip-tests/schedules/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSipTestSchedule(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Schedule not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete SIP test schedule" });
+    }
+  });
+
+  // ==================== CLASS 4 CUSTOMERS ====================
+
+  app.get("/api/class4/customers", async (req, res) => {
+    try {
+      const parentCustomerId = req.query.parentCustomerId as string;
+      if (!parentCustomerId) return res.status(400).json({ error: "parentCustomerId is required" });
+      const customers = await storage.getClass4Customers(parentCustomerId);
+      res.json(customers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch Class 4 customers" });
+    }
+  });
+
+  app.get("/api/class4/customers/:id", async (req, res) => {
+    try {
+      const customer = await storage.getClass4Customer(req.params.id);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+      res.json(customer);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch Class 4 customer" });
+    }
+  });
+
+  app.post("/api/class4/customers", async (req, res) => {
+    try {
+      const parsed = insertClass4CustomerSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const customer = await storage.createClass4Customer(parsed.data);
+      res.status(201).json(customer);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create Class 4 customer" });
+    }
+  });
+
+  app.patch("/api/class4/customers/:id", async (req, res) => {
+    try {
+      const customer = await storage.updateClass4Customer(req.params.id, req.body);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+      res.json(customer);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update Class 4 customer" });
+    }
+  });
+
+  // ==================== CLASS 4 CARRIERS ====================
+
+  app.get("/api/class4/carriers", async (req, res) => {
+    try {
+      const parentCustomerId = req.query.parentCustomerId as string;
+      if (!parentCustomerId) return res.status(400).json({ error: "parentCustomerId is required" });
+      const carriers = await storage.getClass4Carriers(parentCustomerId);
+      res.json(carriers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch Class 4 carriers" });
+    }
+  });
+
+  app.get("/api/class4/carriers/:id", async (req, res) => {
+    try {
+      const carrier = await storage.getClass4Carrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      res.json(carrier);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch Class 4 carrier" });
+    }
+  });
+
+  app.post("/api/class4/carriers", async (req, res) => {
+    try {
+      const parsed = insertClass4CarrierSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const carrier = await storage.createClass4Carrier(parsed.data);
+      res.status(201).json(carrier);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create Class 4 carrier" });
+    }
+  });
+
+  app.patch("/api/class4/carriers/:id", async (req, res) => {
+    try {
+      const carrier = await storage.updateClass4Carrier(req.params.id, req.body);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      res.json(carrier);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update Class 4 carrier" });
+    }
+  });
+
+  // ==================== AI VOICE AGENTS ====================
+
+  app.get("/api/ai-voice/agents", async (req, res) => {
+    try {
+      const customerId = req.query.customerId as string;
+      if (!customerId) return res.status(400).json({ error: "customerId is required" });
+      const agents = await storage.getAiVoiceAgents(customerId);
+      res.json(agents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch AI voice agents" });
+    }
+  });
+
+  app.get("/api/ai-voice/agents/:id", async (req, res) => {
+    try {
+      const agent = await storage.getAiVoiceAgent(req.params.id);
+      if (!agent) return res.status(404).json({ error: "Agent not found" });
+      res.json(agent);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch AI voice agent" });
+    }
+  });
+
+  app.post("/api/ai-voice/agents", async (req, res) => {
+    try {
+      const parsed = insertAiVoiceAgentSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const agent = await storage.createAiVoiceAgent(parsed.data);
+      res.status(201).json(agent);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create AI voice agent" });
+    }
+  });
+
+  app.patch("/api/ai-voice/agents/:id", async (req, res) => {
+    try {
+      const agent = await storage.updateAiVoiceAgent(req.params.id, req.body);
+      if (!agent) return res.status(404).json({ error: "Agent not found" });
+      res.json(agent);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update AI voice agent" });
+    }
+  });
+
+  // ==================== CMS THEMES ====================
+
+  app.get("/api/cms/themes", async (req, res) => {
+    try {
+      const themes = await storage.getCmsThemes();
+      res.json(themes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch CMS themes" });
+    }
+  });
+
+  app.get("/api/cms/themes/:id", async (req, res) => {
+    try {
+      const theme = await storage.getCmsTheme(req.params.id);
+      if (!theme) return res.status(404).json({ error: "Theme not found" });
+      res.json(theme);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch CMS theme" });
+    }
+  });
+
+  app.post("/api/cms/themes", async (req, res) => {
+    try {
+      const parsed = insertCmsThemeSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const theme = await storage.createCmsTheme(parsed.data);
+      res.status(201).json(theme);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create CMS theme" });
+    }
+  });
+
+  app.patch("/api/cms/themes/:id", async (req, res) => {
+    try {
+      const theme = await storage.updateCmsTheme(req.params.id, req.body);
+      if (!theme) return res.status(404).json({ error: "Theme not found" });
+      res.json(theme);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update CMS theme" });
+    }
+  });
+
+  // ==================== TENANT BRANDING ====================
+
+  app.get("/api/tenant-branding/:customerId", async (req, res) => {
+    try {
+      const branding = await storage.getTenantBranding(req.params.customerId);
+      if (!branding) return res.status(404).json({ error: "Branding not found" });
+      res.json(branding);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tenant branding" });
+    }
+  });
+
+  app.post("/api/tenant-branding", async (req, res) => {
+    try {
+      const parsed = insertTenantBrandingSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const branding = await storage.createTenantBranding(parsed.data);
+      res.status(201).json(branding);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create tenant branding" });
+    }
+  });
+
+  app.patch("/api/tenant-branding/:id", async (req, res) => {
+    try {
+      const branding = await storage.updateTenantBranding(req.params.id, req.body);
+      if (!branding) return res.status(404).json({ error: "Branding not found" });
+      res.json(branding);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update tenant branding" });
     }
   });
 
