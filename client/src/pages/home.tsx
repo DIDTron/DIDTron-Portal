@@ -33,8 +33,12 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="ghost" data-testid="button-login">Login</Button>
-            <Button data-testid="button-get-started">Get Started</Button>
+            <Link href="/login">
+              <Button variant="ghost" data-testid="button-login">Login</Button>
+            </Link>
+            <Link href="/register">
+              <Button data-testid="button-get-started">Get Started</Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -57,13 +61,17 @@ export default function Home() {
                   No subscriptions, no commitments. Pay only for what you use.
                 </p>
                 <div className="flex flex-wrap items-center gap-4">
-                  <Button size="lg" data-testid="button-start-trial">
-                    Start Free Trial
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="lg" data-testid="button-view-pricing">
-                    View Pricing
-                  </Button>
+                  <Link href="/register">
+                    <Button size="lg" data-testid="button-start-trial">
+                      Start Free Trial
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <a href="#pricing">
+                    <Button variant="outline" size="lg" data-testid="button-view-pricing">
+                      View Pricing
+                    </Button>
+                  </a>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
