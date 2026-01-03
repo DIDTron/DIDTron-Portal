@@ -30,6 +30,8 @@ import {
   LayoutDashboard,
   Settings,
   Users,
+  Route as RouteIcon,
+  Building,
 } from "lucide-react";
 
 import AdminDashboard from "./dashboard";
@@ -38,6 +40,9 @@ import VoiceTiersPage from "./voice-tiers";
 import CodecsPage from "./codecs";
 import ChannelPlansPage from "./channel-plans";
 import DIDCountriesPage from "./did-countries";
+import CarriersPage from "./carriers";
+import RoutesPage from "./routes";
+import DIDProvidersPage from "./did-providers";
 
 const adminNavItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
@@ -45,7 +50,10 @@ const adminNavItems = [
   { title: "Voice Tiers", url: "/admin/voice-tiers", icon: Layers },
   { title: "Codecs", url: "/admin/codecs", icon: Radio },
   { title: "Channel Plans", url: "/admin/channel-plans", icon: CreditCard },
+  { title: "Carriers", url: "/admin/carriers", icon: Building2 },
+  { title: "Routes", url: "/admin/routes", icon: RouteIcon },
   { title: "DID Countries", url: "/admin/did-countries", icon: Globe },
+  { title: "DID Providers", url: "/admin/did-providers", icon: Building },
 ];
 
 function AdminSidebar() {
@@ -162,7 +170,10 @@ export default function AdminLayout() {
               <Route path="/admin/voice-tiers" component={VoiceTiersPage} />
               <Route path="/admin/codecs" component={CodecsPage} />
               <Route path="/admin/channel-plans" component={ChannelPlansPage} />
+              <Route path="/admin/carriers" component={CarriersPage} />
+              <Route path="/admin/routes" component={RoutesPage} />
               <Route path="/admin/did-countries" component={DIDCountriesPage} />
+              <Route path="/admin/did-providers" component={DIDProvidersPage} />
             </Switch>
           </main>
         </div>
