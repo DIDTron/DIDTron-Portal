@@ -166,6 +166,7 @@ export const carriers = pgTable("carriers", {
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
   type: text("type").default("wholesale"),
+  description: text("description"),
   status: routeStatusEnum("status").default("active"),
   sipHost: text("sip_host"),
   sipPort: integer("sip_port").default(5060),

@@ -691,6 +691,7 @@ export class MemStorage implements IStorage {
       name: carrier.name,
       code: carrier.code,
       type: carrier.type ?? "wholesale",
+      description: carrier.description ?? null,
       status: carrier.status ?? "active",
       sipHost: carrier.sipHost ?? null,
       sipPort: carrier.sipPort ?? 5060,
