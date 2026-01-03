@@ -13,6 +13,7 @@ import {
   type MonitoringRule, type InsertMonitoringRule,
   type Alert, type InsertAlert,
   type DidCountry, type InsertDidCountry,
+  type DidProvider, type InsertDidProvider,
   type Did, type InsertDid,
   type SipTrunk, type InsertSipTrunk,
   type Extension, type InsertExtension,
@@ -121,6 +122,13 @@ export interface IStorage {
   updateDidCountry(id: string, data: Partial<InsertDidCountry>): Promise<DidCountry | undefined>;
   deleteDidCountry(id: string): Promise<boolean>;
 
+  // DID Providers
+  getDidProviders(): Promise<DidProvider[]>;
+  getDidProvider(id: string): Promise<DidProvider | undefined>;
+  createDidProvider(provider: InsertDidProvider): Promise<DidProvider>;
+  updateDidProvider(id: string, data: Partial<InsertDidProvider>): Promise<DidProvider | undefined>;
+  deleteDidProvider(id: string): Promise<boolean>;
+
   // DIDs
   getDids(customerId?: string): Promise<Did[]>;
   getDid(id: string): Promise<Did | undefined>;
@@ -222,6 +230,7 @@ export class MemStorage implements IStorage {
   private monitoringRules: Map<string, MonitoringRule>;
   private alerts: Map<string, Alert>;
   private didCountries: Map<string, DidCountry>;
+  private didProviders: Map<string, DidProvider>;
   private dids: Map<string, Did>;
   private sipTrunks: Map<string, SipTrunk>;
   private extensions: Map<string, Extension>;
@@ -251,6 +260,7 @@ export class MemStorage implements IStorage {
     this.monitoringRules = new Map();
     this.alerts = new Map();
     this.didCountries = new Map();
+    this.didProviders = new Map();
     this.dids = new Map();
     this.sipTrunks = new Map();
     this.extensions = new Map();
@@ -876,6 +886,45 @@ export class MemStorage implements IStorage {
 
   async deleteDidCountry(id: string): Promise<boolean> {
     return this.didCountries.delete(id);
+  }
+
+  // DID Providers
+  async getDidProviders(): Promise<DidProvider[]> {
+    return Array.from(this.didProviders.values());
+  }
+
+  async getDidProvider(id: string): Promise<DidProvider | undefined> {
+    return this.didProviders.get(id);
+  }
+
+  async createDidProvider(provider: InsertDidProvider): Promise<DidProvider> {
+    const id = randomUUID();
+    const now = new Date();
+    const p: DidProvider = {
+      id,
+      name: provider.name,
+      code: provider.code,
+      apiEndpoint: provider.apiEndpoint ?? null,
+      apiKey: provider.apiKey ?? null,
+      countryIds: provider.countryIds ?? null,
+      isActive: provider.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.didProviders.set(id, p);
+    return p;
+  }
+
+  async updateDidProvider(id: string, data: Partial<InsertDidProvider>): Promise<DidProvider | undefined> {
+    const provider = this.didProviders.get(id);
+    if (!provider) return undefined;
+    const updated = { ...provider, ...data, updatedAt: new Date() };
+    this.didProviders.set(id, updated);
+    return updated;
+  }
+
+  async deleteDidProvider(id: string): Promise<boolean> {
+    return this.didProviders.delete(id);
   }
 
   // DIDs

@@ -2,6 +2,9 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { createUser, validateLogin, sanitizeUser } from "./auth";
+import { aiService } from "./ai-service";
+import { connexcs } from "./connexcs";
+import { auditService } from "./audit";
 import { z } from "zod";
 import { 
   insertCustomerCategorySchema, 
@@ -1128,6 +1131,283 @@ export async function registerRoutes(
       res.json(branding);
     } catch (error) {
       res.status(500).json({ error: "Failed to update tenant branding" });
+    }
+  });
+
+  // ==================== AI SERVICE ====================
+
+  app.post("/api/ai/generate-description", async (req, res) => {
+    try {
+      const { entityType, name, context } = req.body;
+      if (!entityType || !name) {
+        return res.status(400).json({ error: "entityType and name are required" });
+      }
+      const description = await aiService.generateDescription({ entityType, name, context });
+      res.json({ description });
+    } catch (error) {
+      console.error("AI description error:", error);
+      res.status(500).json({ error: "Failed to generate description" });
+    }
+  });
+
+  app.post("/api/ai/marketing-copy", async (req, res) => {
+    try {
+      const { service, targetAudience, tone } = req.body;
+      if (!service) {
+        return res.status(400).json({ error: "service is required" });
+      }
+      const copy = await aiService.generateMarketingCopy({ service, targetAudience, tone });
+      res.json(copy);
+    } catch (error) {
+      console.error("AI marketing copy error:", error);
+      res.status(500).json({ error: "Failed to generate marketing copy" });
+    }
+  });
+
+  app.post("/api/ai/analyze", async (req, res) => {
+    try {
+      const { dataType, data, question } = req.body;
+      if (!dataType || !data) {
+        return res.status(400).json({ error: "dataType and data are required" });
+      }
+      const analysis = await aiService.analyzeData({ dataType, data, question });
+      res.json(analysis);
+    } catch (error) {
+      console.error("AI analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze data" });
+    }
+  });
+
+  app.post("/api/ai/carrier-analysis", async (req, res) => {
+    try {
+      const carrierData = req.body;
+      if (!carrierData.name) {
+        return res.status(400).json({ error: "carrier name is required" });
+      }
+      const analysis = await aiService.generateCarrierAnalysis(carrierData);
+      res.json(analysis);
+    } catch (error) {
+      console.error("AI carrier analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze carrier" });
+    }
+  });
+
+  app.post("/api/ai/route-recommendation", async (req, res) => {
+    try {
+      const { destination, budget, qualityPriority, currentRoutes } = req.body;
+      if (!destination) {
+        return res.status(400).json({ error: "destination is required" });
+      }
+      const recommendation = await aiService.generateRouteRecommendation({
+        destination,
+        budget,
+        qualityPriority,
+        currentRoutes,
+      });
+      res.json(recommendation);
+    } catch (error) {
+      console.error("AI route recommendation error:", error);
+      res.status(500).json({ error: "Failed to generate route recommendation" });
+    }
+  });
+
+  app.post("/api/ai/alert-explanation", async (req, res) => {
+    try {
+      const alert = req.body;
+      if (!alert.type) {
+        return res.status(400).json({ error: "alert type is required" });
+      }
+      const explanation = await aiService.generateAlertExplanation(alert);
+      res.json(explanation);
+    } catch (error) {
+      console.error("AI alert explanation error:", error);
+      res.status(500).json({ error: "Failed to explain alert" });
+    }
+  });
+
+  app.post("/api/ai/chat", async (req, res) => {
+    try {
+      const { messages } = req.body;
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: "messages array is required" });
+      }
+      const response = await aiService.chat(messages);
+      res.json({ response });
+    } catch (error) {
+      console.error("AI chat error:", error);
+      res.status(500).json({ error: "Failed to process chat" });
+    }
+  });
+
+  // ==================== CONNEXCS SYNC ====================
+
+  app.get("/api/connexcs/status", async (req, res) => {
+    try {
+      const mockMode = connexcs.isMockMode();
+      const metrics = await connexcs.getMetrics();
+      res.json({ mockMode, connected: !mockMode, metrics });
+    } catch (error) {
+      console.error("ConnexCS status error:", error);
+      res.status(500).json({ error: "Failed to get ConnexCS status", mockMode: true });
+    }
+  });
+
+  app.get("/api/connexcs/carriers", async (req, res) => {
+    try {
+      const carriers = await connexcs.getCarriers();
+      res.json(carriers);
+    } catch (error) {
+      console.error("ConnexCS carriers error:", error);
+      res.status(500).json({ error: "Failed to fetch ConnexCS carriers" });
+    }
+  });
+
+  app.get("/api/connexcs/routes", async (req, res) => {
+    try {
+      const routes = await connexcs.getRoutes();
+      res.json(routes);
+    } catch (error) {
+      console.error("ConnexCS routes error:", error);
+      res.status(500).json({ error: "Failed to fetch ConnexCS routes" });
+    }
+  });
+
+  app.get("/api/connexcs/metrics", async (req, res) => {
+    try {
+      const metrics = await connexcs.getMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error("ConnexCS metrics error:", error);
+      res.status(500).json({ error: "Failed to fetch ConnexCS metrics" });
+    }
+  });
+
+  app.post("/api/connexcs/sync-carrier/:id", async (req, res) => {
+    try {
+      const carrier = await storage.getCarrier(req.params.id);
+      if (!carrier) {
+        return res.status(404).json({ error: "Carrier not found" });
+      }
+      const result = await connexcs.syncCarrier({
+        id: carrier.id,
+        name: carrier.name,
+        sipHost: carrier.sipHost,
+        sipPort: carrier.sipPort,
+      });
+      if (result.synced) {
+        await storage.updateCarrier(carrier.id, { connexcsCarrierId: result.connexcsId });
+      }
+      res.json(result);
+    } catch (error) {
+      console.error("ConnexCS sync carrier error:", error);
+      res.status(500).json({ error: "Failed to sync carrier with ConnexCS" });
+    }
+  });
+
+  app.post("/api/connexcs/sync-route/:id", async (req, res) => {
+    try {
+      const route = await storage.getRoute(req.params.id);
+      if (!route) {
+        return res.status(404).json({ error: "Route not found" });
+      }
+      const result = await connexcs.syncRoute({
+        id: route.id,
+        name: route.name,
+        prefix: route.prefix,
+        priority: route.priority,
+        weight: route.weight,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("ConnexCS sync route error:", error);
+      res.status(500).json({ error: "Failed to sync route with ConnexCS" });
+    }
+  });
+
+  app.post("/api/connexcs/test-route", async (req, res) => {
+    try {
+      const { destination } = req.body;
+      if (!destination) {
+        return res.status(400).json({ error: "destination is required" });
+      }
+      const result = await connexcs.testRoute(destination);
+      res.json(result);
+    } catch (error) {
+      console.error("ConnexCS test route error:", error);
+      res.status(500).json({ error: "Failed to test route" });
+    }
+  });
+
+  // ==================== AUDIT LOGS ====================
+
+  app.get("/api/audit/logs", async (req, res) => {
+    try {
+      const { limit, entityType, entityId, userId, search } = req.query;
+      
+      let logs;
+      if (search) {
+        logs = auditService.searchLogs(String(search));
+      } else if (entityType) {
+        logs = auditService.getLogsByEntity(String(entityType), entityId ? String(entityId) : undefined);
+      } else if (userId) {
+        logs = auditService.getLogsByUser(String(userId));
+      } else {
+        logs = auditService.getRecentLogs(limit ? parseInt(String(limit)) : 100);
+      }
+      
+      res.json(logs);
+    } catch (error) {
+      console.error("Audit logs error:", error);
+      res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
+  // ==================== DID PROVIDERS ====================
+
+  app.get("/api/did-providers", async (req, res) => {
+    try {
+      const providers = await storage.getDidProviders();
+      res.json(providers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch DID providers" });
+    }
+  });
+
+  app.get("/api/did-providers/:id", async (req, res) => {
+    try {
+      const provider = await storage.getDidProvider(req.params.id);
+      if (!provider) return res.status(404).json({ error: "DID provider not found" });
+      res.json(provider);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch DID provider" });
+    }
+  });
+
+  app.post("/api/did-providers", async (req, res) => {
+    try {
+      const provider = await storage.createDidProvider(req.body);
+      res.status(201).json(provider);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create DID provider" });
+    }
+  });
+
+  app.patch("/api/did-providers/:id", async (req, res) => {
+    try {
+      const provider = await storage.updateDidProvider(req.params.id, req.body);
+      if (!provider) return res.status(404).json({ error: "DID provider not found" });
+      res.json(provider);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update DID provider" });
+    }
+  });
+
+  app.delete("/api/did-providers/:id", async (req, res) => {
+    try {
+      await storage.deleteDidProvider(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete DID provider" });
     }
   });
 
