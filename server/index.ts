@@ -4,6 +4,8 @@ import MemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { storage } from "./storage";
+import { hashPassword } from "./auth";
 
 const app = express();
 const httpServer = createServer(app);
@@ -85,7 +87,36 @@ app.use((req, res, next) => {
   next();
 });
 
+async function seedSuperAdmin() {
+  const email = process.env.SUPER_ADMIN_EMAIL || "info@didtron.com";
+  const password = process.env.SUPER_ADMIN_PASSWORD;
+  
+  if (!password) {
+    log("SUPER_ADMIN_PASSWORD not set - skipping super admin creation", "seed");
+    return;
+  }
+  
+  const existingUser = await storage.getUserByEmail(email);
+  if (existingUser) {
+    log(`Super admin ${email} already exists`, "seed");
+    return;
+  }
+  
+  const hashedPassword = await hashPassword(password);
+  await storage.createUser({
+    email,
+    password: hashedPassword,
+    firstName: "Super",
+    lastName: "Admin",
+    role: "super_admin",
+    status: "active",
+  });
+  
+  log(`Super admin ${email} created successfully`, "seed");
+}
+
 (async () => {
+  await seedSuperAdmin();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
