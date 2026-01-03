@@ -25,12 +25,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CreditCard, Trash2 } from "lucide-react";
+import { Plus, CreditCard, Pencil, Trash2 } from "lucide-react";
 import type { ChannelPlan } from "@shared/schema";
 
 export default function ChannelPlansPage() {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<ChannelPlan | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -64,6 +65,26 @@ export default function ChannelPlansPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      const res = await apiRequest("PATCH", `/api/channel-plans/${id}`, {
+        ...data,
+        channels: parseInt(data.channels),
+        cps: parseInt(data.cps),
+        monthlyPrice: data.monthlyPrice,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/channel-plans"] });
+      toast({ title: "Channel plan updated successfully" });
+      resetForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update channel plan", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/channel-plans/${id}`);
@@ -79,13 +100,33 @@ export default function ChannelPlansPage() {
 
   const resetForm = () => {
     setFormData({ name: "", code: "", description: "", channels: "10", cps: "10", monthlyPrice: "0" });
+    setEditingPlan(null);
     setIsOpen(false);
+  };
+
+  const handleEdit = (plan: ChannelPlan) => {
+    setEditingPlan(plan);
+    setFormData({
+      name: plan.name,
+      code: plan.code,
+      description: plan.description || "",
+      channels: String(plan.channels),
+      cps: String(plan.cps),
+      monthlyPrice: plan.monthlyPrice || "0",
+    });
+    setIsOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    if (editingPlan) {
+      updateMutation.mutate({ id: editingPlan.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div>
@@ -96,7 +137,7 @@ export default function ChannelPlansPage() {
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-plan">
+            <Button onClick={() => { setEditingPlan(null); setFormData({ name: "", code: "", description: "", channels: "10", cps: "10", monthlyPrice: "0" }); }} data-testid="button-add-plan">
               <Plus className="h-4 w-4 mr-2" />
               Add Plan
             </Button>
@@ -104,8 +145,8 @@ export default function ChannelPlansPage() {
           <DialogContent>
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Add Channel Plan</DialogTitle>
-                <DialogDescription>Configure concurrent channel limits</DialogDescription>
+                <DialogTitle>{editingPlan ? "Edit Channel Plan" : "Add Channel Plan"}</DialogTitle>
+                <DialogDescription>{editingPlan ? "Update channel plan settings" : "Configure concurrent channel limits"}</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -180,9 +221,9 @@ export default function ChannelPlansPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending} data-testid="button-save-plan">
-                  {createMutation.isPending ? "Saving..." : "Save"}
+                <Button type="button" variant="outline" onClick={resetForm} data-testid="button-cancel-plan">Cancel</Button>
+                <Button type="submit" disabled={isPending} data-testid="button-save-plan">
+                  {isPending ? "Saving..." : "Save"}
                 </Button>
               </DialogFooter>
             </form>
@@ -221,9 +262,14 @@ export default function ChannelPlansPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(plan.id)} data-testid={`button-delete-plan-${plan.id}`}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(plan)} data-testid={`button-edit-plan-${plan.id}`}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(plan.id)} data-testid={`button-delete-plan-${plan.id}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

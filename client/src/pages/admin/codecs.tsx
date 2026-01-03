@@ -24,12 +24,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Radio, Trash2 } from "lucide-react";
+import { Plus, Radio, Pencil, Trash2 } from "lucide-react";
 import type { Codec } from "@shared/schema";
 
 export default function CodecsPage() {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [editingCodec, setEditingCodec] = useState<Codec | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -59,6 +60,24 @@ export default function CodecsPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      const res = await apiRequest("PATCH", `/api/codecs/${id}`, {
+        ...data,
+        priority: parseInt(data.priority),
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/codecs"] });
+      toast({ title: "Codec updated successfully" });
+      resetForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update codec", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/codecs/${id}`);
@@ -74,13 +93,31 @@ export default function CodecsPage() {
 
   const resetForm = () => {
     setFormData({ name: "", code: "", description: "", priority: "1" });
+    setEditingCodec(null);
     setIsOpen(false);
+  };
+
+  const handleEdit = (codec: Codec) => {
+    setEditingCodec(codec);
+    setFormData({
+      name: codec.name,
+      code: codec.code,
+      description: codec.description || "",
+      priority: String(codec.priority || 1),
+    });
+    setIsOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    if (editingCodec) {
+      updateMutation.mutate({ id: editingCodec.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div>
@@ -91,7 +128,7 @@ export default function CodecsPage() {
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-codec">
+            <Button onClick={() => { setEditingCodec(null); setFormData({ name: "", code: "", description: "", priority: "1" }); }} data-testid="button-add-codec">
               <Plus className="h-4 w-4 mr-2" />
               Add Codec
             </Button>
@@ -99,8 +136,8 @@ export default function CodecsPage() {
           <DialogContent>
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Add Codec</DialogTitle>
-                <DialogDescription>Configure a new audio codec</DialogDescription>
+                <DialogTitle>{editingCodec ? "Edit Codec" : "Add Codec"}</DialogTitle>
+                <DialogDescription>{editingCodec ? "Update codec settings" : "Configure a new audio codec"}</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -150,9 +187,9 @@ export default function CodecsPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending} data-testid="button-save-codec">
-                  {createMutation.isPending ? "Saving..." : "Save"}
+                <Button type="button" variant="outline" onClick={resetForm} data-testid="button-cancel-codec">Cancel</Button>
+                <Button type="submit" disabled={isPending} data-testid="button-save-codec">
+                  {isPending ? "Saving..." : "Save"}
                 </Button>
               </DialogFooter>
             </form>
@@ -183,9 +220,14 @@ export default function CodecsPage() {
                     <TableCell>{codec.description || "-"}</TableCell>
                     <TableCell>{codec.priority}</TableCell>
                     <TableCell>
-                      <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(codec.id)} data-testid={`button-delete-codec-${codec.id}`}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(codec)} data-testid={`button-edit-codec-${codec.id}`}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(codec.id)} data-testid={`button-delete-codec-${codec.id}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -25,12 +25,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Globe, Trash2 } from "lucide-react";
+import { Plus, Globe, Pencil, Trash2 } from "lucide-react";
 import type { DidCountry } from "@shared/schema";
 
 export default function DIDCountriesPage() {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [editingCountry, setEditingCountry] = useState<DidCountry | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     isoCode: "",
@@ -57,6 +58,21 @@ export default function DIDCountriesPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      const res = await apiRequest("PATCH", `/api/did-countries/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/did-countries"] });
+      toast({ title: "DID country updated successfully" });
+      resetForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update DID country", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/did-countries/${id}`);
@@ -72,13 +88,31 @@ export default function DIDCountriesPage() {
 
   const resetForm = () => {
     setFormData({ name: "", isoCode: "", dialCode: "", kycRequired: false });
+    setEditingCountry(null);
     setIsOpen(false);
+  };
+
+  const handleEdit = (country: DidCountry) => {
+    setEditingCountry(country);
+    setFormData({
+      name: country.name,
+      isoCode: country.isoCode,
+      dialCode: country.dialCode,
+      kycRequired: country.kycRequired || false,
+    });
+    setIsOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    if (editingCountry) {
+      updateMutation.mutate({ id: editingCountry.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div>
@@ -89,7 +123,7 @@ export default function DIDCountriesPage() {
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-country">
+            <Button onClick={() => { setEditingCountry(null); setFormData({ name: "", isoCode: "", dialCode: "", kycRequired: false }); }} data-testid="button-add-country">
               <Plus className="h-4 w-4 mr-2" />
               Add Country
             </Button>
@@ -97,8 +131,8 @@ export default function DIDCountriesPage() {
           <DialogContent>
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Add DID Country</DialogTitle>
-                <DialogDescription>Configure a new country for DIDs</DialogDescription>
+                <DialogTitle>{editingCountry ? "Edit DID Country" : "Add DID Country"}</DialogTitle>
+                <DialogDescription>{editingCountry ? "Update country settings" : "Configure a new country for DIDs"}</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -147,9 +181,9 @@ export default function DIDCountriesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending} data-testid="button-save-country">
-                  {createMutation.isPending ? "Saving..." : "Save"}
+                <Button type="button" variant="outline" onClick={resetForm} data-testid="button-cancel-country">Cancel</Button>
+                <Button type="submit" disabled={isPending} data-testid="button-save-country">
+                  {isPending ? "Saving..." : "Save"}
                 </Button>
               </DialogFooter>
             </form>
@@ -192,9 +226,14 @@ export default function DIDCountriesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(country.id)} data-testid={`button-delete-country-${country.id}`}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(country)} data-testid={`button-edit-country-${country.id}`}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(country.id)} data-testid={`button-delete-country-${country.id}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

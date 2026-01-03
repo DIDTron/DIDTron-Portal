@@ -61,6 +61,24 @@ export default function VoiceTiersPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      const res = await apiRequest("PATCH", `/api/voice-tiers/${id}`, {
+        ...data,
+        baseRate: data.baseRate,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/voice-tiers"] });
+      toast({ title: "Voice tier updated successfully" });
+      resetForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update voice tier", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/voice-tiers/${id}`);
@@ -80,10 +98,27 @@ export default function VoiceTiersPage() {
     setIsOpen(false);
   };
 
+  const handleEdit = (tier: VoiceTier) => {
+    setEditingTier(tier);
+    setFormData({
+      name: tier.name,
+      code: tier.code,
+      description: tier.description || "",
+      baseRate: tier.baseRate || "0.012",
+    });
+    setIsOpen(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    if (editingTier) {
+      updateMutation.mutate({ id: editingTier.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div>
@@ -94,7 +129,7 @@ export default function VoiceTiersPage() {
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-tier">
+            <Button onClick={() => { setEditingTier(null); setFormData({ name: "", code: "", description: "", baseRate: "0.012" }); }} data-testid="button-add-tier">
               <Plus className="h-4 w-4 mr-2" />
               Add Tier
             </Button>
@@ -102,8 +137,8 @@ export default function VoiceTiersPage() {
           <DialogContent>
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Add Voice Tier</DialogTitle>
-                <DialogDescription>Create a new voice quality tier</DialogDescription>
+                <DialogTitle>{editingTier ? "Edit Voice Tier" : "Add Voice Tier"}</DialogTitle>
+                <DialogDescription>{editingTier ? "Update voice tier settings" : "Create a new voice quality tier"}</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -152,9 +187,9 @@ export default function VoiceTiersPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending} data-testid="button-save-tier">
-                  {createMutation.isPending ? "Saving..." : "Save"}
+                <Button type="button" variant="outline" onClick={resetForm} data-testid="button-cancel-tier">Cancel</Button>
+                <Button type="submit" disabled={isPending} data-testid="button-save-tier">
+                  {isPending ? "Saving..." : "Save"}
                 </Button>
               </DialogFooter>
             </form>
@@ -189,9 +224,14 @@ export default function VoiceTiersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(tier.id)} data-testid={`button-delete-tier-${tier.id}`}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(tier)} data-testid={`button-edit-tier-${tier.id}`}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(tier.id)} data-testid={`button-delete-tier-${tier.id}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
