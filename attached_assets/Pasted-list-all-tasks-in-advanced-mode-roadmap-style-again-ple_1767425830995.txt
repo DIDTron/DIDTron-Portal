@@ -1,0 +1,270 @@
+list all tasks in advanced mode roadmap style again please
+
+The user wants me to display the full 118-task roadmap in a nicely formatted advanced mode style. Let me read the task list and present it in a comprehensive way.
+
+The user wants me to display the full roadmap in an advanced, nicely formatted style. Let me present all 118 tasks in a visual format.
+
+DIDTron Communications - 118-Task Advanced Roadmap
+📊 ROADMAP OVERVIEW
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     DIDTRON 118-TASK DEVELOPMENT ROADMAP                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  PHASE 1   ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Foundation (1-12)      │
+│  PHASE 2   ░░░░████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Class 4 (13-23)        │
+│  PHASE 3   ░░░░░░░░████████████████░░░░░░░░░░░░░░░░  SIP Tester (24-70)     │
+│  PHASE 4   ░░░░░░░░░░░░░░░░░░░░░░░░██░░░░░░░░░░░░░░  Monitoring (71-74)     │
+│  PHASE 5   ░░░░░░░░░░░░░░░░░░░░░░░░░░████░░░░░░░░░░  Core VoIP (75-82)      │
+│  PHASE 6   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██░░░░░░░░  AI Voice (83-86)       │
+│  PHASE 7   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░████░░░░  Billing (87-95)        │
+│  PHASE 8   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░███░  Social AI (96-102)     │
+│  PHASE 9   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██  CMS (103-108)          │
+│  PHASE 10  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█  Portals (109-114)      │
+│  PHASE 11  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█  AI Intel (115-118)     │
+│                                                                              │
+│  TOTAL: 118 Tasks | ~10-12 Months | Full Platform                           │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+PHASE 1: FOUNDATION (Tasks 1-12)
+Duration: 4-6 weeks
+
+#	Task	Description	AI Features
+1	Database Schema	90+ tables for all modules	-
+2	Design System	index.css, tokens, dark mode	-
+3	Categories & Groups	Customer segmentation CRUD	AI descriptions
+4	Authentication	Login, 2FA, sessions	AI welcome emails
+5	Unified AI Service	Core ai-service.ts	All AI functions
+6	ConnexCS API Wrapper	Class 4 backend integration	-
+7	POP Management	Points of presence CRUD	AI descriptions
+8	Voice Tiers	Gold/Platinum/Silver/Instant	AI marketing copy
+9	Codec & Auth Methods	SIP settings, priority	-
+10	Channel/CPS Plans	Capacity pricing	-
+11	DID Countries	Regulations, KYC rules	AI summaries
+12	Config Audit System	Change logging	AI change summaries
+PHASE 2: CLASS 4 SOFTSWITCH (Tasks 13-23)
+Duration: 6-8 weeks
+
+#	Task	Description	AI Features
+13	Carrier Management	Suppliers, IPs, failover	ConnexCS sync
+14	Customer Management	Resellers, credit limits	-
+15	Provider Rate Cards	Import carrier pricing	-
+16	Customer Rate Cards	Auto-markup, profit assurance	-
+17	LCR Engine	Least cost routing	AI optimization
+18	Routing Rules	Prefix, CLI, DNC	-
+19	Real-Time Rating	CDR processing, balance	-
+20	Live Dashboard	Channels, ASR, profits	AI insights
+21	Monitoring & Alerts	Thresholds, notifications	AI anomaly detection
+22	Reporting & CDRs	Search, export, analytics	-
+23	Invoicing	Auto-generate, PDF	Multi-currency
+PHASE 3: SIP TESTER (Tasks 24-70)
+Duration: 8-10 weeks | 47 Tasks
+
+Core Engine (Task 24)
+#	Task	Description
+24	Core Engine	Test queue, result storage, ConnexCS circuit test API
+Test Types (Tasks 25-38)
+#	Test Type	What It Measures
+25	Quick Test	Basic connectivity, SIP 200 OK
+26	Quality Test	MOS, jitter, packet loss, latency, RTP
+27	PDD Test	Post-dial delay, ring time, 180/183
+28	DTMF Test	Touch-tone recognition, IVR verification
+29	CLI Test	Caller ID delivery, CNAM lookup
+30	Codec Test	G.711/G.729/Opus/AMR negotiation
+31	Capacity Test	Concurrent calls, CPS stress
+32	Failover Test	Route redundancy, carrier failover timing
+33	Fax Test	T.38 fax transmission verification
+34	TLS/SRTP Test	Encryption negotiation, certificates
+35	NAT Traversal Test	STUN/TURN/ICE connectivity
+36	Registration Test	SIP REGISTER, auth challenge
+37	Media Path Test	One-way audio detection, RTP validation
+38	E911 Test	Emergency routing verification
+Testing Modes (Tasks 39-40)
+#	Mode	Description
+39	Advanced Mode	Raw SIP headers, custom parameters, expert options
+40	Simple Mode	One-click testing, AI-selected parameters
+Smart Sync System (Tasks 41-45)
+#	Sync Feature	Flow
+41	Smart Sync Engine	Cross-portal result sharing with permissions
+42	Admin → Customer	Admin tests visible to relevant customers
+43	Admin → Carrier	Admin tests visible to route carriers
+44	Class 4 → Admin	Wholesale customer tests sync to DIDTron
+45	Permissions Matrix	Configurable visibility per test type/result
+Scheduling System (Tasks 46-49)
+#	Schedule Feature	Description
+46	Scheduled Tests	Cron jobs, 5min/15min/hourly/daily intervals
+47	Schedule Builder UI	Visual scheduler, timezone support
+48	Customer Portal Schedules	Customers create own test schedules
+49	Class 4 Schedules	Wholesale customers schedule carrier tests
+AI Testing Features (Tasks 50-56)
+#	AI Feature	Description
+50	AI Auto-Testing	AI detects issues and triggers diagnostic tests
+51	AI Test Recommendations	AI suggests which tests to run based on CDRs
+52	AI Result Analysis	Plain English explanations, root cause detection
+53	AI Fix Suggestions	Automated remediation recommendations
+54	AI Predictive Testing	Predict failures before they happen
+55	AI Customer Portal	Natural language test requests, AI summaries
+56	AI Class 4 Portal	Wholesale AI testing, carrier quality insights
+Bulk & Comparison (Tasks 57-58)
+#	Feature	Description
+57	Bulk Testing	Multiple destinations, batch execution, parallel
+58	Carrier Comparison	Side-by-side quality metrics across carriers
+Alerts & Analysis (Tasks 59-61)
+#	Feature	Description
+59	Alert System	MOS/PDD/ASR thresholds, email/SMS/webhook
+60	SIP Trace Viewer	INVITE/200/BYE timeline, raw messages
+61	RTP Analysis	Packet capture, jitter buffer, codec stats
+Third-Party Integrations (Tasks 62-64)
+#	Integration	Purpose	Cost
+62	Twilio	External PSTN testing	~$0.02/test
+63	SignalWire	Budget external testing	~$0.01/test
+64	Spearline	Enterprise global testing	Custom
+Portal UIs (Tasks 65-68)
+#	Portal	Access Level
+65	Super Admin UI	Full access, all tests, raw traces, global view
+66	Customer Portal UI	Assigned routes, schedules, AI assistance
+67	Carrier Portal UI	Their routes, performance reports, SLA data
+68	Class 4 Portal UI	Full tester for wholesale, carrier management
+History & API (Tasks 69-70)
+#	Feature	Description
+69	Test History & Reports	Searchable logs, PDF export, trends graphs
+70	API Access	REST API for external integrations, webhooks
+PHASE 4: MONITORING (Tasks 71-74)
+Duration: 2-3 weeks
+
+#	Task	Description	AI Features
+71	Monitoring Rules Engine	Create rules, schedules, thresholds	-
+72	Metrics Collection	ConnexCS data, time-series	Aggregation
+73	Alert Conditions	Multi-condition triggers	AI human-readable
+74	Auto-Actions	Pause route, switch carrier	Auto-restore
+PHASE 5: CORE VOIP (Tasks 75-82)
+Duration: 4-5 weeks
+
+#	Task	Description	AI Features
+75	SIP Trunk Module	Auto-credentials, downloads	AI setup guides
+76	DID Inventory & Ordering	4-step wizard	AI recommendations
+77	DID Routing	Destinations, failover	Time conditions
+78	KYC System	Stripe Identity, manual	Admin queue
+79	PBX Extensions	SIP creds, caller ID	Forwarding
+80	PBX IVR Builder	Visual drag-drop	AI script writer
+81	PBX Ring Groups & Queues	Call distribution	AI hold messages
+82	Voicemail & Recording	Inbox, R2 storage	AI transcription
+PHASE 6: AI VOICE AGENT (Tasks 83-86)
+Duration: 3-4 weeks
+
+#	Task	Description	AI Features
+83	AI Voice Agent Setup	Inbound/outbound agents	Full AI
+84	AI Voice Builder	Drag-drop conversation flow	Full AI
+85	AI Voice Training	Business FAQs, products, hours	Full AI
+86	AI Outbound Campaigns	Schedule mass AI calls	Full AI
+PHASE 7: BILLING & USERS (Tasks 87-95)
+Duration: 4-5 weeks
+
+#	Task	Description	AI Features
+87	Roles & Permissions	Admin/Customer/Carrier	AI descriptions
+88	Referral System	Links, 3-tier commissions	AI copy
+89	Bonus & Promo System	Codes, bonuses	AI naming
+90	Currency System	200+ currencies	Open Exchange API
+91	FX Rate Service	Hourly fetch, Redis cache	Rate history
+92	Multi-Currency Ledger	Dual base/display	Locked rates
+93	Currency Reconciliation	Nightly sync	ConnexCS comparison
+94	Billing Engine	Prepaid/Postpaid rating	AI invoice summaries
+95	Payment Integration	Stripe/PayPal multi-currency	Auto-top-up
+PHASE 8: AI SOCIAL MEDIA (Tasks 96-102)
+Duration: 4-5 weeks
+
+#	Task	Description	AI Features
+96	Social Account Connection	Ayrshare integration	-
+97	AI Content Creator	Posts, tones, A/B	AI hashtags
+98	AI Media Generation	DALL-E images	AI alt text
+99	Content Inventory	Asset library	AI auto-tagging
+100	Publishing & Calendar	Schedule posts	AI best-time
+101	Unified Inbox	All messages	AI sentiment, replies
+102	Social Analytics	Metrics, A/B testing	AI insights
+PHASE 9: CMS & WHITE-LABEL (Tasks 103-108)
+Duration: 4-5 weeks
+
+#	Task	Description	AI Features
+103	CMS Core	Portals, themes, tokens	Redis cache
+104	Theme Studio UI	Color/font editors	Live preview
+105	Media Library	Upload, folders	Renditions
+106	Layout Composer	Header/footer/sidebar	Menus
+107	Content Block Builder	Drag-drop	AI page builder
+108	Tenant Branding	Per-customer white-label	Custom domains
+PHASE 10: PORTALS (Tasks 109-114)
+Duration: 5-6 weeks
+
+#	Portal	Description	AI Features
+109	Main Website	Home, Products, Pricing	AI SEO
+110	Customer Portal	VitalPBX-style, all modules	AI tips
+111	Carrier Portal	DIDs, routes, settlements	-
+112	Class 4 Portal	Full wholesale platform	AI insights
+113	Super Admin Portal	Full admin, Theme CMS	Exceptions
+114	Docs Site	Markdown, search	AI doc generator
+PHASE 11: AI INTELLIGENCE (Tasks 115-118)
+Duration: 3-4 weeks
+
+#	Task	Description	AI Features
+115	AI Admin Agent	Natural language chat	Function calling
+116	AI Smart Recommendations	Proactive alerts	Predictions
+117	Automation Engine	Event triggers	AI suggestions
+118	Global Search	Natural language	Query builder
+TIMELINE SUMMARY
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           DEVELOPMENT TIMELINE                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  MONTH 1-2:   Foundation + Class 4                                          │
+│               Tasks 1-23 | Core infrastructure                              │
+│               ████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░             │
+│                                                                              │
+│  MONTH 3-5:   SIP Tester (Full Module)                                      │
+│               Tasks 24-70 | All test types, sync, AI                        │
+│               ░░░░░░░░░░░░░░░░████████████████████████░░░░░░░░░             │
+│                                                                              │
+│  MONTH 5-6:   Monitoring + Core VoIP                                        │
+│               Tasks 71-82 | Alerts, SIP, DIDs, PBX                          │
+│               ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░████████░             │
+│                                                                              │
+│  MONTH 6-7:   AI Voice + Billing                                            │
+│               Tasks 83-95 | Voice agents, payments                          │
+│               ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░████░             │
+│                                                                              │
+│  MONTH 8-9:   Social + CMS                                                  │
+│               Tasks 96-108 | Ayrshare, themes, branding                     │
+│               ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██░             │
+│                                                                              │
+│  MONTH 10-11: Portals                                                       │
+│               Tasks 109-114 | All 6 portals                                 │
+│               ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██             │
+│                                                                              │
+│  MONTH 12:    AI Intelligence + Polish                                      │
+│               Tasks 115-118 | AI agent, automation                          │
+│               ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█             │
+│                                                                              │
+│  TOTAL: 118 Tasks | 10-12 Months | Full Enterprise Platform                 │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+PRODUCTS DELIVERED BY PHASE
+Phase	Month	Products Ready
+1-2	Month 2	Authentication, Admin Config
+3	Month 3	Class 4 Softswitch ($0.0005/min)
+4	Month 5	Full SIP Tester (all portals)
+5	Month 6	Monitoring + Alerts
+6	Month 6	Voice Termination ($0.012/min)
+7	Month 7	DIDs ($1.50/mo), PBX ($3/ext)
+8	Month 7	AI Voice Agent ($0.10/min)
+9	Month 8	Multi-Currency Billing
+10	Month 9	AI Social Media
+11	Month 10	White-Label CMS
+12	Month 11	All 6 Portals Complete
+13	Month 12	AI Admin Agent, Full Platform
+EXTERNAL SERVICES (Budget: <$25/month)
+Service	Purpose	Cost
+ConnexCS	VoIP backend	Usage-based
+OpenAI	All AI features	$5-15/mo
+Open Exchange Rates	200+ currencies	Free-$12/mo
+Ayrshare	Social media	Free-$20/mo
+Cloudflare R2	File storage	~$5/mo
+Upstash Redis	Caching	Free
+Twilio/SignalWire	External SIP testing	Pay-per-test
+Ready to start building? Switch to Build mode and I'll begin with Task 1.
