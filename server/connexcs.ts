@@ -1,5 +1,6 @@
 interface ConnexCSConfig {
-  apiKey?: string;
+  username?: string;
+  password?: string;
   baseUrl: string;
 }
 
@@ -59,17 +60,47 @@ interface ConnexCSMetrics {
 class ConnexCSClient {
   private config: ConnexCSConfig;
   private mockMode: boolean;
+  private jwtToken: string | null = null;
+  private tokenExpiry: number = 0;
 
   constructor() {
     this.config = {
-      apiKey: process.env.CONNEXCS_API_KEY,
-      baseUrl: process.env.CONNEXCS_API_URL || "https://api.connexcs.com/v3",
+      username: process.env.CONNEXCS_USERNAME,
+      password: process.env.CONNEXCS_PASSWORD,
+      baseUrl: process.env.CONNEXCS_API_URL || "https://app.connexcs.com",
     };
-    this.mockMode = !this.config.apiKey;
+    this.mockMode = !this.config.username || !this.config.password;
 
     if (this.mockMode) {
-      console.log("[ConnexCS] Running in mock mode - no API key configured");
+      console.log("[ConnexCS] Running in mock mode - no username/password configured");
     }
+  }
+
+  private async authenticate(): Promise<string> {
+    if (this.jwtToken && Date.now() < this.tokenExpiry) {
+      return this.jwtToken;
+    }
+
+    const response = await fetch(`${this.config.baseUrl}/api/cp/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: this.config.username,
+        password: this.config.password,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`ConnexCS authentication failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    this.jwtToken = data.jwt || data.token;
+    this.tokenExpiry = Date.now() + (55 * 60 * 1000); // Refresh 5 min before expiry (1 hour tokens)
+    
+    return this.jwtToken!;
   }
 
   private async request<T>(
@@ -81,10 +112,12 @@ class ConnexCSClient {
       return this.getMockResponse<T>(endpoint, method);
     }
 
-    const response = await fetch(`${this.config.baseUrl}${endpoint}`, {
+    const token = await this.authenticate();
+    
+    const response = await fetch(`${this.config.baseUrl}/api/cp${endpoint}`, {
       method,
       headers: {
-        "Authorization": `Bearer ${this.config.apiKey}`,
+        "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: data ? JSON.stringify(data) : undefined,
