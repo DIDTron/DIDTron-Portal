@@ -14,7 +14,7 @@ import {
 
 export function WorkspaceTabs() {
   const [, setLocation] = useLocation();
-  const { tabs, activeTabId, setActiveTab, closeTab, closeOtherTabs, closeTabsToRight } = useSuperAdminTabs();
+  const { tabs, activeTabId, setActiveTab, closeTab, closeOtherTabs, closeTabsToRight, closeAllTabs } = useSuperAdminTabs();
 
   if (tabs.length === 0) {
     return (
@@ -102,6 +102,13 @@ export function WorkspaceTabs() {
                     data-testid={`context-close-right-${tab.id}`}
                   >
                     Close Tabs To The Right
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem 
+                    onClick={() => closeAllTabs()}
+                    data-testid={`context-close-all-${tab.id}`}
+                  >
+                    Close All
                   </ContextMenuItem>
                 </ContextMenuContent>
               </ContextMenu>
