@@ -22,6 +22,10 @@ import IntegrationsPage from "./integrations";
 import CustomersPage from "./customers";
 import CategoriesPage from "./categories";
 import GroupsPage from "./groups";
+import InvoicesPage from "./invoices";
+import PaymentsPage from "./payments";
+import PromoCodesPage from "./promo-codes";
+import ReferralsPage from "./referrals";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -149,18 +153,10 @@ export default function AdminLayout() {
                 <Route path="/admin/kyc">
                   <PlaceholderPage title="KYC Requests" />
                 </Route>
-                <Route path="/admin/invoices">
-                  <PlaceholderPage title="Invoices" />
-                </Route>
-                <Route path="/admin/payments">
-                  <PlaceholderPage title="Payments" />
-                </Route>
-                <Route path="/admin/referrals">
-                  <PlaceholderPage title="Referrals" />
-                </Route>
-                <Route path="/admin/promo-codes">
-                  <PlaceholderPage title="Promo Codes" />
-                </Route>
+                <Route path="/admin/invoices" component={InvoicesPage} />
+                <Route path="/admin/payments" component={PaymentsPage} />
+                <Route path="/admin/referrals" component={ReferralsPage} />
+                <Route path="/admin/promo-codes" component={PromoCodesPage} />
                 <Route path="/admin/bonuses">
                   <PlaceholderPage title="Bonuses" />
                 </Route>

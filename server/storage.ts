@@ -31,7 +31,9 @@ import {
   type AiVoiceAgent, type InsertAiVoiceAgent,
   type CmsTheme, type InsertCmsTheme,
   type TenantBranding, type InsertTenantBranding,
-  type Integration, type InsertIntegration
+  type Integration, type InsertIntegration,
+  type Invoice, type Payment, type PromoCode, type Referral,
+  type InsertPayment, type InsertPromoCode
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -167,6 +169,35 @@ export interface IStorage {
   createTicket(ticket: InsertTicket): Promise<Ticket>;
   updateTicket(id: string, data: Partial<InsertTicket>): Promise<Ticket | undefined>;
 
+  // Invoices
+  getInvoices(customerId?: string): Promise<Invoice[]>;
+  getInvoice(id: string): Promise<Invoice | undefined>;
+  createInvoice(invoice: Partial<Invoice>): Promise<Invoice>;
+  updateInvoice(id: string, data: Partial<Invoice>): Promise<Invoice | undefined>;
+  deleteInvoice(id: string): Promise<boolean>;
+
+  // Payments
+  getPayments(customerId?: string): Promise<Payment[]>;
+  getPayment(id: string): Promise<Payment | undefined>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  updatePayment(id: string, data: Partial<InsertPayment>): Promise<Payment | undefined>;
+  deletePayment(id: string): Promise<boolean>;
+
+  // Promo Codes
+  getPromoCodes(): Promise<PromoCode[]>;
+  getPromoCode(id: string): Promise<PromoCode | undefined>;
+  getPromoCodeByCode(code: string): Promise<PromoCode | undefined>;
+  createPromoCode(promoCode: InsertPromoCode): Promise<PromoCode>;
+  updatePromoCode(id: string, data: Partial<InsertPromoCode>): Promise<PromoCode | undefined>;
+  deletePromoCode(id: string): Promise<boolean>;
+
+  // Referrals
+  getReferrals(referrerId?: string): Promise<Referral[]>;
+  getReferral(id: string): Promise<Referral | undefined>;
+  createReferral(referral: Partial<Referral>): Promise<Referral>;
+  updateReferral(id: string, data: Partial<Referral>): Promise<Referral | undefined>;
+  deleteReferral(id: string): Promise<boolean>;
+
   // Dashboard Stats
   getCategoryStats(): Promise<{ categoryId: string; customerCount: number; revenue: number }[]>;
 
@@ -257,6 +288,10 @@ export class MemStorage implements IStorage {
   private sipTrunks: Map<string, SipTrunk>;
   private extensions: Map<string, Extension>;
   private tickets: Map<string, Ticket>;
+  private invoices: Map<string, Invoice>;
+  private payments: Map<string, Payment>;
+  private promoCodes: Map<string, PromoCode>;
+  private referrals: Map<string, Referral>;
   private currencies: Map<string, Currency>;
   private fxRates: Map<string, FxRate>;
   private sipTestConfigs: Map<string, SipTestConfig>;
@@ -290,6 +325,10 @@ export class MemStorage implements IStorage {
     this.sipTrunks = new Map();
     this.extensions = new Map();
     this.tickets = new Map();
+    this.invoices = new Map();
+    this.payments = new Map();
+    this.promoCodes = new Map();
+    this.referrals = new Map();
     this.currencies = new Map();
     this.fxRates = new Map();
     this.sipTestConfigs = new Map();
@@ -1211,6 +1250,165 @@ export class MemStorage implements IStorage {
     const updated = { ...ticket, ...data, updatedAt: new Date() };
     this.tickets.set(id, updated);
     return updated;
+  }
+
+  // Invoices
+  async getInvoices(customerId?: string): Promise<Invoice[]> {
+    const all = Array.from(this.invoices.values());
+    if (customerId) return all.filter(i => i.customerId === customerId);
+    return all;
+  }
+  async getInvoice(id: string): Promise<Invoice | undefined> {
+    return this.invoices.get(id);
+  }
+  async createInvoice(invoice: Partial<Invoice>): Promise<Invoice> {
+    const id = randomUUID();
+    const now = new Date();
+    const inv: Invoice = {
+      id,
+      customerId: invoice.customerId || "",
+      invoiceNumber: invoice.invoiceNumber || `INV-${Date.now().toString(36).toUpperCase()}`,
+      amount: invoice.amount || "0",
+      tax: invoice.tax || "0",
+      total: invoice.total || "0",
+      currency: invoice.currency || "USD",
+      status: invoice.status || "pending",
+      dueDate: invoice.dueDate || null,
+      paidAt: invoice.paidAt || null,
+      pdfUrl: invoice.pdfUrl || null,
+      createdAt: now,
+    };
+    this.invoices.set(id, inv);
+    return inv;
+  }
+  async updateInvoice(id: string, data: Partial<Invoice>): Promise<Invoice | undefined> {
+    const inv = this.invoices.get(id);
+    if (!inv) return undefined;
+    const updated = { ...inv, ...data };
+    this.invoices.set(id, updated);
+    return updated;
+  }
+  async deleteInvoice(id: string): Promise<boolean> {
+    return this.invoices.delete(id);
+  }
+
+  // Payments
+  async getPayments(customerId?: string): Promise<Payment[]> {
+    const all = Array.from(this.payments.values());
+    if (customerId) return all.filter(p => p.customerId === customerId);
+    return all;
+  }
+  async getPayment(id: string): Promise<Payment | undefined> {
+    return this.payments.get(id);
+  }
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const id = randomUUID();
+    const now = new Date();
+    const pay: Payment = {
+      id,
+      customerId: payment.customerId,
+      amount: payment.amount,
+      currency: payment.currency || "USD",
+      paymentMethod: payment.paymentMethod || null,
+      transactionId: payment.transactionId || null,
+      stripePaymentIntentId: payment.stripePaymentIntentId || null,
+      paypalTransactionId: payment.paypalTransactionId || null,
+      status: payment.status || "pending",
+      description: payment.description || null,
+      createdAt: now,
+    };
+    this.payments.set(id, pay);
+    return pay;
+  }
+  async updatePayment(id: string, data: Partial<InsertPayment>): Promise<Payment | undefined> {
+    const pay = this.payments.get(id);
+    if (!pay) return undefined;
+    const updated = { ...pay, ...data };
+    this.payments.set(id, updated);
+    return updated;
+  }
+  async deletePayment(id: string): Promise<boolean> {
+    return this.payments.delete(id);
+  }
+
+  // Promo Codes
+  async getPromoCodes(): Promise<PromoCode[]> {
+    return Array.from(this.promoCodes.values());
+  }
+  async getPromoCode(id: string): Promise<PromoCode | undefined> {
+    return this.promoCodes.get(id);
+  }
+  async getPromoCodeByCode(code: string): Promise<PromoCode | undefined> {
+    return Array.from(this.promoCodes.values()).find(p => p.code === code);
+  }
+  async createPromoCode(promoCode: InsertPromoCode): Promise<PromoCode> {
+    const id = randomUUID();
+    const now = new Date();
+    const promo: PromoCode = {
+      id,
+      code: promoCode.code,
+      description: promoCode.description || null,
+      discountType: promoCode.discountType || "percentage",
+      discountValue: promoCode.discountValue,
+      applyTo: promoCode.applyTo || "all",
+      maxUses: promoCode.maxUses || null,
+      usedCount: promoCode.usedCount || 0,
+      minPurchase: promoCode.minPurchase || null,
+      validFrom: promoCode.validFrom || null,
+      validUntil: promoCode.validUntil || null,
+      isActive: promoCode.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.promoCodes.set(id, promo);
+    return promo;
+  }
+  async updatePromoCode(id: string, data: Partial<InsertPromoCode>): Promise<PromoCode | undefined> {
+    const promo = this.promoCodes.get(id);
+    if (!promo) return undefined;
+    const updated = { ...promo, ...data, updatedAt: new Date() };
+    this.promoCodes.set(id, updated);
+    return updated;
+  }
+  async deletePromoCode(id: string): Promise<boolean> {
+    return this.promoCodes.delete(id);
+  }
+
+  // Referrals
+  async getReferrals(referrerId?: string): Promise<Referral[]> {
+    const all = Array.from(this.referrals.values());
+    if (referrerId) return all.filter(r => r.referrerId === referrerId);
+    return all;
+  }
+  async getReferral(id: string): Promise<Referral | undefined> {
+    return this.referrals.get(id);
+  }
+  async createReferral(referral: Partial<Referral>): Promise<Referral> {
+    const id = randomUUID();
+    const now = new Date();
+    const ref: Referral = {
+      id,
+      referrerId: referral.referrerId || "",
+      referredId: referral.referredId || null,
+      referralCode: referral.referralCode || `REF${randomUUID().slice(0, 8).toUpperCase()}`,
+      status: referral.status || "pending",
+      tier: referral.tier || 1,
+      commission: referral.commission || "0",
+      paidAt: referral.paidAt || null,
+      createdAt: now,
+    };
+    this.referrals.set(id, ref);
+    return ref;
+  }
+  async updateReferral(id: string, data: Partial<Referral>): Promise<Referral | undefined> {
+    const ref = this.referrals.get(id);
+    if (!ref) return undefined;
+    const updated = { ...ref, ...data };
+    this.referrals.set(id, updated);
+    return updated;
+  }
+  async deleteReferral(id: string): Promise<boolean> {
+    return this.referrals.delete(id);
   }
 
   // Dashboard Stats

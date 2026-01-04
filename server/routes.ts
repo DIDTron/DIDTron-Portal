@@ -298,6 +298,221 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== INVOICES ====================
+  app.get("/api/invoices", async (req, res) => {
+    try {
+      const customerId = req.query.customerId as string | undefined;
+      const invoices = await storage.getInvoices(customerId);
+      res.json(invoices);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+  });
+
+  app.get("/api/invoices/:id", async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+      res.json(invoice);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch invoice" });
+    }
+  });
+
+  app.post("/api/invoices", async (req, res) => {
+    try {
+      const { customerId, amount, total } = req.body;
+      if (!customerId || !amount || !total) {
+        return res.status(400).json({ error: "customerId, amount, and total are required" });
+      }
+      const invoice = await storage.createInvoice(req.body);
+      res.status(201).json(invoice);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create invoice" });
+    }
+  });
+
+  app.patch("/api/invoices/:id", async (req, res) => {
+    try {
+      const invoice = await storage.updateInvoice(req.params.id, req.body);
+      if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+      res.json(invoice);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update invoice" });
+    }
+  });
+
+  app.delete("/api/invoices/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteInvoice(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Invoice not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete invoice" });
+    }
+  });
+
+  // ==================== PAYMENTS ====================
+  app.get("/api/payments", async (req, res) => {
+    try {
+      const customerId = req.query.customerId as string | undefined;
+      const payments = await storage.getPayments(customerId);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
+  app.get("/api/payments/:id", async (req, res) => {
+    try {
+      const payment = await storage.getPayment(req.params.id);
+      if (!payment) return res.status(404).json({ error: "Payment not found" });
+      res.json(payment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payment" });
+    }
+  });
+
+  app.post("/api/payments", async (req, res) => {
+    try {
+      const { customerId, amount } = req.body;
+      if (!customerId || !amount) {
+        return res.status(400).json({ error: "customerId and amount are required" });
+      }
+      const payment = await storage.createPayment(req.body);
+      res.status(201).json(payment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create payment" });
+    }
+  });
+
+  app.patch("/api/payments/:id", async (req, res) => {
+    try {
+      const payment = await storage.updatePayment(req.params.id, req.body);
+      if (!payment) return res.status(404).json({ error: "Payment not found" });
+      res.json(payment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update payment" });
+    }
+  });
+
+  app.delete("/api/payments/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deletePayment(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Payment not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete payment" });
+    }
+  });
+
+  // ==================== PROMO CODES ====================
+  app.get("/api/promo-codes", async (req, res) => {
+    try {
+      const promoCodes = await storage.getPromoCodes();
+      res.json(promoCodes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch promo codes" });
+    }
+  });
+
+  app.get("/api/promo-codes/:id", async (req, res) => {
+    try {
+      const promoCode = await storage.getPromoCode(req.params.id);
+      if (!promoCode) return res.status(404).json({ error: "Promo code not found" });
+      res.json(promoCode);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch promo code" });
+    }
+  });
+
+  app.post("/api/promo-codes", async (req, res) => {
+    try {
+      const { code, discountValue } = req.body;
+      if (!code || discountValue === undefined) {
+        return res.status(400).json({ error: "code and discountValue are required" });
+      }
+      const promoCode = await storage.createPromoCode(req.body);
+      res.status(201).json(promoCode);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create promo code" });
+    }
+  });
+
+  app.patch("/api/promo-codes/:id", async (req, res) => {
+    try {
+      const promoCode = await storage.updatePromoCode(req.params.id, req.body);
+      if (!promoCode) return res.status(404).json({ error: "Promo code not found" });
+      res.json(promoCode);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update promo code" });
+    }
+  });
+
+  app.delete("/api/promo-codes/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deletePromoCode(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Promo code not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete promo code" });
+    }
+  });
+
+  // ==================== REFERRALS ====================
+  app.get("/api/referrals", async (req, res) => {
+    try {
+      const referrerId = req.query.referrerId as string | undefined;
+      const referrals = await storage.getReferrals(referrerId);
+      res.json(referrals);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch referrals" });
+    }
+  });
+
+  app.get("/api/referrals/:id", async (req, res) => {
+    try {
+      const referral = await storage.getReferral(req.params.id);
+      if (!referral) return res.status(404).json({ error: "Referral not found" });
+      res.json(referral);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch referral" });
+    }
+  });
+
+  app.post("/api/referrals", async (req, res) => {
+    try {
+      const { referrerId } = req.body;
+      if (!referrerId) {
+        return res.status(400).json({ error: "referrerId is required" });
+      }
+      const referral = await storage.createReferral(req.body);
+      res.status(201).json(referral);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create referral" });
+    }
+  });
+
+  app.patch("/api/referrals/:id", async (req, res) => {
+    try {
+      const referral = await storage.updateReferral(req.params.id, req.body);
+      if (!referral) return res.status(404).json({ error: "Referral not found" });
+      res.json(referral);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update referral" });
+    }
+  });
+
+  app.delete("/api/referrals/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteReferral(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Referral not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete referral" });
+    }
+  });
+
   // ==================== POPs ====================
 
   app.get("/api/pops", async (req, res) => {

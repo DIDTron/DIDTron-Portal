@@ -7,7 +7,7 @@ import {
   Building2, Route, Phone, Sparkles, RefreshCw, ArrowUpRight, TrendingUp, Clock
 } from "lucide-react";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
-import type { CustomerCategory, CustomerGroup, Carrier, Pop, Route as RouteType, DidCountry, VoiceTier, Customer } from "@shared/schema";
+import type { CustomerCategory, CustomerGroup, Carrier, Pop, Route as RouteType, DidCountry, VoiceTier, Customer, Invoice, Payment, PromoCode, Referral } from "@shared/schema";
 
 export default function AdminDashboard() {
   const { openTab, setActiveSection, setActiveSubItem } = useSuperAdminTabs();
@@ -42,6 +42,22 @@ export default function AdminDashboard() {
 
   const { data: groups } = useQuery<CustomerGroup[]>({
     queryKey: ["/api/groups"],
+  });
+
+  const { data: invoices } = useQuery<Invoice[]>({
+    queryKey: ["/api/invoices"],
+  });
+
+  const { data: payments } = useQuery<Payment[]>({
+    queryKey: ["/api/payments"],
+  });
+
+  const { data: promoCodes } = useQuery<PromoCode[]>({
+    queryKey: ["/api/promo-codes"],
+  });
+
+  const { data: referrals } = useQuery<Referral[]>({
+    queryKey: ["/api/referrals"],
   });
 
   const handleQuickAction = (section: string, subItem: string, label: string, route: string) => {
@@ -114,6 +130,30 @@ export default function AdminDashboard() {
           description="Active customers" 
           testId="stat-customers"
           onClick={() => handleQuickAction("customers", "customers", "Customers", "/admin/customers")}
+        />
+        <StatCard 
+          icon={CreditCard} 
+          title="Invoices" 
+          value={(invoices ?? []).length.toString()} 
+          description={`${(invoices ?? []).filter(i => i.status === 'pending').length} pending`}
+          testId="stat-invoices"
+          onClick={() => handleQuickAction("billing", "invoices", "Invoices", "/admin/invoices")}
+        />
+        <StatCard 
+          icon={CreditCard} 
+          title="Payments" 
+          value={(payments ?? []).length.toString()} 
+          description={`$${(payments ?? []).reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0).toFixed(2)} total`}
+          testId="stat-payments"
+          onClick={() => handleQuickAction("billing", "payments", "Payments", "/admin/payments")}
+        />
+        <StatCard 
+          icon={Activity} 
+          title="Referrals" 
+          value={(referrals ?? []).length.toString()} 
+          description={`${(referrals ?? []).filter(r => r.status === 'converted').length} converted`}
+          testId="stat-referrals"
+          onClick={() => handleQuickAction("billing", "referrals", "Referrals", "/admin/referrals")}
         />
       </div>
 
