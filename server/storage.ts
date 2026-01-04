@@ -33,7 +33,8 @@ import {
   type TenantBranding, type InsertTenantBranding,
   type Integration, type InsertIntegration,
   type Invoice, type Payment, type PromoCode, type Referral,
-  type InsertPayment, type InsertPromoCode
+  type InsertPayment, type InsertPromoCode,
+  type BonusType, type EmailTemplate
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -198,6 +199,20 @@ export interface IStorage {
   updateReferral(id: string, data: Partial<Referral>): Promise<Referral | undefined>;
   deleteReferral(id: string): Promise<boolean>;
 
+  // Bonus Types
+  getBonusTypes(): Promise<BonusType[]>;
+  getBonusType(id: string): Promise<BonusType | undefined>;
+  createBonusType(bonusType: Partial<BonusType>): Promise<BonusType>;
+  updateBonusType(id: string, data: Partial<BonusType>): Promise<BonusType | undefined>;
+  deleteBonusType(id: string): Promise<boolean>;
+
+  // Email Templates
+  getEmailTemplates(): Promise<EmailTemplate[]>;
+  getEmailTemplate(id: string): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: Partial<EmailTemplate>): Promise<EmailTemplate>;
+  updateEmailTemplate(id: string, data: Partial<EmailTemplate>): Promise<EmailTemplate | undefined>;
+  deleteEmailTemplate(id: string): Promise<boolean>;
+
   // Dashboard Stats
   getCategoryStats(): Promise<{ categoryId: string; customerCount: number; revenue: number }[]>;
 
@@ -303,6 +318,8 @@ export class MemStorage implements IStorage {
   private cmsThemes: Map<string, CmsTheme>;
   private tenantBrandings: Map<string, TenantBranding>;
   private integrations: Map<string, Integration>;
+  private bonusTypes: Map<string, BonusType>;
+  private emailTemplates: Map<string, EmailTemplate>;
 
   constructor() {
     this.users = new Map();
@@ -340,6 +357,8 @@ export class MemStorage implements IStorage {
     this.cmsThemes = new Map();
     this.tenantBrandings = new Map();
     this.integrations = new Map();
+    this.bonusTypes = new Map();
+    this.emailTemplates = new Map();
 
     this.seedDefaultData();
   }
@@ -1409,6 +1428,79 @@ export class MemStorage implements IStorage {
   }
   async deleteReferral(id: string): Promise<boolean> {
     return this.referrals.delete(id);
+  }
+
+  // Bonus Types
+  async getBonusTypes(): Promise<BonusType[]> {
+    return Array.from(this.bonusTypes.values());
+  }
+  async getBonusType(id: string): Promise<BonusType | undefined> {
+    return this.bonusTypes.get(id);
+  }
+  async createBonusType(bonusType: Partial<BonusType>): Promise<BonusType> {
+    const id = randomUUID();
+    const now = new Date();
+    const newBonusType: BonusType = {
+      id,
+      name: bonusType.name || "New Bonus",
+      code: bonusType.code || `BONUS-${Date.now()}`,
+      type: bonusType.type || "signup",
+      amount: bonusType.amount || null,
+      percentage: bonusType.percentage || null,
+      conditions: bonusType.conditions || null,
+      isActive: bonusType.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.bonusTypes.set(id, newBonusType);
+    return newBonusType;
+  }
+  async updateBonusType(id: string, data: Partial<BonusType>): Promise<BonusType | undefined> {
+    const existing = this.bonusTypes.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data, updatedAt: new Date() };
+    this.bonusTypes.set(id, updated);
+    return updated;
+  }
+  async deleteBonusType(id: string): Promise<boolean> {
+    return this.bonusTypes.delete(id);
+  }
+
+  // Email Templates
+  async getEmailTemplates(): Promise<EmailTemplate[]> {
+    return Array.from(this.emailTemplates.values());
+  }
+  async getEmailTemplate(id: string): Promise<EmailTemplate | undefined> {
+    return this.emailTemplates.get(id);
+  }
+  async createEmailTemplate(template: Partial<EmailTemplate>): Promise<EmailTemplate> {
+    const id = randomUUID();
+    const now = new Date();
+    const newTemplate: EmailTemplate = {
+      id,
+      name: template.name || "New Template",
+      slug: template.slug || `template-${Date.now()}`,
+      subject: template.subject || "",
+      htmlContent: template.htmlContent || null,
+      textContent: template.textContent || null,
+      category: template.category || "general",
+      variables: template.variables || null,
+      isActive: template.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.emailTemplates.set(id, newTemplate);
+    return newTemplate;
+  }
+  async updateEmailTemplate(id: string, data: Partial<EmailTemplate>): Promise<EmailTemplate | undefined> {
+    const existing = this.emailTemplates.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data, updatedAt: new Date() };
+    this.emailTemplates.set(id, updated);
+    return updated;
+  }
+  async deleteEmailTemplate(id: string): Promise<boolean> {
+    return this.emailTemplates.delete(id);
   }
 
   // Dashboard Stats

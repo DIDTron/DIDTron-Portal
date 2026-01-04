@@ -26,6 +26,9 @@ import InvoicesPage from "./invoices";
 import PaymentsPage from "./payments";
 import PromoCodesPage from "./promo-codes";
 import ReferralsPage from "./referrals";
+import BonusesPage from "./bonuses";
+import EmailTemplatesPage from "./email-templates";
+import TicketsPage from "./tickets";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -157,18 +160,14 @@ export default function AdminLayout() {
                 <Route path="/admin/payments" component={PaymentsPage} />
                 <Route path="/admin/referrals" component={ReferralsPage} />
                 <Route path="/admin/promo-codes" component={PromoCodesPage} />
-                <Route path="/admin/bonuses">
-                  <PlaceholderPage title="Bonuses" />
-                </Route>
+                <Route path="/admin/bonuses" component={BonusesPage} />
                 <Route path="/admin/social-accounts">
                   <PlaceholderPage title="Social Accounts" />
                 </Route>
                 <Route path="/admin/social-posts">
                   <PlaceholderPage title="Social Posts" />
                 </Route>
-                <Route path="/admin/email-templates">
-                  <PlaceholderPage title="Email Templates" />
-                </Route>
+                <Route path="/admin/email-templates" component={EmailTemplatesPage} />
                 <Route path="/admin/metrics">
                   <PlaceholderPage title="Metrics" />
                 </Route>
@@ -199,9 +198,7 @@ export default function AdminLayout() {
                 <Route path="/admin/audit-logs">
                   <PlaceholderPage title="Audit Logs" />
                 </Route>
-                <Route path="/admin/tickets">
-                  <PlaceholderPage title="Support Tickets" />
-                </Route>
+                <Route path="/admin/tickets" component={TicketsPage} />
                 <Route path="/admin/settings/general">
                   <PlaceholderPage title="General Settings" />
                 </Route>

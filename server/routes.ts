@@ -513,6 +513,114 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== BONUS TYPES ====================
+
+  app.get("/api/bonuses", async (req, res) => {
+    try {
+      const bonuses = await storage.getBonusTypes();
+      res.json(bonuses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bonuses" });
+    }
+  });
+
+  app.get("/api/bonuses/:id", async (req, res) => {
+    try {
+      const bonus = await storage.getBonusType(req.params.id);
+      if (!bonus) return res.status(404).json({ error: "Bonus not found" });
+      res.json(bonus);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bonus" });
+    }
+  });
+
+  app.post("/api/bonuses", async (req, res) => {
+    try {
+      const { name, code } = req.body;
+      if (!name || !code) {
+        return res.status(400).json({ error: "name and code are required" });
+      }
+      const bonus = await storage.createBonusType(req.body);
+      res.status(201).json(bonus);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create bonus" });
+    }
+  });
+
+  app.patch("/api/bonuses/:id", async (req, res) => {
+    try {
+      const bonus = await storage.updateBonusType(req.params.id, req.body);
+      if (!bonus) return res.status(404).json({ error: "Bonus not found" });
+      res.json(bonus);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update bonus" });
+    }
+  });
+
+  app.delete("/api/bonuses/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteBonusType(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Bonus not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete bonus" });
+    }
+  });
+
+  // ==================== EMAIL TEMPLATES ====================
+
+  app.get("/api/email-templates", async (req, res) => {
+    try {
+      const templates = await storage.getEmailTemplates();
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch email templates" });
+    }
+  });
+
+  app.get("/api/email-templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getEmailTemplate(req.params.id);
+      if (!template) return res.status(404).json({ error: "Email template not found" });
+      res.json(template);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch email template" });
+    }
+  });
+
+  app.post("/api/email-templates", async (req, res) => {
+    try {
+      const { name, slug, subject } = req.body;
+      if (!name || !slug || !subject) {
+        return res.status(400).json({ error: "name, slug, and subject are required" });
+      }
+      const template = await storage.createEmailTemplate(req.body);
+      res.status(201).json(template);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create email template" });
+    }
+  });
+
+  app.patch("/api/email-templates/:id", async (req, res) => {
+    try {
+      const template = await storage.updateEmailTemplate(req.params.id, req.body);
+      if (!template) return res.status(404).json({ error: "Email template not found" });
+      res.json(template);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update email template" });
+    }
+  });
+
+  app.delete("/api/email-templates/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteEmailTemplate(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Email template not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete email template" });
+    }
+  });
+
   // ==================== POPs ====================
 
   app.get("/api/pops", async (req, res) => {

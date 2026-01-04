@@ -790,6 +790,39 @@ export const bonusTypeAssignments = pgTable("bonus_type_assignments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ==================== EMAIL SYSTEM ====================
+
+export const emailTemplates = pgTable("email_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  subject: text("subject").notNull(),
+  htmlContent: text("html_content"),
+  textContent: text("text_content"),
+  category: text("category").default("general"),
+  variables: text("variables").array(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const emailLogs = pgTable("email_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  templateId: varchar("template_id").references(() => emailTemplates.id),
+  customerId: varchar("customer_id").references(() => customers.id),
+  recipient: text("recipient").notNull(),
+  subject: text("subject").notNull(),
+  status: text("status").default("pending"),
+  provider: text("provider").default("brevo"),
+  providerMessageId: text("provider_message_id"),
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at"),
+  deliveredAt: timestamp("delivered_at"),
+  openedAt: timestamp("opened_at"),
+  clickedAt: timestamp("clicked_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // ==================== SUPPORT TICKETS ====================
 
 export const tickets = pgTable("tickets", {
@@ -1679,3 +1712,10 @@ export type TenantBranding = typeof tenantBranding.$inferSelect;
 // Integration types
 export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
 export type Integration = typeof integrations.$inferSelect;
+
+// Email System types
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type EmailLog = typeof emailLogs.$inferSelect;
+
+// Bonus types
+export type BonusType = typeof bonusTypes.$inferSelect;
