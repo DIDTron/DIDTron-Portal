@@ -1,9 +1,8 @@
 import { useLocation } from "wouter";
 import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface NavSection {
   id: string;
@@ -49,51 +48,46 @@ export function PrimarySidebar() {
   };
 
   return (
-    <div className="flex flex-col h-full w-14 border-r bg-sidebar shrink-0">
-      <div className="flex h-12 items-center justify-center border-b">
+    <div className="flex flex-col h-full w-44 border-r bg-sidebar shrink-0">
+      <div className="flex h-12 items-center gap-2 px-4 border-b">
         <Phone className="h-6 w-6 text-primary" />
+        <span className="font-bold text-lg">DIDTron</span>
       </div>
       
-      <nav className="flex-1 py-2 space-y-1 px-2">
-        {navSections.map((section) => {
-          const Icon = section.icon;
-          const isActive = activeSection === section.id;
-          
-          return (
-            <Tooltip key={section.id} delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "w-full",
-                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
-                  )}
-                  onClick={() => handleSectionClick(section)}
-                  data-testid={`nav-section-${section.id}`}
-                >
-                  <Icon className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={10}>
-                {section.label}
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </nav>
+      <ScrollArea className="flex-1">
+        <nav className="py-2 px-2 space-y-0.5">
+          {navSections.map((section) => {
+            const Icon = section.icon;
+            const isActive = activeSection === section.id;
+            
+            return (
+              <div
+                key={section.id}
+                onClick={() => handleSectionClick(section)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer hover-elevate",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground"
+                )}
+                data-testid={`nav-section-${section.id}`}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="truncate">{section.label}</span>
+              </div>
+            );
+          })}
+        </nav>
+      </ScrollArea>
 
       <div className="p-2 border-t">
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="w-full" data-testid="nav-section-help">
-              <Server className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={10}>
-            System Status
-          </TooltipContent>
-        </Tooltip>
+        <div 
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer text-sidebar-foreground hover-elevate"
+          data-testid="nav-section-help"
+        >
+          <Server className="h-5 w-5 shrink-0" />
+          <span>System Status</span>
+        </div>
       </div>
     </div>
   );
