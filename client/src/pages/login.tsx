@@ -27,7 +27,12 @@ export default function Login() {
         title: "Welcome back!",
         description: `Signed in as ${result.user.email}`,
       });
-      setLocation("/dashboard");
+      // Redirect super admins to admin portal, others to customer dashboard
+      if (result.user.role === "super_admin") {
+        setLocation("/admin");
+      } else {
+        setLocation("/dashboard");
+      }
     } catch (error: any) {
       toast({
         title: "Login failed",
