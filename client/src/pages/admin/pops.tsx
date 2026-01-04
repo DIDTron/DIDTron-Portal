@@ -62,7 +62,7 @@ export default function POPsPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
-      const res = await apiRequest("PUT", `/api/pops/${id}`, data);
+      const res = await apiRequest("PATCH", `/api/pops/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
