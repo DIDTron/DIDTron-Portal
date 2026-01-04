@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -15,15 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -48,9 +41,14 @@ import {
   CloudOff,
   Activity,
   Zap,
-  TrendingUp
+  TrendingUp,
+  X,
+  Save,
+  ChevronLeft,
+  History,
+  AlertCircle
 } from "lucide-react";
-import type { Carrier } from "@shared/schema";
+import type { Carrier, CustomerCategory, CustomerGroup, Customer, AuditLog, CarrierAssignment } from "@shared/schema";
 
 interface ConnexCSStatus {
   mockMode: boolean;
@@ -74,22 +72,35 @@ interface AIAnalysis {
   riskLevel: string;
 }
 
+type ViewMode = "list" | "edit";
+
 export default function CarriersPage() {
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
-  const [aiDescription, setAiDescription] = useState("");
   const [showAnalysis, setShowAnalysis] = useState<string | null>(null);
   const [analysisData, setAnalysisData] = useState<AIAnalysis | null>(null);
+  
   const [formData, setFormData] = useState({
     name: "",
     code: "",
     type: "wholesale",
+    status: "active",
     sipHost: "",
     sipPort: "5060",
+    sipUsername: "",
+    sipPassword: "",
+    techPrefix: "",
     billingEmail: "",
     technicalEmail: "",
     description: "",
+  });
+
+  const [assignmentData, setAssignmentData] = useState({
+    assignmentType: "all" as "all" | "categories" | "groups" | "specific",
+    categoryIds: [] as string[],
+    groupIds: [] as string[],
+    customerIds: [] as string[],
   });
 
   const { data: carriers, isLoading } = useQuery<Carrier[]>({
@@ -101,6 +112,39 @@ export default function CarriersPage() {
     refetchInterval: 30000,
   });
 
+  const { data: categories } = useQuery<CustomerCategory[]>({
+    queryKey: ["/api/customer-categories"],
+  });
+
+  const { data: groups } = useQuery<CustomerGroup[]>({
+    queryKey: ["/api/customer-groups"],
+  });
+
+  const { data: customers } = useQuery<Customer[]>({
+    queryKey: ["/api/customers"],
+  });
+
+  const { data: auditLogs } = useQuery<AuditLog[]>({
+    queryKey: ["/api/audit-logs", { tableName: "carriers", recordId: editingCarrier?.id }],
+    enabled: !!editingCarrier?.id,
+  });
+
+  const { data: carrierAssignment } = useQuery<CarrierAssignment>({
+    queryKey: ["/api/carriers", editingCarrier?.id, "assignment"],
+    enabled: !!editingCarrier?.id,
+  });
+
+  useEffect(() => {
+    if (carrierAssignment && editingCarrier) {
+      setAssignmentData({
+        assignmentType: carrierAssignment.assignmentType || "all",
+        categoryIds: carrierAssignment.categoryIds || [],
+        groupIds: carrierAssignment.groupIds || [],
+        customerIds: carrierAssignment.customerIds || [],
+      });
+    }
+  }, [carrierAssignment, editingCarrier]);
+
   const generateDescriptionMutation = useMutation({
     mutationFn: async (name: string) => {
       const res = await apiRequest("POST", "/api/ai/generate-description", {
@@ -111,7 +155,6 @@ export default function CarriersPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      setAiDescription(data.description);
       setFormData(prev => ({ ...prev, description: data.description }));
       toast({ title: "AI description generated" });
     },
@@ -164,9 +207,11 @@ export default function CarriersPage() {
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async (carrier) => {
+      await saveAssignment(carrier.id);
       queryClient.invalidateQueries({ queryKey: ["/api/carriers"] });
       toast({ title: "Carrier created successfully" });
+      setViewMode("list");
       resetForm();
     },
     onError: (error: Error) => {
@@ -182,9 +227,11 @@ export default function CarriersPage() {
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async (carrier) => {
+      await saveAssignment(carrier.id);
       queryClient.invalidateQueries({ queryKey: ["/api/carriers"] });
       toast({ title: "Carrier updated successfully" });
+      setViewMode("list");
       resetForm();
     },
     onError: (error: Error) => {
@@ -205,20 +252,41 @@ export default function CarriersPage() {
     },
   });
 
+  const saveAssignment = async (carrierId: string) => {
+    try {
+      await apiRequest("PUT", `/api/carriers/${carrierId}/assignment`, assignmentData);
+    } catch (error) {
+      console.error("Failed to save assignment", error);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: "",
       code: "",
       type: "wholesale",
+      status: "active",
       sipHost: "",
       sipPort: "5060",
+      sipUsername: "",
+      sipPassword: "",
+      techPrefix: "",
       billingEmail: "",
       technicalEmail: "",
       description: "",
     });
-    setAiDescription("");
+    setAssignmentData({
+      assignmentType: "all",
+      categoryIds: [],
+      groupIds: [],
+      customerIds: [],
+    });
     setEditingCarrier(null);
-    setIsOpen(false);
+  };
+
+  const handleCreate = () => {
+    resetForm();
+    setViewMode("edit");
   };
 
   const handleEdit = (carrier: Carrier) => {
@@ -227,14 +295,22 @@ export default function CarriersPage() {
       name: carrier.name,
       code: carrier.code,
       type: carrier.type || "wholesale",
+      status: carrier.status || "active",
       sipHost: carrier.sipHost || "",
       sipPort: String(carrier.sipPort || 5060),
+      sipUsername: carrier.sipUsername || "",
+      sipPassword: carrier.sipPassword || "",
+      techPrefix: carrier.techPrefix || "",
       billingEmail: carrier.billingEmail || "",
       technicalEmail: carrier.technicalEmail || "",
       description: carrier.description || "",
     });
-    setAiDescription(carrier.description || "");
-    setIsOpen(true);
+    setViewMode("edit");
+  };
+
+  const handleCancel = () => {
+    setViewMode("list");
+    resetForm();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -248,8 +324,419 @@ export default function CarriersPage() {
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  if (viewMode === "edit") {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-4 p-4 border-b bg-muted/30">
+          <Button variant="ghost" size="icon" onClick={handleCancel} data-testid="button-back">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold" data-testid="text-form-title">
+              {editingCarrier ? `Edit Carrier: ${editingCarrier.name}` : "New Carrier"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {editingCarrier ? "Update carrier configuration" : "Configure a new carrier connection"}
+            </p>
+          </div>
+          {editingCarrier?.connexcsCarrierId && (
+            <Badge variant="outline" className="text-green-600 border-green-600">
+              <Cloud className="h-3 w-3 mr-1" /> ConnexCS Synced
+            </Badge>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex-1 overflow-auto">
+          <Tabs defaultValue="general" className="h-full">
+            <div className="border-b px-4">
+              <TabsList className="h-10 bg-transparent">
+                <TabsTrigger value="general" data-testid="tab-general">GENERAL</TabsTrigger>
+                <TabsTrigger value="advanced" data-testid="tab-advanced">ADVANCED</TabsTrigger>
+                <TabsTrigger value="assignment" data-testid="tab-assignment">ASSIGNMENT</TabsTrigger>
+                {editingCarrier && (
+                  <TabsTrigger value="history" data-testid="tab-history">HISTORY</TabsTrigger>
+                )}
+              </TabsList>
+            </div>
+
+            <div className="p-6">
+              <TabsContent value="general" className="mt-0 space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Carrier Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Enter carrier name"
+                      required
+                      data-testid="input-carrier-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="code">Code *</Label>
+                    <Input
+                      id="code"
+                      value={formData.code}
+                      onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                      placeholder="CARRIER1"
+                      required
+                      data-testid="input-carrier-code"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Type</Label>
+                    <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
+                      <SelectTrigger data-testid="select-carrier-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="wholesale">Wholesale</SelectItem>
+                        <SelectItem value="retail">Retail</SelectItem>
+                        <SelectItem value="hybrid">Hybrid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                      <SelectTrigger data-testid="select-carrier-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="testing">Testing</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="sipHost">SIP Host</Label>
+                    <Input
+                      id="sipHost"
+                      value={formData.sipHost}
+                      onChange={(e) => setFormData({ ...formData, sipHost: e.target.value })}
+                      placeholder="sip.carrier.com"
+                      data-testid="input-carrier-host"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sipPort">Port</Label>
+                    <Input
+                      id="sipPort"
+                      type="number"
+                      value={formData.sipPort}
+                      onChange={(e) => setFormData({ ...formData, sipPort: e.target.value })}
+                      placeholder="5060"
+                      data-testid="input-carrier-port"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="billingEmail">Billing Email</Label>
+                    <Input
+                      id="billingEmail"
+                      type="email"
+                      value={formData.billingEmail}
+                      onChange={(e) => setFormData({ ...formData, billingEmail: e.target.value })}
+                      placeholder="billing@carrier.com"
+                      data-testid="input-carrier-billing-email"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="technicalEmail">Technical Email</Label>
+                    <Input
+                      id="technicalEmail"
+                      type="email"
+                      value={formData.technicalEmail}
+                      onChange={(e) => setFormData({ ...formData, technicalEmail: e.target.value })}
+                      placeholder="noc@carrier.com"
+                      data-testid="input-carrier-technical-email"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="description">Description</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => formData.name && generateDescriptionMutation.mutate(formData.name)}
+                      disabled={!formData.name || generateDescriptionMutation.isPending}
+                      data-testid="button-generate-ai-description"
+                    >
+                      <Sparkles className="h-4 w-4 mr-1" />
+                      {generateDescriptionMutation.isPending ? "Generating..." : "AI Generate"}
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Carrier description..."
+                    rows={3}
+                    data-testid="input-carrier-description"
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="advanced" className="mt-0 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">SIP Authentication</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="sipUsername">SIP Username</Label>
+                        <Input
+                          id="sipUsername"
+                          value={formData.sipUsername}
+                          onChange={(e) => setFormData({ ...formData, sipUsername: e.target.value })}
+                          placeholder="username"
+                          data-testid="input-carrier-sip-username"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="sipPassword">SIP Password</Label>
+                        <Input
+                          id="sipPassword"
+                          type="password"
+                          value={formData.sipPassword}
+                          onChange={(e) => setFormData({ ...formData, sipPassword: e.target.value })}
+                          placeholder="********"
+                          data-testid="input-carrier-sip-password"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="techPrefix">Tech Prefix</Label>
+                      <Input
+                        id="techPrefix"
+                        value={formData.techPrefix}
+                        onChange={(e) => setFormData({ ...formData, techPrefix: e.target.value })}
+                        placeholder="Optional tech prefix for routing"
+                        data-testid="input-carrier-tech-prefix"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {editingCarrier && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">ConnexCS Integration</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Sync Status</p>
+                          <p className="text-sm text-muted-foreground">
+                            {editingCarrier.connexcsCarrierId 
+                              ? `Synced (ID: ${editingCarrier.connexcsCarrierId})`
+                              : "Not synced to ConnexCS"}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => syncCarrierMutation.mutate(editingCarrier.id)}
+                          disabled={syncCarrierMutation.isPending}
+                          data-testid="button-sync-carrier"
+                        >
+                          <RefreshCw className={`h-4 w-4 mr-2 ${syncCarrierMutation.isPending ? 'animate-spin' : ''}`} />
+                          {editingCarrier.connexcsCarrierId ? "Re-sync" : "Sync to ConnexCS"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="assignment" className="mt-0 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Visibility Assignment</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Assignment Type</Label>
+                      <Select 
+                        value={assignmentData.assignmentType} 
+                        onValueChange={(v: "all" | "categories" | "groups" | "specific") => 
+                          setAssignmentData({ ...assignmentData, assignmentType: v })
+                        }
+                      >
+                        <SelectTrigger data-testid="select-assignment-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Customers</SelectItem>
+                          <SelectItem value="categories">By Category</SelectItem>
+                          <SelectItem value="groups">By Group</SelectItem>
+                          <SelectItem value="specific">Specific Customers</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground">
+                        Control which customers can see and use this carrier
+                      </p>
+                    </div>
+
+                    {assignmentData.assignmentType === "categories" && (
+                      <div className="space-y-2">
+                        <Label>Select Categories</Label>
+                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border rounded-md p-3">
+                          {categories?.map((cat) => (
+                            <label key={cat.id} className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox
+                                checked={assignmentData.categoryIds.includes(cat.id)}
+                                onCheckedChange={(checked) => {
+                                  setAssignmentData(prev => ({
+                                    ...prev,
+                                    categoryIds: checked 
+                                      ? [...prev.categoryIds, cat.id]
+                                      : prev.categoryIds.filter(id => id !== cat.id)
+                                  }));
+                                }}
+                                data-testid={`checkbox-category-${cat.id}`}
+                              />
+                              <span className="text-sm">{cat.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {assignmentData.assignmentType === "groups" && (
+                      <div className="space-y-2">
+                        <Label>Select Groups</Label>
+                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border rounded-md p-3">
+                          {groups?.map((group) => (
+                            <label key={group.id} className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox
+                                checked={assignmentData.groupIds.includes(group.id)}
+                                onCheckedChange={(checked) => {
+                                  setAssignmentData(prev => ({
+                                    ...prev,
+                                    groupIds: checked 
+                                      ? [...prev.groupIds, group.id]
+                                      : prev.groupIds.filter(id => id !== group.id)
+                                  }));
+                                }}
+                                data-testid={`checkbox-group-${group.id}`}
+                              />
+                              <span className="text-sm">{group.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {assignmentData.assignmentType === "specific" && (
+                      <div className="space-y-2">
+                        <Label>Select Customers</Label>
+                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto border rounded-md p-3">
+                          {customers?.map((customer) => (
+                            <label key={customer.id} className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox
+                                checked={assignmentData.customerIds.includes(customer.id)}
+                                onCheckedChange={(checked) => {
+                                  setAssignmentData(prev => ({
+                                    ...prev,
+                                    customerIds: checked 
+                                      ? [...prev.customerIds, customer.id]
+                                      : prev.customerIds.filter(id => id !== customer.id)
+                                  }));
+                                }}
+                                data-testid={`checkbox-customer-${customer.id}`}
+                              />
+                              <span className="text-sm">{customer.companyName || customer.billingEmail || customer.accountNumber}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {editingCarrier && (
+                <TabsContent value="history" className="mt-0 space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <History className="h-4 w-4" />
+                        Audit History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {auditLogs && auditLogs.length > 0 ? (
+                        <div className="space-y-3">
+                          {auditLogs.map((log) => (
+                            <div key={log.id} className="flex items-start gap-3 p-3 rounded-md bg-muted/50">
+                              <AlertCircle className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium capitalize">{log.action}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {log.createdAt ? new Date(log.createdAt).toLocaleString() : "Unknown date"}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No history available</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
+            </div>
+          </Tabs>
+        </form>
+
+        <div className="flex items-center justify-end gap-2 p-4 border-t bg-muted/30">
+          {editingCarrier && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                deleteMutation.mutate(editingCarrier.id);
+                setViewMode("list");
+              }}
+              disabled={deleteMutation.isPending}
+              data-testid="button-delete-carrier"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          )}
+          <div className="flex-1" />
+          <Button type="button" variant="outline" onClick={handleCancel} data-testid="button-cancel">
+            <X className="h-4 w-4 mr-2" />
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isPending} data-testid="button-save-carrier">
+            <Save className="h-4 w-4 mr-2" />
+            {isPending ? "Saving..." : "Save"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-carriers-title">Carriers</h1>
@@ -262,12 +749,12 @@ export default function CarriersPage() {
                 {connexcsStatus?.connected ? (
                   <>
                     <Cloud className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-green-600">ConnexCS Connected</span>
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400">ConnexCS Connected</span>
                   </>
                 ) : (
                   <>
                     <CloudOff className="h-4 w-4 text-amber-500" />
-                    <span className="text-sm font-medium text-amber-600">Mock Mode</span>
+                    <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Mock Mode</span>
                   </>
                 )}
               </div>
@@ -279,138 +766,10 @@ export default function CarriersPage() {
             </TooltipContent>
           </Tooltip>
           
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { setEditingCarrier(null); resetForm(); }} data-testid="button-add-carrier">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Carrier
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <form onSubmit={handleSubmit}>
-                <DialogHeader>
-                  <DialogTitle>{editingCarrier ? "Edit Carrier" : "Add Carrier"}</DialogTitle>
-                  <DialogDescription>{editingCarrier ? "Update carrier settings" : "Configure a new carrier connection"}</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Carrier Name"
-                        required
-                        data-testid="input-carrier-name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="code">Code</Label>
-                      <Input
-                        id="code"
-                        value={formData.code}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        placeholder="CARRIER1"
-                        required
-                        data-testid="input-carrier-code"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Type</Label>
-                    <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
-                      <SelectTrigger data-testid="select-carrier-type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="wholesale" data-testid="option-carrier-type-wholesale">Wholesale</SelectItem>
-                        <SelectItem value="retail" data-testid="option-carrier-type-retail">Retail</SelectItem>
-                        <SelectItem value="hybrid" data-testid="option-carrier-type-hybrid">Hybrid</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2 col-span-2">
-                      <Label htmlFor="sipHost">SIP Host</Label>
-                      <Input
-                        id="sipHost"
-                        value={formData.sipHost}
-                        onChange={(e) => setFormData({ ...formData, sipHost: e.target.value })}
-                        placeholder="sip.carrier.com"
-                        data-testid="input-carrier-host"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="sipPort">Port</Label>
-                      <Input
-                        id="sipPort"
-                        type="number"
-                        value={formData.sipPort}
-                        onChange={(e) => setFormData({ ...formData, sipPort: e.target.value })}
-                        placeholder="5060"
-                        data-testid="input-carrier-port"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="billingEmail">Billing Email</Label>
-                      <Input
-                        id="billingEmail"
-                        type="email"
-                        value={formData.billingEmail}
-                        onChange={(e) => setFormData({ ...formData, billingEmail: e.target.value })}
-                        placeholder="billing@carrier.com"
-                        data-testid="input-carrier-billing-email"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="technicalEmail">Technical Email</Label>
-                      <Input
-                        id="technicalEmail"
-                        type="email"
-                        value={formData.technicalEmail}
-                        onChange={(e) => setFormData({ ...formData, technicalEmail: e.target.value })}
-                        placeholder="noc@carrier.com"
-                        data-testid="input-carrier-technical-email"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="description">Description</Label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => formData.name && generateDescriptionMutation.mutate(formData.name)}
-                        disabled={!formData.name || generateDescriptionMutation.isPending}
-                        data-testid="button-generate-ai-description"
-                      >
-                        <Sparkles className="h-4 w-4 mr-1" />
-                        {generateDescriptionMutation.isPending ? "Generating..." : "AI Generate"}
-                      </Button>
-                    </div>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Carrier description..."
-                      rows={3}
-                      data-testid="input-carrier-description"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={resetForm} data-testid="button-cancel-carrier">Cancel</Button>
-                  <Button type="submit" disabled={isPending} data-testid="button-save-carrier">
-                    {isPending ? "Saving..." : "Save"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={handleCreate} data-testid="button-add-carrier">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Carrier
+          </Button>
         </div>
       </div>
 
@@ -483,7 +842,12 @@ export default function CarriersPage() {
               </TableHeader>
               <TableBody>
                 {carriers.map((carrier) => (
-                  <TableRow key={carrier.id} data-testid={`row-carrier-${carrier.id}`}>
+                  <TableRow 
+                    key={carrier.id} 
+                    className="cursor-pointer hover-elevate"
+                    onClick={() => handleEdit(carrier)}
+                    data-testid={`row-carrier-${carrier.id}`}
+                  >
                     <TableCell>
                       <div>
                         <span className="font-medium">{carrier.name}</span>
@@ -514,7 +878,7 @@ export default function CarriersPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button 
@@ -546,7 +910,12 @@ export default function CarriersPage() {
                         <Button size="icon" variant="ghost" onClick={() => handleEdit(carrier)} data-testid={`button-edit-carrier-${carrier.id}`}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(carrier.id)} data-testid={`button-delete-carrier-${carrier.id}`}>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          onClick={() => deleteMutation.mutate(carrier.id)} 
+                          data-testid={`button-delete-carrier-${carrier.id}`}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -560,7 +929,7 @@ export default function CarriersPage() {
               <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="font-medium mb-1">No carriers configured</h3>
               <p className="text-sm text-muted-foreground mb-4">Add carrier connections for voice routing</p>
-              <Button onClick={() => setIsOpen(true)} data-testid="button-add-first-carrier">
+              <Button onClick={handleCreate} data-testid="button-add-first-carrier">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Carrier
               </Button>
@@ -569,63 +938,53 @@ export default function CarriersPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!showAnalysis} onOpenChange={() => { setShowAnalysis(null); setAnalysisData(null); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {showAnalysis && analysisData && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
               AI Carrier Analysis
-            </DialogTitle>
-            <DialogDescription>AI-powered insights for this carrier</DialogDescription>
-          </DialogHeader>
-          {analysisData && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Performance Score</span>
-                <Badge variant={analysisData.score >= 80 ? "default" : analysisData.score >= 60 ? "secondary" : "destructive"}>
-                  {analysisData.score}/100
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Risk Level</span>
-                <Badge variant={analysisData.riskLevel === "low" ? "default" : analysisData.riskLevel === "medium" ? "secondary" : "destructive"}>
-                  {analysisData.riskLevel}
-                </Badge>
-              </div>
+            </CardTitle>
+            <Button size="icon" variant="ghost" onClick={() => setShowAnalysis(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="text-3xl font-bold">{analysisData.score}/100</div>
+              <Badge variant={analysisData.riskLevel === "low" ? "default" : analysisData.riskLevel === "medium" ? "secondary" : "destructive"}>
+                {analysisData.riskLevel} risk
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <h4 className="text-sm font-medium mb-2">Strengths</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
+                <h4 className="font-medium mb-2 text-green-600">Strengths</h4>
+                <ul className="text-sm space-y-1">
                   {analysisData.strengths.map((s, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-green-500">+</span> {s}
-                    </li>
+                    <li key={i}>{s}</li>
                   ))}
                 </ul>
               </div>
               <div>
-                <h4 className="text-sm font-medium mb-2">Areas for Improvement</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
+                <h4 className="font-medium mb-2 text-red-600">Weaknesses</h4>
+                <ul className="text-sm space-y-1">
                   {analysisData.weaknesses.map((w, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-amber-500">-</span> {w}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium mb-2">Recommendations</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  {analysisData.recommendations.map((r, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-blue-500">*</span> {r}
-                    </li>
+                    <li key={i}>{w}</li>
                   ))}
                 </ul>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            <div>
+              <h4 className="font-medium mb-2">Recommendations</h4>
+              <ul className="text-sm space-y-1">
+                {analysisData.recommendations.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

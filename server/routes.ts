@@ -15,6 +15,7 @@ import {
   insertCodecSchema,
   insertChannelPlanSchema,
   insertCarrierSchema,
+  insertCarrierAssignmentSchema,
   insertRouteSchema,
   insertMonitoringRuleSchema,
   insertAlertSchema,
@@ -488,6 +489,13 @@ export async function registerRoutes(
       const parsed = insertCarrierSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const carrier = await storage.createCarrier(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "carriers",
+        recordId: carrier.id,
+        newValues: carrier,
+      });
       res.status(201).json(carrier);
     } catch (error) {
       res.status(500).json({ error: "Failed to create carrier" });
@@ -496,8 +504,17 @@ export async function registerRoutes(
 
   app.patch("/api/carriers/:id", async (req, res) => {
     try {
+      const oldCarrier = await storage.getCarrier(req.params.id);
       const carrier = await storage.updateCarrier(req.params.id, req.body);
       if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "carriers",
+        recordId: req.params.id,
+        oldValues: oldCarrier,
+        newValues: carrier,
+      });
       res.json(carrier);
     } catch (error) {
       res.status(500).json({ error: "Failed to update carrier" });
@@ -506,11 +523,62 @@ export async function registerRoutes(
 
   app.delete("/api/carriers/:id", async (req, res) => {
     try {
+      const oldCarrier = await storage.getCarrier(req.params.id);
       const deleted = await storage.deleteCarrier(req.params.id);
       if (!deleted) return res.status(404).json({ error: "Carrier not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "carriers",
+        recordId: req.params.id,
+        oldValues: oldCarrier,
+      });
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete carrier" });
+    }
+  });
+
+  // Carrier Assignments
+  app.get("/api/carriers/:id/assignment", async (req, res) => {
+    try {
+      const assignment = await storage.getCarrierAssignment(req.params.id);
+      res.json(assignment || { carrierId: req.params.id, assignmentType: "all", categoryIds: [], groupIds: [], customerIds: [] });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch carrier assignment" });
+    }
+  });
+
+  app.put("/api/carriers/:id/assignment", async (req, res) => {
+    try {
+      const parsed = insertCarrierAssignmentSchema.safeParse({ ...req.body, carrierId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const assignment = await storage.upsertCarrierAssignment(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update_assignment",
+        tableName: "carrier_assignments",
+        recordId: req.params.id,
+        newValues: assignment,
+      });
+      res.json(assignment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update carrier assignment" });
+    }
+  });
+
+  // Audit Logs
+  app.get("/api/audit-logs", async (req, res) => {
+    try {
+      const { tableName, recordId, limit } = req.query;
+      const logs = await storage.getAuditLogs(
+        tableName as string | undefined,
+        recordId as string | undefined,
+        limit ? parseInt(limit as string) : 50
+      );
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch audit logs" });
     }
   });
 

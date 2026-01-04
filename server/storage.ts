@@ -8,6 +8,8 @@ import {
   type Codec, type InsertCodec,
   type ChannelPlan, type InsertChannelPlan,
   type Carrier, type InsertCarrier,
+  type CarrierAssignment, type InsertCarrierAssignment,
+  type AuditLog,
   type Route, type InsertRoute,
   type RouteGroup, type InsertRouteGroup,
   type MonitoringRule, type InsertMonitoringRule,
@@ -94,6 +96,14 @@ export interface IStorage {
   createCarrier(carrier: InsertCarrier): Promise<Carrier>;
   updateCarrier(id: string, data: Partial<InsertCarrier>): Promise<Carrier | undefined>;
   deleteCarrier(id: string): Promise<boolean>;
+
+  // Carrier Assignments
+  getCarrierAssignment(carrierId: string): Promise<CarrierAssignment | undefined>;
+  upsertCarrierAssignment(assignment: InsertCarrierAssignment): Promise<CarrierAssignment>;
+
+  // Audit Logs
+  getAuditLogs(tableName?: string, recordId?: string, limit?: number): Promise<AuditLog[]>;
+  createAuditLog(log: { userId?: string; action: string; tableName?: string; recordId?: string; oldValues?: unknown; newValues?: unknown; ipAddress?: string; }): Promise<AuditLog>;
 
   // Routes
   getRoutes(): Promise<Route[]>;
@@ -226,6 +236,8 @@ export class MemStorage implements IStorage {
   private codecs: Map<string, Codec>;
   private channelPlans: Map<string, ChannelPlan>;
   private carriers: Map<string, Carrier>;
+  private carrierAssignments: Map<string, CarrierAssignment>;
+  private auditLogs: Map<string, AuditLog>;
   private routes: Map<string, Route>;
   private monitoringRules: Map<string, MonitoringRule>;
   private alerts: Map<string, Alert>;
@@ -256,6 +268,8 @@ export class MemStorage implements IStorage {
     this.codecs = new Map();
     this.channelPlans = new Map();
     this.carriers = new Map();
+    this.carrierAssignments = new Map();
+    this.auditLogs = new Map();
     this.routes = new Map();
     this.monitoringRules = new Map();
     this.alerts = new Map();
@@ -718,6 +732,62 @@ export class MemStorage implements IStorage {
 
   async deleteCarrier(id: string): Promise<boolean> {
     return this.carriers.delete(id);
+  }
+
+  // Carrier Assignments
+  async getCarrierAssignment(carrierId: string): Promise<CarrierAssignment | undefined> {
+    return Array.from(this.carrierAssignments.values()).find(a => a.carrierId === carrierId);
+  }
+
+  async upsertCarrierAssignment(assignment: InsertCarrierAssignment): Promise<CarrierAssignment> {
+    const existing = Array.from(this.carrierAssignments.values()).find(a => a.carrierId === assignment.carrierId);
+    if (existing) {
+      const updated: CarrierAssignment = { ...existing, ...assignment };
+      this.carrierAssignments.set(existing.id, updated);
+      return updated;
+    }
+    const id = randomUUID();
+    const now = new Date();
+    const a: CarrierAssignment = {
+      id,
+      carrierId: assignment.carrierId,
+      assignmentType: assignment.assignmentType ?? "all",
+      categoryIds: assignment.categoryIds ?? null,
+      groupIds: assignment.groupIds ?? null,
+      customerIds: assignment.customerIds ?? null,
+      createdAt: now,
+    };
+    this.carrierAssignments.set(id, a);
+    return a;
+  }
+
+  // Audit Logs
+  async getAuditLogs(tableName?: string, recordId?: string, limit?: number): Promise<AuditLog[]> {
+    let logs = Array.from(this.auditLogs.values());
+    if (tableName) logs = logs.filter(l => l.tableName === tableName);
+    if (recordId) logs = logs.filter(l => l.recordId === recordId);
+    logs.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+    if (limit) logs = logs.slice(0, limit);
+    return logs;
+  }
+
+  async createAuditLog(log: { userId?: string; action: string; tableName?: string; recordId?: string; oldValues?: unknown; newValues?: unknown; ipAddress?: string; }): Promise<AuditLog> {
+    const id = randomUUID();
+    const now = new Date();
+    const entry: AuditLog = {
+      id,
+      userId: log.userId ?? null,
+      action: log.action,
+      tableName: log.tableName ?? null,
+      recordId: log.recordId ?? null,
+      oldValues: log.oldValues ?? null,
+      newValues: log.newValues ?? null,
+      ipAddress: log.ipAddress ?? null,
+      userAgent: null,
+      createdAt: now,
+    };
+    this.auditLogs.set(id, entry);
+    return entry;
   }
 
   // Routes
