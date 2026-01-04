@@ -19,7 +19,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={AdminLayout} />
-      <Route path="/admin/:rest*" component={AdminLayout} />
+      <Route path="/admin/:section" component={AdminLayout} />
+      <Route path="/admin/:section/:subsection" component={AdminLayout} />
       <Route component={NotFound} />
     </Switch>
   );
