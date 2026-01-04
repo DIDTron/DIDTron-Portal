@@ -56,11 +56,13 @@ interface ConnexCSStatus {
   mockMode: boolean;
   connected: boolean;
   metrics?: {
-    activeCalls: number;
-    callsToday: number;
+    active_channels: number;
+    cps: number;
+    total_calls_24h: number;
     asr: number;
     acd: number;
-    revenue: number;
+    revenue_24h: number;
+    cost_24h: number;
   };
 }
 
@@ -416,20 +418,20 @@ export default function CarriersPage() {
         <div className="grid grid-cols-5 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Calls</CardTitle>
+              <CardTitle className="text-sm font-medium">Active Channels</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{connexcsStatus.metrics.activeCalls}</div>
+              <div className="text-2xl font-bold">{connexcsStatus.metrics.active_channels ?? 0}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Calls Today</CardTitle>
+              <CardTitle className="text-sm font-medium">Calls (24h)</CardTitle>
               <Zap className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{connexcsStatus.metrics.callsToday.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{(connexcsStatus.metrics.total_calls_24h ?? 0).toLocaleString()}</div>
             </CardContent>
           </Card>
           <Card>
@@ -438,7 +440,7 @@ export default function CarriersPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{connexcsStatus.metrics.asr}%</div>
+              <div className="text-2xl font-bold">{connexcsStatus.metrics.asr ?? 0}%</div>
             </CardContent>
           </Card>
           <Card>
@@ -447,16 +449,16 @@ export default function CarriersPage() {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{connexcsStatus.metrics.acd}s</div>
+              <div className="text-2xl font-bold">{connexcsStatus.metrics.acd ?? 0}s</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">Revenue (24h)</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${connexcsStatus.metrics.revenue.toLocaleString()}</div>
+              <div className="text-2xl font-bold">${(connexcsStatus.metrics.revenue_24h ?? 0).toLocaleString()}</div>
             </CardContent>
           </Card>
         </div>
