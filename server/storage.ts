@@ -34,7 +34,8 @@ import {
   type Integration, type InsertIntegration,
   type Invoice, type Payment, type PromoCode, type Referral,
   type InsertPayment, type InsertPromoCode,
-  type BonusType, type EmailTemplate
+  type BonusType, type EmailTemplate,
+  type InsertBonusType, type InsertEmailTemplate
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -202,15 +203,15 @@ export interface IStorage {
   // Bonus Types
   getBonusTypes(): Promise<BonusType[]>;
   getBonusType(id: string): Promise<BonusType | undefined>;
-  createBonusType(bonusType: Partial<BonusType>): Promise<BonusType>;
-  updateBonusType(id: string, data: Partial<BonusType>): Promise<BonusType | undefined>;
+  createBonusType(bonusType: InsertBonusType): Promise<BonusType>;
+  updateBonusType(id: string, data: Partial<InsertBonusType>): Promise<BonusType | undefined>;
   deleteBonusType(id: string): Promise<boolean>;
 
   // Email Templates
   getEmailTemplates(): Promise<EmailTemplate[]>;
   getEmailTemplate(id: string): Promise<EmailTemplate | undefined>;
-  createEmailTemplate(template: Partial<EmailTemplate>): Promise<EmailTemplate>;
-  updateEmailTemplate(id: string, data: Partial<EmailTemplate>): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: string, data: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
   deleteEmailTemplate(id: string): Promise<boolean>;
 
   // Dashboard Stats
@@ -1437,17 +1438,17 @@ export class MemStorage implements IStorage {
   async getBonusType(id: string): Promise<BonusType | undefined> {
     return this.bonusTypes.get(id);
   }
-  async createBonusType(bonusType: Partial<BonusType>): Promise<BonusType> {
+  async createBonusType(bonusType: InsertBonusType): Promise<BonusType> {
     const id = randomUUID();
     const now = new Date();
     const newBonusType: BonusType = {
       id,
-      name: bonusType.name || "New Bonus",
-      code: bonusType.code || `BONUS-${Date.now()}`,
+      name: bonusType.name,
+      code: bonusType.code,
       type: bonusType.type || "signup",
-      amount: bonusType.amount || null,
-      percentage: bonusType.percentage || null,
-      conditions: bonusType.conditions || null,
+      amount: bonusType.amount ?? null,
+      percentage: bonusType.percentage ?? null,
+      conditions: bonusType.conditions ?? null,
       isActive: bonusType.isActive ?? true,
       createdAt: now,
       updatedAt: now,
@@ -1455,7 +1456,7 @@ export class MemStorage implements IStorage {
     this.bonusTypes.set(id, newBonusType);
     return newBonusType;
   }
-  async updateBonusType(id: string, data: Partial<BonusType>): Promise<BonusType | undefined> {
+  async updateBonusType(id: string, data: Partial<InsertBonusType>): Promise<BonusType | undefined> {
     const existing = this.bonusTypes.get(id);
     if (!existing) return undefined;
     const updated = { ...existing, ...data, updatedAt: new Date() };
@@ -1473,18 +1474,18 @@ export class MemStorage implements IStorage {
   async getEmailTemplate(id: string): Promise<EmailTemplate | undefined> {
     return this.emailTemplates.get(id);
   }
-  async createEmailTemplate(template: Partial<EmailTemplate>): Promise<EmailTemplate> {
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
     const id = randomUUID();
     const now = new Date();
     const newTemplate: EmailTemplate = {
       id,
-      name: template.name || "New Template",
-      slug: template.slug || `template-${Date.now()}`,
-      subject: template.subject || "",
-      htmlContent: template.htmlContent || null,
-      textContent: template.textContent || null,
+      name: template.name,
+      slug: template.slug,
+      subject: template.subject,
+      htmlContent: template.htmlContent ?? null,
+      textContent: template.textContent ?? null,
       category: template.category || "general",
-      variables: template.variables || null,
+      variables: template.variables ?? null,
       isActive: template.isActive ?? true,
       createdAt: now,
       updatedAt: now,
@@ -1492,7 +1493,7 @@ export class MemStorage implements IStorage {
     this.emailTemplates.set(id, newTemplate);
     return newTemplate;
   }
-  async updateEmailTemplate(id: string, data: Partial<EmailTemplate>): Promise<EmailTemplate | undefined> {
+  async updateEmailTemplate(id: string, data: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined> {
     const existing = this.emailTemplates.get(id);
     if (!existing) return undefined;
     const updated = { ...existing, ...data, updatedAt: new Date() };

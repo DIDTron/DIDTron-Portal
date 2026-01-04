@@ -1588,6 +1588,8 @@ export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true,
 export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAlertSchema = createInsertSchema(alerts).omit({ id: true, createdAt: true });
+export const insertBonusTypeSchema = createInsertSchema(bonusTypes).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, createdAt: true, updatedAt: true });
 
 // ==================== TYPES ====================
 
@@ -1641,6 +1643,10 @@ export type InsertPromoCode = z.infer<typeof insertPromoCodeSchema>;
 export type PromoCode = typeof promoCodes.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Alert = typeof alerts.$inferSelect;
+export type InsertBonusType = z.infer<typeof insertBonusTypeSchema>;
+export type BonusType = typeof bonusTypes.$inferSelect;
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type CustomerKyc = typeof customerKyc.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;

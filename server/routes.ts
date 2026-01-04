@@ -31,7 +31,9 @@ import {
   insertAiVoiceAgentSchema,
   insertCmsThemeSchema,
   insertTenantBrandingSchema,
-  insertIntegrationSchema
+  insertIntegrationSchema,
+  insertBonusTypeSchema,
+  insertEmailTemplateSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -536,11 +538,9 @@ export async function registerRoutes(
 
   app.post("/api/bonuses", async (req, res) => {
     try {
-      const { name, code } = req.body;
-      if (!name || !code) {
-        return res.status(400).json({ error: "name and code are required" });
-      }
-      const bonus = await storage.createBonusType(req.body);
+      const parsed = insertBonusTypeSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const bonus = await storage.createBonusType(parsed.data);
       res.status(201).json(bonus);
     } catch (error) {
       res.status(500).json({ error: "Failed to create bonus" });
@@ -590,11 +590,9 @@ export async function registerRoutes(
 
   app.post("/api/email-templates", async (req, res) => {
     try {
-      const { name, slug, subject } = req.body;
-      if (!name || !slug || !subject) {
-        return res.status(400).json({ error: "name, slug, and subject are required" });
-      }
-      const template = await storage.createEmailTemplate(req.body);
+      const parsed = insertEmailTemplateSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const template = await storage.createEmailTemplate(parsed.data);
       res.status(201).json(template);
     } catch (error) {
       res.status(500).json({ error: "Failed to create email template" });
