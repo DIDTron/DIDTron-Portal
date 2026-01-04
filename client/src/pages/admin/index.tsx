@@ -20,6 +20,8 @@ import RoutesPage from "./routes";
 import DIDProvidersPage from "./did-providers";
 import IntegrationsPage from "./integrations";
 import CustomersPage from "./customers";
+import CategoriesPage from "./categories";
+import GroupsPage from "./groups";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -142,12 +144,8 @@ export default function AdminLayout() {
                 <Route path="/admin/did-countries" component={DIDCountriesPage} />
                 <Route path="/admin/did-providers" component={DIDProvidersPage} />
                 <Route path="/admin/customers" component={CustomersPage} />
-                <Route path="/admin/categories">
-                  <PlaceholderPage title="Categories" />
-                </Route>
-                <Route path="/admin/groups">
-                  <PlaceholderPage title="Groups" />
-                </Route>
+                <Route path="/admin/categories" component={CategoriesPage} />
+                <Route path="/admin/groups" component={GroupsPage} />
                 <Route path="/admin/kyc">
                   <PlaceholderPage title="KYC Requests" />
                 </Route>

@@ -7,7 +7,7 @@ import {
   Building2, Route, Phone, Sparkles, RefreshCw, ArrowUpRight, TrendingUp, Clock
 } from "lucide-react";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
-import type { CustomerCategory, Carrier, Pop, Route as RouteType, DidCountry, VoiceTier, Customer } from "@shared/schema";
+import type { CustomerCategory, CustomerGroup, Carrier, Pop, Route as RouteType, DidCountry, VoiceTier, Customer } from "@shared/schema";
 
 export default function AdminDashboard() {
   const { openTab, setActiveSection, setActiveSubItem } = useSuperAdminTabs();
@@ -38,6 +38,10 @@ export default function AdminDashboard() {
 
   const { data: customers } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+  });
+
+  const { data: groups } = useQuery<CustomerGroup[]>({
+    queryKey: ["/api/groups"],
   });
 
   const handleQuickAction = (section: string, subItem: string, label: string, route: string) => {
@@ -192,6 +196,30 @@ export default function AdminDashboard() {
                 ))
               ) : (
                 <p className="text-sm text-muted-foreground">No categories configured</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-groups">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5" />
+              Customer Groups
+            </CardTitle>
+            <CardDescription>Sub-groups for organization</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {groups && groups.length > 0 ? (
+                groups.map((grp) => (
+                  <div key={grp.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span>{grp.name}</span>
+                    <Badge variant="outline" className="text-xs">{grp.code}</Badge>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No groups configured</p>
               )}
             </div>
           </CardContent>
