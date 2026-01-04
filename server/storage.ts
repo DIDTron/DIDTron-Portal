@@ -30,7 +30,8 @@ import {
   type Class4Carrier, type InsertClass4Carrier,
   type AiVoiceAgent, type InsertAiVoiceAgent,
   type CmsTheme, type InsertCmsTheme,
-  type TenantBranding, type InsertTenantBranding
+  type TenantBranding, type InsertTenantBranding,
+  type Integration, type InsertIntegration
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -224,6 +225,14 @@ export interface IStorage {
   getTenantBranding(customerId: string): Promise<TenantBranding | undefined>;
   createTenantBranding(branding: InsertTenantBranding): Promise<TenantBranding>;
   updateTenantBranding(id: string, data: Partial<InsertTenantBranding>): Promise<TenantBranding | undefined>;
+
+  // Integrations
+  getIntegrations(): Promise<Integration[]>;
+  getIntegration(id: string): Promise<Integration | undefined>;
+  getIntegrationByProvider(provider: string): Promise<Integration | undefined>;
+  createIntegration(integration: InsertIntegration): Promise<Integration>;
+  updateIntegration(id: string, data: Partial<InsertIntegration>): Promise<Integration | undefined>;
+  deleteIntegration(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -257,6 +266,7 @@ export class MemStorage implements IStorage {
   private aiVoiceAgents: Map<string, AiVoiceAgent>;
   private cmsThemes: Map<string, CmsTheme>;
   private tenantBrandings: Map<string, TenantBranding>;
+  private integrations: Map<string, Integration>;
 
   constructor() {
     this.users = new Map();
@@ -289,6 +299,7 @@ export class MemStorage implements IStorage {
     this.aiVoiceAgents = new Map();
     this.cmsThemes = new Map();
     this.tenantBrandings = new Map();
+    this.integrations = new Map();
 
     this.seedDefaultData();
   }
@@ -325,6 +336,21 @@ export class MemStorage implements IStorage {
       { id: randomUUID(), categoryId: individualCat.id, name: "Power User", code: "ind-power", description: "Power users", displayOrder: 2, isActive: true, createdAt: now, updatedAt: now },
     ];
     groups.forEach(grp => this.customerGroups.set(grp.id, grp));
+
+    // Seed default integrations
+    const defaultIntegrations: Integration[] = [
+      { id: randomUUID(), provider: "connexcs", displayName: "ConnexCS", description: "VoIP switching and routing platform", category: "voip", icon: "phone", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "stripe", displayName: "Stripe", description: "Payment processing and billing", category: "payments", icon: "credit-card", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "paypal", displayName: "PayPal", description: "Alternative payment processing", category: "payments", icon: "wallet", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "brevo", displayName: "Brevo (Sendinblue)", description: "Transactional and marketing emails", category: "email", icon: "mail", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "ayrshare", displayName: "Ayrshare", description: "Social media management and posting", category: "social", icon: "share-2", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "openexchangerates", displayName: "Open Exchange Rates", description: "Currency conversion and FX rates", category: "finance", icon: "dollar-sign", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "cloudflare_r2", displayName: "Cloudflare R2", description: "Object storage for recordings and files", category: "storage", icon: "hard-drive", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "upstash_redis", displayName: "Upstash Redis", description: "Caching and session management", category: "cache", icon: "database", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "twilio", displayName: "Twilio", description: "SIP testing and verification", category: "sip_testing", icon: "phone-call", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "signalwire", displayName: "SignalWire", description: "Budget SIP testing provider", category: "sip_testing", icon: "phone-forwarded", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+    ];
+    defaultIntegrations.forEach(i => this.integrations.set(i.id, i));
   }
 
   // Users
@@ -1584,6 +1610,55 @@ export class MemStorage implements IStorage {
     const updated = { ...branding, ...data, updatedAt: new Date() };
     this.tenantBrandings.set(id, updated);
     return updated;
+  }
+
+  // Integrations
+  async getIntegrations(): Promise<Integration[]> {
+    return Array.from(this.integrations.values());
+  }
+
+  async getIntegration(id: string): Promise<Integration | undefined> {
+    return this.integrations.get(id);
+  }
+
+  async getIntegrationByProvider(provider: string): Promise<Integration | undefined> {
+    return Array.from(this.integrations.values()).find(i => i.provider === provider);
+  }
+
+  async createIntegration(integration: InsertIntegration): Promise<Integration> {
+    const id = randomUUID();
+    const now = new Date();
+    const i: Integration = {
+      id,
+      provider: integration.provider,
+      displayName: integration.displayName,
+      description: integration.description ?? null,
+      category: integration.category,
+      icon: integration.icon ?? null,
+      status: integration.status ?? "not_configured",
+      isEnabled: integration.isEnabled ?? false,
+      credentials: integration.credentials ?? null,
+      settings: integration.settings ?? null,
+      lastTestedAt: integration.lastTestedAt ?? null,
+      lastSyncedAt: integration.lastSyncedAt ?? null,
+      testResult: integration.testResult ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.integrations.set(id, i);
+    return i;
+  }
+
+  async updateIntegration(id: string, data: Partial<InsertIntegration>): Promise<Integration | undefined> {
+    const integration = this.integrations.get(id);
+    if (!integration) return undefined;
+    const updated = { ...integration, ...data, updatedAt: new Date() };
+    this.integrations.set(id, updated);
+    return updated;
+  }
+
+  async deleteIntegration(id: string): Promise<boolean> {
+    return this.integrations.delete(id);
   }
 }
 

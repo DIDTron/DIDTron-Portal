@@ -1466,6 +1466,28 @@ export const tenantBranding = pgTable("tenant_branding", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ==================== INTEGRATIONS ====================
+
+export const integrationStatusEnum = pgEnum("integration_status", ["connected", "disconnected", "error", "not_configured"]);
+
+export const integrations = pgTable("integrations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  provider: text("provider").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(),
+  icon: text("icon"),
+  status: integrationStatusEnum("status").default("not_configured"),
+  isEnabled: boolean("is_enabled").default(false),
+  credentials: jsonb("credentials"),
+  settings: jsonb("settings"),
+  lastTestedAt: timestamp("last_tested_at"),
+  lastSyncedAt: timestamp("last_synced_at"),
+  testResult: text("test_result"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== INSERT SCHEMAS ====================
 
 export const insertCurrencySchema = createInsertSchema(currencies).omit({ id: true, createdAt: true });
@@ -1484,6 +1506,7 @@ export const insertCmsPortalSchema = createInsertSchema(cmsPortals).omit({ id: t
 export const insertCmsThemeSchema = createInsertSchema(cmsThemes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsPageSchema = createInsertSchema(cmsPages).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTenantBrandingSchema = createInsertSchema(tenantBranding).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertIntegrationSchema = createInsertSchema(integrations).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertCustomerCategorySchema = createInsertSchema(customerCategories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerGroupSchema = createInsertSchema(customerGroups).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1630,3 +1653,7 @@ export type CmsMenu = typeof cmsMenus.$inferSelect;
 export type CmsMediaItem = typeof cmsMediaLibrary.$inferSelect;
 export type InsertTenantBranding = z.infer<typeof insertTenantBrandingSchema>;
 export type TenantBranding = typeof tenantBranding.$inferSelect;
+
+// Integration types
+export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
+export type Integration = typeof integrations.$inferSelect;

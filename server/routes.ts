@@ -30,7 +30,8 @@ import {
   insertFxRateSchema,
   insertAiVoiceAgentSchema,
   insertCmsThemeSchema,
-  insertTenantBrandingSchema
+  insertTenantBrandingSchema,
+  insertIntegrationSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -1476,6 +1477,159 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete DID provider" });
+    }
+  });
+
+  // ==================== INTEGRATIONS ====================
+
+  app.get("/api/integrations", async (req, res) => {
+    try {
+      const integrations = await storage.getIntegrations();
+      // Mask credentials in response
+      const masked = integrations.map(i => ({
+        ...i,
+        credentials: i.credentials ? { configured: true } : null
+      }));
+      res.json(masked);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch integrations" });
+    }
+  });
+
+  app.get("/api/integrations/:id", async (req, res) => {
+    try {
+      const integration = await storage.getIntegration(req.params.id);
+      if (!integration) return res.status(404).json({ error: "Integration not found" });
+      // Mask credentials
+      res.json({
+        ...integration,
+        credentials: integration.credentials ? { configured: true } : null
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch integration" });
+    }
+  });
+
+  app.patch("/api/integrations/:id", async (req, res) => {
+    try {
+      const existing = await storage.getIntegration(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Integration not found" });
+      
+      const updateData = { ...req.body };
+      
+      // If credentials are being updated, merge with existing
+      if (updateData.credentials && existing.credentials) {
+        updateData.credentials = { ...existing.credentials, ...updateData.credentials };
+      }
+      
+      // Update status based on credentials
+      if (updateData.credentials) {
+        updateData.status = "disconnected"; // Will be connected after test
+      }
+      
+      const integration = await storage.updateIntegration(req.params.id, updateData);
+      
+      // Log the change
+      await storage.createAuditLog({
+        action: "update",
+        tableName: "integrations",
+        recordId: req.params.id,
+        oldValues: { isEnabled: existing.isEnabled, status: existing.status },
+        newValues: { isEnabled: integration?.isEnabled, status: integration?.status }
+      });
+      
+      res.json({
+        ...integration,
+        credentials: integration?.credentials ? { configured: true } : null
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update integration" });
+    }
+  });
+
+  app.post("/api/integrations/:id/test", async (req, res) => {
+    try {
+      const integration = await storage.getIntegration(req.params.id);
+      if (!integration) return res.status(404).json({ error: "Integration not found" });
+      
+      let testResult = { success: false, message: "Unknown provider" };
+      
+      // Test based on provider
+      switch (integration.provider) {
+        case "connexcs":
+          const creds = integration.credentials as { username?: string; password?: string } | null;
+          if (creds?.username && creds?.password) {
+            try {
+              const response = await fetch("https://app.connexcs.com/api/cp/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: creds.username, password: creds.password })
+              });
+              if (response.ok) {
+                testResult = { success: true, message: "Connected successfully" };
+              } else {
+                testResult = { success: false, message: `Authentication failed: ${response.status}` };
+              }
+            } catch (e) {
+              testResult = { success: false, message: "Connection failed" };
+            }
+          } else {
+            testResult = { success: false, message: "Credentials not configured" };
+          }
+          break;
+          
+        case "stripe":
+        case "paypal":
+        case "brevo":
+        case "ayrshare":
+        case "openexchangerates":
+        case "cloudflare_r2":
+        case "upstash_redis":
+        case "twilio":
+        case "signalwire":
+          // Mock test for now - would implement actual API tests
+          if (integration.credentials) {
+            testResult = { success: true, message: "Credentials configured (test pending)" };
+          } else {
+            testResult = { success: false, message: "Credentials not configured" };
+          }
+          break;
+      }
+      
+      // Update integration with test result
+      await storage.updateIntegration(req.params.id, {
+        status: testResult.success ? "connected" : "error",
+        lastTestedAt: new Date(),
+        testResult: testResult.message
+      });
+      
+      res.json(testResult);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to test integration" });
+    }
+  });
+
+  app.post("/api/integrations/:id/enable", async (req, res) => {
+    try {
+      const integration = await storage.updateIntegration(req.params.id, {
+        isEnabled: true
+      });
+      if (!integration) return res.status(404).json({ error: "Integration not found" });
+      res.json({ ...integration, credentials: integration.credentials ? { configured: true } : null });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to enable integration" });
+    }
+  });
+
+  app.post("/api/integrations/:id/disable", async (req, res) => {
+    try {
+      const integration = await storage.updateIntegration(req.params.id, {
+        isEnabled: false
+      });
+      if (!integration) return res.status(404).json({ error: "Integration not found" });
+      res.json({ ...integration, credentials: integration.credentials ? { configured: true } : null });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to disable integration" });
     }
   });
 

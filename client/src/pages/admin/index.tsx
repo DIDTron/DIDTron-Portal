@@ -18,6 +18,7 @@ import DIDCountriesPage from "./did-countries";
 import CarriersPage from "./carriers";
 import RoutesPage from "./routes";
 import DIDProvidersPage from "./did-providers";
+import IntegrationsPage from "./integrations";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -217,9 +218,7 @@ export default function AdminLayout() {
                 <Route path="/admin/settings/webhooks">
                   <PlaceholderPage title="Webhooks" />
                 </Route>
-                <Route path="/admin/settings/integrations">
-                  <PlaceholderPage title="Integrations" />
-                </Route>
+                <Route path="/admin/settings/integrations" component={IntegrationsPage} />
                 <Route path="/admin/activity">
                   <PlaceholderPage title="Live Activity" />
                 </Route>
