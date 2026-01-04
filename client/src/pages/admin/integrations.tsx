@@ -124,12 +124,15 @@ export default function IntegrationsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/integrations"] });
-      toast({ title: "Integration updated" });
+      toast({ 
+        title: "Credentials saved successfully",
+        description: "Click 'Test Connection' to verify the credentials work."
+      });
       setEditingIntegration(null);
       setCredentialValues({});
     },
     onError: () => {
-      toast({ title: "Failed to update integration", variant: "destructive" });
+      toast({ title: "Failed to save credentials", variant: "destructive" });
     },
   });
 
