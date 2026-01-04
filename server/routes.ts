@@ -1594,6 +1594,27 @@ export async function registerRoutes(
             testResult = { success: false, message: "Credentials not configured" };
           }
           break;
+          
+        case "nowpayments":
+          const npCreds = integration.credentials as { apiKey?: string } | null;
+          if (npCreds?.apiKey) {
+            try {
+              const response = await fetch("https://api.nowpayments.io/v1/status", {
+                headers: { "x-api-key": npCreds.apiKey }
+              });
+              if (response.ok) {
+                const data = await response.json();
+                testResult = { success: true, message: `Connected - ${data.message || "API Online"}` };
+              } else {
+                testResult = { success: false, message: `API Error: ${response.status}` };
+              }
+            } catch (e: any) {
+              testResult = { success: false, message: `Connection failed: ${e.message}` };
+            }
+          } else {
+            testResult = { success: false, message: "API Key not configured" };
+          }
+          break;
       }
       
       // Update integration with test result

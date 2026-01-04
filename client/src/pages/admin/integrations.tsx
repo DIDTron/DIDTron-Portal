@@ -32,6 +32,7 @@ import {
   Settings,
   RefreshCw,
   Loader2,
+  Coins,
 } from "lucide-react";
 import type { Integration } from "@shared/schema";
 
@@ -46,6 +47,7 @@ const iconMap: Record<string, React.ReactNode> = {
   database: <Database className="w-5 h-5" />,
   "phone-call": <PhoneCall className="w-5 h-5" />,
   "phone-forwarded": <PhoneForwarded className="w-5 h-5" />,
+  bitcoin: <Coins className="w-5 h-5" />,
 };
 
 const categoryLabels: Record<string, string> = {
@@ -99,6 +101,10 @@ const credentialFields: Record<string, { label: string; type: string; key: strin
     { label: "Project ID", type: "text", key: "project_id" },
     { label: "API Token", type: "password", key: "api_token" },
     { label: "Space URL", type: "text", key: "space_url" },
+  ],
+  nowpayments: [
+    { label: "API Key", type: "password", key: "apiKey" },
+    { label: "IPN Secret (optional)", type: "password", key: "ipnSecret" },
   ],
 };
 

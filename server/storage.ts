@@ -349,6 +349,7 @@ export class MemStorage implements IStorage {
       { id: randomUUID(), provider: "upstash_redis", displayName: "Upstash Redis", description: "Caching and session management", category: "cache", icon: "database", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
       { id: randomUUID(), provider: "twilio", displayName: "Twilio", description: "SIP testing and verification", category: "sip_testing", icon: "phone-call", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
       { id: randomUUID(), provider: "signalwire", displayName: "SignalWire", description: "Budget SIP testing provider", category: "sip_testing", icon: "phone-forwarded", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
+      { id: randomUUID(), provider: "nowpayments", displayName: "NOWPayments", description: "Crypto payment gateway - 160+ cryptocurrencies", category: "payments", icon: "bitcoin", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
     ];
     defaultIntegrations.forEach(i => this.integrations.set(i.id, i));
   }
