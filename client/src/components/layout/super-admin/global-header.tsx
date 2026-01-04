@@ -1,7 +1,8 @@
-import { Search, Bell, LogOut } from "lucide-react";
+import { Search, Bell, LogOut, Menu, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useSuperAdminTabs } from "@/stores/super-admin-tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,10 +21,25 @@ interface GlobalHeaderProps {
 
 export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
   const initials = userEmail?.substring(0, 2).toUpperCase() || "SA";
+  const { primarySidebarOpen, toggleBothSidebars } = useSuperAdminTabs();
 
   return (
     <header className="sticky top-0 z-50 flex h-12 items-center justify-between gap-4 border-b bg-background px-4">
       <div className="flex items-center gap-4 flex-1">
+        {!primarySidebarOpen && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleBothSidebars}
+              data-testid="header-toggle-sidebars"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <Phone className="h-5 w-5 text-primary" />
+            <span className="font-bold">DIDTron</span>
+          </div>
+        )}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

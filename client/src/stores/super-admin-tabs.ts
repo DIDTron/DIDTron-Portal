@@ -14,6 +14,8 @@ interface SuperAdminTabsState {
   activeTabId: string | null;
   activeSection: string | null;
   activeSubItem: string | null;
+  primarySidebarOpen: boolean;
+  secondarySidebarOpen: boolean;
   openTab: (tab: WorkspaceTab) => void;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
@@ -23,6 +25,9 @@ interface SuperAdminTabsState {
   closeAllTabs: () => void;
   closeOtherTabs: (tabId: string) => void;
   closeTabsToRight: (tabId: string) => void;
+  togglePrimarySidebar: () => void;
+  toggleSecondarySidebar: () => void;
+  toggleBothSidebars: () => void;
 }
 
 export const useSuperAdminTabs = create<SuperAdminTabsState>()(
@@ -32,6 +37,8 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
       activeTabId: null,
       activeSection: 'voip',
       activeSubItem: null,
+      primarySidebarOpen: true,
+      secondarySidebarOpen: true,
 
       openTab: (tab: WorkspaceTab) => {
         const { tabs } = get();
@@ -112,6 +119,25 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
         }
         
         set({ tabs: newTabs, activeTabId: newActiveId });
+      },
+
+      togglePrimarySidebar: () => {
+        const { primarySidebarOpen } = get();
+        set({ primarySidebarOpen: !primarySidebarOpen });
+      },
+
+      toggleSecondarySidebar: () => {
+        const { secondarySidebarOpen } = get();
+        set({ secondarySidebarOpen: !secondarySidebarOpen });
+      },
+
+      toggleBothSidebars: () => {
+        const { primarySidebarOpen, secondarySidebarOpen } = get();
+        const bothOpen = primarySidebarOpen && secondarySidebarOpen;
+        set({ 
+          primarySidebarOpen: !bothOpen, 
+          secondarySidebarOpen: !bothOpen 
+        });
       },
     }),
     {

@@ -1,7 +1,9 @@
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Menu } from "lucide-react";
 import {
   Server, Layers, Radio, CreditCard, Building2, Globe, Building,
   Route as RouteIcon, Users, UserPlus, Tags, Gift, Ticket,
@@ -108,7 +110,18 @@ const sectionConfigs: Record<string, SectionConfig> = {
 
 export function SecondarySidebar() {
   const [, setLocation] = useLocation();
-  const { activeSection, activeSubItem, setActiveSubItem, openTab } = useSuperAdminTabs();
+  const { 
+    activeSection, 
+    activeSubItem, 
+    setActiveSubItem, 
+    openTab,
+    secondarySidebarOpen,
+    toggleSecondarySidebar
+  } = useSuperAdminTabs();
+
+  if (!secondarySidebarOpen) {
+    return null;
+  }
 
   if (!activeSection || activeSection === "dashboard") {
     return null;
@@ -130,8 +143,17 @@ export function SecondarySidebar() {
 
   return (
     <div className="flex flex-col h-full w-48 border-r bg-sidebar shrink-0">
-      <div className="flex h-12 items-center px-4 border-b">
-        <span className="font-semibold text-sm text-sidebar-foreground">{config.title}</span>
+      <div className="flex h-12 items-center gap-2 px-3 border-b">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSecondarySidebar}
+          className="shrink-0"
+          data-testid="toggle-secondary-sidebar"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <span className="font-semibold text-sm text-sidebar-foreground truncate">{config.title}</span>
       </div>
       
       <ScrollArea className="flex-1">

@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
-import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield } from "lucide-react";
+import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -25,7 +26,15 @@ export const navSections: NavSection[] = [
 
 export function PrimarySidebar() {
   const [, setLocation] = useLocation();
-  const { activeSection, setActiveSection, openTab, setActiveSubItem } = useSuperAdminTabs();
+  const { 
+    activeSection, 
+    setActiveSection, 
+    openTab, 
+    setActiveSubItem,
+    primarySidebarOpen,
+    togglePrimarySidebar,
+    toggleBothSidebars
+  } = useSuperAdminTabs();
 
   const handleSectionClick = (section: NavSection) => {
     setActiveSection(section.id);
@@ -47,11 +56,24 @@ export function PrimarySidebar() {
     }
   };
 
+  if (!primarySidebarOpen) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col h-full w-44 border-r bg-sidebar shrink-0">
-      <div className="flex h-12 items-center gap-2 px-4 border-b">
-        <Phone className="h-6 w-6 text-primary" />
-        <span className="font-bold text-lg">DIDTron</span>
+      <div className="flex h-12 items-center gap-2 px-3 border-b">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleBothSidebars}
+          className="shrink-0"
+          data-testid="toggle-both-sidebars"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <Phone className="h-5 w-5 text-primary shrink-0" />
+        <span className="font-bold text-base truncate">DIDTron</span>
       </div>
       
       <ScrollArea className="flex-1">
