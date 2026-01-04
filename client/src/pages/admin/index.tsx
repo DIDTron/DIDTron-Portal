@@ -1,38 +1,13 @@
 import { useEffect, useState } from "react";
-import { useLocation, Link, Switch, Route } from "wouter";
+import { useLocation, Switch, Route } from "wouter";
 import { getCurrentUser, logout, type User } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarHeader,
-  SidebarFooter,
-} from "@/components/ui/sidebar";
-import {
-  Phone,
-  LogOut,
-  Server,
-  Layers,
-  Radio,
-  CreditCard,
-  Globe,
-  Building2,
-  LayoutDashboard,
-  Settings,
-  Users,
-  Route as RouteIcon,
-  Building,
-} from "lucide-react";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { GlobalHeader } from "@/components/layout/super-admin/global-header";
+import { PrimarySidebar } from "@/components/layout/super-admin/primary-sidebar";
+import { SecondarySidebar } from "@/components/layout/super-admin/secondary-sidebar";
+import { WorkspaceTabs } from "@/components/layout/super-admin/workspace-tabs";
+import { useSuperAdminTabs } from "@/stores/super-admin-tabs";
 
 import AdminDashboard from "./dashboard";
 import POPsPage from "./pops";
@@ -44,71 +19,71 @@ import CarriersPage from "./carriers";
 import RoutesPage from "./routes";
 import DIDProvidersPage from "./did-providers";
 
-const adminNavItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "POPs", url: "/admin/pops", icon: Server },
-  { title: "Voice Tiers", url: "/admin/voice-tiers", icon: Layers },
-  { title: "Codecs", url: "/admin/codecs", icon: Radio },
-  { title: "Channel Plans", url: "/admin/channel-plans", icon: CreditCard },
-  { title: "Carriers", url: "/admin/carriers", icon: Building2 },
-  { title: "Routes", url: "/admin/routes", icon: RouteIcon },
-  { title: "DID Countries", url: "/admin/did-countries", icon: Globe },
-  { title: "DID Providers", url: "/admin/did-providers", icon: Building },
-];
-
-function AdminSidebar() {
-  const [location] = useLocation();
-
+function PlaceholderPage({ title }: { title: string }) {
   return (
-    <Sidebar>
-      <SidebarHeader className="p-4">
-        <Link href="/admin" className="flex items-center gap-2">
-          <Phone className="h-6 w-6 text-primary" />
-          <div>
-            <span className="font-bold text-lg">DIDTron</span>
-            <p className="text-xs text-muted-foreground">Super Admin</p>
-          </div>
-        </Link>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Configuration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === item.url || (item.url !== "/admin" && location.startsWith(item.url))}
-                  >
-                    <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter className="p-4">
-        <Link href="/dashboard">
-          <Button variant="outline" className="w-full" data-testid="button-back-to-portal">
-            <Users className="h-4 w-4 mr-2" />
-            Customer Portal
-          </Button>
-        </Link>
-      </SidebarFooter>
-    </Sidebar>
+    <div className="flex items-center justify-center h-full min-h-[400px]">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-foreground mb-2">{title}</h2>
+        <p className="text-muted-foreground">This module is coming soon</p>
+      </div>
+    </div>
   );
 }
 
+const routeToSection: Record<string, { section: string; subItem: string }> = {
+  "/admin": { section: "dashboard", subItem: "overview" },
+  "/admin/pops": { section: "voip", subItem: "pops" },
+  "/admin/voice-tiers": { section: "voip", subItem: "voice-tiers" },
+  "/admin/codecs": { section: "voip", subItem: "codecs" },
+  "/admin/channel-plans": { section: "voip", subItem: "channel-plans" },
+  "/admin/carriers": { section: "voip", subItem: "carriers" },
+  "/admin/routes": { section: "voip", subItem: "routes" },
+  "/admin/did-countries": { section: "voip", subItem: "did-countries" },
+  "/admin/did-providers": { section: "voip", subItem: "did-providers" },
+  "/admin/customers": { section: "customers", subItem: "customers" },
+  "/admin/categories": { section: "customers", subItem: "categories" },
+  "/admin/groups": { section: "customers", subItem: "groups" },
+  "/admin/kyc": { section: "customers", subItem: "kyc" },
+  "/admin/invoices": { section: "billing", subItem: "invoices" },
+  "/admin/payments": { section: "billing", subItem: "payments" },
+  "/admin/referrals": { section: "billing", subItem: "referrals" },
+  "/admin/promo-codes": { section: "billing", subItem: "promo-codes" },
+  "/admin/bonuses": { section: "billing", subItem: "bonuses" },
+  "/admin/social-accounts": { section: "marketing", subItem: "social-accounts" },
+  "/admin/social-posts": { section: "marketing", subItem: "social-posts" },
+  "/admin/email-templates": { section: "marketing", subItem: "email-templates" },
+  "/admin/metrics": { section: "monitoring", subItem: "metrics" },
+  "/admin/alerts": { section: "monitoring", subItem: "alerts" },
+  "/admin/rules": { section: "monitoring", subItem: "rules" },
+  "/admin/sip-tester": { section: "monitoring", subItem: "sip-tester" },
+  "/admin/pages": { section: "cms", subItem: "pages" },
+  "/admin/themes": { section: "cms", subItem: "themes" },
+  "/admin/media": { section: "cms", subItem: "media" },
+  "/admin/admin-users": { section: "admin", subItem: "admin-users" },
+  "/admin/roles": { section: "admin", subItem: "roles" },
+  "/admin/audit-logs": { section: "admin", subItem: "audit-logs" },
+  "/admin/tickets": { section: "admin", subItem: "tickets" },
+  "/admin/settings/general": { section: "settings", subItem: "general" },
+  "/admin/settings/api-keys": { section: "settings", subItem: "api-keys" },
+  "/admin/settings/webhooks": { section: "settings", subItem: "webhooks" },
+  "/admin/settings/integrations": { section: "settings", subItem: "integrations" },
+  "/admin/activity": { section: "dashboard", subItem: "activity" },
+};
+
 export default function AdminLayout() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { setActiveSection, setActiveSubItem } = useSuperAdminTabs();
+
+  useEffect(() => {
+    const mapping = routeToSection[location];
+    if (mapping) {
+      setActiveSection(mapping.section);
+      setActiveSubItem(mapping.subItem);
+    }
+  }, [location, setActiveSection, setActiveSubItem]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -141,43 +116,121 @@ export default function AdminLayout() {
     );
   }
 
-  const sidebarStyle = {
-    "--sidebar-width": "16rem",
-    "--sidebar-width-icon": "3rem",
-  };
-
   return (
-    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-      <div className="flex h-screen w-full">
-        <AdminSidebar />
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="sticky top-0 z-50 flex h-14 items-center justify-between gap-4 border-b bg-background px-4">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground" data-testid="text-admin-email">
-                {user?.email}
-              </span>
-              <ThemeToggle />
-              <Button variant="ghost" size="icon" onClick={handleLogout} data-testid="button-logout">
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto p-6">
-            <Switch>
-              <Route path="/admin" component={AdminDashboard} />
-              <Route path="/admin/pops" component={POPsPage} />
-              <Route path="/admin/voice-tiers" component={VoiceTiersPage} />
-              <Route path="/admin/codecs" component={CodecsPage} />
-              <Route path="/admin/channel-plans" component={ChannelPlansPage} />
-              <Route path="/admin/carriers" component={CarriersPage} />
-              <Route path="/admin/routes" component={RoutesPage} />
-              <Route path="/admin/did-countries" component={DIDCountriesPage} />
-              <Route path="/admin/did-providers" component={DIDProvidersPage} />
-            </Switch>
-          </main>
+    <TooltipProvider>
+      <div className="flex flex-col h-screen w-full bg-background">
+        <GlobalHeader userEmail={user?.email || ""} onLogout={handleLogout} />
+        
+        <div className="flex flex-1 overflow-hidden">
+          <PrimarySidebar />
+          <SecondarySidebar />
+          
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <WorkspaceTabs />
+            
+            <main className="flex-1 overflow-auto p-6">
+              <Switch>
+                <Route path="/admin" component={AdminDashboard} />
+                <Route path="/admin/pops" component={POPsPage} />
+                <Route path="/admin/voice-tiers" component={VoiceTiersPage} />
+                <Route path="/admin/codecs" component={CodecsPage} />
+                <Route path="/admin/channel-plans" component={ChannelPlansPage} />
+                <Route path="/admin/carriers" component={CarriersPage} />
+                <Route path="/admin/routes" component={RoutesPage} />
+                <Route path="/admin/did-countries" component={DIDCountriesPage} />
+                <Route path="/admin/did-providers" component={DIDProvidersPage} />
+                <Route path="/admin/customers">
+                  <PlaceholderPage title="Customers" />
+                </Route>
+                <Route path="/admin/categories">
+                  <PlaceholderPage title="Categories" />
+                </Route>
+                <Route path="/admin/groups">
+                  <PlaceholderPage title="Groups" />
+                </Route>
+                <Route path="/admin/kyc">
+                  <PlaceholderPage title="KYC Requests" />
+                </Route>
+                <Route path="/admin/invoices">
+                  <PlaceholderPage title="Invoices" />
+                </Route>
+                <Route path="/admin/payments">
+                  <PlaceholderPage title="Payments" />
+                </Route>
+                <Route path="/admin/referrals">
+                  <PlaceholderPage title="Referrals" />
+                </Route>
+                <Route path="/admin/promo-codes">
+                  <PlaceholderPage title="Promo Codes" />
+                </Route>
+                <Route path="/admin/bonuses">
+                  <PlaceholderPage title="Bonuses" />
+                </Route>
+                <Route path="/admin/social-accounts">
+                  <PlaceholderPage title="Social Accounts" />
+                </Route>
+                <Route path="/admin/social-posts">
+                  <PlaceholderPage title="Social Posts" />
+                </Route>
+                <Route path="/admin/email-templates">
+                  <PlaceholderPage title="Email Templates" />
+                </Route>
+                <Route path="/admin/metrics">
+                  <PlaceholderPage title="Metrics" />
+                </Route>
+                <Route path="/admin/alerts">
+                  <PlaceholderPage title="Alerts" />
+                </Route>
+                <Route path="/admin/rules">
+                  <PlaceholderPage title="Monitoring Rules" />
+                </Route>
+                <Route path="/admin/sip-tester">
+                  <PlaceholderPage title="SIP Tester" />
+                </Route>
+                <Route path="/admin/pages">
+                  <PlaceholderPage title="CMS Pages" />
+                </Route>
+                <Route path="/admin/themes">
+                  <PlaceholderPage title="Themes" />
+                </Route>
+                <Route path="/admin/media">
+                  <PlaceholderPage title="Media Library" />
+                </Route>
+                <Route path="/admin/admin-users">
+                  <PlaceholderPage title="Admin Users" />
+                </Route>
+                <Route path="/admin/roles">
+                  <PlaceholderPage title="Roles" />
+                </Route>
+                <Route path="/admin/audit-logs">
+                  <PlaceholderPage title="Audit Logs" />
+                </Route>
+                <Route path="/admin/tickets">
+                  <PlaceholderPage title="Support Tickets" />
+                </Route>
+                <Route path="/admin/settings/general">
+                  <PlaceholderPage title="General Settings" />
+                </Route>
+                <Route path="/admin/settings/api-keys">
+                  <PlaceholderPage title="API Keys" />
+                </Route>
+                <Route path="/admin/settings/webhooks">
+                  <PlaceholderPage title="Webhooks" />
+                </Route>
+                <Route path="/admin/settings/integrations">
+                  <PlaceholderPage title="Integrations" />
+                </Route>
+                <Route path="/admin/activity">
+                  <PlaceholderPage title="Live Activity" />
+                </Route>
+                <Route>
+                  <PlaceholderPage title="Page Not Found" />
+                </Route>
+              </Switch>
+            </main>
+          </div>
         </div>
       </div>
-    </SidebarProvider>
+    </TooltipProvider>
   );
 }
