@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, StateStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 export interface WorkspaceTab {
   id: string;
@@ -22,6 +22,7 @@ interface SuperAdminTabsState {
   markTabDirty: (tabId: string, isDirty: boolean) => void;
   closeAllTabs: () => void;
   closeOtherTabs: (tabId: string) => void;
+  closeTabsToRight: (tabId: string) => void;
 }
 
 export const useSuperAdminTabs = create<SuperAdminTabsState>()(
@@ -95,6 +96,22 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
           tabs: tabToKeep ? [tabToKeep] : [],
           activeTabId: tabId,
         });
+      },
+
+      closeTabsToRight: (tabId: string) => {
+        const { tabs, activeTabId } = get();
+        const tabIndex = tabs.findIndex((t: WorkspaceTab) => t.id === tabId);
+        
+        if (tabIndex === -1) return;
+        
+        const newTabs = tabs.slice(0, tabIndex + 1);
+        
+        let newActiveId = activeTabId;
+        if (activeTabId && !newTabs.find((t: WorkspaceTab) => t.id === activeTabId)) {
+          newActiveId = tabId;
+        }
+        
+        set({ tabs: newTabs, activeTabId: newActiveId });
       },
     }),
     {
