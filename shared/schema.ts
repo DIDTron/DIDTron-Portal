@@ -1511,7 +1511,29 @@ export const insertIntegrationSchema = createInsertSchema(integrations).omit({ i
 export const insertCustomerCategorySchema = createInsertSchema(customerCategories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerGroupSchema = createInsertSchema(customerGroups).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true }).partial({
+  balance: true,
+  creditLimit: true,
+  lowBalanceThreshold1: true,
+  lowBalanceThreshold2: true,
+  lowBalanceThreshold3: true,
+  autoTopUpEnabled: true,
+  autoTopUpAmount: true,
+  autoTopUpThreshold: true,
+  billingEmail: true,
+  technicalEmail: true,
+  address: true,
+  city: true,
+  state: true,
+  country: true,
+  postalCode: true,
+  taxId: true,
+  referralCode: true,
+  referredBy: true,
+  connexcsCustomerId: true,
+  categoryId: true,
+  groupId: true,
+});
 export const insertCarrierSchema = createInsertSchema(carriers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierAssignmentSchema = createInsertSchema(carrierAssignments).omit({ id: true, createdAt: true });
 export const insertPopSchema = createInsertSchema(pops).omit({ id: true, createdAt: true, updatedAt: true });

@@ -7,7 +7,7 @@ import {
   Building2, Route, Phone, Sparkles, RefreshCw, ArrowUpRight, TrendingUp, Clock
 } from "lucide-react";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
-import type { CustomerCategory, Carrier, Pop, Route as RouteType, DidCountry, VoiceTier } from "@shared/schema";
+import type { CustomerCategory, Carrier, Pop, Route as RouteType, DidCountry, VoiceTier, Customer } from "@shared/schema";
 
 export default function AdminDashboard() {
   const { openTab, setActiveSection, setActiveSubItem } = useSuperAdminTabs();
@@ -34,6 +34,10 @@ export default function AdminDashboard() {
 
   const { data: voiceTiers } = useQuery<VoiceTier[]>({
     queryKey: ["/api/voice-tiers"],
+  });
+
+  const { data: customers } = useQuery<Customer[]>({
+    queryKey: ["/api/customers"],
   });
 
   const handleQuickAction = (section: string, subItem: string, label: string, route: string) => {
@@ -98,6 +102,14 @@ export default function AdminDashboard() {
           description="Available countries" 
           testId="stat-did-countries"
           onClick={() => handleQuickAction("voip", "did-countries", "DID Countries", "/admin/did-countries")}
+        />
+        <StatCard 
+          icon={Users} 
+          title="Customers" 
+          value={customers?.length?.toString() || "0"} 
+          description="Active customers" 
+          testId="stat-customers"
+          onClick={() => handleQuickAction("customers", "customers", "Customers", "/admin/customers")}
         />
       </div>
 

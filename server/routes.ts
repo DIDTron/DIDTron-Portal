@@ -255,9 +255,11 @@ export async function registerRoutes(
 
   app.post("/api/customers", async (req, res) => {
     try {
-      const parsed = insertCustomerSchema.safeParse(req.body);
-      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
-      const customer = await storage.createCustomer(parsed.data);
+      const { accountNumber, companyName, ...rest } = req.body;
+      if (!accountNumber || !companyName) {
+        return res.status(400).json({ error: "accountNumber and companyName are required" });
+      }
+      const customer = await storage.createCustomer({ accountNumber, companyName, ...rest });
       res.status(201).json(customer);
     } catch (error) {
       res.status(500).json({ error: "Failed to create customer" });
@@ -271,6 +273,16 @@ export async function registerRoutes(
       res.json(customer);
     } catch (error) {
       res.status(500).json({ error: "Failed to update customer" });
+    }
+  });
+
+  app.delete("/api/customers/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteCustomer(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Customer not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete customer" });
     }
   });
 

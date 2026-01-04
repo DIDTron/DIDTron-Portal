@@ -61,6 +61,7 @@ export interface IStorage {
   getCustomer(id: string): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: string, data: Partial<InsertCustomer>): Promise<Customer | undefined>;
+  deleteCustomer(id: string): Promise<boolean>;
   moveCustomer(id: string, categoryId: string, groupId?: string): Promise<Customer | undefined>;
 
   // POPs
@@ -538,6 +539,10 @@ export class MemStorage implements IStorage {
     const updated = { ...cust, ...data, updatedAt: new Date() };
     this.customers.set(id, updated);
     return updated;
+  }
+
+  async deleteCustomer(id: string): Promise<boolean> {
+    return this.customers.delete(id);
   }
 
   async moveCustomer(id: string, categoryId: string, groupId?: string): Promise<Customer | undefined> {

@@ -19,6 +19,7 @@ import CarriersPage from "./carriers";
 import RoutesPage from "./routes";
 import DIDProvidersPage from "./did-providers";
 import IntegrationsPage from "./integrations";
+import CustomersPage from "./customers";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -140,9 +141,7 @@ export default function AdminLayout() {
                 <Route path="/admin/routes" component={RoutesPage} />
                 <Route path="/admin/did-countries" component={DIDCountriesPage} />
                 <Route path="/admin/did-providers" component={DIDProvidersPage} />
-                <Route path="/admin/customers">
-                  <PlaceholderPage title="Customers" />
-                </Route>
+                <Route path="/admin/customers" component={CustomersPage} />
                 <Route path="/admin/categories">
                   <PlaceholderPage title="Categories" />
                 </Route>
