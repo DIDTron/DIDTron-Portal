@@ -623,6 +623,133 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CUSTOMER AI VOICE AGENTS ====================
+
+  app.get("/api/my/ai-voice/agents", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const agents = await storage.getAiVoiceAgents(user.customerId);
+      res.json(agents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch AI voice agents" });
+    }
+  });
+
+  app.get("/api/my/ai-voice/agents/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const agent = await storage.getAiVoiceAgent(req.params.id);
+      if (!agent || agent.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      res.json(agent);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch AI voice agent" });
+    }
+  });
+
+  app.post("/api/my/ai-voice/agents", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      // Whitelist allowed fields from customer input
+      const { name, description, type, voiceId, voiceProvider, systemPrompt, 
+              greetingMessage, fallbackMessage, maxCallDuration, webhookUrl } = req.body;
+      
+      const parsed = insertAiVoiceAgentSchema.omit({ customerId: true }).safeParse({
+        name, description, type, voiceId, voiceProvider, systemPrompt,
+        greetingMessage, fallbackMessage, maxCallDuration, webhookUrl
+      });
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      
+      const agent = await storage.createAiVoiceAgent({
+        ...parsed.data,
+        customerId: user.customerId,
+      });
+      res.status(201).json(agent);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create AI voice agent" });
+    }
+  });
+
+  app.patch("/api/my/ai-voice/agents/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const agent = await storage.getAiVoiceAgent(req.params.id);
+      if (!agent || agent.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      
+      // Whitelist allowed fields for update - exclude customerId, id, createdAt
+      const { name, description, type, voiceId, voiceProvider, systemPrompt, 
+              greetingMessage, fallbackMessage, maxCallDuration, webhookUrl, status } = req.body;
+      
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (type !== undefined) updateData.type = type;
+      if (voiceId !== undefined) updateData.voiceId = voiceId;
+      if (voiceProvider !== undefined) updateData.voiceProvider = voiceProvider;
+      if (systemPrompt !== undefined) updateData.systemPrompt = systemPrompt;
+      if (greetingMessage !== undefined) updateData.greetingMessage = greetingMessage;
+      if (fallbackMessage !== undefined) updateData.fallbackMessage = fallbackMessage;
+      if (maxCallDuration !== undefined) updateData.maxCallDuration = maxCallDuration;
+      if (webhookUrl !== undefined) updateData.webhookUrl = webhookUrl;
+      if (status !== undefined) updateData.status = status;
+      
+      const updated = await storage.updateAiVoiceAgent(req.params.id, updateData);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update AI voice agent" });
+    }
+  });
+
+  app.delete("/api/my/ai-voice/agents/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const agent = await storage.getAiVoiceAgent(req.params.id);
+      if (!agent || agent.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      await storage.deleteAiVoiceAgent(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete AI voice agent" });
+    }
+  });
+
   // Admin: Get all referrals
   app.get("/api/admin/referrals", async (req, res) => {
     try {

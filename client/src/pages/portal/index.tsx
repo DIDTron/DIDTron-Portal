@@ -34,6 +34,7 @@ import SupportPage from "./support";
 import SettingsPage from "./settings";
 import UsagePage from "./usage";
 import BrandingPage from "./branding";
+import PortalAiAgentsPage from "./ai-agents";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -229,12 +230,8 @@ export default function CustomerPortal() {
               <Route path="/portal/pbx/ivr">
                 <PlaceholderPage title="IVR" />
               </Route>
-              <Route path="/portal/ai-agent">
-                <PlaceholderPage title="AI Voice Agents" />
-              </Route>
-              <Route path="/portal/ai-agent/personas">
-                <PlaceholderPage title="Agent Personas" />
-              </Route>
+              <Route path="/portal/ai-agent" component={PortalAiAgentsPage} />
+              <Route path="/portal/ai-agent/personas" component={PortalAiAgentsPage} />
               <Route path="/portal/ai-agent/flows">
                 <PlaceholderPage title="Conversation Flows" />
               </Route>
