@@ -35,6 +35,7 @@ import CmsThemesPage from "./cms-themes";
 import CmsPagesPage from "./cms-pages";
 import MediaLibraryPage from "./media-library";
 import DocumentationPage from "./documentation";
+import TenantBrandingPage from "./tenant-branding";
 import SipTesterPage from "./sip-tester";
 import KycPage from "./kyc";
 import AdminUsersPage from "./admin-users";
@@ -96,6 +97,8 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/pages": { section: "cms", subItem: "pages" },
   "/admin/themes": { section: "cms", subItem: "themes" },
   "/admin/media": { section: "cms", subItem: "media" },
+  "/admin/documentation": { section: "cms", subItem: "documentation" },
+  "/admin/branding": { section: "cms", subItem: "branding" },
   "/admin/admin-users": { section: "admin", subItem: "admin-users" },
   "/admin/roles": { section: "admin", subItem: "roles" },
   "/admin/audit-logs": { section: "admin", subItem: "audit-logs" },
@@ -202,6 +205,7 @@ export default function AdminLayout() {
                 <Route path="/admin/themes" component={CmsThemesPage} />
                 <Route path="/admin/media" component={MediaLibraryPage} />
                 <Route path="/admin/documentation" component={DocumentationPage} />
+                <Route path="/admin/branding" component={TenantBrandingPage} />
                 <Route path="/admin/admin-users" component={AdminUsersPage} />
                 <Route path="/admin/roles" component={RolesPage} />
                 <Route path="/admin/audit-logs" component={AuditLogsPage} />

@@ -103,6 +103,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "pages", label: "Pages", route: "/admin/pages", icon: FileText },
       { id: "themes", label: "Themes", route: "/admin/themes", icon: Palette },
       { id: "media", label: "Media Library", route: "/admin/media", icon: Image },
+      { id: "branding", label: "Tenant Branding", route: "/admin/branding", icon: Building },
       { id: "documentation", label: "Documentation", route: "/admin/documentation", icon: BookOpen },
     ],
   },
