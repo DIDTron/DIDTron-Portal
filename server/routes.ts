@@ -306,6 +306,77 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CUSTOMER KYC ====================
+  app.get("/api/kyc", async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const kycRequests = await storage.getCustomerKycRequests(status);
+      res.json(kycRequests);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch KYC requests" });
+    }
+  });
+
+  app.get("/api/kyc/:id", async (req, res) => {
+    try {
+      const kyc = await storage.getCustomerKyc(req.params.id);
+      if (!kyc) return res.status(404).json({ error: "KYC request not found" });
+      res.json(kyc);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch KYC request" });
+    }
+  });
+
+  app.post("/api/kyc", async (req, res) => {
+    try {
+      const { customerId } = req.body;
+      if (!customerId) return res.status(400).json({ error: "customerId is required" });
+      const kyc = await storage.createCustomerKyc(req.body);
+      res.status(201).json(kyc);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create KYC request" });
+    }
+  });
+
+  app.patch("/api/kyc/:id", async (req, res) => {
+    try {
+      const kyc = await storage.updateCustomerKyc(req.params.id, req.body);
+      if (!kyc) return res.status(404).json({ error: "KYC request not found" });
+      res.json(kyc);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update KYC request" });
+    }
+  });
+
+  app.post("/api/kyc/:id/approve", async (req, res) => {
+    try {
+      const kyc = await storage.updateCustomerKyc(req.params.id, {
+        status: "approved",
+        verifiedAt: new Date(),
+        reviewedBy: req.body.reviewedBy || null,
+      });
+      if (!kyc) return res.status(404).json({ error: "KYC request not found" });
+      res.json(kyc);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to approve KYC request" });
+    }
+  });
+
+  app.post("/api/kyc/:id/reject", async (req, res) => {
+    try {
+      const { rejectionReason } = req.body;
+      const kyc = await storage.updateCustomerKyc(req.params.id, {
+        status: "rejected",
+        rejectionReason,
+        reviewedBy: req.body.reviewedBy || null,
+      });
+      if (!kyc) return res.status(404).json({ error: "KYC request not found" });
+      res.json(kyc);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reject KYC request" });
+    }
+  });
+
   // ==================== INVOICES ====================
   app.get("/api/invoices", async (req, res) => {
     try {

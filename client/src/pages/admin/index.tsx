@@ -36,6 +36,15 @@ import CmsPagesPage from "./cms-pages";
 import MediaLibraryPage from "./media-library";
 import DocumentationPage from "./documentation";
 import SipTesterPage from "./sip-tester";
+import KycPage from "./kyc";
+import AdminUsersPage from "./admin-users";
+import AuditLogsPage from "./audit-logs";
+import SettingsPage from "./settings";
+import LiveActivityPage from "./live-activity";
+import MetricsPage from "./metrics";
+import AlertsPage from "./alerts";
+import MonitoringRulesPage from "./monitoring-rules";
+import RolesPage from "./roles";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -160,9 +169,7 @@ export default function AdminLayout() {
                 <Route path="/admin/customers" component={CustomersPage} />
                 <Route path="/admin/categories" component={CategoriesPage} />
                 <Route path="/admin/groups" component={GroupsPage} />
-                <Route path="/admin/kyc">
-                  <PlaceholderPage title="KYC Requests" />
-                </Route>
+                <Route path="/admin/kyc" component={KycPage} />
                 <Route path="/admin/invoices" component={InvoicesPage} />
                 <Route path="/admin/payments" component={PaymentsPage} />
                 <Route path="/admin/referrals" component={ReferralsPage} />
@@ -171,43 +178,23 @@ export default function AdminLayout() {
                 <Route path="/admin/social-accounts" component={SocialAccountsPage} />
                 <Route path="/admin/social-posts" component={SocialPostsPage} />
                 <Route path="/admin/email-templates" component={EmailTemplatesPage} />
-                <Route path="/admin/metrics">
-                  <PlaceholderPage title="Metrics" />
-                </Route>
-                <Route path="/admin/alerts">
-                  <PlaceholderPage title="Alerts" />
-                </Route>
-                <Route path="/admin/rules">
-                  <PlaceholderPage title="Monitoring Rules" />
-                </Route>
+                <Route path="/admin/metrics" component={MetricsPage} />
+                <Route path="/admin/alerts" component={AlertsPage} />
+                <Route path="/admin/rules" component={MonitoringRulesPage} />
                 <Route path="/admin/sip-tester" component={SipTesterPage} />
                 <Route path="/admin/pages" component={CmsPagesPage} />
                 <Route path="/admin/themes" component={CmsThemesPage} />
                 <Route path="/admin/media" component={MediaLibraryPage} />
                 <Route path="/admin/documentation" component={DocumentationPage} />
-                <Route path="/admin/admin-users">
-                  <PlaceholderPage title="Admin Users" />
-                </Route>
-                <Route path="/admin/roles">
-                  <PlaceholderPage title="Roles" />
-                </Route>
-                <Route path="/admin/audit-logs">
-                  <PlaceholderPage title="Audit Logs" />
-                </Route>
+                <Route path="/admin/admin-users" component={AdminUsersPage} />
+                <Route path="/admin/roles" component={RolesPage} />
+                <Route path="/admin/audit-logs" component={AuditLogsPage} />
                 <Route path="/admin/tickets" component={TicketsPage} />
-                <Route path="/admin/settings/general">
-                  <PlaceholderPage title="General Settings" />
-                </Route>
-                <Route path="/admin/settings/api-keys">
-                  <PlaceholderPage title="API Keys" />
-                </Route>
-                <Route path="/admin/settings/webhooks">
-                  <PlaceholderPage title="Webhooks" />
-                </Route>
+                <Route path="/admin/settings/general" component={SettingsPage} />
+                <Route path="/admin/settings/api-keys" component={SettingsPage} />
+                <Route path="/admin/settings/webhooks" component={SettingsPage} />
                 <Route path="/admin/settings/integrations" component={IntegrationsPage} />
-                <Route path="/admin/activity">
-                  <PlaceholderPage title="Live Activity" />
-                </Route>
+                <Route path="/admin/activity" component={LiveActivityPage} />
                 <Route>
                   <PlaceholderPage title="Page Not Found" />
                 </Route>

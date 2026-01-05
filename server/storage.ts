@@ -3,6 +3,7 @@ import {
   type CustomerCategory, type InsertCustomerCategory,
   type CustomerGroup, type InsertCustomerGroup,
   type Customer, type InsertCustomer,
+  type CustomerKyc, type InsertCustomerKyc,
   type Pop, type InsertPop,
   type VoiceTier, type InsertVoiceTier,
   type Codec, type InsertCodec,
@@ -73,6 +74,13 @@ export interface IStorage {
   updateCustomer(id: string, data: Partial<InsertCustomer>): Promise<Customer | undefined>;
   deleteCustomer(id: string): Promise<boolean>;
   moveCustomer(id: string, categoryId: string, groupId?: string): Promise<Customer | undefined>;
+
+  // Customer KYC
+  getCustomerKycRequests(status?: string): Promise<CustomerKyc[]>;
+  getCustomerKyc(id: string): Promise<CustomerKyc | undefined>;
+  getCustomerKycByCustomerId(customerId: string): Promise<CustomerKyc | undefined>;
+  createCustomerKyc(kyc: InsertCustomerKyc): Promise<CustomerKyc>;
+  updateCustomerKyc(id: string, data: Partial<InsertCustomerKyc>): Promise<CustomerKyc | undefined>;
 
   // POPs
   getPops(): Promise<Pop[]>;
@@ -331,6 +339,7 @@ export class MemStorage implements IStorage {
   private customerCategories: Map<string, CustomerCategory>;
   private customerGroups: Map<string, CustomerGroup>;
   private customers: Map<string, Customer>;
+  private customerKyc: Map<string, CustomerKyc>;
   private pops: Map<string, Pop>;
   private voiceTiers: Map<string, VoiceTier>;
   private codecs: Map<string, Codec>;
@@ -361,6 +370,7 @@ export class MemStorage implements IStorage {
   private aiVoiceAgents: Map<string, AiVoiceAgent>;
   private cmsThemes: Map<string, CmsTheme>;
   private cmsPages: Map<string, CmsPage>;
+  private cmsMediaItems: Map<string, CmsMediaItem>;
   private tenantBrandings: Map<string, TenantBranding>;
   private integrations: Map<string, Integration>;
   private bonusTypes: Map<string, BonusType>;
@@ -375,6 +385,7 @@ export class MemStorage implements IStorage {
     this.customerCategories = new Map();
     this.customerGroups = new Map();
     this.customers = new Map();
+    this.customerKyc = new Map();
     this.pops = new Map();
     this.voiceTiers = new Map();
     this.codecs = new Map();
@@ -405,6 +416,7 @@ export class MemStorage implements IStorage {
     this.aiVoiceAgents = new Map();
     this.cmsThemes = new Map();
     this.cmsPages = new Map();
+    this.cmsMediaItems = new Map();
     this.tenantBrandings = new Map();
     this.integrations = new Map();
     this.bonusTypes = new Map();
@@ -659,6 +671,52 @@ export class MemStorage implements IStorage {
 
   async moveCustomer(id: string, categoryId: string, groupId?: string): Promise<Customer | undefined> {
     return this.updateCustomer(id, { categoryId, groupId: groupId ?? null });
+  }
+
+  // Customer KYC
+  async getCustomerKycRequests(status?: string): Promise<CustomerKyc[]> {
+    let requests = Array.from(this.customerKyc.values());
+    if (status) requests = requests.filter(k => k.status === status);
+    return requests.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  }
+
+  async getCustomerKyc(id: string): Promise<CustomerKyc | undefined> {
+    return this.customerKyc.get(id);
+  }
+
+  async getCustomerKycByCustomerId(customerId: string): Promise<CustomerKyc | undefined> {
+    return Array.from(this.customerKyc.values()).find(k => k.customerId === customerId);
+  }
+
+  async createCustomerKyc(kyc: InsertCustomerKyc): Promise<CustomerKyc> {
+    const id = randomUUID();
+    const now = new Date();
+    const newKyc: CustomerKyc = {
+      id,
+      customerId: kyc.customerId,
+      stripeIdentityId: kyc.stripeIdentityId ?? null,
+      documentType: kyc.documentType ?? null,
+      documentUrl: kyc.documentUrl ?? null,
+      addressDocumentUrl: kyc.addressDocumentUrl ?? null,
+      businessDocumentUrl: kyc.businessDocumentUrl ?? null,
+      status: kyc.status ?? "not_started",
+      verifiedAt: kyc.verifiedAt ?? null,
+      expiresAt: kyc.expiresAt ?? null,
+      rejectionReason: kyc.rejectionReason ?? null,
+      reviewedBy: kyc.reviewedBy ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.customerKyc.set(id, newKyc);
+    return newKyc;
+  }
+
+  async updateCustomerKyc(id: string, data: Partial<InsertCustomerKyc>): Promise<CustomerKyc | undefined> {
+    const existing = this.customerKyc.get(id);
+    if (!existing) return undefined;
+    const updated: CustomerKyc = { ...existing, ...data, updatedAt: new Date() };
+    this.customerKyc.set(id, updated);
+    return updated;
   }
 
   // POPs
