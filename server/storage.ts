@@ -404,6 +404,7 @@ export interface IStorage {
   deleteCmsPage(id: string): Promise<boolean>;
 
   // Tenant Branding
+  listTenantBrandings(): Promise<TenantBranding[]>;
   getTenantBranding(customerId: string): Promise<TenantBranding | undefined>;
   createTenantBranding(branding: InsertTenantBranding): Promise<TenantBranding>;
   updateTenantBranding(id: string, data: Partial<InsertTenantBranding>): Promise<TenantBranding | undefined>;
@@ -2796,6 +2797,10 @@ export class MemStorage implements IStorage {
   }
 
   // Tenant Branding
+  async listTenantBrandings(): Promise<TenantBranding[]> {
+    return Array.from(this.tenantBrandings.values());
+  }
+
   async getTenantBranding(customerId: string): Promise<TenantBranding | undefined> {
     return Array.from(this.tenantBrandings.values()).find(b => b.customerId === customerId);
   }

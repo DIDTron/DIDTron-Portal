@@ -69,23 +69,7 @@ export default function TenantBrandingPage() {
   });
 
   const { data: brandings, isLoading } = useQuery<TenantBranding[]>({
-    queryKey: ["/api/admin/tenant-brandings"],
-    queryFn: async () => {
-      const brandingList: TenantBranding[] = [];
-      if (customers) {
-        for (const customer of customers.slice(0, 50)) {
-          try {
-            const res = await fetch(`/api/tenant-branding/${customer.id}`);
-            if (res.ok) {
-              const branding = await res.json();
-              brandingList.push(branding);
-            }
-          } catch {}
-        }
-      }
-      return brandingList;
-    },
-    enabled: !!customers,
+    queryKey: ["/api/tenant-brandings"],
   });
 
   const createMutation = useMutation({
@@ -94,7 +78,7 @@ export default function TenantBrandingPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/tenant-brandings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tenant-brandings"] });
       toast({ title: "Branding created successfully" });
       resetForm();
     },
@@ -109,7 +93,7 @@ export default function TenantBrandingPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/tenant-brandings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tenant-brandings"] });
       toast({ title: "Branding updated successfully" });
       resetForm();
     },

@@ -4786,6 +4786,15 @@ export async function registerRoutes(
 
   // ==================== TENANT BRANDING ====================
 
+  app.get("/api/tenant-brandings", async (req, res) => {
+    try {
+      const brandings = await storage.listTenantBrandings();
+      res.json(brandings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tenant brandings" });
+    }
+  });
+
   app.get("/api/tenant-branding/:customerId", async (req, res) => {
     try {
       const branding = await storage.getTenantBranding(req.params.customerId);
