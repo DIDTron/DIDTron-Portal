@@ -410,6 +410,125 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CUSTOMER SUPPORT TICKETS ====================
+
+  // Get customer's tickets
+  app.get("/api/my/tickets", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const customer = await storage.getCustomer(user.customerId);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+
+      const tickets = await storage.getTickets(customer.id);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Tickets fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch tickets" });
+    }
+  });
+
+  // Create customer ticket
+  app.post("/api/my/tickets", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const customer = await storage.getCustomer(user.customerId);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+
+      const { subject, category, priority, description } = req.body;
+      if (!subject || !description) {
+        return res.status(400).json({ error: "Subject and description required" });
+      }
+
+      const ticket = await storage.createTicket({
+        customerId: customer.id,
+        ticketNumber: `TKT-${Date.now().toString(36).toUpperCase()}`,
+        subject,
+        category: category || "general",
+        priority: priority || "medium",
+        description,
+      });
+
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Create ticket error:", error);
+      res.status(500).json({ error: "Failed to create ticket" });
+    }
+  });
+
+  // Get single customer ticket
+  app.get("/api/my/tickets/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const customer = await storage.getCustomer(user.customerId);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket || ticket.customerId !== customer.id) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+
+      res.json(ticket);
+    } catch (error) {
+      console.error("Ticket fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch ticket" });
+    }
+  });
+
+  // Add reply to customer ticket
+  app.post("/api/my/tickets/:id/reply", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const customer = await storage.getCustomer(user.customerId);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket || ticket.customerId !== customer.id) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+
+      const { message } = req.body;
+      if (!message || typeof message !== "string" || message.trim().length === 0) {
+        return res.status(400).json({ error: "Message required" });
+      }
+
+      // Update ticket with new reply (stored in description for simplicity)
+      const updatedDescription = `${ticket.description}\n\n---\n**Customer Reply (${new Date().toISOString()}):**\n${message}`;
+      const updated = await storage.updateTicket(req.params.id, { 
+        description: updatedDescription,
+        status: "pending",
+      });
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Ticket reply error:", error);
+      res.status(500).json({ error: "Failed to add reply" });
+    }
+  });
+
   // Admin: Get all referrals
   app.get("/api/admin/referrals", async (req, res) => {
     try {
