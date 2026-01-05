@@ -249,12 +249,8 @@ export default function CustomerPortal() {
               <Route path="/portal/pbx/queues" component={PortalQueuesPage} />
               <Route path="/portal/ai-agent" component={PortalAiAgentsPage} />
               <Route path="/portal/ai-agent/personas" component={PortalAiAgentsPage} />
-              <Route path="/portal/ai-agent/flows">
-                <PlaceholderPage title="Conversation Flows" />
-              </Route>
-              <Route path="/portal/ai-agent/training">
-                <PlaceholderPage title="Training Data" />
-              </Route>
+              <Route path="/portal/ai-agent/flows" component={PortalAiAgentsPage} />
+              <Route path="/portal/ai-agent/training" component={PortalAiAgentsPage} />
               <Route path="/portal/sip-tester" component={PortalSipTesterPage} />
               <Route path="/portal/sip-tester/configs" component={PortalSipTesterPage} />
               <Route path="/portal/sip-tester/results" component={PortalSipTesterPage} />

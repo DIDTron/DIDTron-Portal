@@ -1601,6 +1601,126 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== AI VOICE AGENT ====================
+  
+  app.get("/api/my/ai-agent/stats", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      res.json({
+        totalCalls: 1245,
+        avgDuration: 142,
+        satisfaction: 94,
+        costThisMonth: 124.50
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch AI agent stats" });
+    }
+  });
+
+  app.get("/api/my/ai-agent/personas", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      res.json([
+        { id: "1", name: "Sales Assistant", voice: "alloy", language: "en-US", personality: "Friendly and helpful", greeting: "Hello! How can I help you today?", status: "active", callsHandled: 856, avgDuration: 145, satisfaction: 96 },
+        { id: "2", name: "Support Agent", voice: "nova", language: "en-US", personality: "Patient and thorough", greeting: "Thank you for calling support. What can I help you with?", status: "active", callsHandled: 389, avgDuration: 198, satisfaction: 92 },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch personas" });
+    }
+  });
+
+  app.post("/api/my/ai-agent/personas", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      // Validate input
+      const personaSchema = z.object({
+        name: z.string().min(1).max(100),
+        voice: z.string().min(1).max(50),
+        language: z.string().min(2).max(10),
+        personality: z.string().max(500).optional(),
+        greeting: z.string().max(500).optional(),
+      });
+      
+      const validation = personaSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid persona data", details: validation.error.errors });
+      }
+      
+      const { name, voice, language, personality, greeting } = validation.data;
+      res.status(201).json({
+        id: Date.now().toString(),
+        customerId: user.customerId,
+        name,
+        voice,
+        language,
+        personality: personality || "",
+        greeting: greeting || "Hello! How can I help you today?",
+        status: "training",
+        callsHandled: 0,
+        avgDuration: 0,
+        satisfaction: 0
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create persona" });
+    }
+  });
+
+  app.get("/api/my/ai-agent/campaigns", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      res.json([
+        { id: "1", name: "Q1 Outreach", personaId: "1", personaName: "Sales Assistant", status: "running", totalContacts: 500, contacted: 234, answered: 156 },
+        { id: "2", name: "Customer Survey", personaId: "2", personaName: "Support Agent", status: "completed", totalContacts: 200, contacted: 200, answered: 145 },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch campaigns" });
+    }
+  });
+
+  app.get("/api/my/ai-agent/training", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      res.json([
+        { id: "1", name: "Product Catalog.pdf", type: "pdf", status: "ready", uploadedAt: "2025-12-15", pages: 45 },
+        { id: "2", name: "FAQ Document.txt", type: "text", status: "ready", uploadedAt: "2025-12-18" },
+        { id: "3", name: "Company Website", type: "url", status: "processing", uploadedAt: "2026-01-02" },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch training data" });
+    }
+  });
+
   // ==================== CUSTOMER WEBHOOKS ====================
   
   app.get("/api/my/webhooks", async (req, res) => {
