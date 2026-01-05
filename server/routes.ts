@@ -447,9 +447,15 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Branding already exists. Use PATCH to update." });
       }
 
+      // Validate allowed fields
+      const { companyName, logoUrl, faviconUrl, primaryColor, secondaryColor } = req.body;
       const branding = await storage.createTenantBranding({
         customerId: user.customerId,
-        ...req.body,
+        companyName: companyName || null,
+        logoUrl: logoUrl || null,
+        faviconUrl: faviconUrl || null,
+        primaryColor: primaryColor || null,
+        secondaryColor: secondaryColor || null,
       });
       res.status(201).json(branding);
     } catch (error) {
@@ -469,17 +475,27 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Customer profile not found" });
       }
       
+      // Extract allowed fields only
+      const { companyName, logoUrl, faviconUrl, primaryColor, secondaryColor } = req.body;
+      const updateData = {
+        companyName: companyName || null,
+        logoUrl: logoUrl || null,
+        faviconUrl: faviconUrl || null,
+        primaryColor: primaryColor || null,
+        secondaryColor: secondaryColor || null,
+      };
+      
       const existing = await storage.getTenantBranding(user.customerId);
       if (!existing) {
         // Auto-create if it doesn't exist
         const branding = await storage.createTenantBranding({
           customerId: user.customerId,
-          ...req.body,
+          ...updateData,
         });
         return res.json(branding);
       }
 
-      const updated = await storage.updateTenantBranding(existing.id, req.body);
+      const updated = await storage.updateTenantBranding(existing.id, updateData);
       res.json(updated);
     } catch (error) {
       console.error("Update branding error:", error);

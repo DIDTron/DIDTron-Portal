@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -39,7 +39,7 @@ export default function BrandingPage() {
     enabled: !!profile,
   });
 
-  useState(() => {
+  useEffect(() => {
     if (branding) {
       setFormData({
         logoUrl: branding.logoUrl || "",
@@ -48,8 +48,9 @@ export default function BrandingPage() {
         primaryColor: branding.primaryColor || "#2563EB",
         secondaryColor: branding.secondaryColor || "#64748B",
       });
+      setHasChanges(false);
     }
-  });
+  }, [branding]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: BrandingFormData) => {
