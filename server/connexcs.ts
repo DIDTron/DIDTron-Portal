@@ -62,6 +62,7 @@ class ConnexCSClient {
   private mockMode: boolean;
   private jwtToken: string | null = null;
   private tokenExpiry: number = 0;
+  private credentialsLoaded: boolean = false;
 
   constructor() {
     this.config = {
@@ -74,6 +75,30 @@ class ConnexCSClient {
     if (this.mockMode) {
       console.log("[ConnexCS] Running in mock mode - no username/password configured");
     }
+  }
+
+  async loadCredentialsFromStorage(storage: { getIntegrationByProvider: (provider: string) => Promise<{ credentials?: unknown; isEnabled?: boolean } | undefined> }): Promise<void> {
+    if (this.credentialsLoaded && !this.mockMode) return;
+    
+    try {
+      const integration = await storage.getIntegrationByProvider("connexcs");
+      if (integration?.credentials && integration.isEnabled) {
+        const creds = integration.credentials as { username?: string; password?: string };
+        if (creds.username && creds.password) {
+          this.config.username = creds.username;
+          this.config.password = creds.password;
+          this.mockMode = false;
+          this.credentialsLoaded = true;
+          console.log("[ConnexCS] Loaded credentials from integrations database");
+        }
+      }
+    } catch (error) {
+      console.error("[ConnexCS] Failed to load credentials from storage:", error);
+    }
+  }
+
+  isConfigured(): boolean {
+    return !this.mockMode;
   }
 
   private async authenticate(): Promise<string> {

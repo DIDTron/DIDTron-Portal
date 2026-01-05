@@ -23,6 +23,7 @@ interface BrevoResponse {
 class BrevoEmailService {
   private config: BrevoConfig;
   private mockMode: boolean;
+  private credentialsLoaded: boolean = false;
 
   constructor() {
     this.config = {
@@ -36,6 +37,27 @@ class BrevoEmailService {
       console.log("[Brevo] Running in mock mode - no API key configured");
     } else {
       console.log("[Brevo] Email service initialized");
+    }
+  }
+
+  async loadCredentialsFromStorage(storage: { getIntegrationByProvider: (provider: string) => Promise<{ credentials?: unknown; isEnabled?: boolean } | undefined> }): Promise<void> {
+    if (this.credentialsLoaded && !this.mockMode) return;
+    
+    try {
+      const integration = await storage.getIntegrationByProvider("brevo");
+      if (integration?.credentials && integration.isEnabled) {
+        const creds = integration.credentials as { api_key?: string; sender_email?: string; sender_name?: string };
+        if (creds.api_key) {
+          this.config.apiKey = creds.api_key;
+          if (creds.sender_email) this.config.senderEmail = creds.sender_email;
+          if (creds.sender_name) this.config.senderName = creds.sender_name;
+          this.mockMode = false;
+          this.credentialsLoaded = true;
+          console.log("[Brevo] Loaded credentials from integrations database");
+        }
+      }
+    } catch (error) {
+      console.error("[Brevo] Failed to load credentials from storage:", error);
     }
   }
 

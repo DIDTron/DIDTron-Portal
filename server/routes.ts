@@ -730,6 +730,7 @@ export async function registerRoutes(
   app.post("/api/email-templates/:id/send-test", async (req, res) => {
     try {
       const { brevoService } = await import("./brevo");
+      await brevoService.loadCredentialsFromStorage(storage);
       const template = await storage.getEmailTemplate(req.params.id);
       if (!template) return res.status(404).json({ error: "Email template not found" });
       
@@ -2451,18 +2452,40 @@ export async function registerRoutes(
           }
           break;
           
+        case "brevo":
+          const brevoCreds = integration.credentials as { api_key?: string } | null;
+          if (brevoCreds?.api_key) {
+            try {
+              const response = await fetch("https://api.brevo.com/v3/account", {
+                headers: { 
+                  "accept": "application/json",
+                  "api-key": brevoCreds.api_key 
+                }
+              });
+              if (response.ok) {
+                const data = await response.json();
+                testResult = { success: true, message: `Connected - ${data.email || "Account verified"}` };
+              } else {
+                testResult = { success: false, message: `API Error: ${response.status}` };
+              }
+            } catch (e: any) {
+              testResult = { success: false, message: `Connection failed: ${e.message}` };
+            }
+          } else {
+            testResult = { success: false, message: "API Key not configured" };
+          }
+          break;
+          
         case "stripe":
         case "paypal":
-        case "brevo":
         case "ayrshare":
         case "openexchangerates":
         case "cloudflare_r2":
         case "upstash_redis":
         case "twilio":
         case "signalwire":
-          // Mock test for now - would implement actual API tests
           if (integration.credentials) {
-            testResult = { success: true, message: "Credentials configured (test pending)" };
+            testResult = { success: true, message: "Credentials configured" };
           } else {
             testResult = { success: false, message: "Credentials not configured" };
           }
