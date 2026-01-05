@@ -41,6 +41,7 @@ type CustomerFormData = {
   groupId: string;
   status: string;
   billingType: string;
+  creditLimit: string;
   billingEmail: string;
   technicalEmail: string;
   country: string;
@@ -57,6 +58,7 @@ export default function CustomersPage() {
     groupId: "",
     status: "pending_approval",
     billingType: "prepaid",
+    creditLimit: "0",
     billingEmail: "",
     technicalEmail: "",
     country: "",
@@ -133,6 +135,7 @@ export default function CustomersPage() {
       groupId: "",
       status: "pending_approval",
       billingType: "prepaid",
+      creditLimit: "0",
       billingEmail: "",
       technicalEmail: "",
       country: "",
@@ -150,6 +153,7 @@ export default function CustomersPage() {
       groupId: customer.groupId || "",
       status: customer.status || "pending_approval",
       billingType: customer.billingType || "prepaid",
+      creditLimit: customer.creditLimit || "0",
       billingEmail: customer.billingEmail || "",
       technicalEmail: customer.technicalEmail || "",
       country: customer.country || "",
@@ -299,6 +303,25 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
+                {formData.billingType === "postpaid" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="creditLimit">Credit Limit ($)</Label>
+                    <Input
+                      id="creditLimit"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.creditLimit}
+                      onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
+                      placeholder="0.00"
+                      data-testid="input-credit-limit"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Maximum amount this customer can spend before payment is required
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="billingEmail">Billing Email</Label>
@@ -388,9 +411,16 @@ export default function CustomersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {customer.billingType || "prepaid"}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant="secondary">
+                          {customer.billingType || "prepaid"}
+                        </Badge>
+                        {customer.billingType === "postpaid" && (
+                          <span className="text-xs text-muted-foreground">
+                            Limit: ${parseFloat(customer.creditLimit || "0").toFixed(2)}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="font-mono">
                       ${parseFloat(customer.balance || "0").toFixed(2)}

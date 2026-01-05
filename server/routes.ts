@@ -217,6 +217,46 @@ export async function registerRoutes(
     }
   });
 
+  // Update logged-in user's customer profile settings
+  app.patch("/api/my/profile", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      // Validate allowed fields with proper types using zod
+      const profileUpdateSchema = z.object({
+        autoTopUpEnabled: z.boolean().optional(),
+        autoTopUpAmount: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
+        autoTopUpThreshold: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
+        displayCurrency: z.string().min(3).max(3).optional(),
+      });
+      
+      const validation = profileUpdateSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid data", details: validation.error.errors });
+      }
+      
+      const updateData = validation.data;
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+      
+      const updated = await storage.updateCustomer(user.customerId, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Profile update error:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
   // Get logged-in user's payments/transactions
   app.get("/api/my/payments", async (req, res) => {
     try {
@@ -1252,8 +1292,12 @@ export async function registerRoutes(
       if (!user?.customerId) {
         return res.status(404).json({ error: "Customer profile not found" });
       }
-      const configs = await storage.getSipTestConfigs(user.customerId);
-      res.json(configs);
+      // Get customer's own configs
+      const customerConfigs = await storage.getSipTestConfigs(user.customerId);
+      // Get shared configs from admin (Smart Sync)
+      const sharedConfigs = await storage.getSharedSipTestConfigs();
+      // Combine and return
+      res.json([...customerConfigs, ...sharedConfigs]);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch SIP test configs" });
     }
@@ -1293,10 +1337,12 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid SIP test config", details: validation.error.errors });
       }
       
+      // Customers cannot create shared configs - force isShared to false
       const config = await storage.createSipTestConfig({
         ...validation.data,
         customerId: user.customerId,
-        createdBy: user.id
+        createdBy: user.id,
+        isShared: false
       });
       res.status(201).json(config);
     } catch (error) {
@@ -1314,10 +1360,12 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Customer profile not found" });
       }
       const config = await storage.getSipTestConfig(req.params.id);
-      if (!config || config.customerId !== user.customerId) {
+      // Block editing shared configs or configs not owned by this customer
+      if (!config || config.isShared || config.customerId !== user.customerId) {
         return res.status(404).json({ error: "SIP test config not found" });
       }
       
+      // Note: isShared is intentionally excluded - customers cannot change this field
       const { name, description, testType, destinations, cliNumber, isAdvancedMode, advancedSettings, alertThresholds, isActive } = req.body;
       const updateData: Record<string, unknown> = {};
       if (name !== undefined) updateData.name = name;
@@ -1347,7 +1395,8 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Customer profile not found" });
       }
       const config = await storage.getSipTestConfig(req.params.id);
-      if (!config || config.customerId !== user.customerId) {
+      // Block deleting shared configs or configs not owned by this customer
+      if (!config || config.isShared || config.customerId !== user.customerId) {
         return res.status(404).json({ error: "SIP test config not found" });
       }
       await storage.deleteSipTestConfig(req.params.id);
@@ -1812,6 +1861,27 @@ export async function registerRoutes(
     }
   });
 
+  // Get webhook delivery logs
+  app.get("/api/my/webhooks/:id/deliveries", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const webhook = await storage.getWebhook(req.params.id);
+      if (!webhook || webhook.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Webhook not found" });
+      }
+      const deliveries = await storage.getWebhookDeliveries(req.params.id);
+      res.json(deliveries);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch webhook deliveries" });
+    }
+  });
+
   // ==================== CUSTOMER API KEYS ====================
   
   app.get("/api/my/api-keys", async (req, res) => {
@@ -2021,6 +2091,91 @@ export async function registerRoutes(
       res.json(referrals);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch referrals" });
+    }
+  });
+
+  // ==================== CURRENCIES & FX RATES ====================
+
+  app.get("/api/admin/currencies", async (req, res) => {
+    try {
+      const currencies = await storage.getCurrencies();
+      res.json(currencies);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch currencies" });
+    }
+  });
+
+  app.post("/api/admin/currencies", async (req, res) => {
+    try {
+      const parsed = insertCurrencySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      const currency = await storage.createCurrency(parsed.data);
+      res.status(201).json(currency);
+    } catch (error) {
+      console.error("Create currency error:", error);
+      res.status(500).json({ error: "Failed to create currency" });
+    }
+  });
+
+  app.patch("/api/admin/currencies/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateCurrency(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Currency not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update currency" });
+    }
+  });
+
+  app.delete("/api/admin/currencies/:id", async (req, res) => {
+    try {
+      await storage.deleteCurrency(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete currency" });
+    }
+  });
+
+  app.get("/api/admin/fx-rates", async (req, res) => {
+    try {
+      const rates = await storage.getFxRates();
+      res.json(rates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch FX rates" });
+    }
+  });
+
+  app.post("/api/admin/fx-rates/refresh", async (req, res) => {
+    try {
+      // In production, this would call Open Exchange Rates API
+      // For now, we'll generate mock rates for enabled currencies
+      const currencies = await storage.getCurrencies();
+      const baseCurrency = "USD";
+      
+      const mockRates: Record<string, number> = {
+        EUR: 0.92, GBP: 0.79, CAD: 1.36, AUD: 1.53, JPY: 149.50,
+        CHF: 0.88, CNY: 7.24, INR: 83.12, MXN: 17.15, BRL: 4.97,
+        SGD: 1.34, HKD: 7.82, NZD: 1.64, SEK: 10.42, NOK: 10.58,
+        DKK: 6.88, ZAR: 18.65, AED: 3.67, SAR: 3.75
+      };
+      
+      for (const currency of currencies) {
+        if (currency.code !== baseCurrency && mockRates[currency.code]) {
+          await storage.createFxRate({
+            baseCurrency,
+            quoteCurrency: currency.code,
+            rate: mockRates[currency.code].toFixed(6),
+            source: "openexchangerates",
+          });
+        }
+      }
+      
+      res.json({ success: true, message: "FX rates refreshed" });
+    } catch (error) {
+      console.error("FX refresh error:", error);
+      res.status(500).json({ error: "Failed to refresh FX rates" });
     }
   });
 

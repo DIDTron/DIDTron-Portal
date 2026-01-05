@@ -48,6 +48,7 @@ import RolesPage from "./roles";
 import AiVoiceAgentsPage from "./ai-voice-agents";
 import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./class4-softswitch";
 import DIDInventoryPage from "./did-inventory";
+import CurrenciesPage from "./currencies";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -77,6 +78,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/kyc": { section: "customers", subItem: "kyc" },
   "/admin/invoices": { section: "billing", subItem: "invoices" },
   "/admin/payments": { section: "billing", subItem: "payments" },
+  "/admin/currencies": { section: "billing", subItem: "currencies" },
   "/admin/referrals": { section: "billing", subItem: "referrals" },
   "/admin/promo-codes": { section: "billing", subItem: "promo-codes" },
   "/admin/bonuses": { section: "billing", subItem: "bonuses" },
@@ -181,6 +183,7 @@ export default function AdminLayout() {
                 <Route path="/admin/kyc" component={KycPage} />
                 <Route path="/admin/invoices" component={InvoicesPage} />
                 <Route path="/admin/payments" component={PaymentsPage} />
+                <Route path="/admin/currencies" component={CurrenciesPage} />
                 <Route path="/admin/referrals" component={ReferralsPage} />
                 <Route path="/admin/promo-codes" component={PromoCodesPage} />
                 <Route path="/admin/bonuses" component={BonusesPage} />

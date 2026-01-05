@@ -60,6 +60,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
     items: [
       { id: "invoices", label: "Invoices", route: "/admin/invoices", icon: FileText },
       { id: "payments", label: "Payments", route: "/admin/payments", icon: CreditCard },
+      { id: "currencies", label: "Currencies", route: "/admin/currencies", icon: Globe },
       { id: "referrals", label: "Referrals", route: "/admin/referrals", icon: Users },
       { id: "promo-codes", label: "Promo Codes", route: "/admin/promo-codes", icon: Gift },
       { id: "bonuses", label: "Bonuses", route: "/admin/bonuses", icon: Gift },

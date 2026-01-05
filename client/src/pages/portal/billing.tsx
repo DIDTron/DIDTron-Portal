@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { 
   CreditCard, DollarSign, TrendingUp, Plus, 
-  ArrowUpRight, Clock, Receipt, Wallet, ArrowDownLeft, Gift, Loader2
+  ArrowUpRight, Clock, Receipt, Wallet, ArrowDownLeft, Gift, Loader2, Zap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -21,9 +22,13 @@ export default function BillingPage() {
   const { toast } = useToast();
   const [showAddFundsDialog, setShowAddFundsDialog] = useState(false);
   const [showPromoDialog, setShowPromoDialog] = useState(false);
+  const [showAutoTopUpDialog, setShowAutoTopUpDialog] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [amount, setAmount] = useState("50");
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [autoTopUpEnabled, setAutoTopUpEnabled] = useState(false);
+  const [autoTopUpAmount, setAutoTopUpAmount] = useState("50");
+  const [autoTopUpThreshold, setAutoTopUpThreshold] = useState("25");
 
   const { data: profile, isLoading: profileLoading } = useQuery<Customer>({
     queryKey: ["/api/my/profile"],
@@ -65,6 +70,35 @@ export default function BillingPage() {
 
   const handleAddFunds = () => {
     addFundsMutation.mutate({ amount: parseFloat(amount), method: paymentMethod });
+  };
+
+  const updateAutoTopUpMutation = useMutation({
+    mutationFn: async (data: { autoTopUpEnabled: boolean; autoTopUpAmount: string; autoTopUpThreshold: string }) => {
+      return await apiRequest("PATCH", "/api/my/profile", data);
+    },
+    onSuccess: () => {
+      toast({ title: "Auto Top-Up Updated", description: autoTopUpEnabled ? "Auto top-up has been enabled" : "Auto top-up settings saved" });
+      queryClient.invalidateQueries({ queryKey: ["/api/my/profile"] });
+      setShowAutoTopUpDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleAutoTopUpSave = () => {
+    updateAutoTopUpMutation.mutate({
+      autoTopUpEnabled,
+      autoTopUpAmount,
+      autoTopUpThreshold,
+    });
+  };
+
+  const openAutoTopUpDialog = () => {
+    setAutoTopUpEnabled(profile?.autoTopUpEnabled || false);
+    setAutoTopUpAmount(profile?.autoTopUpAmount || "50");
+    setAutoTopUpThreshold(profile?.autoTopUpThreshold || "25");
+    setShowAutoTopUpDialog(true);
   };
 
   const balance = parseFloat(profile?.balance || "0");
@@ -325,7 +359,10 @@ export default function BillingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Auto Top-Up</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Auto Top-Up
+          </CardTitle>
           <CardDescription>
             Automatically add funds when your balance gets low
           </CardDescription>
@@ -333,20 +370,122 @@ export default function BillingPage() {
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Auto top-up is {profile?.autoTopUpEnabled ? "enabled" : "disabled"}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium">Auto top-up is {profile?.autoTopUpEnabled ? "enabled" : "disabled"}</p>
+                {profile?.autoTopUpEnabled && (
+                  <Badge variant="default">Active</Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 {profile?.autoTopUpEnabled 
                   ? `Add $${profile?.autoTopUpAmount || 50} when balance falls below $${profile?.autoTopUpThreshold || 25}`
-                  : "Enable to automatically add $50 when balance falls below $25"
+                  : "Enable to never run out of balance"
                 }
               </p>
             </div>
-            <Button variant="outline" data-testid="button-toggle-auto-topup">
+            <Button variant="outline" onClick={openAutoTopUpDialog} data-testid="button-toggle-auto-topup">
               {profile?.autoTopUpEnabled ? "Configure" : "Enable"}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={showAutoTopUpDialog} onOpenChange={setShowAutoTopUpDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Auto Top-Up Settings</DialogTitle>
+            <DialogDescription>
+              Configure automatic balance recharge to never run out of funds
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Enable Auto Top-Up</p>
+                <p className="text-sm text-muted-foreground">Automatically add funds when balance is low</p>
+              </div>
+              <Switch
+                checked={autoTopUpEnabled}
+                onCheckedChange={setAutoTopUpEnabled}
+                data-testid="switch-auto-topup"
+              />
+            </div>
+            {autoTopUpEnabled && (
+              <>
+                <div className="space-y-2">
+                  <Label>Top-Up Amount ($)</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {["25", "50", "100", "250"].map(val => (
+                      <Button
+                        key={val}
+                        variant={autoTopUpAmount === val ? "default" : "outline"}
+                        onClick={() => setAutoTopUpAmount(val)}
+                        data-testid={`button-amount-${val}`}
+                      >
+                        ${val}
+                      </Button>
+                    ))}
+                  </div>
+                  <Input
+                    type="number"
+                    value={autoTopUpAmount}
+                    onChange={(e) => setAutoTopUpAmount(e.target.value)}
+                    placeholder="Custom amount"
+                    className="mt-2"
+                    data-testid="input-auto-topup-amount"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Threshold ($)</Label>
+                  <p className="text-sm text-muted-foreground">Top up when balance falls below this amount</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {["10", "25", "50", "100"].map(val => (
+                      <Button
+                        key={val}
+                        variant={autoTopUpThreshold === val ? "default" : "outline"}
+                        onClick={() => setAutoTopUpThreshold(val)}
+                        data-testid={`button-threshold-${val}`}
+                      >
+                        ${val}
+                      </Button>
+                    ))}
+                  </div>
+                  <Input
+                    type="number"
+                    value={autoTopUpThreshold}
+                    onChange={(e) => setAutoTopUpThreshold(e.target.value)}
+                    placeholder="Custom threshold"
+                    className="mt-2"
+                    data-testid="input-auto-topup-threshold"
+                  />
+                </div>
+                <div className="p-4 bg-muted rounded-md">
+                  <p className="text-sm">
+                    When your balance falls below <span className="font-bold">${autoTopUpThreshold}</span>, 
+                    we will automatically charge your default payment method <span className="font-bold">${autoTopUpAmount}</span>.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAutoTopUpDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAutoTopUpSave} 
+              disabled={updateAutoTopUpMutation.isPending}
+              data-testid="button-save-auto-topup"
+            >
+              {updateAutoTopUpMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
+              ) : (
+                "Save Settings"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

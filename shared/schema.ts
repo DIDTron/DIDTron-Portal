@@ -1040,6 +1040,7 @@ export const currencies = pgTable("currencies", {
   name: text("name").notNull(),
   symbol: text("symbol"),
   decimals: integer("decimals").default(2),
+  markup: decimal("markup", { precision: 5, scale: 2 }).default("0"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -1122,6 +1123,7 @@ export const sipTestConfigs = pgTable("sip_test_configs", {
   advancedSettings: jsonb("advanced_settings"),
   alertThresholds: jsonb("alert_thresholds"),
   isActive: boolean("is_active").default(true),
+  isShared: boolean("is_shared").default(false),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

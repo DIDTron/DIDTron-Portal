@@ -49,6 +49,7 @@ import {
   type DocCategory, type InsertDocCategory,
   type DocArticle, type InsertDocArticle,
   type Webhook, type InsertWebhook,
+  type WebhookDelivery, type InsertWebhookDelivery,
   type CustomerApiKey, type InsertCustomerApiKey
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -283,6 +284,8 @@ export interface IStorage {
   getCurrencies(): Promise<Currency[]>;
   getCurrency(id: string): Promise<Currency | undefined>;
   createCurrency(currency: InsertCurrency): Promise<Currency>;
+  updateCurrency(id: string, data: Partial<InsertCurrency>): Promise<Currency | undefined>;
+  deleteCurrency(id: string): Promise<boolean>;
 
   // FX Rates
   getFxRates(quoteCurrency?: string): Promise<FxRate[]>;
@@ -291,6 +294,7 @@ export interface IStorage {
 
   // SIP Test Configs
   getSipTestConfigs(customerId?: string): Promise<SipTestConfig[]>;
+  getSharedSipTestConfigs(): Promise<SipTestConfig[]>;
   getSipTestConfig(id: string): Promise<SipTestConfig | undefined>;
   createSipTestConfig(config: InsertSipTestConfig): Promise<SipTestConfig>;
   updateSipTestConfig(id: string, data: Partial<InsertSipTestConfig>): Promise<SipTestConfig | undefined>;
@@ -314,6 +318,11 @@ export interface IStorage {
   createWebhook(webhook: InsertWebhook): Promise<Webhook>;
   updateWebhook(id: string, data: Partial<InsertWebhook>): Promise<Webhook | undefined>;
   deleteWebhook(id: string): Promise<boolean>;
+
+  // Webhook Deliveries
+  getWebhookDeliveries(webhookId: string): Promise<WebhookDelivery[]>;
+  createWebhookDelivery(delivery: InsertWebhookDelivery): Promise<WebhookDelivery>;
+  updateWebhookDelivery(id: string, data: Partial<InsertWebhookDelivery>): Promise<WebhookDelivery | undefined>;
 
   // Customer API Keys
   getCustomerApiKeys(customerId: string): Promise<CustomerApiKey[]>;
@@ -1988,11 +1997,24 @@ export class MemStorage implements IStorage {
       name: currency.name,
       symbol: currency.symbol ?? null,
       decimals: currency.decimals ?? 2,
+      markup: currency.markup ?? "0",
       isActive: currency.isActive ?? true,
       createdAt: now
     };
     this.currencies.set(id, c);
     return c;
+  }
+
+  async updateCurrency(id: string, data: Partial<InsertCurrency>): Promise<Currency | undefined> {
+    const existing = this.currencies.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data };
+    this.currencies.set(id, updated);
+    return updated;
+  }
+
+  async deleteCurrency(id: string): Promise<boolean> {
+    return this.currencies.delete(id);
   }
 
   // FX Rates
@@ -2030,6 +2052,10 @@ export class MemStorage implements IStorage {
     const configs = Array.from(this.sipTestConfigs.values());
     if (customerId) return configs.filter(c => c.customerId === customerId);
     return configs;
+  }
+
+  async getSharedSipTestConfigs(): Promise<SipTestConfig[]> {
+    return Array.from(this.sipTestConfigs.values()).filter(c => c.isShared === true);
   }
 
   async getSipTestConfig(id: string): Promise<SipTestConfig | undefined> {
@@ -2203,6 +2229,35 @@ export class MemStorage implements IStorage {
 
   async deleteWebhook(id: string): Promise<boolean> {
     return this.webhooks.delete(id);
+  }
+
+  // Webhook Deliveries
+  private webhookDeliveries = new Map<string, WebhookDelivery>();
+
+  async getWebhookDeliveries(webhookId: string): Promise<WebhookDelivery[]> {
+    return Array.from(this.webhookDeliveries.values())
+      .filter(d => d.webhookId === webhookId)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async createWebhookDelivery(delivery: InsertWebhookDelivery): Promise<WebhookDelivery> {
+    const id = randomUUID();
+    const newDelivery: WebhookDelivery = {
+      ...delivery,
+      id,
+      retryCount: delivery.retryCount || 0,
+      createdAt: new Date(),
+    };
+    this.webhookDeliveries.set(id, newDelivery);
+    return newDelivery;
+  }
+
+  async updateWebhookDelivery(id: string, data: Partial<InsertWebhookDelivery>): Promise<WebhookDelivery | undefined> {
+    const existing = this.webhookDeliveries.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data };
+    this.webhookDeliveries.set(id, updated);
+    return updated;
   }
 
   // Customer API Keys

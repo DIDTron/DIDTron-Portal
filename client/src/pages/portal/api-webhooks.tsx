@@ -14,9 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Plus, Trash2, Copy, Key, Webhook, Eye, EyeOff, 
-  CheckCircle2, XCircle, Loader2, AlertTriangle
+  CheckCircle2, XCircle, Loader2, AlertTriangle, History, ChevronRight
 } from "lucide-react";
-import type { Webhook as WebhookType, CustomerApiKey } from "@shared/schema";
+import type { Webhook as WebhookType, CustomerApiKey, WebhookDelivery } from "@shared/schema";
 
 const WEBHOOK_EVENTS = [
   { value: "call.started", label: "Call Started" },
@@ -37,6 +37,12 @@ export default function ApiWebhooksPage() {
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [newKeyResult, setNewKeyResult] = useState<{ fullKey: string } | null>(null);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  const [selectedWebhookId, setSelectedWebhookId] = useState<string | null>(null);
+
+  const { data: deliveries = [], isLoading: deliveriesLoading, isFetching: deliveriesFetching } = useQuery<WebhookDelivery[]>({
+    queryKey: selectedWebhookId ? ["/api/my/webhooks", selectedWebhookId, "deliveries"] : ["disabled"],
+    enabled: !!selectedWebhookId && activeTab === "delivery-logs",
+  });
 
   const { data: apiKeys = [], isLoading: keysLoading } = useQuery<CustomerApiKey[]>({
     queryKey: ["/api/my/api-keys"],
@@ -136,6 +142,10 @@ export default function ApiWebhooksPage() {
           <TabsTrigger value="webhooks" data-testid="tab-webhooks">
             <Webhook className="h-4 w-4 mr-2" />
             Webhooks
+          </TabsTrigger>
+          <TabsTrigger value="delivery-logs" data-testid="tab-delivery-logs">
+            <History className="h-4 w-4 mr-2" />
+            Delivery Logs
           </TabsTrigger>
         </TabsList>
 
@@ -424,6 +434,109 @@ export default function ApiWebhooksPage() {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="delivery-logs" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Webhook Delivery Logs</CardTitle>
+              <CardDescription>View delivery history and retry failed webhooks</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {webhooks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No webhooks configured</p>
+                  <p className="text-sm">Create a webhook to start seeing delivery logs</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Select Webhook</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {webhooks.map(wh => (
+                        <Button
+                          key={wh.id}
+                          variant={selectedWebhookId === wh.id ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedWebhookId(wh.id)}
+                          data-testid={`button-select-webhook-${wh.id}`}
+                        >
+                          {wh.url.replace(/https?:\/\//, "").slice(0, 30)}
+                          {wh.url.length > 30 ? "..." : ""}
+                          <ChevronRight className="h-3 w-3 ml-1" />
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {selectedWebhookId && (
+                    <div className="mt-4">
+                      {deliveriesLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                        </div>
+                      ) : deliveries.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No deliveries yet</p>
+                          <p className="text-sm">Deliveries will appear here once events are triggered</p>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Event</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Retries</TableHead>
+                              <TableHead>Delivered At</TableHead>
+                              <TableHead>Response</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {deliveries.map(delivery => (
+                              <TableRow key={delivery.id} data-testid={`row-delivery-${delivery.id}`}>
+                                <TableCell>
+                                  <Badge variant="outline">{delivery.event}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {delivery.responseStatus && delivery.responseStatus >= 200 && delivery.responseStatus < 300 ? (
+                                    <Badge variant="default">
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      {delivery.responseStatus}
+                                    </Badge>
+                                  ) : delivery.responseStatus ? (
+                                    <Badge variant="destructive">
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      {delivery.responseStatus}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary">Pending</Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {delivery.retryCount || 0}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm">
+                                  {delivery.deliveredAt 
+                                    ? new Date(delivery.deliveredAt).toLocaleString()
+                                    : "-"
+                                  }
+                                </TableCell>
+                                <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                                  {delivery.responseBody || "-"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>

@@ -18,7 +18,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Play, Plus, Settings, Clock, Activity, CheckCircle2, XCircle, 
   AlertTriangle, Loader2, Phone, Signal, Zap, Timer, BarChart3,
-  Trash2, Edit, RefreshCw, Calendar
+  Trash2, Edit, RefreshCw, Calendar, Cloud
 } from "lucide-react";
 import type { SipTestConfig, SipTestResult, SipTestSchedule } from "@shared/schema";
 
@@ -353,11 +353,19 @@ export default function PortalSipTesterPage() {
                     {configs.map((config) => (
                       <TableRow key={config.id} data-testid={`row-config-${config.id}`}>
                         <TableCell>
-                          <div>
-                            <div className="font-medium">{config.name}</div>
-                            {config.description && (
-                              <div className="text-xs text-muted-foreground">{config.description}</div>
+                          <div className="flex items-start gap-2">
+                            {config.isShared && (
+                              <Cloud className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                             )}
+                            <div>
+                              <div className="font-medium">{config.name}</div>
+                              {config.description && (
+                                <div className="text-xs text-muted-foreground">{config.description}</div>
+                              )}
+                              {config.isShared && (
+                                <Badge variant="secondary" className="text-xs mt-1">Smart Sync</Badge>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -378,14 +386,16 @@ export default function PortalSipTesterPage() {
                             <Button size="icon" variant="ghost" data-testid={`button-run-config-${config.id}`}>
                               <Play className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              onClick={() => deleteConfig.mutate(config.id)}
-                              data-testid={`button-delete-config-${config.id}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {!config.isShared && (
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                onClick={() => deleteConfig.mutate(config.id)}
+                                data-testid={`button-delete-config-${config.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
