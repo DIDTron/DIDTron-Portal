@@ -29,6 +29,8 @@ import ReferralsPage from "./referrals";
 import BonusesPage from "./bonuses";
 import EmailTemplatesPage from "./email-templates";
 import TicketsPage from "./tickets";
+import SocialAccountsPage from "./social-accounts";
+import SocialPostsPage from "./social-posts";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -161,12 +163,8 @@ export default function AdminLayout() {
                 <Route path="/admin/referrals" component={ReferralsPage} />
                 <Route path="/admin/promo-codes" component={PromoCodesPage} />
                 <Route path="/admin/bonuses" component={BonusesPage} />
-                <Route path="/admin/social-accounts">
-                  <PlaceholderPage title="Social Accounts" />
-                </Route>
-                <Route path="/admin/social-posts">
-                  <PlaceholderPage title="Social Posts" />
-                </Route>
+                <Route path="/admin/social-accounts" component={SocialAccountsPage} />
+                <Route path="/admin/social-posts" component={SocialPostsPage} />
                 <Route path="/admin/email-templates" component={EmailTemplatesPage} />
                 <Route path="/admin/metrics">
                   <PlaceholderPage title="Metrics" />
