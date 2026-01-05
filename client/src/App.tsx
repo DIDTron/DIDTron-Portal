@@ -10,6 +10,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import AdminLayout from "@/pages/admin/index";
+import Docs from "@/pages/docs";
 
 function Router() {
   return (
@@ -18,6 +19,9 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/docs" component={Docs} />
+      <Route path="/docs/:category" component={Docs} />
+      <Route path="/docs/:category/:article" component={Docs} />
       <Route path="/admin" component={AdminLayout} />
       <Route path="/admin/:section" component={AdminLayout} />
       <Route path="/admin/:section/:subsection" component={AdminLayout} />
