@@ -29,6 +29,7 @@ import KycDocumentsPage from "./kyc-documents";
 import BillingPage from "./billing";
 import InvoicesPage from "./invoices";
 import TransactionsPage from "./transactions";
+import ReferralsPage from "./referrals";
 import SupportPage from "./support";
 import SettingsPage from "./settings";
 import UsagePage from "./usage";
@@ -65,6 +66,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/billing": { section: "billing", subItem: "balance" },
   "/portal/billing/invoices": { section: "billing", subItem: "invoices" },
   "/portal/billing/transactions": { section: "billing", subItem: "transactions" },
+  "/portal/billing/referrals": { section: "billing", subItem: "referrals" },
   "/portal/billing/export": { section: "billing", subItem: "export" },
   "/portal/support": { section: "support", subItem: "tickets" },
   "/portal/support/new": { section: "support", subItem: "new-ticket" },
@@ -240,6 +242,7 @@ export default function CustomerPortal() {
               <Route path="/portal/billing" component={BillingPage} />
               <Route path="/portal/billing/invoices" component={InvoicesPage} />
               <Route path="/portal/billing/transactions" component={TransactionsPage} />
+              <Route path="/portal/billing/referrals" component={ReferralsPage} />
               <Route path="/portal/billing/export">
                 <PlaceholderPage title="Export CDRs" />
               </Route>

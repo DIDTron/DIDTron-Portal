@@ -328,6 +328,90 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== REFERRAL SYSTEM ====================
+
+  // Get logged-in user's referral info
+  app.get("/api/my/referral", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const customer = await storage.getCustomer(user.customerId);
+      const referrals = await storage.getReferrals(user.customerId);
+      
+      // Generate referral code if not exists
+      let referralCode = customer?.referralCode;
+      if (!referralCode) {
+        referralCode = `DID${user.customerId.substring(0, 8).toUpperCase()}`;
+        await storage.updateCustomer(user.customerId, { referralCode });
+      }
+
+      // Calculate stats
+      const successfulReferrals = referrals.filter(r => r.status === "converted").length;
+      const pendingReferrals = referrals.filter(r => r.status === "pending").length;
+      const totalEarnings = referrals.reduce((sum, r) => sum + parseFloat(r.commission || "0"), 0);
+
+      res.json({
+        referralCode,
+        referralLink: `https://didtron.com/signup?ref=${referralCode}`,
+        stats: {
+          total: referrals.length,
+          successful: successfulReferrals,
+          pending: pendingReferrals,
+          earnings: totalEarnings.toFixed(2),
+        },
+        referrals,
+      });
+    } catch (error) {
+      console.error("Referral fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch referral info" });
+    }
+  });
+
+  // Track referral click
+  app.post("/api/referral/track", async (req, res) => {
+    try {
+      const { code } = req.body;
+      if (!code || typeof code !== "string" || code.length < 3 || code.length > 50) {
+        return res.status(400).json({ error: "Valid referral code required" });
+      }
+
+      // Efficient lookup by referral code
+      const referrer = await storage.getCustomerByReferralCode(code);
+      
+      if (!referrer) {
+        return res.status(404).json({ error: "Invalid referral code" });
+      }
+
+      // Create pending referral record
+      await storage.createReferral({
+        referrerId: referrer.id,
+        referralCode: code,
+        status: "clicked",
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Referral tracking error:", error);
+      res.status(500).json({ error: "Failed to track referral" });
+    }
+  });
+
+  // Admin: Get all referrals
+  app.get("/api/admin/referrals", async (req, res) => {
+    try {
+      const referrals = await storage.getReferrals();
+      res.json(referrals);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch referrals" });
+    }
+  });
+
   // ==================== CUSTOMER CATEGORIES ====================
 
   app.get("/api/categories", async (req, res) => {

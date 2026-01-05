@@ -70,6 +70,7 @@ export interface IStorage {
   // Customers
   getCustomers(categoryId?: string, groupId?: string): Promise<Customer[]>;
   getCustomer(id: string): Promise<Customer | undefined>;
+  getCustomerByReferralCode(code: string): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: string, data: Partial<InsertCustomer>): Promise<Customer | undefined>;
   deleteCustomer(id: string): Promise<boolean>;
@@ -622,6 +623,9 @@ export class MemStorage implements IStorage {
 
   async getCustomer(id: string): Promise<Customer | undefined> {
     return this.customers.get(id);
+  }
+  async getCustomerByReferralCode(code: string): Promise<Customer | undefined> {
+    return Array.from(this.customers.values()).find(c => c.referralCode === code);
   }
 
   async createCustomer(customer: InsertCustomer): Promise<Customer> {
