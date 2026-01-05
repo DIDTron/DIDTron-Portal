@@ -6,7 +6,7 @@ import {
   Globe, Search, FileCheck, CreditCard, Receipt, 
   History, Download, HelpCircle, MessageSquare, BookOpen,
   Settings, User, Shield, Bell, Headphones, Users as UsersIcon,
-  PhoneCall, Bot, Mic, Workflow, Database, Gift
+  PhoneCall, Bot, Mic, Workflow, Database, Gift, Palette
 } from "lucide-react";
 
 interface SecondarySidebarProps {
@@ -85,6 +85,7 @@ const sectionMenus: Record<string, { title: string; items: SidebarItem[] }> = {
     title: "Settings",
     items: [
       { id: "profile", label: "Profile", icon: User, path: "/portal/settings" },
+      { id: "branding", label: "Branding", icon: Palette, path: "/portal/settings/branding" },
       { id: "security", label: "Security", icon: Shield, path: "/portal/settings/security" },
       { id: "notifications", label: "Notifications", icon: Bell, path: "/portal/settings/notifications" },
     ],

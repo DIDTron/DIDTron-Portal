@@ -33,6 +33,7 @@ import ReferralsPage from "./referrals";
 import SupportPage from "./support";
 import SettingsPage from "./settings";
 import UsagePage from "./usage";
+import BrandingPage from "./branding";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -72,6 +73,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/support/new": { section: "support", subItem: "new-ticket" },
   "/portal/support/kb": { section: "support", subItem: "kb" },
   "/portal/settings": { section: "settings", subItem: "profile" },
+  "/portal/settings/branding": { section: "settings", subItem: "branding" },
   "/portal/settings/security": { section: "settings", subItem: "security" },
   "/portal/settings/notifications": { section: "settings", subItem: "notifications" },
 };
@@ -254,6 +256,7 @@ export default function CustomerPortal() {
                 <PlaceholderPage title="Knowledge Base" />
               </Route>
               <Route path="/portal/settings" component={SettingsPage} />
+              <Route path="/portal/settings/branding" component={BrandingPage} />
               <Route path="/portal/settings/security">
                 <PlaceholderPage title="Security Settings" />
               </Route>

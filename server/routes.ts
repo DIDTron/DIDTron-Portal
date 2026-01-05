@@ -410,6 +410,83 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CUSTOMER BRANDING ====================
+
+  // Get customer's branding
+  app.get("/api/my/branding", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const branding = await storage.getTenantBranding(user.customerId);
+      res.json(branding || null);
+    } catch (error) {
+      console.error("Branding fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch branding" });
+    }
+  });
+
+  // Create customer branding
+  app.post("/api/my/branding", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      // Check if branding already exists
+      const existing = await storage.getTenantBranding(user.customerId);
+      if (existing) {
+        return res.status(400).json({ error: "Branding already exists. Use PATCH to update." });
+      }
+
+      const branding = await storage.createTenantBranding({
+        customerId: user.customerId,
+        ...req.body,
+      });
+      res.status(201).json(branding);
+    } catch (error) {
+      console.error("Create branding error:", error);
+      res.status(500).json({ error: "Failed to create branding" });
+    }
+  });
+
+  // Update customer branding
+  app.patch("/api/my/branding", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const existing = await storage.getTenantBranding(user.customerId);
+      if (!existing) {
+        // Auto-create if it doesn't exist
+        const branding = await storage.createTenantBranding({
+          customerId: user.customerId,
+          ...req.body,
+        });
+        return res.json(branding);
+      }
+
+      const updated = await storage.updateTenantBranding(existing.id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update branding error:", error);
+      res.status(500).json({ error: "Failed to update branding" });
+    }
+  });
+
   // ==================== CUSTOMER SUPPORT TICKETS ====================
 
   // Get customer's tickets
