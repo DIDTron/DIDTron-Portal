@@ -243,6 +243,91 @@ export async function registerRoutes(
     }
   });
 
+  // Add funds to logged-in user's account (creates pending payment intent)
+  app.post("/api/my/add-funds", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const customer = await storage.getCustomer(user.customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      
+      const { amount, method } = req.body;
+      const validMethods = ["card", "paypal"];
+      if (!amount || typeof amount !== "number" || amount < 5 || amount > 10000) {
+        return res.status(400).json({ error: "Amount must be between $5 and $10,000" });
+      }
+      if (method && !validMethods.includes(method)) {
+        return res.status(400).json({ error: "Invalid payment method" });
+      }
+
+      // Create pending payment record - balance only credited after webhook confirms
+      const payment = await storage.createPayment({
+        customerId: user.customerId,
+        amount: amount.toFixed(2),
+        paymentMethod: method || "card",
+        status: "pending",
+        description: `Account top-up via ${method || "card"}`,
+      });
+
+      // TODO: Integrate with Stripe/PayPal to create actual payment intent
+      // For now, return the pending payment - webhook will confirm and credit balance
+      res.json({ 
+        success: true, 
+        payment,
+        message: "Payment intent created. Awaiting confirmation.",
+        // In production: include clientSecret for Stripe Elements
+      });
+    } catch (error) {
+      console.error("Add funds error:", error);
+      res.status(500).json({ error: "Failed to initiate payment" });
+    }
+  });
+
+  // Webhook endpoint to confirm payments (called by Stripe/PayPal)
+  app.post("/api/webhooks/payment-confirmed", async (req, res) => {
+    try {
+      // TODO: Verify webhook signature from Stripe/PayPal
+      const { paymentId, transactionId } = req.body;
+      
+      const payment = await storage.getPayment(paymentId);
+      if (!payment || payment.status !== "pending") {
+        return res.status(400).json({ error: "Invalid or already processed payment" });
+      }
+
+      // Update payment status
+      await storage.updatePayment(paymentId, { 
+        status: "completed",
+        transactionId 
+      });
+
+      // Credit customer balance
+      const customer = await storage.getCustomer(payment.customerId);
+      if (customer) {
+        const newBalance = (parseFloat(customer.balance || "0") + parseFloat(payment.amount)).toFixed(2);
+        await storage.updateCustomer(payment.customerId, { balance: newBalance });
+        
+        // Send confirmation email
+        try {
+          await sendPaymentReceivedEmail(payment.customerId, parseFloat(payment.amount), newBalance);
+        } catch (emailErr) {
+          console.error("Failed to send payment email:", emailErr);
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Payment webhook error:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
   // ==================== CUSTOMER CATEGORIES ====================
 
   app.get("/api/categories", async (req, res) => {
