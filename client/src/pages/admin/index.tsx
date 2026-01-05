@@ -35,6 +35,7 @@ import CmsThemesPage from "./cms-themes";
 import CmsPagesPage from "./cms-pages";
 import MediaLibraryPage from "./media-library";
 import DocumentationPage from "./documentation";
+import SipTesterPage from "./sip-tester";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -179,9 +180,7 @@ export default function AdminLayout() {
                 <Route path="/admin/rules">
                   <PlaceholderPage title="Monitoring Rules" />
                 </Route>
-                <Route path="/admin/sip-tester">
-                  <PlaceholderPage title="SIP Tester" />
-                </Route>
+                <Route path="/admin/sip-tester" component={SipTesterPage} />
                 <Route path="/admin/pages" component={CmsPagesPage} />
                 <Route path="/admin/themes" component={CmsThemesPage} />
                 <Route path="/admin/media" component={MediaLibraryPage} />
