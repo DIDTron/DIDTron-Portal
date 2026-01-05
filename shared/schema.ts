@@ -1626,6 +1626,7 @@ export const insertAlertSchema = createInsertSchema(alerts).omit({ id: true, cre
 export const insertCustomerKycSchema = createInsertSchema(customerKyc).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertBonusTypeSchema = createInsertSchema(bonusTypes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, createdAt: true });
 export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id: true, createdAt: true, updatedAt: true });
 
@@ -1685,6 +1686,8 @@ export type InsertBonusType = z.infer<typeof insertBonusTypeSchema>;
 export type BonusType = typeof bonusTypes.$inferSelect;
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
+export type EmailLog = typeof emailLogs.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type InsertCustomerKyc = z.infer<typeof insertCustomerKycSchema>;
 export type CustomerKyc = typeof customerKyc.$inferSelect;

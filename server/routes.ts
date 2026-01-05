@@ -701,6 +701,118 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/email-templates/seed", async (req, res) => {
+    try {
+      const { brevoService, defaultEmailTemplates } = await import("./brevo");
+      const existingTemplates = await storage.getEmailTemplates();
+      const existingSlugs = new Set(existingTemplates.map(t => t.slug));
+      
+      let created = 0;
+      for (const template of defaultEmailTemplates) {
+        if (!existingSlugs.has(template.slug)) {
+          await storage.createEmailTemplate(template);
+          created++;
+        }
+      }
+      
+      res.json({ 
+        message: `Seeded ${created} email templates`,
+        created,
+        skipped: defaultEmailTemplates.length - created,
+        brevoConfigured: brevoService.isConfigured()
+      });
+    } catch (error) {
+      console.error("Failed to seed email templates:", error);
+      res.status(500).json({ error: "Failed to seed email templates" });
+    }
+  });
+
+  app.post("/api/email-templates/:id/send-test", async (req, res) => {
+    try {
+      const { brevoService } = await import("./brevo");
+      const template = await storage.getEmailTemplate(req.params.id);
+      if (!template) return res.status(404).json({ error: "Email template not found" });
+      
+      const { email, variables } = req.body;
+      if (!email) return res.status(400).json({ error: "Email address is required" });
+      
+      const testVariables: Record<string, string> = {
+        firstName: "Test",
+        lastName: "User",
+        email: email,
+        loginUrl: `${req.protocol}://${req.get("host")}/portal`,
+        verificationUrl: `${req.protocol}://${req.get("host")}/verify`,
+        resetUrl: `${req.protocol}://${req.get("host")}/reset`,
+        portalUrl: `${req.protocol}://${req.get("host")}/portal`,
+        topUpUrl: `${req.protocol}://${req.get("host")}/portal/billing`,
+        invoiceUrl: `${req.protocol}://${req.get("host")}/portal/billing/invoices`,
+        resubmitUrl: `${req.protocol}://${req.get("host")}/portal/dids/kyc`,
+        referralUrl: `${req.protocol}://${req.get("host")}/portal/referrals`,
+        currentBalance: "25.00",
+        minimumBalance: "10.00",
+        suggestedAmount: "50.00",
+        amount: "100.00",
+        invoiceNumber: "INV-2024-0001",
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        summary: "Voice termination: $45.00, DIDs: $15.00, PBX: $30.00",
+        paymentMethod: "Visa ending in 4242",
+        transactionId: "txn_test123456",
+        newBalance: "125.00",
+        documentType: "Government ID",
+        approvedDate: new Date().toLocaleDateString(),
+        rejectionReason: "Document expired",
+        aiExplanation: "Please upload a valid, non-expired government-issued photo ID. Ensure all text is clearly visible and the document is not cut off.",
+        referredName: "John Smith",
+        rewardAmount: "25.00",
+        totalEarnings: "150.00",
+        weekRange: "Dec 30, 2024 - Jan 5, 2025",
+        totalCalls: "1,234",
+        totalMinutes: "5,678",
+        totalSpend: "68.14",
+        topDestination: "United States",
+        aiInsights: "Your usage increased by 15% this week. Consider our volume discount for routes to the US to save up to 8% on your top destination.",
+        expiresIn: "24 hours",
+        ...variables,
+      };
+      
+      const result = await brevoService.sendTemplatedEmail(
+        template.htmlContent || "",
+        template.subject,
+        email,
+        "Test User",
+        testVariables,
+        ["test-email"]
+      );
+      
+      if (result.success) {
+        await storage.createEmailLog({
+          templateId: template.id,
+          recipient: email,
+          subject: brevoService.parseTemplate(template.subject, testVariables),
+          status: "sent",
+          provider: "brevo",
+          providerMessageId: result.messageId,
+          sentAt: new Date(),
+        });
+        res.json({ success: true, messageId: result.messageId });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Failed to send test email:", error);
+      res.status(500).json({ error: "Failed to send test email" });
+    }
+  });
+
+  app.get("/api/email-logs", async (req, res) => {
+    try {
+      const logs = await storage.getEmailLogs();
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch email logs" });
+    }
+  });
+
   // ==================== SOCIAL ACCOUNTS ====================
 
   app.get("/api/social-accounts", async (req, res) => {

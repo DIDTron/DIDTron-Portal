@@ -37,8 +37,8 @@ import {
   type Integration, type InsertIntegration,
   type Invoice, type Payment, type PromoCode, type Referral,
   type InsertPayment, type InsertPromoCode,
-  type BonusType, type EmailTemplate,
-  type InsertBonusType, type InsertEmailTemplate,
+  type BonusType, type EmailTemplate, type EmailLog,
+  type InsertBonusType, type InsertEmailTemplate, type InsertEmailLog,
   type SocialAccount, type InsertSocialAccount,
   type SocialPost, type InsertSocialPost,
   type DocCategory, type InsertDocCategory,
@@ -228,6 +228,10 @@ export interface IStorage {
   updateEmailTemplate(id: string, data: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
   deleteEmailTemplate(id: string): Promise<boolean>;
 
+  // Email Logs
+  getEmailLogs(): Promise<EmailLog[]>;
+  createEmailLog(log: InsertEmailLog): Promise<EmailLog>;
+
   // Social Accounts
   getSocialAccounts(): Promise<SocialAccount[]>;
   getSocialAccount(id: string): Promise<SocialAccount | undefined>;
@@ -375,6 +379,7 @@ export class MemStorage implements IStorage {
   private integrations: Map<string, Integration>;
   private bonusTypes: Map<string, BonusType>;
   private emailTemplates: Map<string, EmailTemplate>;
+  private emailLogs: Map<string, EmailLog>;
   private socialAccounts: Map<string, SocialAccount>;
   private socialPosts: Map<string, SocialPost>;
   private docCategories: Map<string, DocCategory>;
@@ -421,6 +426,7 @@ export class MemStorage implements IStorage {
     this.integrations = new Map();
     this.bonusTypes = new Map();
     this.emailTemplates = new Map();
+    this.emailLogs = new Map();
     this.socialAccounts = new Map();
     this.socialPosts = new Map();
     this.docCategories = new Map();
@@ -1613,6 +1619,35 @@ export class MemStorage implements IStorage {
   }
   async deleteEmailTemplate(id: string): Promise<boolean> {
     return this.emailTemplates.delete(id);
+  }
+
+  // Email Logs
+  async getEmailLogs(): Promise<EmailLog[]> {
+    return Array.from(this.emailLogs.values()).sort((a, b) => 
+      (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
+    );
+  }
+  async createEmailLog(log: InsertEmailLog): Promise<EmailLog> {
+    const id = randomUUID();
+    const now = new Date();
+    const newLog: EmailLog = {
+      id,
+      templateId: log.templateId ?? null,
+      customerId: log.customerId ?? null,
+      recipient: log.recipient,
+      subject: log.subject,
+      status: log.status || "pending",
+      provider: log.provider || "brevo",
+      providerMessageId: log.providerMessageId ?? null,
+      errorMessage: log.errorMessage ?? null,
+      sentAt: log.sentAt ?? null,
+      deliveredAt: log.deliveredAt ?? null,
+      openedAt: log.openedAt ?? null,
+      clickedAt: log.clickedAt ?? null,
+      createdAt: now,
+    };
+    this.emailLogs.set(id, newLog);
+    return newLog;
   }
 
   // Social Accounts
