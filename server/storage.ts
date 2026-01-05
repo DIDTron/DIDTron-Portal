@@ -39,7 +39,9 @@ import {
   type BonusType, type EmailTemplate,
   type InsertBonusType, type InsertEmailTemplate,
   type SocialAccount, type InsertSocialAccount,
-  type SocialPost, type InsertSocialPost
+  type SocialPost, type InsertSocialPost,
+  type DocCategory, type InsertDocCategory,
+  type DocArticle, type InsertDocArticle
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -307,6 +309,21 @@ export interface IStorage {
   createIntegration(integration: InsertIntegration): Promise<Integration>;
   updateIntegration(id: string, data: Partial<InsertIntegration>): Promise<Integration | undefined>;
   deleteIntegration(id: string): Promise<boolean>;
+
+  // Documentation Categories
+  getDocCategories(): Promise<DocCategory[]>;
+  getDocCategory(id: string): Promise<DocCategory | undefined>;
+  createDocCategory(category: InsertDocCategory): Promise<DocCategory>;
+  updateDocCategory(id: string, data: Partial<InsertDocCategory>): Promise<DocCategory | undefined>;
+  deleteDocCategory(id: string): Promise<boolean>;
+
+  // Documentation Articles
+  getDocArticles(categoryId?: string): Promise<DocArticle[]>;
+  getDocArticle(id: string): Promise<DocArticle | undefined>;
+  getDocArticleBySlug(categorySlug: string, articleSlug: string): Promise<DocArticle | undefined>;
+  createDocArticle(article: InsertDocArticle): Promise<DocArticle>;
+  updateDocArticle(id: string, data: Partial<InsertDocArticle>): Promise<DocArticle | undefined>;
+  deleteDocArticle(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -350,6 +367,8 @@ export class MemStorage implements IStorage {
   private emailTemplates: Map<string, EmailTemplate>;
   private socialAccounts: Map<string, SocialAccount>;
   private socialPosts: Map<string, SocialPost>;
+  private docCategories: Map<string, DocCategory>;
+  private docArticles: Map<string, DocArticle>;
 
   constructor() {
     this.users = new Map();
@@ -392,6 +411,8 @@ export class MemStorage implements IStorage {
     this.emailTemplates = new Map();
     this.socialAccounts = new Map();
     this.socialPosts = new Map();
+    this.docCategories = new Map();
+    this.docArticles = new Map();
 
     this.seedDefaultData();
   }
@@ -2137,6 +2158,98 @@ export class MemStorage implements IStorage {
 
   async deleteIntegration(id: string): Promise<boolean> {
     return this.integrations.delete(id);
+  }
+
+  // Documentation Categories
+  async getDocCategories(): Promise<DocCategory[]> {
+    return Array.from(this.docCategories.values()).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  }
+
+  async getDocCategory(id: string): Promise<DocCategory | undefined> {
+    return this.docCategories.get(id);
+  }
+
+  async createDocCategory(category: InsertDocCategory): Promise<DocCategory> {
+    const id = randomUUID();
+    const now = new Date();
+    const c: DocCategory = {
+      id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description ?? null,
+      icon: category.icon ?? null,
+      displayOrder: category.displayOrder ?? 0,
+      isPublished: category.isPublished ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.docCategories.set(id, c);
+    return c;
+  }
+
+  async updateDocCategory(id: string, data: Partial<InsertDocCategory>): Promise<DocCategory | undefined> {
+    const category = this.docCategories.get(id);
+    if (!category) return undefined;
+    const updated = { ...category, ...data, updatedAt: new Date() };
+    this.docCategories.set(id, updated);
+    return updated;
+  }
+
+  async deleteDocCategory(id: string): Promise<boolean> {
+    return this.docCategories.delete(id);
+  }
+
+  // Documentation Articles
+  async getDocArticles(categoryId?: string): Promise<DocArticle[]> {
+    const articles = Array.from(this.docArticles.values());
+    const filtered = categoryId ? articles.filter(a => a.categoryId === categoryId) : articles;
+    return filtered.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  }
+
+  async getDocArticle(id: string): Promise<DocArticle | undefined> {
+    return this.docArticles.get(id);
+  }
+
+  async getDocArticleBySlug(categorySlug: string, articleSlug: string): Promise<DocArticle | undefined> {
+    const category = Array.from(this.docCategories.values()).find(c => c.slug === categorySlug);
+    if (!category) return undefined;
+    return Array.from(this.docArticles.values()).find(a => a.categoryId === category.id && a.slug === articleSlug);
+  }
+
+  async createDocArticle(article: InsertDocArticle): Promise<DocArticle> {
+    const id = randomUUID();
+    const now = new Date();
+    const a: DocArticle = {
+      id,
+      categoryId: article.categoryId,
+      title: article.title,
+      slug: article.slug,
+      excerpt: article.excerpt ?? null,
+      content: article.content ?? null,
+      author: article.author ?? null,
+      tags: article.tags ?? null,
+      displayOrder: article.displayOrder ?? 0,
+      isPublished: article.isPublished ?? false,
+      publishedAt: article.publishedAt ?? null,
+      viewCount: article.viewCount ?? 0,
+      helpfulCount: article.helpfulCount ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.docArticles.set(id, a);
+    return a;
+  }
+
+  async updateDocArticle(id: string, data: Partial<InsertDocArticle>): Promise<DocArticle | undefined> {
+    const article = this.docArticles.get(id);
+    if (!article) return undefined;
+    const updated = { ...article, ...data, updatedAt: new Date() };
+    this.docArticles.set(id, updated);
+    return updated;
+  }
+
+  async deleteDocArticle(id: string): Promise<boolean> {
+    return this.docArticles.delete(id);
   }
 }
 
