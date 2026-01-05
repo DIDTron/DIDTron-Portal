@@ -47,6 +47,7 @@ import MonitoringRulesPage from "./monitoring-rules";
 import RolesPage from "./roles";
 import AiVoiceAgentsPage from "./ai-voice-agents";
 import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./class4-softswitch";
+import DIDInventoryPage from "./did-inventory";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -69,6 +70,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/routes": { section: "voip", subItem: "routes" },
   "/admin/did-countries": { section: "voip", subItem: "did-countries" },
   "/admin/did-providers": { section: "voip", subItem: "did-providers" },
+  "/admin/did-inventory": { section: "voip", subItem: "did-inventory" },
   "/admin/customers": { section: "customers", subItem: "customers" },
   "/admin/categories": { section: "customers", subItem: "categories" },
   "/admin/groups": { section: "customers", subItem: "groups" },
@@ -172,6 +174,7 @@ export default function AdminLayout() {
                 <Route path="/admin/routes" component={RoutesPage} />
                 <Route path="/admin/did-countries" component={DIDCountriesPage} />
                 <Route path="/admin/did-providers" component={DIDProvidersPage} />
+                <Route path="/admin/did-inventory" component={DIDInventoryPage} />
                 <Route path="/admin/customers" component={CustomersPage} />
                 <Route path="/admin/categories" component={CategoriesPage} />
                 <Route path="/admin/groups" component={GroupsPage} />

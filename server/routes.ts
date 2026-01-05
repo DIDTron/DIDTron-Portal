@@ -42,7 +42,8 @@ import {
   insertPromoCodeSchema,
   insertEmailTemplateSchema,
   insertSocialAccountSchema,
-  insertSocialPostSchema
+  insertSocialPostSchema,
+  insertDidSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -3132,6 +3133,51 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete DID provider" });
+    }
+  });
+
+  // ==================== DID INVENTORY ====================
+
+  app.get("/api/dids", async (req, res) => {
+    try {
+      const customerId = req.query.customerId as string | undefined;
+      const dids = await storage.getDids(customerId);
+      res.json(dids);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch DIDs" });
+    }
+  });
+
+  app.get("/api/dids/:id", async (req, res) => {
+    try {
+      const did = await storage.getDid(req.params.id);
+      if (!did) return res.status(404).json({ error: "DID not found" });
+      res.json(did);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch DID" });
+    }
+  });
+
+  app.post("/api/dids", async (req, res) => {
+    try {
+      const parsed = insertDidSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid DID data", details: parsed.error.issues });
+      }
+      const did = await storage.createDid(parsed.data);
+      res.status(201).json(did);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create DID" });
+    }
+  });
+
+  app.patch("/api/dids/:id", async (req, res) => {
+    try {
+      const did = await storage.updateDid(req.params.id, req.body);
+      if (!did) return res.status(404).json({ error: "DID not found" });
+      res.json(did);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update DID" });
     }
   });
 

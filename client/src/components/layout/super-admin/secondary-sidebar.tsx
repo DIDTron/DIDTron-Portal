@@ -43,6 +43,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "routes", label: "Routes", route: "/admin/routes", icon: RouteIcon },
       { id: "did-countries", label: "DID Countries", route: "/admin/did-countries", icon: Globe },
       { id: "did-providers", label: "DID Providers", route: "/admin/did-providers", icon: Building },
+      { id: "did-inventory", label: "DID Inventory", route: "/admin/did-inventory", icon: Phone },
     ],
   },
   customers: {
