@@ -224,6 +224,7 @@ export interface IStorage {
   // Email Templates
   getEmailTemplates(): Promise<EmailTemplate[]>;
   getEmailTemplate(id: string): Promise<EmailTemplate | undefined>;
+  getEmailTemplateBySlug(slug: string): Promise<EmailTemplate | undefined>;
   createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
   updateEmailTemplate(id: string, data: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
   deleteEmailTemplate(id: string): Promise<boolean>;
@@ -1590,6 +1591,9 @@ export class MemStorage implements IStorage {
   }
   async getEmailTemplate(id: string): Promise<EmailTemplate | undefined> {
     return this.emailTemplates.get(id);
+  }
+  async getEmailTemplateBySlug(slug: string): Promise<EmailTemplate | undefined> {
+    return Array.from(this.emailTemplates.values()).find(t => t.slug === slug);
   }
   async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
     const id = randomUUID();

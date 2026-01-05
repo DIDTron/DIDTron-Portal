@@ -699,3 +699,125 @@ export const defaultEmailTemplates = [
     isActive: true,
   },
 ];
+
+// Email trigger helper functions
+interface EmailTriggerStorage {
+  getEmailTemplateBySlug: (slug: string) => Promise<{ subject: string; htmlContent: string } | undefined>;
+  getIntegrationByProvider: (provider: string) => Promise<{ credentials?: unknown; isEnabled?: boolean | null } | undefined>;
+}
+
+export async function sendWelcomeEmail(
+  storage: EmailTriggerStorage,
+  params: { email: string; firstName: string; lastName: string; loginUrl: string }
+): Promise<BrevoResponse> {
+  await brevoService.loadCredentialsFromStorage(storage);
+  const template = await storage.getEmailTemplateBySlug("welcome");
+  if (!template) {
+    const defaultTemplate = defaultEmailTemplates.find(t => t.slug === "welcome");
+    if (!defaultTemplate) return { success: false, error: "Template not found" };
+    return brevoService.sendTemplatedEmail(
+      defaultTemplate.htmlContent,
+      defaultTemplate.subject,
+      params.email,
+      `${params.firstName} ${params.lastName}`,
+      { firstName: params.firstName, lastName: params.lastName, email: params.email, loginUrl: params.loginUrl },
+      ["welcome", "onboarding"]
+    );
+  }
+  return brevoService.sendTemplatedEmail(
+    template.htmlContent,
+    template.subject,
+    params.email,
+    `${params.firstName} ${params.lastName}`,
+    { firstName: params.firstName, lastName: params.lastName, email: params.email, loginUrl: params.loginUrl },
+    ["welcome", "onboarding"]
+  );
+}
+
+export async function sendLowBalanceAlert(
+  storage: EmailTriggerStorage,
+  params: { email: string; firstName: string; currentBalance: string; minimumBalance: string; topUpUrl: string; suggestedAmount: string }
+): Promise<BrevoResponse> {
+  await brevoService.loadCredentialsFromStorage(storage);
+  const template = await storage.getEmailTemplateBySlug("low-balance");
+  const html = template?.htmlContent || defaultEmailTemplates.find(t => t.slug === "low-balance")?.htmlContent || "";
+  const subject = template?.subject || defaultEmailTemplates.find(t => t.slug === "low-balance")?.subject || "";
+  return brevoService.sendTemplatedEmail(html, subject, params.email, params.firstName, params, ["billing", "alert"]);
+}
+
+export async function sendPaymentReceived(
+  storage: EmailTriggerStorage,
+  params: { email: string; firstName: string; amount: string; paymentMethod: string; transactionId: string; newBalance: string }
+): Promise<BrevoResponse> {
+  await brevoService.loadCredentialsFromStorage(storage);
+  const template = await storage.getEmailTemplateBySlug("payment-received");
+  const html = template?.htmlContent || defaultEmailTemplates.find(t => t.slug === "payment-received")?.htmlContent || "";
+  const subject = template?.subject || defaultEmailTemplates.find(t => t.slug === "payment-received")?.subject || "";
+  return brevoService.sendTemplatedEmail(html, subject, params.email, params.firstName, params, ["billing", "payment"]);
+}
+
+export async function sendInvoiceReady(
+  storage: EmailTriggerStorage,
+  params: { email: string; firstName: string; invoiceNumber: string; amount: string; dueDate: string; invoiceUrl: string; summary: string }
+): Promise<BrevoResponse> {
+  await brevoService.loadCredentialsFromStorage(storage);
+  const template = await storage.getEmailTemplateBySlug("invoice-ready");
+  const html = template?.htmlContent || defaultEmailTemplates.find(t => t.slug === "invoice-ready")?.htmlContent || "";
+  const subject = template?.subject || defaultEmailTemplates.find(t => t.slug === "invoice-ready")?.subject || "";
+  return brevoService.sendTemplatedEmail(html, subject, params.email, params.firstName, params, ["billing", "invoice"]);
+}
+
+export async function sendKycApproved(
+  storage: EmailTriggerStorage,
+  params: { email: string; firstName: string; documentType: string; approvedDate: string; portalUrl: string }
+): Promise<BrevoResponse> {
+  await brevoService.loadCredentialsFromStorage(storage);
+  const template = await storage.getEmailTemplateBySlug("kyc-approved");
+  const html = template?.htmlContent || defaultEmailTemplates.find(t => t.slug === "kyc-approved")?.htmlContent || "";
+  const subject = template?.subject || defaultEmailTemplates.find(t => t.slug === "kyc-approved")?.subject || "";
+  return brevoService.sendTemplatedEmail(html, subject, params.email, params.firstName, params, ["compliance", "kyc"]);
+}
+
+export async function sendKycRejected(
+  storage: EmailTriggerStorage,
+  params: { email: string; firstName: string; documentType: string; rejectionReason: string; aiExplanation: string; resubmitUrl: string }
+): Promise<BrevoResponse> {
+  await brevoService.loadCredentialsFromStorage(storage);
+  const template = await storage.getEmailTemplateBySlug("kyc-rejected");
+  const html = template?.htmlContent || defaultEmailTemplates.find(t => t.slug === "kyc-rejected")?.htmlContent || "";
+  const subject = template?.subject || defaultEmailTemplates.find(t => t.slug === "kyc-rejected")?.subject || "";
+  return brevoService.sendTemplatedEmail(html, subject, params.email, params.firstName, params, ["compliance", "kyc"]);
+}
+
+export async function sendReferralReward(
+  storage: EmailTriggerStorage,
+  params: { email: string; firstName: string; referredName: string; rewardAmount: string; totalEarnings: string; referralUrl: string }
+): Promise<BrevoResponse> {
+  await brevoService.loadCredentialsFromStorage(storage);
+  const template = await storage.getEmailTemplateBySlug("referral-reward");
+  const html = template?.htmlContent || defaultEmailTemplates.find(t => t.slug === "referral-reward")?.htmlContent || "";
+  const subject = template?.subject || defaultEmailTemplates.find(t => t.slug === "referral-reward")?.subject || "";
+  return brevoService.sendTemplatedEmail(html, subject, params.email, params.firstName, params, ["referral", "reward"]);
+}
+
+export async function sendPasswordReset(
+  storage: EmailTriggerStorage,
+  params: { email: string; firstName: string; resetUrl: string; expiresIn: string }
+): Promise<BrevoResponse> {
+  await brevoService.loadCredentialsFromStorage(storage);
+  const template = await storage.getEmailTemplateBySlug("password-reset");
+  const html = template?.htmlContent || defaultEmailTemplates.find(t => t.slug === "password-reset")?.htmlContent || "";
+  const subject = template?.subject || defaultEmailTemplates.find(t => t.slug === "password-reset")?.subject || "";
+  return brevoService.sendTemplatedEmail(html, subject, params.email, params.firstName, params, ["security", "password"]);
+}
+
+export async function sendWeeklySummary(
+  storage: EmailTriggerStorage,
+  params: { email: string; firstName: string; weekRange: string; totalCalls: string; totalMinutes: string; totalSpend: string; topDestination: string; aiInsights: string; portalUrl: string }
+): Promise<BrevoResponse> {
+  await brevoService.loadCredentialsFromStorage(storage);
+  const template = await storage.getEmailTemplateBySlug("weekly-summary");
+  const html = template?.htmlContent || defaultEmailTemplates.find(t => t.slug === "weekly-summary")?.htmlContent || "";
+  const subject = template?.subject || defaultEmailTemplates.find(t => t.slug === "weekly-summary")?.subject || "";
+  return brevoService.sendTemplatedEmail(html, subject, params.email, params.firstName, params, ["reports", "weekly"]);
+}

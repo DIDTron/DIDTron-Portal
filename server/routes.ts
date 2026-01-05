@@ -5,6 +5,7 @@ import { createUser, validateLogin, sanitizeUser } from "./auth";
 import { aiService } from "./ai-service";
 import { connexcs } from "./connexcs";
 import { auditService } from "./audit";
+import { sendWelcomeEmail } from "./brevo";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { 
@@ -115,6 +116,19 @@ export async function registerRoutes(
         } catch (syncError) {
           console.error("[ConnexCS] Auto-sync registration failed:", syncError);
         }
+        
+        // Send welcome email
+        try {
+          await sendWelcomeEmail(storage, {
+            email: parsed.data.email,
+            firstName: parsed.data.firstName || parsed.data.email.split('@')[0],
+            lastName: parsed.data.lastName || '',
+            loginUrl: `${req.protocol}://${req.get('host')}/portal`,
+          });
+          console.log(`[Brevo] Welcome email sent to ${parsed.data.email}`);
+        } catch (emailError) {
+          console.error("[Brevo] Failed to send welcome email:", emailError);
+        }
       } catch (customerError) {
         console.error("Failed to create customer record:", customerError);
       }
@@ -171,6 +185,61 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Auth check error:", error);
       res.status(500).json({ error: "Failed to check authentication" });
+    }
+  });
+
+  // Get logged-in user's customer profile with balance
+  app.get("/api/my/profile", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const customer = await storage.getCustomer(user.customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      res.json(customer);
+    } catch (error) {
+      console.error("Profile fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  // Get logged-in user's payments/transactions
+  app.get("/api/my/payments", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.json([]);
+      }
+      const payments = await storage.getPayments(user.customerId);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
+  // Get logged-in user's invoices
+  app.get("/api/my/invoices", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.json([]);
+      }
+      const invoices = await storage.getInvoices(user.customerId);
+      res.json(invoices);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch invoices" });
     }
   });
 

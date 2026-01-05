@@ -6,12 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   CreditCard, DollarSign, TrendingUp, Plus, 
-  ArrowUpRight, Clock, Receipt, Wallet
+  ArrowUpRight, Clock, Receipt, Wallet, ArrowDownLeft
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Customer, Payment } from "@shared/schema";
 
 export default function BillingPage() {
   const { toast } = useToast();
@@ -19,16 +23,42 @@ export default function BillingPage() {
   const [amount, setAmount] = useState("50");
   const [paymentMethod, setPaymentMethod] = useState("card");
 
+  const { data: profile, isLoading: profileLoading } = useQuery<Customer>({
+    queryKey: ["/api/my/profile"],
+  });
+
+  const { data: payments = [], isLoading: paymentsLoading } = useQuery<Payment[]>({
+    queryKey: ["/api/my/payments"],
+  });
+
+  const addFundsMutation = useMutation({
+    mutationFn: async (data: { amount: number; method: string }) => {
+      return await apiRequest("POST", "/api/my/add-funds", data);
+    },
+    onSuccess: () => {
+      toast({ title: "Payment Processing", description: `Adding $${amount} to your balance...` });
+      queryClient.invalidateQueries({ queryKey: ["/api/my/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my/payments"] });
+      setShowAddFundsDialog(false);
+    },
+    onError: () => {
+      toast({ title: "Payment Failed", description: "Unable to process payment. Please try again.", variant: "destructive" });
+    },
+  });
+
   const handleAddFunds = () => {
-    toast({ title: "Payment Processing", description: `Adding $${amount} to your balance...` });
-    setShowAddFundsDialog(false);
+    addFundsMutation.mutate({ amount: parseFloat(amount), method: paymentMethod });
   };
 
-  const recentTransactions = [
-    { type: "credit", description: "Balance Top-up", amount: 100, date: new Date(Date.now() - 86400000) },
-    { type: "debit", description: "Voice Usage - Jan 4", amount: -24.56, date: new Date(Date.now() - 172800000) },
-    { type: "debit", description: "DID Renewal - +1 555 123 4567", amount: -1.50, date: new Date(Date.now() - 259200000) },
-  ];
+  const balance = parseFloat(profile?.balance || "0");
+  const recentPayments = payments.slice(0, 5);
+
+  const estimateDaysRemaining = () => {
+    const avgDailySpend = 16.7;
+    if (avgDailySpend <= 0) return "N/A";
+    const days = Math.floor(balance / avgDailySpend);
+    return `${days} days`;
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -91,8 +121,8 @@ export default function BillingPage() {
               <Button variant="outline" onClick={() => setShowAddFundsDialog(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddFunds} data-testid="button-confirm-payment">
-                Pay ${amount}
+              <Button onClick={handleAddFunds} disabled={addFundsMutation.isPending} data-testid="button-confirm-payment">
+                {addFundsMutation.isPending ? "Processing..." : `Pay $${amount}`}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -107,7 +137,11 @@ export default function BillingPage() {
                 <Wallet className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">$1,245.50</p>
+                {profileLoading ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  <p className="text-2xl font-bold" data-testid="text-balance">${balance.toFixed(2)}</p>
+                )}
                 <p className="text-sm text-muted-foreground">Current Balance</p>
               </div>
             </div>
@@ -120,7 +154,7 @@ export default function BillingPage() {
                 <TrendingUp className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">$456.78</p>
+                <p className="text-2xl font-bold" data-testid="text-monthly-usage">$0.00</p>
                 <p className="text-sm text-muted-foreground">This Month Usage</p>
               </div>
             </div>
@@ -133,7 +167,7 @@ export default function BillingPage() {
                 <Receipt className="h-6 w-6 text-accent-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">$12.50</p>
+                <p className="text-2xl font-bold">$0.00</p>
                 <p className="text-sm text-muted-foreground">DID Renewals Due</p>
               </div>
             </div>
@@ -146,7 +180,7 @@ export default function BillingPage() {
                 <Clock className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">27 days</p>
+                <p className="text-2xl font-bold" data-testid="text-balance-life">{estimateDaysRemaining()}</p>
                 <p className="text-sm text-muted-foreground">Est. Balance Life</p>
               </div>
             </div>
@@ -160,31 +194,44 @@ export default function BillingPage() {
             <CardTitle>Recent Transactions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentTransactions.map((tx, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-md bg-muted/50" data-testid={`tx-${index}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-md ${tx.type === "credit" ? "bg-primary/10" : "bg-destructive/10"}`}>
-                      {tx.type === "credit" ? (
-                        <ArrowUpRight className="h-4 w-4 text-primary" />
-                      ) : (
-                        <DollarSign className="h-4 w-4 text-destructive" />
-                      )}
+            {paymentsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : recentPayments.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No transactions yet</p>
+            ) : (
+              <div className="space-y-3">
+                {recentPayments.map((payment, index) => {
+                  const isCredit = payment.status === "completed" && parseFloat(payment.amount || "0") > 0;
+                  return (
+                    <div key={payment.id} className="flex items-center justify-between p-3 rounded-md bg-muted/50" data-testid={`tx-${index}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-md ${isCredit ? "bg-primary/10" : "bg-destructive/10"}`}>
+                          {isCredit ? (
+                            <ArrowUpRight className="h-4 w-4 text-primary" />
+                          ) : (
+                            <ArrowDownLeft className="h-4 w-4 text-destructive" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{payment.description || payment.paymentMethod || "Payment"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`font-mono ${isCredit ? "text-primary" : ""}`}>
+                        {isCredit ? "+" : "-"}${Math.abs(parseFloat(payment.amount || "0")).toFixed(2)}
+                      </span>
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">{tx.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {tx.date.toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`font-mono ${tx.amount > 0 ? "text-primary" : ""}`}>
-                    {tx.amount > 0 ? "+" : ""}${Math.abs(tx.amount).toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <Link href="/portal/billing/transactions">
+                  );
+                })}
+              </div>
+            )}
+            <Link href="/portal/transactions">
               <Button variant="ghost" className="w-full mt-4">
                 View All Transactions
               </Button>
@@ -202,11 +249,10 @@ export default function BillingPage() {
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-5 w-5" />
                   <div>
-                    <p className="font-medium text-sm">Visa ending in 4242</p>
-                    <p className="text-xs text-muted-foreground">Expires 12/26</p>
+                    <p className="font-medium text-sm">No cards on file</p>
+                    <p className="text-xs text-muted-foreground">Add a payment method</p>
                   </div>
                 </div>
-                <Badge variant="default">Default</Badge>
               </div>
             </div>
             <Button variant="outline" className="w-full mt-4" data-testid="button-add-card">
@@ -227,13 +273,16 @@ export default function BillingPage() {
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Auto top-up is disabled</p>
+              <p className="font-medium">Auto top-up is {profile?.autoTopUpEnabled ? "enabled" : "disabled"}</p>
               <p className="text-sm text-muted-foreground">
-                Enable to automatically add $50 when balance falls below $25
+                {profile?.autoTopUpEnabled 
+                  ? `Add $${profile?.autoTopUpAmount || 50} when balance falls below $${profile?.autoTopUpThreshold || 25}`
+                  : "Enable to automatically add $50 when balance falls below $25"
+                }
               </p>
             </div>
-            <Button variant="outline" data-testid="button-enable-auto-topup">
-              Enable
+            <Button variant="outline" data-testid="button-toggle-auto-topup">
+              {profile?.autoTopUpEnabled ? "Configure" : "Enable"}
             </Button>
           </div>
         </CardContent>
