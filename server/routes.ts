@@ -1917,6 +1917,44 @@ export async function registerRoutes(
 
   // ==================== CUSTOMER PROMO CODES ====================
   
+  app.get("/api/my/promo-codes", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      // Return mock redeemed codes for the customer
+      res.json([
+        { id: "1", code: "WELCOME20", description: "Welcome bonus", discountType: "fixed", discountValue: 20, status: "used", redeemedAt: "2025-12-15" },
+        { id: "2", code: "HOLIDAY10", description: "Holiday special", discountType: "percentage", discountValue: 10, status: "active", redeemedAt: "2026-01-02", expiresAt: "2026-02-01" },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch promo codes" });
+    }
+  });
+
+  app.get("/api/my/bonuses", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      // Return mock available bonuses
+      res.json([
+        { id: "1", name: "Volume Bonus", description: "Get 5% back when you spend $500+ this month", type: "percentage", value: 5, minSpend: 500 },
+        { id: "2", name: "Deposit Match", description: "50% match on deposits over $100", type: "percentage", value: 50, expiresAt: "2026-02-28" },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bonuses" });
+    }
+  });
+  
   app.post("/api/my/promo-codes/redeem", async (req, res) => {
     try {
       if (!req.session.userId) {

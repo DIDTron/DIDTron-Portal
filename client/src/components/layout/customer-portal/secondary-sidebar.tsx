@@ -8,7 +8,7 @@ import {
   Settings, User, Shield, Bell, Headphones, Users as UsersIcon,
   PhoneCall, Bot, Mic, Workflow, Database, Gift, Palette, ListOrdered,
   Zap, Clock, TestTube, Key, Webhook, Network, FileSpreadsheet, 
-  TrendingDown, Calculator
+  TrendingDown, Calculator, Tag
 } from "lucide-react";
 
 interface SecondarySidebarProps {
@@ -98,6 +98,7 @@ const sectionMenus: Record<string, { title: string; items: SidebarItem[] }> = {
       { id: "invoices", label: "Invoices", icon: Receipt, path: "/portal/billing/invoices" },
       { id: "transactions", label: "Transactions", icon: History, path: "/portal/billing/transactions" },
       { id: "referrals", label: "Referrals", icon: Gift, path: "/portal/billing/referrals" },
+      { id: "promo", label: "Promo Codes", icon: Tag, path: "/portal/billing/promo" },
       { id: "export", label: "Export CDRs", icon: Download, path: "/portal/billing/export" },
     ],
   },

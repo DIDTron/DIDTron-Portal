@@ -47,6 +47,7 @@ import NewTicketPage from "./new-ticket";
 import KnowledgeBasePage from "./knowledge-base";
 import SecuritySettingsPage from "./security-settings";
 import NotificationSettingsPage from "./notification-settings";
+import PromoCodesPage from "./promo-codes";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -93,6 +94,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/billing/invoices": { section: "billing", subItem: "invoices" },
   "/portal/billing/transactions": { section: "billing", subItem: "transactions" },
   "/portal/billing/referrals": { section: "billing", subItem: "referrals" },
+  "/portal/billing/promo": { section: "billing", subItem: "promo" },
   "/portal/billing/export": { section: "billing", subItem: "export" },
   "/portal/support": { section: "support", subItem: "tickets" },
   "/portal/support/new": { section: "support", subItem: "new-ticket" },
@@ -266,6 +268,7 @@ export default function CustomerPortal() {
               <Route path="/portal/billing/invoices" component={InvoicesPage} />
               <Route path="/portal/billing/transactions" component={TransactionsPage} />
               <Route path="/portal/billing/referrals" component={ReferralsPage} />
+              <Route path="/portal/billing/promo" component={PromoCodesPage} />
               <Route path="/portal/billing/export" component={CdrExportPage} />
               <Route path="/portal/support" component={SupportPage} />
               <Route path="/portal/support/new" component={NewTicketPage} />
