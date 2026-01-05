@@ -30,6 +30,7 @@ import {
   insertFxRateSchema,
   insertAiVoiceAgentSchema,
   insertCmsThemeSchema,
+  insertCmsPageSchema,
   insertTenantBrandingSchema,
   insertIntegrationSchema,
   insertBonusTypeSchema,
@@ -1619,6 +1620,68 @@ export async function registerRoutes(
       res.json(theme);
     } catch (error) {
       res.status(500).json({ error: "Failed to update CMS theme" });
+    }
+  });
+
+  app.delete("/api/cms/themes/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteCmsTheme(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Theme not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete CMS theme" });
+    }
+  });
+
+  // ==================== CMS PAGES ====================
+
+  app.get("/api/cms/pages", async (req, res) => {
+    try {
+      const pages = await storage.getCmsPages();
+      res.json(pages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch CMS pages" });
+    }
+  });
+
+  app.get("/api/cms/pages/:id", async (req, res) => {
+    try {
+      const page = await storage.getCmsPage(req.params.id);
+      if (!page) return res.status(404).json({ error: "Page not found" });
+      res.json(page);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch CMS page" });
+    }
+  });
+
+  app.post("/api/cms/pages", async (req, res) => {
+    try {
+      const parsed = insertCmsPageSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const page = await storage.createCmsPage(parsed.data);
+      res.status(201).json(page);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create CMS page" });
+    }
+  });
+
+  app.patch("/api/cms/pages/:id", async (req, res) => {
+    try {
+      const page = await storage.updateCmsPage(req.params.id, req.body);
+      if (!page) return res.status(404).json({ error: "Page not found" });
+      res.json(page);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update CMS page" });
+    }
+  });
+
+  app.delete("/api/cms/pages/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteCmsPage(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Page not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete CMS page" });
     }
   });
 

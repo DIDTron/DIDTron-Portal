@@ -30,6 +30,7 @@ import {
   type Class4Carrier, type InsertClass4Carrier,
   type AiVoiceAgent, type InsertAiVoiceAgent,
   type CmsTheme, type InsertCmsTheme,
+  type CmsPage, type InsertCmsPage,
   type TenantBranding, type InsertTenantBranding,
   type Integration, type InsertIntegration,
   type Invoice, type Payment, type PromoCode, type Referral,
@@ -284,6 +285,14 @@ export interface IStorage {
   getCmsTheme(id: string): Promise<CmsTheme | undefined>;
   createCmsTheme(theme: InsertCmsTheme): Promise<CmsTheme>;
   updateCmsTheme(id: string, data: Partial<InsertCmsTheme>): Promise<CmsTheme | undefined>;
+  deleteCmsTheme(id: string): Promise<boolean>;
+
+  // CMS Pages
+  getCmsPages(): Promise<CmsPage[]>;
+  getCmsPage(id: string): Promise<CmsPage | undefined>;
+  createCmsPage(page: InsertCmsPage): Promise<CmsPage>;
+  updateCmsPage(id: string, data: Partial<InsertCmsPage>): Promise<CmsPage | undefined>;
+  deleteCmsPage(id: string): Promise<boolean>;
 
   // Tenant Branding
   getTenantBranding(customerId: string): Promise<TenantBranding | undefined>;
@@ -333,6 +342,7 @@ export class MemStorage implements IStorage {
   private class4Carriers: Map<string, Class4Carrier>;
   private aiVoiceAgents: Map<string, AiVoiceAgent>;
   private cmsThemes: Map<string, CmsTheme>;
+  private cmsPages: Map<string, CmsPage>;
   private tenantBrandings: Map<string, TenantBranding>;
   private integrations: Map<string, Integration>;
   private bonusTypes: Map<string, BonusType>;
@@ -374,6 +384,7 @@ export class MemStorage implements IStorage {
     this.class4Carriers = new Map();
     this.aiVoiceAgents = new Map();
     this.cmsThemes = new Map();
+    this.cmsPages = new Map();
     this.tenantBrandings = new Map();
     this.integrations = new Map();
     this.bonusTypes = new Map();
@@ -1962,6 +1973,45 @@ export class MemStorage implements IStorage {
     const updated = { ...theme, ...data, updatedAt: new Date() };
     this.cmsThemes.set(id, updated);
     return updated;
+  }
+  async deleteCmsTheme(id: string): Promise<boolean> {
+    return this.cmsThemes.delete(id);
+  }
+
+  // CMS Pages
+  async getCmsPages(): Promise<CmsPage[]> {
+    return Array.from(this.cmsPages.values());
+  }
+  async getCmsPage(id: string): Promise<CmsPage | undefined> {
+    return this.cmsPages.get(id);
+  }
+  async createCmsPage(page: InsertCmsPage): Promise<CmsPage> {
+    const id = randomUUID();
+    const now = new Date();
+    const newPage: CmsPage = {
+      id,
+      title: page.title,
+      slug: page.slug,
+      content: page.content ?? null,
+      metaTitle: page.metaTitle ?? null,
+      metaDescription: page.metaDescription ?? null,
+      status: page.status || "draft",
+      publishedAt: page.publishedAt ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.cmsPages.set(id, newPage);
+    return newPage;
+  }
+  async updateCmsPage(id: string, data: Partial<InsertCmsPage>): Promise<CmsPage | undefined> {
+    const page = this.cmsPages.get(id);
+    if (!page) return undefined;
+    const updated = { ...page, ...data, updatedAt: new Date() };
+    this.cmsPages.set(id, updated);
+    return updated;
+  }
+  async deleteCmsPage(id: string): Promise<boolean> {
+    return this.cmsPages.delete(id);
   }
 
   // Tenant Branding
