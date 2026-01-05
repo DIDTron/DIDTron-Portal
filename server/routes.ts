@@ -6,6 +6,7 @@ import { aiService } from "./ai-service";
 import { connexcs } from "./connexcs";
 import { auditService } from "./audit";
 import { z } from "zod";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { 
   insertCustomerCategorySchema, 
   insertCustomerGroupSchema,
@@ -61,7 +62,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  // ==================== AUTHENTICATION ====================
+  // ==================== REPLIT AUTH (OIDC) ====================
+  await setupAuth(app);
+  registerAuthRoutes(app);
+
+  // ==================== LEGACY AUTHENTICATION ====================
 
   app.post("/api/auth/register", async (req, res) => {
     try {

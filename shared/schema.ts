@@ -1774,3 +1774,6 @@ export type InsertDocCategory = z.infer<typeof insertDocCategorySchema>;
 export type DocCategory = typeof docCategories.$inferSelect;
 export type InsertDocArticle = z.infer<typeof insertDocArticleSchema>;
 export type DocArticle = typeof docArticles.$inferSelect;
+
+// Auth models (for Replit Auth sessions)
+export * from "./models/auth";

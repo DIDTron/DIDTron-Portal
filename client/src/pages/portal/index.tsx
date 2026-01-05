@@ -5,9 +5,19 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CustomerIconRail } from "@/components/layout/customer-portal/icon-rail";
 import { CustomerSecondarySidebar } from "@/components/layout/customer-portal/secondary-sidebar";
-import { Phone, Bell, User, LogOut, Search, Plus } from "lucide-react";
+import { Phone, Bell, User, LogOut, Search, Plus, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import CustomerDashboard from "./dashboard";
 import VoiceRatesPage from "./voice-rates";
@@ -64,10 +74,47 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/settings/notifications": { section: "settings", subItem: "notifications" },
 };
 
+function PortalLoginPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-muted/30">
+      <div className="w-full max-w-md p-8">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Phone className="h-8 w-8 text-primary" />
+            <span className="text-2xl font-bold">DIDTron</span>
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Customer Portal</h1>
+          <p className="text-muted-foreground">
+            Sign in to access your VoIP services
+          </p>
+        </div>
+        <div className="bg-card border rounded-lg p-6 space-y-4">
+          <a href="/api/login" className="block">
+            <Button className="w-full" size="lg" data-testid="button-login">
+              Sign in with Replit
+            </Button>
+          </a>
+          <p className="text-xs text-center text-muted-foreground">
+            Sign in with Google, GitHub, Apple, or email
+          </p>
+        </div>
+        <div className="mt-6 text-center">
+          <Link href="/">
+            <Button variant="ghost" size="sm" data-testid="link-back-home">
+              Back to Home
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CustomerPortal() {
   const [location] = useLocation();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [activeSubItem, setActiveSubItem] = useState("overview");
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     const mapping = routeToSection[location];
@@ -76,6 +123,22 @@ export default function CustomerPortal() {
       setActiveSubItem(mapping.subItem);
     }
   }, [location]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <PortalLoginPage />;
+  }
+
+  const userInitials = user?.firstName && user?.lastName 
+    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+    : user?.email?.[0]?.toUpperCase() || "U";
 
   return (
     <TooltipProvider>
@@ -112,14 +175,30 @@ export default function CustomerPortal() {
                 <Bell className="h-4 w-4" />
               </Button>
               <ThemeToggle />
-              <Button variant="ghost" size="icon" data-testid="button-profile">
-                <User className="h-4 w-4" />
-              </Button>
-              <Link href="/">
-                <Button variant="ghost" size="icon" data-testid="button-logout">
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" data-testid="button-profile">
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>
+                    {user?.firstName} {user?.lastName}
+                    <p className="text-xs font-normal text-muted-foreground">{user?.email}</p>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/portal/settings">Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => logout()} data-testid="button-logout">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 
