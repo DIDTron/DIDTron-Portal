@@ -7,7 +7,8 @@ import {
   History, Download, HelpCircle, MessageSquare, BookOpen,
   Settings, User, Shield, Bell, Headphones, Users as UsersIcon,
   PhoneCall, Bot, Mic, Workflow, Database, Gift, Palette, ListOrdered,
-  Zap, Clock, TestTube, Key, Webhook
+  Zap, Clock, TestTube, Key, Webhook, Network, FileSpreadsheet, 
+  TrendingDown, Calculator
 } from "lucide-react";
 
 interface SecondarySidebarProps {
@@ -79,6 +80,15 @@ const sectionMenus: Record<string, { title: string; items: SidebarItem[] }> = {
     items: [
       { id: "api-keys", label: "API Keys", icon: Key, path: "/portal/developers/api-keys" },
       { id: "webhooks", label: "Webhooks", icon: Webhook, path: "/portal/developers/webhooks" },
+    ],
+  },
+  class4: {
+    title: "Class 4 Softswitch",
+    items: [
+      { id: "overview", label: "Overview", icon: Network, path: "/portal/class4" },
+      { id: "rate-cards", label: "Rate Cards", icon: FileSpreadsheet, path: "/portal/class4/rate-cards" },
+      { id: "lcr", label: "LCR Rules", icon: TrendingDown, path: "/portal/class4/lcr" },
+      { id: "margins", label: "Margin Analysis", icon: Calculator, path: "/portal/class4/margins" },
     ],
   },
   billing: {

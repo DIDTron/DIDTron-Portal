@@ -41,6 +41,7 @@ import PortalRingGroupsPage from "./ring-groups";
 import PortalQueuesPage from "./queues";
 import PortalSipTesterPage from "./sip-tester";
 import ApiWebhooksPage from "./api-webhooks";
+import Class4Page from "./class4";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -76,6 +77,10 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/sip-tester/configs": { section: "sip-tester", subItem: "configs" },
   "/portal/sip-tester/results": { section: "sip-tester", subItem: "results" },
   "/portal/sip-tester/schedules": { section: "sip-tester", subItem: "schedules" },
+  "/portal/class4": { section: "class4", subItem: "overview" },
+  "/portal/class4/rate-cards": { section: "class4", subItem: "rate-cards" },
+  "/portal/class4/lcr": { section: "class4", subItem: "lcr" },
+  "/portal/class4/margins": { section: "class4", subItem: "margins" },
   "/portal/developers": { section: "developers", subItem: "api-keys" },
   "/portal/developers/api-keys": { section: "developers", subItem: "api-keys" },
   "/portal/developers/webhooks": { section: "developers", subItem: "webhooks" },
@@ -249,6 +254,10 @@ export default function CustomerPortal() {
               <Route path="/portal/sip-tester/configs" component={PortalSipTesterPage} />
               <Route path="/portal/sip-tester/results" component={PortalSipTesterPage} />
               <Route path="/portal/sip-tester/schedules" component={PortalSipTesterPage} />
+              <Route path="/portal/class4" component={Class4Page} />
+              <Route path="/portal/class4/rate-cards" component={Class4Page} />
+              <Route path="/portal/class4/lcr" component={Class4Page} />
+              <Route path="/portal/class4/margins" component={Class4Page} />
               <Route path="/portal/developers" component={ApiWebhooksPage} />
               <Route path="/portal/developers/api-keys" component={ApiWebhooksPage} />
               <Route path="/portal/developers/webhooks" component={ApiWebhooksPage} />

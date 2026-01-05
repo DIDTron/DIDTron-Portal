@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   LayoutDashboard, Phone, Globe, Headphones, CreditCard, 
-  HelpCircle, Settings, FileText, Bot, TestTube, Code
+  HelpCircle, Settings, FileText, Bot, TestTube, Code, Network
 } from "lucide-react";
 
 interface IconRailProps {
@@ -18,6 +18,7 @@ const sections = [
   { id: "pbx", icon: Headphones, label: "Cloud PBX", path: "/portal/pbx", external: false },
   { id: "ai-agent", icon: Bot, label: "AI Agent", path: "/portal/ai-agent", external: false },
   { id: "sip-tester", icon: TestTube, label: "SIP Tester", path: "/portal/sip-tester", external: false },
+  { id: "class4", icon: Network, label: "Class 4", path: "/portal/class4", external: false },
   { id: "developers", icon: Code, label: "Developers", path: "/portal/developers", external: false },
   { id: "billing", icon: CreditCard, label: "Billing", path: "/portal/billing", external: false },
   { id: "support", icon: HelpCircle, label: "Support", path: "/portal/support", external: false },

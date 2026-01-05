@@ -1468,6 +1468,94 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CUSTOMER CLASS 4 SOFTSWITCH ====================
+  
+  app.get("/api/my/class4/stats", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      // Return mock stats for now - would be synced from ConnexCS
+      res.json({
+        activeRateCards: 3,
+        activeLcrRules: 5,
+        totalPrefixes: 12450,
+        avgMargin: "8.5%"
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch Class 4 stats" });
+    }
+  });
+
+  app.get("/api/my/class4/rate-cards", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      // Return mock rate cards for now
+      res.json([
+        { id: 1, name: "US_Tier1_Premium", type: "provider", prefixCount: 3200, lastUpdated: "2 days ago", status: "active" },
+        { id: 2, name: "EU_Standard_Rates", type: "provider", prefixCount: 5600, lastUpdated: "1 week ago", status: "active" },
+        { id: 3, name: "Customer_Wholesale", type: "customer", prefixCount: 8900, lastUpdated: "3 days ago", status: "active" },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rate cards" });
+    }
+  });
+
+  app.get("/api/my/class4/lcr-rules", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      // Return mock LCR rules
+      res.json([
+        { id: 1, name: "US Domestic Priority", priority: 1, prefixPattern: "1*", routes: ["Tier1_US", "Tier2_US", "Backup_US"], status: "active" },
+        { id: 2, name: "UK Mobile LCR", priority: 2, prefixPattern: "447*", routes: ["UK_Mobile_A", "UK_Mobile_B"], status: "active" },
+        { id: 3, name: "EU Standard", priority: 3, prefixPattern: "3*,4*,49*", routes: ["EU_Tier1", "EU_Tier2"], status: "active" },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch LCR rules" });
+    }
+  });
+
+  app.get("/api/my/class4/margins", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      // Return mock margin analysis data
+      res.json([
+        { prefix: "1", destination: "USA - Fixed", buyRate: 0.0085, sellRate: 0.0120, margin: 0.0035, marginPercent: 29.2, volume: 125000 },
+        { prefix: "1", destination: "USA - Mobile", buyRate: 0.0095, sellRate: 0.0125, margin: 0.0030, marginPercent: 24.0, volume: 89000 },
+        { prefix: "44", destination: "UK - Fixed", buyRate: 0.0120, sellRate: 0.0145, margin: 0.0025, marginPercent: 17.2, volume: 45000 },
+        { prefix: "447", destination: "UK - Mobile", buyRate: 0.0280, sellRate: 0.0320, margin: 0.0040, marginPercent: 12.5, volume: 32000 },
+        { prefix: "49", destination: "Germany - Fixed", buyRate: 0.0110, sellRate: 0.0135, margin: 0.0025, marginPercent: 18.5, volume: 28000 },
+        { prefix: "33", destination: "France - Fixed", buyRate: 0.0105, sellRate: 0.0130, margin: 0.0025, marginPercent: 19.2, volume: 21000 },
+        { prefix: "61", destination: "Australia - Fixed", buyRate: 0.0150, sellRate: 0.0185, margin: 0.0035, marginPercent: 18.9, volume: 15000 },
+        { prefix: "91", destination: "India - Fixed", buyRate: 0.0045, sellRate: 0.0058, margin: 0.0013, marginPercent: 22.4, volume: 67000 },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch margin data" });
+    }
+  });
+
   // ==================== CUSTOMER WEBHOOKS ====================
   
   app.get("/api/my/webhooks", async (req, res) => {
