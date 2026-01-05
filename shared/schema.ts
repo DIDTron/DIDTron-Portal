@@ -1015,6 +1015,23 @@ export const webhookDeliveries = pgTable("webhook_deliveries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ==================== CUSTOMER API KEYS ====================
+
+export const customerApiKeys = pgTable("customer_api_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  name: text("name").notNull(),
+  keyPrefix: text("key_prefix").notNull(),
+  keyHash: text("key_hash").notNull(),
+  permissions: text("permissions").array(),
+  rateLimitPerMinute: integer("rate_limit_per_minute").default(60),
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== CURRENCIES & FX RATES ====================
 
 export const currencies = pgTable("currencies", {
@@ -1629,6 +1646,9 @@ export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit
 export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, createdAt: true });
 export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertWebhookSchema = createInsertSchema(webhooks).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertWebhookDeliverySchema = createInsertSchema(webhookDeliveries).omit({ id: true, createdAt: true });
+export const insertCustomerApiKeySchema = createInsertSchema(customerApiKeys).omit({ id: true, createdAt: true, updatedAt: true });
 
 // ==================== TYPES ====================
 
@@ -1777,6 +1797,14 @@ export type InsertDocCategory = z.infer<typeof insertDocCategorySchema>;
 export type DocCategory = typeof docCategories.$inferSelect;
 export type InsertDocArticle = z.infer<typeof insertDocArticleSchema>;
 export type DocArticle = typeof docArticles.$inferSelect;
+
+// Webhook and API Key types
+export type InsertWebhook = z.infer<typeof insertWebhookSchema>;
+export type Webhook = typeof webhooks.$inferSelect;
+export type InsertWebhookDelivery = z.infer<typeof insertWebhookDeliverySchema>;
+export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
+export type InsertCustomerApiKey = z.infer<typeof insertCustomerApiKeySchema>;
+export type CustomerApiKey = typeof customerApiKeys.$inferSelect;
 
 // Auth models (for Replit Auth sessions)
 export * from "./models/auth";

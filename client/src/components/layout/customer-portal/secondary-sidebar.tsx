@@ -6,7 +6,8 @@ import {
   Globe, Search, FileCheck, CreditCard, Receipt, 
   History, Download, HelpCircle, MessageSquare, BookOpen,
   Settings, User, Shield, Bell, Headphones, Users as UsersIcon,
-  PhoneCall, Bot, Mic, Workflow, Database, Gift, Palette
+  PhoneCall, Bot, Mic, Workflow, Database, Gift, Palette, ListOrdered,
+  Zap, Clock, TestTube, Key, Webhook
 } from "lucide-react";
 
 interface SecondarySidebarProps {
@@ -52,6 +53,7 @@ const sectionMenus: Record<string, { title: string; items: SidebarItem[] }> = {
       { id: "extensions", label: "Extensions", icon: Headphones, path: "/portal/pbx/extensions" },
       { id: "ring-groups", label: "Ring Groups", icon: UsersIcon, path: "/portal/pbx/ring-groups" },
       { id: "ivr", label: "IVR", icon: PhoneCall, path: "/portal/pbx/ivr" },
+      { id: "queues", label: "Queues", icon: ListOrdered, path: "/portal/pbx/queues" },
     ],
   },
   "ai-agent": {
@@ -61,6 +63,22 @@ const sectionMenus: Record<string, { title: string; items: SidebarItem[] }> = {
       { id: "personas", label: "Personas", icon: Mic, path: "/portal/ai-agent/personas" },
       { id: "flows", label: "Flows", icon: Workflow, path: "/portal/ai-agent/flows" },
       { id: "training", label: "Training Data", icon: Database, path: "/portal/ai-agent/training" },
+    ],
+  },
+  "sip-tester": {
+    title: "SIP Tester",
+    items: [
+      { id: "quick-test", label: "Quick Test", icon: Zap, path: "/portal/sip-tester" },
+      { id: "configs", label: "Saved Configs", icon: Settings, path: "/portal/sip-tester/configs" },
+      { id: "results", label: "Results", icon: BarChart3, path: "/portal/sip-tester/results" },
+      { id: "schedules", label: "Schedules", icon: Clock, path: "/portal/sip-tester/schedules" },
+    ],
+  },
+  developers: {
+    title: "Developers",
+    items: [
+      { id: "api-keys", label: "API Keys", icon: Key, path: "/portal/developers/api-keys" },
+      { id: "webhooks", label: "Webhooks", icon: Webhook, path: "/portal/developers/webhooks" },
     ],
   },
   billing: {

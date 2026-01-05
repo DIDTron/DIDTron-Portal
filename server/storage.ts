@@ -20,6 +20,9 @@ import {
   type Did, type InsertDid,
   type SipTrunk, type InsertSipTrunk,
   type Extension, type InsertExtension,
+  type Ivr, type InsertIvr,
+  type RingGroup, type InsertRingGroup,
+  type Queue, type InsertQueue,
   type Ticket, type InsertTicket,
   type Currency, type InsertCurrency,
   type FxRate, type InsertFxRate,
@@ -44,7 +47,9 @@ import {
   type SocialAccount, type InsertSocialAccount,
   type SocialPost, type InsertSocialPost,
   type DocCategory, type InsertDocCategory,
-  type DocArticle, type InsertDocArticle
+  type DocArticle, type InsertDocArticle,
+  type Webhook, type InsertWebhook,
+  type CustomerApiKey, type InsertCustomerApiKey
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -182,6 +187,27 @@ export interface IStorage {
   updateExtension(id: string, data: Partial<InsertExtension>): Promise<Extension | undefined>;
   deleteExtension(id: string): Promise<boolean>;
 
+  // IVRs
+  getIvrs(customerId: string): Promise<Ivr[]>;
+  getIvr(id: string): Promise<Ivr | undefined>;
+  createIvr(ivr: InsertIvr): Promise<Ivr>;
+  updateIvr(id: string, data: Partial<InsertIvr>): Promise<Ivr | undefined>;
+  deleteIvr(id: string): Promise<boolean>;
+
+  // Ring Groups
+  getRingGroups(customerId: string): Promise<RingGroup[]>;
+  getRingGroup(id: string): Promise<RingGroup | undefined>;
+  createRingGroup(rg: InsertRingGroup): Promise<RingGroup>;
+  updateRingGroup(id: string, data: Partial<InsertRingGroup>): Promise<RingGroup | undefined>;
+  deleteRingGroup(id: string): Promise<boolean>;
+
+  // Queues
+  getQueues(customerId: string): Promise<Queue[]>;
+  getQueue(id: string): Promise<Queue | undefined>;
+  createQueue(queue: InsertQueue): Promise<Queue>;
+  updateQueue(id: string, data: Partial<InsertQueue>): Promise<Queue | undefined>;
+  deleteQueue(id: string): Promise<boolean>;
+
   // Tickets
   getTickets(customerId?: string): Promise<Ticket[]>;
   getTicket(id: string): Promise<Ticket | undefined>;
@@ -277,9 +303,24 @@ export interface IStorage {
 
   // SIP Test Schedules
   getSipTestSchedules(configId?: string): Promise<SipTestSchedule[]>;
+  getSipTestSchedule(id: string): Promise<SipTestSchedule | undefined>;
   createSipTestSchedule(schedule: InsertSipTestSchedule): Promise<SipTestSchedule>;
   updateSipTestSchedule(id: string, data: Partial<InsertSipTestSchedule>): Promise<SipTestSchedule | undefined>;
   deleteSipTestSchedule(id: string): Promise<boolean>;
+
+  // Webhooks
+  getWebhooks(customerId: string): Promise<Webhook[]>;
+  getWebhook(id: string): Promise<Webhook | undefined>;
+  createWebhook(webhook: InsertWebhook): Promise<Webhook>;
+  updateWebhook(id: string, data: Partial<InsertWebhook>): Promise<Webhook | undefined>;
+  deleteWebhook(id: string): Promise<boolean>;
+
+  // Customer API Keys
+  getCustomerApiKeys(customerId: string): Promise<CustomerApiKey[]>;
+  getCustomerApiKey(id: string): Promise<CustomerApiKey | undefined>;
+  createCustomerApiKey(apiKey: InsertCustomerApiKey): Promise<CustomerApiKey>;
+  updateCustomerApiKey(id: string, data: Partial<InsertCustomerApiKey>): Promise<CustomerApiKey | undefined>;
+  deleteCustomerApiKey(id: string): Promise<boolean>;
 
   // Class 4 Customers
   getClass4Customers(parentCustomerId: string): Promise<Class4Customer[]>;
@@ -377,6 +418,9 @@ export class MemStorage implements IStorage {
   private dids: Map<string, Did>;
   private sipTrunks: Map<string, SipTrunk>;
   private extensions: Map<string, Extension>;
+  private ivrs: Map<string, Ivr>;
+  private ringGroups: Map<string, RingGroup>;
+  private queues: Map<string, Queue>;
   private tickets: Map<string, Ticket>;
   private invoices: Map<string, Invoice>;
   private payments: Map<string, Payment>;
@@ -404,6 +448,8 @@ export class MemStorage implements IStorage {
   private socialPosts: Map<string, SocialPost>;
   private docCategories: Map<string, DocCategory>;
   private docArticles: Map<string, DocArticle>;
+  private webhooks: Map<string, Webhook>;
+  private customerApiKeys: Map<string, CustomerApiKey>;
 
   constructor() {
     this.users = new Map();
@@ -426,6 +472,9 @@ export class MemStorage implements IStorage {
     this.dids = new Map();
     this.sipTrunks = new Map();
     this.extensions = new Map();
+    this.ivrs = new Map();
+    this.ringGroups = new Map();
+    this.queues = new Map();
     this.tickets = new Map();
     this.invoices = new Map();
     this.payments = new Map();
@@ -453,6 +502,8 @@ export class MemStorage implements IStorage {
     this.socialPosts = new Map();
     this.docCategories = new Map();
     this.docArticles = new Map();
+    this.webhooks = new Map();
+    this.customerApiKeys = new Map();
 
     this.seedDefaultData();
   }
@@ -1371,6 +1422,135 @@ export class MemStorage implements IStorage {
     return this.extensions.delete(id);
   }
 
+  // IVRs
+  async getIvrs(customerId: string): Promise<Ivr[]> {
+    return Array.from(this.ivrs.values()).filter(i => i.customerId === customerId);
+  }
+
+  async getIvr(id: string): Promise<Ivr | undefined> {
+    return this.ivrs.get(id);
+  }
+
+  async createIvr(ivr: InsertIvr): Promise<Ivr> {
+    const id = randomUUID();
+    const now = new Date();
+    const i: Ivr = {
+      id,
+      customerId: ivr.customerId,
+      name: ivr.name,
+      description: ivr.description ?? null,
+      greetingType: ivr.greetingType ?? "tts",
+      greetingText: ivr.greetingText ?? null,
+      greetingAudioUrl: ivr.greetingAudioUrl ?? null,
+      timeout: ivr.timeout ?? 10,
+      maxRetries: ivr.maxRetries ?? 3,
+      invalidDestination: ivr.invalidDestination ?? null,
+      timeoutDestination: ivr.timeoutDestination ?? null,
+      isActive: ivr.isActive ?? true,
+      connexcsIvrId: ivr.connexcsIvrId ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.ivrs.set(id, i);
+    return i;
+  }
+
+  async updateIvr(id: string, data: Partial<InsertIvr>): Promise<Ivr | undefined> {
+    const ivr = this.ivrs.get(id);
+    if (!ivr) return undefined;
+    const updated = { ...ivr, ...data, updatedAt: new Date() };
+    this.ivrs.set(id, updated);
+    return updated;
+  }
+
+  async deleteIvr(id: string): Promise<boolean> {
+    return this.ivrs.delete(id);
+  }
+
+  // Ring Groups
+  async getRingGroups(customerId: string): Promise<RingGroup[]> {
+    return Array.from(this.ringGroups.values()).filter(r => r.customerId === customerId);
+  }
+
+  async getRingGroup(id: string): Promise<RingGroup | undefined> {
+    return this.ringGroups.get(id);
+  }
+
+  async createRingGroup(rg: InsertRingGroup): Promise<RingGroup> {
+    const id = randomUUID();
+    const now = new Date();
+    const r: RingGroup = {
+      id,
+      customerId: rg.customerId,
+      name: rg.name,
+      extension: rg.extension ?? null,
+      strategy: rg.strategy ?? "ring_all",
+      ringTimeout: rg.ringTimeout ?? 20,
+      noAnswerDestination: rg.noAnswerDestination ?? null,
+      isActive: rg.isActive ?? true,
+      connexcsRingGroupId: rg.connexcsRingGroupId ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.ringGroups.set(id, r);
+    return r;
+  }
+
+  async updateRingGroup(id: string, data: Partial<InsertRingGroup>): Promise<RingGroup | undefined> {
+    const rg = this.ringGroups.get(id);
+    if (!rg) return undefined;
+    const updated = { ...rg, ...data, updatedAt: new Date() };
+    this.ringGroups.set(id, updated);
+    return updated;
+  }
+
+  async deleteRingGroup(id: string): Promise<boolean> {
+    return this.ringGroups.delete(id);
+  }
+
+  // Queues
+  async getQueues(customerId: string): Promise<Queue[]> {
+    return Array.from(this.queues.values()).filter(q => q.customerId === customerId);
+  }
+
+  async getQueue(id: string): Promise<Queue | undefined> {
+    return this.queues.get(id);
+  }
+
+  async createQueue(queue: InsertQueue): Promise<Queue> {
+    const id = randomUUID();
+    const now = new Date();
+    const q: Queue = {
+      id,
+      customerId: queue.customerId,
+      name: queue.name,
+      extension: queue.extension ?? null,
+      strategy: queue.strategy ?? "round_robin",
+      maxWaitTime: queue.maxWaitTime ?? 300,
+      announcePosition: queue.announcePosition ?? true,
+      holdMusicUrl: queue.holdMusicUrl ?? null,
+      timeoutDestination: queue.timeoutDestination ?? null,
+      isActive: queue.isActive ?? true,
+      connexcsQueueId: queue.connexcsQueueId ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.queues.set(id, q);
+    return q;
+  }
+
+  async updateQueue(id: string, data: Partial<InsertQueue>): Promise<Queue | undefined> {
+    const queue = this.queues.get(id);
+    if (!queue) return undefined;
+    const updated = { ...queue, ...data, updatedAt: new Date() };
+    this.queues.set(id, updated);
+    return updated;
+  }
+
+  async deleteQueue(id: string): Promise<boolean> {
+    return this.queues.delete(id);
+  }
+
   // Tickets
   async getTickets(customerId?: string): Promise<Ticket[]> {
     const tickets = Array.from(this.tickets.values());
@@ -1923,6 +2103,10 @@ export class MemStorage implements IStorage {
     return schedules;
   }
 
+  async getSipTestSchedule(id: string): Promise<SipTestSchedule | undefined> {
+    return this.sipTestSchedules.get(id);
+  }
+
   async createSipTestSchedule(schedule: InsertSipTestSchedule): Promise<SipTestSchedule> {
     const id = randomUUID();
     const now = new Date();
@@ -1954,6 +2138,88 @@ export class MemStorage implements IStorage {
 
   async deleteSipTestSchedule(id: string): Promise<boolean> {
     return this.sipTestSchedules.delete(id);
+  }
+
+  // Webhooks
+  async getWebhooks(customerId: string): Promise<Webhook[]> {
+    return Array.from(this.webhooks.values()).filter(w => w.customerId === customerId);
+  }
+
+  async getWebhook(id: string): Promise<Webhook | undefined> {
+    return this.webhooks.get(id);
+  }
+
+  async createWebhook(webhook: InsertWebhook): Promise<Webhook> {
+    const id = randomUUID();
+    const now = new Date();
+    const w: Webhook = {
+      id,
+      customerId: webhook.customerId ?? null,
+      url: webhook.url,
+      events: webhook.events ?? null,
+      secret: webhook.secret ?? null,
+      isActive: webhook.isActive ?? true,
+      lastDeliveryAt: null,
+      lastDeliveryStatus: null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.webhooks.set(id, w);
+    return w;
+  }
+
+  async updateWebhook(id: string, data: Partial<InsertWebhook>): Promise<Webhook | undefined> {
+    const webhook = this.webhooks.get(id);
+    if (!webhook) return undefined;
+    const updated = { ...webhook, ...data, updatedAt: new Date() };
+    this.webhooks.set(id, updated);
+    return updated;
+  }
+
+  async deleteWebhook(id: string): Promise<boolean> {
+    return this.webhooks.delete(id);
+  }
+
+  // Customer API Keys
+  async getCustomerApiKeys(customerId: string): Promise<CustomerApiKey[]> {
+    return Array.from(this.customerApiKeys.values()).filter(k => k.customerId === customerId);
+  }
+
+  async getCustomerApiKey(id: string): Promise<CustomerApiKey | undefined> {
+    return this.customerApiKeys.get(id);
+  }
+
+  async createCustomerApiKey(apiKey: InsertCustomerApiKey): Promise<CustomerApiKey> {
+    const id = randomUUID();
+    const now = new Date();
+    const k: CustomerApiKey = {
+      id,
+      customerId: apiKey.customerId,
+      name: apiKey.name,
+      keyPrefix: apiKey.keyPrefix,
+      keyHash: apiKey.keyHash,
+      permissions: apiKey.permissions ?? null,
+      rateLimitPerMinute: apiKey.rateLimitPerMinute ?? 60,
+      lastUsedAt: null,
+      expiresAt: apiKey.expiresAt ?? null,
+      isActive: apiKey.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.customerApiKeys.set(id, k);
+    return k;
+  }
+
+  async updateCustomerApiKey(id: string, data: Partial<InsertCustomerApiKey>): Promise<CustomerApiKey | undefined> {
+    const apiKey = this.customerApiKeys.get(id);
+    if (!apiKey) return undefined;
+    const updated = { ...apiKey, ...data, updatedAt: new Date() };
+    this.customerApiKeys.set(id, updated);
+    return updated;
+  }
+
+  async deleteCustomerApiKey(id: string): Promise<boolean> {
+    return this.customerApiKeys.delete(id);
   }
 
   // Class 4 Customers

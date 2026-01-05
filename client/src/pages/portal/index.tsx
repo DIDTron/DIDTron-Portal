@@ -35,6 +35,12 @@ import SettingsPage from "./settings";
 import UsagePage from "./usage";
 import BrandingPage from "./branding";
 import PortalAiAgentsPage from "./ai-agents";
+import PortalExtensionsPage from "./extensions";
+import PortalIvrPage from "./ivr";
+import PortalRingGroupsPage from "./ring-groups";
+import PortalQueuesPage from "./queues";
+import PortalSipTesterPage from "./sip-tester";
+import ApiWebhooksPage from "./api-webhooks";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -61,10 +67,18 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/pbx/extensions": { section: "pbx", subItem: "extensions" },
   "/portal/pbx/ring-groups": { section: "pbx", subItem: "ring-groups" },
   "/portal/pbx/ivr": { section: "pbx", subItem: "ivr" },
+  "/portal/pbx/queues": { section: "pbx", subItem: "queues" },
   "/portal/ai-agent": { section: "ai-agent", subItem: "agents" },
   "/portal/ai-agent/personas": { section: "ai-agent", subItem: "personas" },
   "/portal/ai-agent/flows": { section: "ai-agent", subItem: "flows" },
   "/portal/ai-agent/training": { section: "ai-agent", subItem: "training" },
+  "/portal/sip-tester": { section: "sip-tester", subItem: "quick-test" },
+  "/portal/sip-tester/configs": { section: "sip-tester", subItem: "configs" },
+  "/portal/sip-tester/results": { section: "sip-tester", subItem: "results" },
+  "/portal/sip-tester/schedules": { section: "sip-tester", subItem: "schedules" },
+  "/portal/developers": { section: "developers", subItem: "api-keys" },
+  "/portal/developers/api-keys": { section: "developers", subItem: "api-keys" },
+  "/portal/developers/webhooks": { section: "developers", subItem: "webhooks" },
   "/portal/billing": { section: "billing", subItem: "balance" },
   "/portal/billing/invoices": { section: "billing", subItem: "invoices" },
   "/portal/billing/transactions": { section: "billing", subItem: "transactions" },
@@ -218,18 +232,11 @@ export default function CustomerPortal() {
               <Route path="/portal/dids" component={DIDsPage} />
               <Route path="/portal/dids/search" component={DIDSearchPage} />
               <Route path="/portal/dids/kyc" component={KycDocumentsPage} />
-              <Route path="/portal/pbx">
-                <PlaceholderPage title="Cloud PBX" />
-              </Route>
-              <Route path="/portal/pbx/extensions">
-                <PlaceholderPage title="Extensions" />
-              </Route>
-              <Route path="/portal/pbx/ring-groups">
-                <PlaceholderPage title="Ring Groups" />
-              </Route>
-              <Route path="/portal/pbx/ivr">
-                <PlaceholderPage title="IVR" />
-              </Route>
+              <Route path="/portal/pbx" component={PortalExtensionsPage} />
+              <Route path="/portal/pbx/extensions" component={PortalExtensionsPage} />
+              <Route path="/portal/pbx/ring-groups" component={PortalRingGroupsPage} />
+              <Route path="/portal/pbx/ivr" component={PortalIvrPage} />
+              <Route path="/portal/pbx/queues" component={PortalQueuesPage} />
               <Route path="/portal/ai-agent" component={PortalAiAgentsPage} />
               <Route path="/portal/ai-agent/personas" component={PortalAiAgentsPage} />
               <Route path="/portal/ai-agent/flows">
@@ -238,6 +245,13 @@ export default function CustomerPortal() {
               <Route path="/portal/ai-agent/training">
                 <PlaceholderPage title="Training Data" />
               </Route>
+              <Route path="/portal/sip-tester" component={PortalSipTesterPage} />
+              <Route path="/portal/sip-tester/configs" component={PortalSipTesterPage} />
+              <Route path="/portal/sip-tester/results" component={PortalSipTesterPage} />
+              <Route path="/portal/sip-tester/schedules" component={PortalSipTesterPage} />
+              <Route path="/portal/developers" component={ApiWebhooksPage} />
+              <Route path="/portal/developers/api-keys" component={ApiWebhooksPage} />
+              <Route path="/portal/developers/webhooks" component={ApiWebhooksPage} />
               <Route path="/portal/billing" component={BillingPage} />
               <Route path="/portal/billing/invoices" component={InvoicesPage} />
               <Route path="/portal/billing/transactions" component={TransactionsPage} />

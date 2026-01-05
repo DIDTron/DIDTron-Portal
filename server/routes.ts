@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
 import { createUser, validateLogin, sanitizeUser } from "./auth";
 import { aiService } from "./ai-service";
@@ -43,7 +44,12 @@ import {
   insertEmailTemplateSchema,
   insertSocialAccountSchema,
   insertSocialPostSchema,
-  insertDidSchema
+  insertDidSchema,
+  insertExtensionSchema,
+  insertIvrSchema,
+  insertRingGroupSchema,
+  insertQueueSchema,
+  insertWebhookSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -747,6 +753,893 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete AI voice agent" });
+    }
+  });
+
+  // ==================== CUSTOMER PBX EXTENSIONS ====================
+
+  app.get("/api/my/extensions", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const extensions = await storage.getExtensions(user.customerId);
+      res.json(extensions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch extensions" });
+    }
+  });
+
+  app.get("/api/my/extensions/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const ext = await storage.getExtension(req.params.id);
+      if (!ext || ext.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Extension not found" });
+      }
+      res.json(ext);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch extension" });
+    }
+  });
+
+  app.post("/api/my/extensions", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const validation = insertExtensionSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid extension data", details: validation.error.errors });
+      }
+      
+      const ext = await storage.createExtension({
+        ...validation.data,
+        customerId: user.customerId
+      });
+      res.status(201).json(ext);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create extension" });
+    }
+  });
+
+  app.patch("/api/my/extensions/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const ext = await storage.getExtension(req.params.id);
+      if (!ext || ext.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Extension not found" });
+      }
+      
+      const { name, email, callerId, voicemailEnabled, voicemailPin, voicemailEmail, 
+              ringTimeout, dndEnabled, callWaitingEnabled, forwardingEnabled, forwardingDestination, status } = req.body;
+      
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (email !== undefined) updateData.email = email;
+      if (callerId !== undefined) updateData.callerId = callerId;
+      if (voicemailEnabled !== undefined) updateData.voicemailEnabled = voicemailEnabled;
+      if (voicemailPin !== undefined) updateData.voicemailPin = voicemailPin;
+      if (voicemailEmail !== undefined) updateData.voicemailEmail = voicemailEmail;
+      if (ringTimeout !== undefined) updateData.ringTimeout = ringTimeout;
+      if (dndEnabled !== undefined) updateData.dndEnabled = dndEnabled;
+      if (callWaitingEnabled !== undefined) updateData.callWaitingEnabled = callWaitingEnabled;
+      if (forwardingEnabled !== undefined) updateData.forwardingEnabled = forwardingEnabled;
+      if (forwardingDestination !== undefined) updateData.forwardingDestination = forwardingDestination;
+      if (status !== undefined) updateData.status = status;
+      
+      const updated = await storage.updateExtension(req.params.id, updateData);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update extension" });
+    }
+  });
+
+  app.delete("/api/my/extensions/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const ext = await storage.getExtension(req.params.id);
+      if (!ext || ext.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Extension not found" });
+      }
+      await storage.deleteExtension(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete extension" });
+    }
+  });
+
+  // ==================== CUSTOMER IVRs ====================
+
+  app.get("/api/my/ivrs", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const ivrs = await storage.getIvrs(user.customerId);
+      res.json(ivrs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch IVRs" });
+    }
+  });
+
+  app.get("/api/my/ivrs/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const ivr = await storage.getIvr(req.params.id);
+      if (!ivr || ivr.customerId !== user.customerId) {
+        return res.status(404).json({ error: "IVR not found" });
+      }
+      res.json(ivr);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch IVR" });
+    }
+  });
+
+  app.post("/api/my/ivrs", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const validation = insertIvrSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid IVR data", details: validation.error.errors });
+      }
+      
+      const ivr = await storage.createIvr({
+        ...validation.data,
+        customerId: user.customerId
+      });
+      res.status(201).json(ivr);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create IVR" });
+    }
+  });
+
+  app.patch("/api/my/ivrs/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const ivr = await storage.getIvr(req.params.id);
+      if (!ivr || ivr.customerId !== user.customerId) {
+        return res.status(404).json({ error: "IVR not found" });
+      }
+      
+      const { name, description, greetingType, greetingText, timeout, maxRetries,
+              invalidDestination, timeoutDestination, isActive } = req.body;
+      
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (greetingType !== undefined) updateData.greetingType = greetingType;
+      if (greetingText !== undefined) updateData.greetingText = greetingText;
+      if (timeout !== undefined) updateData.timeout = timeout;
+      if (maxRetries !== undefined) updateData.maxRetries = maxRetries;
+      if (invalidDestination !== undefined) updateData.invalidDestination = invalidDestination;
+      if (timeoutDestination !== undefined) updateData.timeoutDestination = timeoutDestination;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      const updated = await storage.updateIvr(req.params.id, updateData);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update IVR" });
+    }
+  });
+
+  app.delete("/api/my/ivrs/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const ivr = await storage.getIvr(req.params.id);
+      if (!ivr || ivr.customerId !== user.customerId) {
+        return res.status(404).json({ error: "IVR not found" });
+      }
+      await storage.deleteIvr(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete IVR" });
+    }
+  });
+
+  // ==================== CUSTOMER RING GROUPS ====================
+
+  app.get("/api/my/ring-groups", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const ringGroups = await storage.getRingGroups(user.customerId);
+      res.json(ringGroups);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch ring groups" });
+    }
+  });
+
+  app.get("/api/my/ring-groups/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const rg = await storage.getRingGroup(req.params.id);
+      if (!rg || rg.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Ring group not found" });
+      }
+      res.json(rg);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch ring group" });
+    }
+  });
+
+  app.post("/api/my/ring-groups", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const validation = insertRingGroupSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid ring group data", details: validation.error.errors });
+      }
+      
+      const rg = await storage.createRingGroup({
+        ...validation.data,
+        customerId: user.customerId
+      });
+      res.status(201).json(rg);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create ring group" });
+    }
+  });
+
+  app.patch("/api/my/ring-groups/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const rg = await storage.getRingGroup(req.params.id);
+      if (!rg || rg.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Ring group not found" });
+      }
+      
+      const { name, extension, strategy, ringTimeout, noAnswerDestination, isActive } = req.body;
+      
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (extension !== undefined) updateData.extension = extension;
+      if (strategy !== undefined) updateData.strategy = strategy;
+      if (ringTimeout !== undefined) updateData.ringTimeout = ringTimeout;
+      if (noAnswerDestination !== undefined) updateData.noAnswerDestination = noAnswerDestination;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      const updated = await storage.updateRingGroup(req.params.id, updateData);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update ring group" });
+    }
+  });
+
+  app.delete("/api/my/ring-groups/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const rg = await storage.getRingGroup(req.params.id);
+      if (!rg || rg.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Ring group not found" });
+      }
+      await storage.deleteRingGroup(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete ring group" });
+    }
+  });
+
+  // ==================== CUSTOMER QUEUES ====================
+
+  app.get("/api/my/queues", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const queues = await storage.getQueues(user.customerId);
+      res.json(queues);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch queues" });
+    }
+  });
+
+  app.get("/api/my/queues/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const queue = await storage.getQueue(req.params.id);
+      if (!queue || queue.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Queue not found" });
+      }
+      res.json(queue);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch queue" });
+    }
+  });
+
+  app.post("/api/my/queues", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const validation = insertQueueSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid queue data", details: validation.error.errors });
+      }
+      
+      const queue = await storage.createQueue({
+        ...validation.data,
+        customerId: user.customerId
+      });
+      res.status(201).json(queue);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create queue" });
+    }
+  });
+
+  app.patch("/api/my/queues/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const queue = await storage.getQueue(req.params.id);
+      if (!queue || queue.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Queue not found" });
+      }
+      
+      const { name, extension, strategy, maxWaitTime, announcePosition, 
+              holdMusicUrl, timeoutDestination, isActive } = req.body;
+      
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (extension !== undefined) updateData.extension = extension;
+      if (strategy !== undefined) updateData.strategy = strategy;
+      if (maxWaitTime !== undefined) updateData.maxWaitTime = maxWaitTime;
+      if (announcePosition !== undefined) updateData.announcePosition = announcePosition;
+      if (holdMusicUrl !== undefined) updateData.holdMusicUrl = holdMusicUrl;
+      if (timeoutDestination !== undefined) updateData.timeoutDestination = timeoutDestination;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      const updated = await storage.updateQueue(req.params.id, updateData);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update queue" });
+    }
+  });
+
+  app.delete("/api/my/queues/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const queue = await storage.getQueue(req.params.id);
+      if (!queue || queue.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Queue not found" });
+      }
+      await storage.deleteQueue(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete queue" });
+    }
+  });
+
+  // ==================== CUSTOMER SIP TESTS ====================
+  
+  app.get("/api/my/sip-tests/configs", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const configs = await storage.getSipTestConfigs(user.customerId);
+      res.json(configs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch SIP test configs" });
+    }
+  });
+
+  app.get("/api/my/sip-tests/configs/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const config = await storage.getSipTestConfig(req.params.id);
+      if (!config || config.customerId !== user.customerId) {
+        return res.status(404).json({ error: "SIP test config not found" });
+      }
+      res.json(config);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch SIP test config" });
+    }
+  });
+
+  app.post("/api/my/sip-tests/configs", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const validation = insertSipTestConfigSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid SIP test config", details: validation.error.errors });
+      }
+      
+      const config = await storage.createSipTestConfig({
+        ...validation.data,
+        customerId: user.customerId,
+        createdBy: user.id
+      });
+      res.status(201).json(config);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create SIP test config" });
+    }
+  });
+
+  app.patch("/api/my/sip-tests/configs/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const config = await storage.getSipTestConfig(req.params.id);
+      if (!config || config.customerId !== user.customerId) {
+        return res.status(404).json({ error: "SIP test config not found" });
+      }
+      
+      const { name, description, testType, destinations, cliNumber, isAdvancedMode, advancedSettings, alertThresholds, isActive } = req.body;
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (testType !== undefined) updateData.testType = testType;
+      if (destinations !== undefined) updateData.destinations = destinations;
+      if (cliNumber !== undefined) updateData.cliNumber = cliNumber;
+      if (isAdvancedMode !== undefined) updateData.isAdvancedMode = isAdvancedMode;
+      if (advancedSettings !== undefined) updateData.advancedSettings = advancedSettings;
+      if (alertThresholds !== undefined) updateData.alertThresholds = alertThresholds;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      const updated = await storage.updateSipTestConfig(req.params.id, updateData);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update SIP test config" });
+    }
+  });
+
+  app.delete("/api/my/sip-tests/configs/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const config = await storage.getSipTestConfig(req.params.id);
+      if (!config || config.customerId !== user.customerId) {
+        return res.status(404).json({ error: "SIP test config not found" });
+      }
+      await storage.deleteSipTestConfig(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete SIP test config" });
+    }
+  });
+
+  app.get("/api/my/sip-tests/results", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const results = await storage.getSipTestResults(user.customerId);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch SIP test results" });
+    }
+  });
+
+  app.post("/api/my/sip-tests/run", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const validation = insertSipTestResultSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid test data", details: validation.error.errors });
+      }
+      
+      // Simulate test result (in production, this would call actual SIP testing infrastructure)
+      const result = await storage.createSipTestResult({
+        ...validation.data,
+        status: "completed",
+        result: Math.random() > 0.2 ? "pass" : "fail",
+        pddMs: Math.floor(Math.random() * 200) + 100,
+        mosScore: (3.5 + Math.random() * 1).toFixed(2),
+        jitterMs: (Math.random() * 20).toFixed(2),
+        packetLossPercent: (Math.random() * 2).toFixed(2),
+        latencyMs: Math.floor(Math.random() * 100) + 20,
+        sipResponseCode: 200,
+      });
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to run SIP test" });
+    }
+  });
+
+  app.get("/api/my/sip-tests/schedules", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const schedules = await storage.getSipTestSchedules(user.customerId);
+      res.json(schedules);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch SIP test schedules" });
+    }
+  });
+
+  app.post("/api/my/sip-tests/schedules", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const validation = insertSipTestScheduleSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid schedule data", details: validation.error.errors });
+      }
+      
+      const schedule = await storage.createSipTestSchedule({
+        ...validation.data,
+        customerId: user.customerId,
+        portalType: "customer"
+      });
+      res.status(201).json(schedule);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create SIP test schedule" });
+    }
+  });
+
+  app.delete("/api/my/sip-tests/schedules/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const schedule = await storage.getSipTestSchedule(req.params.id);
+      if (!schedule || schedule.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Schedule not found" });
+      }
+      await storage.deleteSipTestSchedule(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete schedule" });
+    }
+  });
+
+  // ==================== CUSTOMER WEBHOOKS ====================
+  
+  app.get("/api/my/webhooks", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const webhooks = await storage.getWebhooks(user.customerId);
+      res.json(webhooks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch webhooks" });
+    }
+  });
+
+  app.post("/api/my/webhooks", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const validation = insertWebhookSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid webhook data", details: validation.error.errors });
+      }
+      
+      const webhook = await storage.createWebhook({
+        ...validation.data,
+        customerId: user.customerId,
+        secret: randomBytes(32).toString('hex')
+      });
+      res.status(201).json(webhook);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create webhook" });
+    }
+  });
+
+  app.patch("/api/my/webhooks/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const webhook = await storage.getWebhook(req.params.id);
+      if (!webhook || webhook.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Webhook not found" });
+      }
+      
+      const { url, events, isActive } = req.body;
+      const updateData: Record<string, unknown> = {};
+      if (url !== undefined) updateData.url = url;
+      if (events !== undefined) updateData.events = events;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      const updated = await storage.updateWebhook(req.params.id, updateData);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update webhook" });
+    }
+  });
+
+  app.delete("/api/my/webhooks/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const webhook = await storage.getWebhook(req.params.id);
+      if (!webhook || webhook.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Webhook not found" });
+      }
+      await storage.deleteWebhook(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete webhook" });
+    }
+  });
+
+  // ==================== CUSTOMER API KEYS ====================
+  
+  app.get("/api/my/api-keys", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const apiKeys = await storage.getCustomerApiKeys(user.customerId);
+      // Never return the full hash, only the prefix for display
+      res.json(apiKeys.map(k => ({ ...k, keyHash: undefined })));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch API keys" });
+    }
+  });
+
+  app.post("/api/my/api-keys", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const { name, permissions } = req.body;
+      if (!name) {
+        return res.status(400).json({ error: "Name is required" });
+      }
+      
+      // Generate a secure API key
+      const fullKey = `dt_${randomBytes(32).toString('hex')}`;
+      const keyPrefix = fullKey.substring(0, 12) + "...";
+      const keyHash = createHash('sha256').update(fullKey).digest('hex');
+      
+      const apiKey = await storage.createCustomerApiKey({
+        customerId: user.customerId,
+        name,
+        keyPrefix,
+        keyHash,
+        permissions: permissions || ['read'],
+        rateLimitPerMinute: 60,
+        isActive: true
+      });
+      
+      // Return the full key only once during creation
+      res.status(201).json({ ...apiKey, fullKey, keyHash: undefined });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create API key" });
+    }
+  });
+
+  app.patch("/api/my/api-keys/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const apiKey = await storage.getCustomerApiKey(req.params.id);
+      if (!apiKey || apiKey.customerId !== user.customerId) {
+        return res.status(404).json({ error: "API key not found" });
+      }
+      
+      const { name, permissions, isActive } = req.body;
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (permissions !== undefined) updateData.permissions = permissions;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      const updated = await storage.updateCustomerApiKey(req.params.id, updateData);
+      res.json({ ...updated, keyHash: undefined });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update API key" });
+    }
+  });
+
+  app.delete("/api/my/api-keys/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const apiKey = await storage.getCustomerApiKey(req.params.id);
+      if (!apiKey || apiKey.customerId !== user.customerId) {
+        return res.status(404).json({ error: "API key not found" });
+      }
+      await storage.deleteCustomerApiKey(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete API key" });
     }
   });
 
