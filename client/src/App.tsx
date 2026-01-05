@@ -10,6 +10,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import AdminLayout from "@/pages/admin/index";
+import CustomerPortal from "@/pages/portal/index";
 import Docs from "@/pages/docs";
 
 function Router() {
@@ -25,6 +26,9 @@ function Router() {
       <Route path="/admin" component={AdminLayout} />
       <Route path="/admin/:section" component={AdminLayout} />
       <Route path="/admin/:section/:subsection" component={AdminLayout} />
+      <Route path="/portal" component={CustomerPortal} />
+      <Route path="/portal/:section" component={CustomerPortal} />
+      <Route path="/portal/:section/:subsection" component={CustomerPortal} />
       <Route component={NotFound} />
     </Switch>
   );
