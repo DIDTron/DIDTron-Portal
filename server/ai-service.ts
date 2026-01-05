@@ -309,6 +309,44 @@ Be concise, technical when needed, and always helpful.`,
 
     return response.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
   },
+
+  async generateSocialPostContent(
+    topic: string,
+    tone: string = "professional",
+    platforms: string[] = ["twitter"]
+  ): Promise<string> {
+    const platformGuidelines = platforms.map(p => {
+      if (p === "twitter") return "Twitter/X: Max 280 chars, use hashtags";
+      if (p === "linkedin") return "LinkedIn: Professional, 1-3 paragraphs";
+      if (p === "facebook") return "Facebook: Engaging, can be longer";
+      if (p === "instagram") return "Instagram: Visual-focused, use emojis sparingly";
+      return `${p}: Standard social media format`;
+    }).join("; ");
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are a social media content creator for DIDTron Communications, a B2B VoIP platform.
+Create engaging social media content targeting telecom professionals and businesses.
+Tone: ${tone}
+Platform guidelines: ${platformGuidelines}
+Focus on value proposition, industry insights, and thought leadership.
+Do not use excessive emojis. Keep content professional but engaging.`,
+        },
+        {
+          role: "user",
+          content: `Create a social media post about: ${topic}
+Target platforms: ${platforms.join(", ")}`,
+        },
+      ],
+      max_tokens: 400,
+      temperature: 0.8,
+    });
+
+    return response.choices[0]?.message?.content || `Check out DIDTron's ${topic} solutions!`;
+  },
 };
 
 export default aiService;

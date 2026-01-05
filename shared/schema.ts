@@ -1590,6 +1590,8 @@ export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({ id: t
 export const insertAlertSchema = createInsertSchema(alerts).omit({ id: true, createdAt: true });
 export const insertBonusTypeSchema = createInsertSchema(bonusTypes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id: true, createdAt: true, updatedAt: true });
 
 // ==================== TYPES ====================
 
@@ -1657,6 +1659,9 @@ export type Cdr = typeof cdrs.$inferSelect;
 export type Voicemail = typeof voicemails.$inferSelect;
 export type CallRecording = typeof callRecordings.$inferSelect;
 export type AiAgentAction = typeof aiAgentActions.$inferSelect;
+export type InsertSocialAccount = z.infer<typeof insertSocialAccountSchema>;
+export type SocialAccount = typeof socialAccounts.$inferSelect;
+export type InsertSocialPost = z.infer<typeof insertSocialPostSchema>;
 export type SocialPost = typeof socialPosts.$inferSelect;
 
 // Currency types

@@ -35,7 +35,9 @@ import {
   type Invoice, type Payment, type PromoCode, type Referral,
   type InsertPayment, type InsertPromoCode,
   type BonusType, type EmailTemplate,
-  type InsertBonusType, type InsertEmailTemplate
+  type InsertBonusType, type InsertEmailTemplate,
+  type SocialAccount, type InsertSocialAccount,
+  type SocialPost, type InsertSocialPost
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -214,6 +216,20 @@ export interface IStorage {
   updateEmailTemplate(id: string, data: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
   deleteEmailTemplate(id: string): Promise<boolean>;
 
+  // Social Accounts
+  getSocialAccounts(): Promise<SocialAccount[]>;
+  getSocialAccount(id: string): Promise<SocialAccount | undefined>;
+  createSocialAccount(account: InsertSocialAccount): Promise<SocialAccount>;
+  updateSocialAccount(id: string, data: Partial<InsertSocialAccount>): Promise<SocialAccount | undefined>;
+  deleteSocialAccount(id: string): Promise<boolean>;
+
+  // Social Posts
+  getSocialPosts(): Promise<SocialPost[]>;
+  getSocialPost(id: string): Promise<SocialPost | undefined>;
+  createSocialPost(post: InsertSocialPost): Promise<SocialPost>;
+  updateSocialPost(id: string, data: Partial<InsertSocialPost>): Promise<SocialPost | undefined>;
+  deleteSocialPost(id: string): Promise<boolean>;
+
   // Dashboard Stats
   getCategoryStats(): Promise<{ categoryId: string; customerCount: number; revenue: number }[]>;
 
@@ -321,6 +337,8 @@ export class MemStorage implements IStorage {
   private integrations: Map<string, Integration>;
   private bonusTypes: Map<string, BonusType>;
   private emailTemplates: Map<string, EmailTemplate>;
+  private socialAccounts: Map<string, SocialAccount>;
+  private socialPosts: Map<string, SocialPost>;
 
   constructor() {
     this.users = new Map();
@@ -360,6 +378,8 @@ export class MemStorage implements IStorage {
     this.integrations = new Map();
     this.bonusTypes = new Map();
     this.emailTemplates = new Map();
+    this.socialAccounts = new Map();
+    this.socialPosts = new Map();
 
     this.seedDefaultData();
   }
@@ -1502,6 +1522,79 @@ export class MemStorage implements IStorage {
   }
   async deleteEmailTemplate(id: string): Promise<boolean> {
     return this.emailTemplates.delete(id);
+  }
+
+  // Social Accounts
+  async getSocialAccounts(): Promise<SocialAccount[]> {
+    return Array.from(this.socialAccounts.values());
+  }
+  async getSocialAccount(id: string): Promise<SocialAccount | undefined> {
+    return this.socialAccounts.get(id);
+  }
+  async createSocialAccount(account: InsertSocialAccount): Promise<SocialAccount> {
+    const id = randomUUID();
+    const now = new Date();
+    const newAccount: SocialAccount = {
+      id,
+      platform: account.platform,
+      accountName: account.accountName ?? null,
+      accountId: account.accountId ?? null,
+      accessToken: account.accessToken ?? null,
+      refreshToken: account.refreshToken ?? null,
+      tokenExpiresAt: account.tokenExpiresAt ?? null,
+      isActive: account.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.socialAccounts.set(id, newAccount);
+    return newAccount;
+  }
+  async updateSocialAccount(id: string, data: Partial<InsertSocialAccount>): Promise<SocialAccount | undefined> {
+    const existing = this.socialAccounts.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data, updatedAt: new Date() };
+    this.socialAccounts.set(id, updated);
+    return updated;
+  }
+  async deleteSocialAccount(id: string): Promise<boolean> {
+    return this.socialAccounts.delete(id);
+  }
+
+  // Social Posts
+  async getSocialPosts(): Promise<SocialPost[]> {
+    return Array.from(this.socialPosts.values());
+  }
+  async getSocialPost(id: string): Promise<SocialPost | undefined> {
+    return this.socialPosts.get(id);
+  }
+  async createSocialPost(post: InsertSocialPost): Promise<SocialPost> {
+    const id = randomUUID();
+    const now = new Date();
+    const newPost: SocialPost = {
+      id,
+      content: post.content,
+      platforms: post.platforms ?? null,
+      mediaUrls: post.mediaUrls ?? null,
+      status: post.status || "draft",
+      scheduledAt: post.scheduledAt ?? null,
+      publishedAt: post.publishedAt ?? null,
+      ayrsharePostId: post.ayrsharePostId ?? null,
+      engagement: post.engagement ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.socialPosts.set(id, newPost);
+    return newPost;
+  }
+  async updateSocialPost(id: string, data: Partial<InsertSocialPost>): Promise<SocialPost | undefined> {
+    const existing = this.socialPosts.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data, updatedAt: new Date() };
+    this.socialPosts.set(id, updated);
+    return updated;
+  }
+  async deleteSocialPost(id: string): Promise<boolean> {
+    return this.socialPosts.delete(id);
   }
 
   // Dashboard Stats

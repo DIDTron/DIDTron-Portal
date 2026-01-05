@@ -33,7 +33,9 @@ import {
   insertTenantBrandingSchema,
   insertIntegrationSchema,
   insertBonusTypeSchema,
-  insertEmailTemplateSchema
+  insertEmailTemplateSchema,
+  insertSocialAccountSchema,
+  insertSocialPostSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -616,6 +618,123 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete email template" });
+    }
+  });
+
+  // ==================== SOCIAL ACCOUNTS ====================
+
+  app.get("/api/social-accounts", async (req, res) => {
+    try {
+      const accounts = await storage.getSocialAccounts();
+      res.json(accounts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch social accounts" });
+    }
+  });
+
+  app.get("/api/social-accounts/:id", async (req, res) => {
+    try {
+      const account = await storage.getSocialAccount(req.params.id);
+      if (!account) return res.status(404).json({ error: "Social account not found" });
+      res.json(account);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch social account" });
+    }
+  });
+
+  app.post("/api/social-accounts", async (req, res) => {
+    try {
+      const parsed = insertSocialAccountSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const account = await storage.createSocialAccount(parsed.data);
+      res.status(201).json(account);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create social account" });
+    }
+  });
+
+  app.patch("/api/social-accounts/:id", async (req, res) => {
+    try {
+      const account = await storage.updateSocialAccount(req.params.id, req.body);
+      if (!account) return res.status(404).json({ error: "Social account not found" });
+      res.json(account);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update social account" });
+    }
+  });
+
+  app.delete("/api/social-accounts/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSocialAccount(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Social account not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete social account" });
+    }
+  });
+
+  // ==================== SOCIAL POSTS ====================
+
+  app.get("/api/social-posts", async (req, res) => {
+    try {
+      const posts = await storage.getSocialPosts();
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch social posts" });
+    }
+  });
+
+  app.get("/api/social-posts/:id", async (req, res) => {
+    try {
+      const post = await storage.getSocialPost(req.params.id);
+      if (!post) return res.status(404).json({ error: "Social post not found" });
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch social post" });
+    }
+  });
+
+  app.post("/api/social-posts", async (req, res) => {
+    try {
+      const parsed = insertSocialPostSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const post = await storage.createSocialPost(parsed.data);
+      res.status(201).json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create social post" });
+    }
+  });
+
+  app.patch("/api/social-posts/:id", async (req, res) => {
+    try {
+      const post = await storage.updateSocialPost(req.params.id, req.body);
+      if (!post) return res.status(404).json({ error: "Social post not found" });
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update social post" });
+    }
+  });
+
+  app.delete("/api/social-posts/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSocialPost(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Social post not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete social post" });
+    }
+  });
+
+  // AI Generate Social Post Content
+  app.post("/api/social-posts/generate", async (req, res) => {
+    try {
+      const { topic, tone, platforms } = req.body;
+      if (!topic) return res.status(400).json({ error: "Topic is required" });
+      
+      const content = await aiService.generateSocialPostContent(topic, tone || "professional", platforms || ["twitter"]);
+      res.json({ content });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate social post content" });
     }
   });
 
