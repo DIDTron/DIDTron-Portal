@@ -12,6 +12,7 @@ interface ConnexCSCarrier {
   port?: number;
   channels?: number;
   cps?: number;
+  tech_prefix?: string;
 }
 
 interface ConnexCSRoute {
@@ -32,6 +33,24 @@ interface ConnexCSCustomer {
   status: string;
   channels?: number;
   cps?: number;
+  currency?: string;
+}
+
+interface ConnexCSRateCard {
+  id: string;
+  name: string;
+  direction?: string;
+  currency?: string;
+  carrier_id?: string;
+  status?: string;
+}
+
+interface ConnexCSDID {
+  id: string;
+  number: string;
+  customer_id?: string;
+  destination?: string;
+  status?: string;
 }
 
 interface ConnexCSCDR {
@@ -156,23 +175,36 @@ class ConnexCSClient {
   }
 
   private getMockResponse<T>(endpoint: string, _method: string): T {
-    if (endpoint.includes("/carriers")) {
+    if (endpoint.includes("/carrier")) {
       return [
         { id: "mock-1", name: "Mock Carrier A", status: "active", ip_address: "192.168.1.1", port: 5060, channels: 100, cps: 10 },
         { id: "mock-2", name: "Mock Carrier B", status: "active", ip_address: "192.168.1.2", port: 5060, channels: 50, cps: 5 },
       ] as unknown as T;
     }
 
-    if (endpoint.includes("/routes")) {
+    if (endpoint.includes("/route")) {
       return [
         { id: "mock-r1", name: "US Default", prefix: "1", carrier_id: "mock-1", priority: 1, weight: 100, status: "active" },
         { id: "mock-r2", name: "UK Default", prefix: "44", carrier_id: "mock-2", priority: 1, weight: 100, status: "active" },
       ] as unknown as T;
     }
 
-    if (endpoint.includes("/customers")) {
+    if (endpoint.includes("/customer")) {
       return [
         { id: "mock-c1", name: "Demo Customer", balance: 100.00, credit_limit: 500, status: "active", channels: 10, cps: 2 },
+      ] as unknown as T;
+    }
+
+    if (endpoint.includes("/card")) {
+      return [
+        { id: "mock-rc1", name: "Default Termination", direction: "termination", currency: "USD", status: "active" },
+        { id: "mock-rc2", name: "Default Origination", direction: "origination", currency: "USD", status: "active" },
+      ] as unknown as T;
+    }
+
+    if (endpoint.includes("/did")) {
+      return [
+        { id: "mock-did1", number: "+14155551234", status: "active" },
       ] as unknown as T;
     }
 
@@ -195,64 +227,113 @@ class ConnexCSClient {
     return {} as T;
   }
 
+  // Carrier endpoints
   async getCarriers(): Promise<ConnexCSCarrier[]> {
-    return this.request<ConnexCSCarrier[]>("GET", "/carriers");
+    return this.request<ConnexCSCarrier[]>("GET", "/carrier");
   }
 
   async getCarrier(id: string): Promise<ConnexCSCarrier> {
-    return this.request<ConnexCSCarrier>("GET", `/carriers/${id}`);
+    return this.request<ConnexCSCarrier>("GET", `/carrier/${id}`);
   }
 
   async createCarrier(data: Partial<ConnexCSCarrier>): Promise<ConnexCSCarrier> {
-    return this.request<ConnexCSCarrier>("POST", "/carriers", data);
+    return this.request<ConnexCSCarrier>("POST", "/carrier", data);
   }
 
   async updateCarrier(id: string, data: Partial<ConnexCSCarrier>): Promise<ConnexCSCarrier> {
-    return this.request<ConnexCSCarrier>("PUT", `/carriers/${id}`, data);
+    return this.request<ConnexCSCarrier>("PUT", `/carrier/${id}`, data);
   }
 
   async deleteCarrier(id: string): Promise<void> {
-    await this.request<void>("DELETE", `/carriers/${id}`);
+    await this.request<void>("DELETE", `/carrier/${id}`);
   }
 
-  async getRoutes(): Promise<ConnexCSRoute[]> {
-    return this.request<ConnexCSRoute[]>("GET", "/routes");
-  }
-
-  async getRoute(id: string): Promise<ConnexCSRoute> {
-    return this.request<ConnexCSRoute>("GET", `/routes/${id}`);
-  }
-
-  async createRoute(data: Partial<ConnexCSRoute>): Promise<ConnexCSRoute> {
-    return this.request<ConnexCSRoute>("POST", "/routes", data);
-  }
-
-  async updateRoute(id: string, data: Partial<ConnexCSRoute>): Promise<ConnexCSRoute> {
-    return this.request<ConnexCSRoute>("PUT", `/routes/${id}`, data);
-  }
-
-  async deleteRoute(id: string): Promise<void> {
-    await this.request<void>("DELETE", `/routes/${id}`);
-  }
-
+  // Customer endpoints
   async getCustomers(): Promise<ConnexCSCustomer[]> {
-    return this.request<ConnexCSCustomer[]>("GET", "/customers");
+    return this.request<ConnexCSCustomer[]>("GET", "/customer");
   }
 
   async getCustomer(id: string): Promise<ConnexCSCustomer> {
-    return this.request<ConnexCSCustomer>("GET", `/customers/${id}`);
+    return this.request<ConnexCSCustomer>("GET", `/customer/${id}`);
   }
 
   async createCustomer(data: Partial<ConnexCSCustomer>): Promise<ConnexCSCustomer> {
-    return this.request<ConnexCSCustomer>("POST", "/customers", data);
+    return this.request<ConnexCSCustomer>("POST", "/customer", data);
   }
 
   async updateCustomer(id: string, data: Partial<ConnexCSCustomer>): Promise<ConnexCSCustomer> {
-    return this.request<ConnexCSCustomer>("PUT", `/customers/${id}`, data);
+    return this.request<ConnexCSCustomer>("PUT", `/customer/${id}`, data);
+  }
+
+  async deleteCustomer(id: string): Promise<void> {
+    await this.request<void>("DELETE", `/customer/${id}`);
   }
 
   async updateCustomerBalance(id: string, amount: number): Promise<ConnexCSCustomer> {
-    return this.request<ConnexCSCustomer>("POST", `/customers/${id}/balance`, { amount });
+    return this.request<ConnexCSCustomer>("POST", `/customer/${id}/balance`, { amount });
+  }
+
+  // Rate Card endpoints
+  async getRateCards(): Promise<ConnexCSRateCard[]> {
+    return this.request<ConnexCSRateCard[]>("GET", "/card");
+  }
+
+  async getRateCard(id: string): Promise<ConnexCSRateCard> {
+    return this.request<ConnexCSRateCard>("GET", `/card/${id}`);
+  }
+
+  async createRateCard(data: Partial<ConnexCSRateCard>): Promise<ConnexCSRateCard> {
+    return this.request<ConnexCSRateCard>("POST", "/card", data);
+  }
+
+  async updateRateCard(id: string, data: Partial<ConnexCSRateCard>): Promise<ConnexCSRateCard> {
+    return this.request<ConnexCSRateCard>("PUT", `/card/${id}`, data);
+  }
+
+  async deleteRateCard(id: string): Promise<void> {
+    await this.request<void>("DELETE", `/card/${id}`);
+  }
+
+  // DID endpoints
+  async getDIDs(): Promise<ConnexCSDID[]> {
+    return this.request<ConnexCSDID[]>("GET", "/did");
+  }
+
+  async getDID(id: string): Promise<ConnexCSDID> {
+    return this.request<ConnexCSDID>("GET", `/did/${id}`);
+  }
+
+  async createDID(data: Partial<ConnexCSDID>): Promise<ConnexCSDID> {
+    return this.request<ConnexCSDID>("POST", "/did", data);
+  }
+
+  async updateDID(id: string, data: Partial<ConnexCSDID>): Promise<ConnexCSDID> {
+    return this.request<ConnexCSDID>("PUT", `/did/${id}`, data);
+  }
+
+  async deleteDID(id: string): Promise<void> {
+    await this.request<void>("DELETE", `/did/${id}`);
+  }
+
+  // Route endpoints
+  async getRoutes(): Promise<ConnexCSRoute[]> {
+    return this.request<ConnexCSRoute[]>("GET", "/route");
+  }
+
+  async getRoute(id: string): Promise<ConnexCSRoute> {
+    return this.request<ConnexCSRoute>("GET", `/route/${id}`);
+  }
+
+  async createRoute(data: Partial<ConnexCSRoute>): Promise<ConnexCSRoute> {
+    return this.request<ConnexCSRoute>("POST", "/route", data);
+  }
+
+  async updateRoute(id: string, data: Partial<ConnexCSRoute>): Promise<ConnexCSRoute> {
+    return this.request<ConnexCSRoute>("PUT", `/route/${id}`, data);
+  }
+
+  async deleteRoute(id: string): Promise<void> {
+    await this.request<void>("DELETE", `/route/${id}`);
   }
 
   async getCDRs(params?: {
@@ -292,7 +373,7 @@ class ConnexCSClient {
         calls_24h: Math.floor(1000 + Math.random() * 5000),
       };
     }
-    return this.request("GET", `/carriers/${carrierId}/metrics`);
+    return this.request("GET", `/carrier/${carrierId}/metrics`);
   }
 
   async testRoute(destination: string): Promise<{
@@ -309,7 +390,7 @@ class ConnexCSClient {
         sip_code: 200,
       };
     }
-    return this.request("POST", "/routes/test", { destination });
+    return this.request("POST", "/route/test", { destination });
   }
 
   async syncCarrier(localCarrier: {
@@ -385,6 +466,8 @@ class ConnexCSClient {
     id: string;
     name: string;
     accountNumber?: string | null;
+    creditLimit?: number;
+    currency?: string;
   }): Promise<{ connexcsId: string; synced: boolean }> {
     if (this.mockMode) {
       return {
@@ -402,6 +485,74 @@ class ConnexCSClient {
 
     const created = await this.createCustomer({
       name: localCustomer.name,
+      credit_limit: localCustomer.creditLimit || 0,
+      currency: localCustomer.currency || "USD",
+    });
+    return { connexcsId: created.id, synced: true };
+  }
+
+  async syncRateCard(localRateCard: {
+    id: string;
+    name: string;
+    direction?: string | null;
+    currency?: string | null;
+    carrierId?: string | null;
+  }): Promise<{ connexcsId: string; synced: boolean }> {
+    if (this.mockMode) {
+      return {
+        connexcsId: `cx-rc-${localRateCard.id}`,
+        synced: true,
+      };
+    }
+
+    const existingCards = await this.getRateCards();
+    const existing = existingCards.find(c => c.name === localRateCard.name);
+
+    if (existing) {
+      await this.updateRateCard(existing.id, {
+        direction: localRateCard.direction || undefined,
+        currency: localRateCard.currency || undefined,
+      });
+      return { connexcsId: existing.id, synced: true };
+    }
+
+    const created = await this.createRateCard({
+      name: localRateCard.name,
+      direction: localRateCard.direction || "termination",
+      currency: localRateCard.currency || "USD",
+      carrier_id: localRateCard.carrierId || undefined,
+    });
+    return { connexcsId: created.id, synced: true };
+  }
+
+  async syncDID(localDID: {
+    id: string;
+    number: string;
+    customerId?: string | null;
+    destination?: string | null;
+  }): Promise<{ connexcsId: string; synced: boolean }> {
+    if (this.mockMode) {
+      return {
+        connexcsId: `cx-did-${localDID.id}`,
+        synced: true,
+      };
+    }
+
+    const existingDIDs = await this.getDIDs();
+    const existing = existingDIDs.find(d => d.number === localDID.number);
+
+    if (existing) {
+      await this.updateDID(existing.id, {
+        customer_id: localDID.customerId || undefined,
+        destination: localDID.destination || undefined,
+      });
+      return { connexcsId: existing.id, synced: true };
+    }
+
+    const created = await this.createDID({
+      number: localDID.number,
+      customer_id: localDID.customerId || undefined,
+      destination: localDID.destination || undefined,
     });
     return { connexcsId: created.id, synced: true };
   }

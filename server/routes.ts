@@ -83,6 +83,42 @@ export async function registerRoutes(
       const user = await createUser(parsed.data);
       req.session.userId = user.id;
       
+      // Create a Customer record for this user with auto-generated account number
+      const accountNumber = `CUST-${Date.now().toString(36).toUpperCase()}`;
+      const companyName = parsed.data.companyName || `${parsed.data.firstName || ''} ${parsed.data.lastName || ''}`.trim() || parsed.data.email.split('@')[0];
+      
+      try {
+        const customer = await storage.createCustomer({
+          accountNumber,
+          companyName,
+          billingEmail: parsed.data.email,
+          status: "pending_approval",
+        });
+        
+        // Link user to customer
+        await storage.updateUser(user.id, { customerId: customer.id } as any);
+        
+        // Auto-sync to ConnexCS if integration is enabled
+        try {
+          await connexcs.loadCredentialsFromStorage(storage);
+          if (connexcs.isConfigured()) {
+            const syncResult = await connexcs.syncCustomer({
+              id: customer.id,
+              name: customer.companyName,
+              accountNumber: customer.accountNumber,
+            });
+            if (syncResult.connexcsId) {
+              await storage.updateCustomer(customer.id, { connexcsCustomerId: syncResult.connexcsId });
+            }
+            console.log(`[ConnexCS] New registration synced: ${customer.companyName} -> ${syncResult.connexcsId}`);
+          }
+        } catch (syncError) {
+          console.error("[ConnexCS] Auto-sync registration failed:", syncError);
+        }
+      } catch (customerError) {
+        console.error("Failed to create customer record:", customerError);
+      }
+      
       res.status(201).json({ user: sanitizeUser(user) });
     } catch (error) {
       console.error("Registration error:", error);
@@ -1283,6 +1319,27 @@ export async function registerRoutes(
       const parsed = insertRouteSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const route = await storage.createRoute(parsed.data);
+      
+      // Auto-sync to ConnexCS if integration is enabled
+      try {
+        await connexcs.loadCredentialsFromStorage(storage);
+        if (connexcs.isConfigured()) {
+          const syncResult = await connexcs.syncRoute({
+            id: route.id,
+            name: route.name,
+            prefix: route.prefix,
+            priority: route.priority,
+            weight: route.weight,
+          });
+          if (syncResult.connexcsId) {
+            await storage.updateRoute(route.id, { connexcsRouteId: syncResult.connexcsId });
+          }
+          console.log(`[ConnexCS] Route ${route.name} synced: ${syncResult.connexcsId}`);
+        }
+      } catch (syncError) {
+        console.error("[ConnexCS] Auto-sync route failed:", syncError);
+      }
+      
       res.status(201).json(route);
     } catch (error) {
       res.status(500).json({ error: "Failed to create route" });
