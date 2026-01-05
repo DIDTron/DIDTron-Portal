@@ -1499,6 +1499,38 @@ export const tenantBranding = pgTable("tenant_branding", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ==================== DOCUMENTATION PORTAL ====================
+
+export const docCategories = pgTable("doc_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  icon: text("icon"),
+  displayOrder: integer("display_order").default(0),
+  isPublished: boolean("is_published").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const docArticles = pgTable("doc_articles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoryId: varchar("category_id").references(() => docCategories.id).notNull(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull(),
+  excerpt: text("excerpt"),
+  content: text("content"),
+  author: text("author"),
+  tags: text("tags").array(),
+  displayOrder: integer("display_order").default(0),
+  isPublished: boolean("is_published").default(false),
+  publishedAt: timestamp("published_at"),
+  viewCount: integer("view_count").default(0),
+  helpfulCount: integer("helpful_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== INTEGRATIONS ====================
 
 export const integrationStatusEnum = pgEnum("integration_status", ["connected", "disconnected", "error", "not_configured"]);
@@ -1539,6 +1571,8 @@ export const insertCmsPortalSchema = createInsertSchema(cmsPortals).omit({ id: t
 export const insertCmsThemeSchema = createInsertSchema(cmsThemes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsPageSchema = createInsertSchema(cmsPages).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsMediaItemSchema = createInsertSchema(cmsMediaLibrary).omit({ id: true, createdAt: true });
+export const insertDocCategorySchema = createInsertSchema(docCategories).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertDocArticleSchema = createInsertSchema(docArticles).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTenantBrandingSchema = createInsertSchema(tenantBranding).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertIntegrationSchema = createInsertSchema(integrations).omit({ id: true, createdAt: true, updatedAt: true });
 
@@ -1732,3 +1766,9 @@ export type EmailLog = typeof emailLogs.$inferSelect;
 
 // Bonus types
 export type BonusType = typeof bonusTypes.$inferSelect;
+
+// Documentation types
+export type InsertDocCategory = z.infer<typeof insertDocCategorySchema>;
+export type DocCategory = typeof docCategories.$inferSelect;
+export type InsertDocArticle = z.infer<typeof insertDocArticleSchema>;
+export type DocArticle = typeof docArticles.$inferSelect;
