@@ -2511,6 +2511,104 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CLASS 4 RATE CARDS ====================
+
+  app.get("/api/class4/provider-rate-cards", async (req, res) => {
+    try {
+      const carrierId = req.query.carrierId as string | undefined;
+      const cards = await storage.getClass4ProviderRateCards(carrierId);
+      res.json(cards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch provider rate cards" });
+    }
+  });
+
+  app.get("/api/class4/provider-rate-cards/:id", async (req, res) => {
+    try {
+      const card = await storage.getClass4ProviderRateCard(req.params.id);
+      if (!card) return res.status(404).json({ error: "Rate card not found" });
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch provider rate card" });
+    }
+  });
+
+  app.post("/api/class4/provider-rate-cards", async (req, res) => {
+    try {
+      const card = await storage.createClass4ProviderRateCard(req.body);
+      res.status(201).json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create provider rate card" });
+    }
+  });
+
+  app.patch("/api/class4/provider-rate-cards/:id", async (req, res) => {
+    try {
+      const card = await storage.updateClass4ProviderRateCard(req.params.id, req.body);
+      if (!card) return res.status(404).json({ error: "Rate card not found" });
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update provider rate card" });
+    }
+  });
+
+  app.delete("/api/class4/provider-rate-cards/:id", async (req, res) => {
+    try {
+      await storage.deleteClass4ProviderRateCard(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete provider rate card" });
+    }
+  });
+
+  app.get("/api/class4/customer-rate-cards", async (req, res) => {
+    try {
+      const class4CustomerId = req.query.class4CustomerId as string | undefined;
+      const cards = await storage.getClass4CustomerRateCards(class4CustomerId);
+      res.json(cards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch customer rate cards" });
+    }
+  });
+
+  app.get("/api/class4/customer-rate-cards/:id", async (req, res) => {
+    try {
+      const card = await storage.getClass4CustomerRateCard(req.params.id);
+      if (!card) return res.status(404).json({ error: "Rate card not found" });
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch customer rate card" });
+    }
+  });
+
+  app.post("/api/class4/customer-rate-cards", async (req, res) => {
+    try {
+      const card = await storage.createClass4CustomerRateCard(req.body);
+      res.status(201).json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create customer rate card" });
+    }
+  });
+
+  app.patch("/api/class4/customer-rate-cards/:id", async (req, res) => {
+    try {
+      const card = await storage.updateClass4CustomerRateCard(req.params.id, req.body);
+      if (!card) return res.status(404).json({ error: "Rate card not found" });
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update customer rate card" });
+    }
+  });
+
+  app.delete("/api/class4/customer-rate-cards/:id", async (req, res) => {
+    try {
+      await storage.deleteClass4CustomerRateCard(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete customer rate card" });
+    }
+  });
+
   // ==================== AI VOICE AGENTS ====================
 
   app.get("/api/ai-voice/agents", async (req, res) => {

@@ -29,6 +29,8 @@ import {
   type SipTestSchedule, type InsertSipTestSchedule,
   type Class4Customer, type InsertClass4Customer,
   type Class4Carrier, type InsertClass4Carrier,
+  type Class4ProviderRateCard, type InsertClass4ProviderRateCard,
+  type Class4CustomerRateCard, type InsertClass4CustomerRateCard,
   type AiVoiceAgent, type InsertAiVoiceAgent,
   type CmsTheme, type InsertCmsTheme,
   type CmsPage, type InsertCmsPage,
@@ -291,6 +293,20 @@ export interface IStorage {
   createClass4Carrier(carrier: InsertClass4Carrier): Promise<Class4Carrier>;
   updateClass4Carrier(id: string, data: Partial<InsertClass4Carrier>): Promise<Class4Carrier | undefined>;
 
+  // Class 4 Provider Rate Cards
+  getClass4ProviderRateCards(carrierId?: string): Promise<Class4ProviderRateCard[]>;
+  getClass4ProviderRateCard(id: string): Promise<Class4ProviderRateCard | undefined>;
+  createClass4ProviderRateCard(card: InsertClass4ProviderRateCard): Promise<Class4ProviderRateCard>;
+  updateClass4ProviderRateCard(id: string, data: Partial<InsertClass4ProviderRateCard>): Promise<Class4ProviderRateCard | undefined>;
+  deleteClass4ProviderRateCard(id: string): Promise<boolean>;
+
+  // Class 4 Customer Rate Cards
+  getClass4CustomerRateCards(class4CustomerId?: string): Promise<Class4CustomerRateCard[]>;
+  getClass4CustomerRateCard(id: string): Promise<Class4CustomerRateCard | undefined>;
+  createClass4CustomerRateCard(card: InsertClass4CustomerRateCard): Promise<Class4CustomerRateCard>;
+  updateClass4CustomerRateCard(id: string, data: Partial<InsertClass4CustomerRateCard>): Promise<Class4CustomerRateCard | undefined>;
+  deleteClass4CustomerRateCard(id: string): Promise<boolean>;
+
   // AI Voice Agents
   getAiVoiceAgents(customerId: string): Promise<AiVoiceAgent[]>;
   getAiVoiceAgent(id: string): Promise<AiVoiceAgent | undefined>;
@@ -373,6 +389,8 @@ export class MemStorage implements IStorage {
   private sipTestSchedules: Map<string, SipTestSchedule>;
   private class4Customers: Map<string, Class4Customer>;
   private class4Carriers: Map<string, Class4Carrier>;
+  private class4ProviderRateCards: Map<string, Class4ProviderRateCard>;
+  private class4CustomerRateCards: Map<string, Class4CustomerRateCard>;
   private aiVoiceAgents: Map<string, AiVoiceAgent>;
   private cmsThemes: Map<string, CmsTheme>;
   private cmsPages: Map<string, CmsPage>;
@@ -420,6 +438,8 @@ export class MemStorage implements IStorage {
     this.sipTestSchedules = new Map();
     this.class4Customers = new Map();
     this.class4Carriers = new Map();
+    this.class4ProviderRateCards = new Map();
+    this.class4CustomerRateCards = new Map();
     this.aiVoiceAgents = new Map();
     this.cmsThemes = new Map();
     this.cmsPages = new Map();
@@ -2015,6 +2035,94 @@ export class MemStorage implements IStorage {
     const updated = { ...carrier, ...data, updatedAt: new Date() };
     this.class4Carriers.set(id, updated);
     return updated;
+  }
+
+  // Class 4 Provider Rate Cards
+  async getClass4ProviderRateCards(carrierId?: string): Promise<Class4ProviderRateCard[]> {
+    const all = Array.from(this.class4ProviderRateCards.values());
+    if (carrierId) return all.filter(r => r.carrierId === carrierId);
+    return all;
+  }
+
+  async getClass4ProviderRateCard(id: string): Promise<Class4ProviderRateCard | undefined> {
+    return this.class4ProviderRateCards.get(id);
+  }
+
+  async createClass4ProviderRateCard(card: InsertClass4ProviderRateCard): Promise<Class4ProviderRateCard> {
+    const id = randomUUID();
+    const now = new Date();
+    const r: Class4ProviderRateCard = {
+      id,
+      parentCustomerId: card.parentCustomerId,
+      carrierId: card.carrierId,
+      name: card.name,
+      currency: card.currency ?? "USD",
+      effectiveDate: card.effectiveDate ?? null,
+      expiryDate: card.expiryDate ?? null,
+      isActive: card.isActive ?? true,
+      connexcsRateCardId: card.connexcsRateCardId ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.class4ProviderRateCards.set(id, r);
+    return r;
+  }
+
+  async updateClass4ProviderRateCard(id: string, data: Partial<InsertClass4ProviderRateCard>): Promise<Class4ProviderRateCard | undefined> {
+    const card = this.class4ProviderRateCards.get(id);
+    if (!card) return undefined;
+    const updated = { ...card, ...data, updatedAt: new Date() };
+    this.class4ProviderRateCards.set(id, updated);
+    return updated;
+  }
+
+  async deleteClass4ProviderRateCard(id: string): Promise<boolean> {
+    return this.class4ProviderRateCards.delete(id);
+  }
+
+  // Class 4 Customer Rate Cards
+  async getClass4CustomerRateCards(class4CustomerId?: string): Promise<Class4CustomerRateCard[]> {
+    const all = Array.from(this.class4CustomerRateCards.values());
+    if (class4CustomerId) return all.filter(r => r.class4CustomerId === class4CustomerId);
+    return all;
+  }
+
+  async getClass4CustomerRateCard(id: string): Promise<Class4CustomerRateCard | undefined> {
+    return this.class4CustomerRateCards.get(id);
+  }
+
+  async createClass4CustomerRateCard(card: InsertClass4CustomerRateCard): Promise<Class4CustomerRateCard> {
+    const id = randomUUID();
+    const now = new Date();
+    const r: Class4CustomerRateCard = {
+      id,
+      parentCustomerId: card.parentCustomerId,
+      class4CustomerId: card.class4CustomerId ?? null,
+      name: card.name,
+      sourceRateCardId: card.sourceRateCardId ?? null,
+      markupType: card.markupType ?? "percentage",
+      markupValue: card.markupValue ?? "10",
+      profitAssuranceEnabled: card.profitAssuranceEnabled ?? true,
+      currency: card.currency ?? "USD",
+      isActive: card.isActive ?? true,
+      connexcsRateCardId: card.connexcsRateCardId ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.class4CustomerRateCards.set(id, r);
+    return r;
+  }
+
+  async updateClass4CustomerRateCard(id: string, data: Partial<InsertClass4CustomerRateCard>): Promise<Class4CustomerRateCard | undefined> {
+    const card = this.class4CustomerRateCards.get(id);
+    if (!card) return undefined;
+    const updated = { ...card, ...data, updatedAt: new Date() };
+    this.class4CustomerRateCards.set(id, updated);
+    return updated;
+  }
+
+  async deleteClass4CustomerRateCard(id: string): Promise<boolean> {
+    return this.class4CustomerRateCards.delete(id);
   }
 
   // AI Voice Agents
