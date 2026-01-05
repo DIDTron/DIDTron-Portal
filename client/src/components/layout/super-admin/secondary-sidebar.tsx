@@ -8,7 +8,7 @@ import {
   Server, Layers, Radio, CreditCard, Building2, Globe, Building,
   Route as RouteIcon, Users, UserPlus, Tags, Gift, Ticket,
   FileText, Palette, Image, Mail, BarChart3, Activity, Bell,
-  Shield, Key, Database, History, Settings, Webhook, Cpu
+  Shield, Key, Database, History, Settings, Webhook, Cpu, BookOpen
 } from "lucide-react";
 
 interface NavSubItem {
@@ -86,6 +86,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "pages", label: "Pages", route: "/admin/pages", icon: FileText },
       { id: "themes", label: "Themes", route: "/admin/themes", icon: Palette },
       { id: "media", label: "Media Library", route: "/admin/media", icon: Image },
+      { id: "documentation", label: "Documentation", route: "/admin/documentation", icon: BookOpen },
     ],
   },
   admin: {

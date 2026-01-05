@@ -34,6 +34,7 @@ import SocialPostsPage from "./social-posts";
 import CmsThemesPage from "./cms-themes";
 import CmsPagesPage from "./cms-pages";
 import MediaLibraryPage from "./media-library";
+import DocumentationPage from "./documentation";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -184,6 +185,7 @@ export default function AdminLayout() {
                 <Route path="/admin/pages" component={CmsPagesPage} />
                 <Route path="/admin/themes" component={CmsThemesPage} />
                 <Route path="/admin/media" component={MediaLibraryPage} />
+                <Route path="/admin/documentation" component={DocumentationPage} />
                 <Route path="/admin/admin-users">
                   <PlaceholderPage title="Admin Users" />
                 </Route>
