@@ -31,6 +31,7 @@ import {
   insertAiVoiceAgentSchema,
   insertCmsThemeSchema,
   insertCmsPageSchema,
+  insertCmsMediaItemSchema,
   insertTenantBrandingSchema,
   insertIntegrationSchema,
   insertBonusTypeSchema,
@@ -1682,6 +1683,58 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete CMS page" });
+    }
+  });
+
+  // ==================== CMS MEDIA LIBRARY ====================
+
+  app.get("/api/cms/media", async (req, res) => {
+    try {
+      const items = await storage.getCmsMediaItems();
+      res.json(items);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch media items" });
+    }
+  });
+
+  app.get("/api/cms/media/:id", async (req, res) => {
+    try {
+      const item = await storage.getCmsMediaItem(req.params.id);
+      if (!item) return res.status(404).json({ error: "Media item not found" });
+      res.json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch media item" });
+    }
+  });
+
+  app.post("/api/cms/media", async (req, res) => {
+    try {
+      const parsed = insertCmsMediaItemSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const item = await storage.createCmsMediaItem(parsed.data);
+      res.status(201).json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create media item" });
+    }
+  });
+
+  app.patch("/api/cms/media/:id", async (req, res) => {
+    try {
+      const item = await storage.updateCmsMediaItem(req.params.id, req.body);
+      if (!item) return res.status(404).json({ error: "Media item not found" });
+      res.json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update media item" });
+    }
+  });
+
+  app.delete("/api/cms/media/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteCmsMediaItem(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Media item not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete media item" });
     }
   });
 

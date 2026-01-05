@@ -1538,6 +1538,7 @@ export const insertAiVoiceCampaignSchema = createInsertSchema(aiVoiceCampaigns).
 export const insertCmsPortalSchema = createInsertSchema(cmsPortals).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsThemeSchema = createInsertSchema(cmsThemes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsPageSchema = createInsertSchema(cmsPages).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsMediaItemSchema = createInsertSchema(cmsMediaLibrary).omit({ id: true, createdAt: true });
 export const insertTenantBrandingSchema = createInsertSchema(tenantBranding).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertIntegrationSchema = createInsertSchema(integrations).omit({ id: true, createdAt: true, updatedAt: true });
 
@@ -1714,6 +1715,7 @@ export type CmsPortal = typeof cmsPortals.$inferSelect;
 export type InsertCmsTheme = z.infer<typeof insertCmsThemeSchema>;
 export type CmsTheme = typeof cmsThemes.$inferSelect;
 export type InsertCmsPage = z.infer<typeof insertCmsPageSchema>;
+export type InsertCmsMediaItem = z.infer<typeof insertCmsMediaItemSchema>;
 export type CmsPage = typeof cmsPages.$inferSelect;
 export type CmsMenu = typeof cmsMenus.$inferSelect;
 export type CmsMediaItem = typeof cmsMediaLibrary.$inferSelect;

@@ -31,6 +31,7 @@ import {
   type AiVoiceAgent, type InsertAiVoiceAgent,
   type CmsTheme, type InsertCmsTheme,
   type CmsPage, type InsertCmsPage,
+  type CmsMediaItem, type InsertCmsMediaItem,
   type TenantBranding, type InsertTenantBranding,
   type Integration, type InsertIntegration,
   type Invoice, type Payment, type PromoCode, type Referral,
@@ -2013,6 +2014,42 @@ export class MemStorage implements IStorage {
   }
   async deleteCmsPage(id: string): Promise<boolean> {
     return this.cmsPages.delete(id);
+  }
+
+  // CMS Media Library
+  async getCmsMediaItems(): Promise<CmsMediaItem[]> {
+    return Array.from(this.cmsMediaItems.values());
+  }
+  async getCmsMediaItem(id: string): Promise<CmsMediaItem | undefined> {
+    return this.cmsMediaItems.get(id);
+  }
+  async createCmsMediaItem(item: InsertCmsMediaItem): Promise<CmsMediaItem> {
+    const id = randomUUID();
+    const newItem: CmsMediaItem = {
+      id,
+      customerId: item.customerId ?? null,
+      name: item.name,
+      type: item.type,
+      url: item.url,
+      thumbnailUrl: item.thumbnailUrl ?? null,
+      altText: item.altText ?? null,
+      folder: item.folder ?? null,
+      size: item.size ?? null,
+      tags: item.tags ?? null,
+      createdAt: new Date(),
+    };
+    this.cmsMediaItems.set(id, newItem);
+    return newItem;
+  }
+  async updateCmsMediaItem(id: string, data: Partial<InsertCmsMediaItem>): Promise<CmsMediaItem | undefined> {
+    const item = this.cmsMediaItems.get(id);
+    if (!item) return undefined;
+    const updated = { ...item, ...data };
+    this.cmsMediaItems.set(id, updated);
+    return updated;
+  }
+  async deleteCmsMediaItem(id: string): Promise<boolean> {
+    return this.cmsMediaItems.delete(id);
   }
 
   // Tenant Branding
