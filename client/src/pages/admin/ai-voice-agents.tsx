@@ -111,7 +111,7 @@ export default function AiVoiceAgentsPage() {
   const [activeTab, setActiveTab] = useState("general");
 
   const { data: agents = [], isLoading: agentsLoading } = useQuery<AiVoiceAgent[]>({
-    queryKey: ["/api/ai-voice/agents"],
+    queryKey: ["/api/admin/ai-voice/agents"],
   });
 
   const { data: customers = [] } = useQuery<Customer[]>({
@@ -120,11 +120,11 @@ export default function AiVoiceAgentsPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: AgentFormData) => {
-      const res = await apiRequest("POST", "/api/ai-voice/agents", data);
+      const res = await apiRequest("POST", "/api/admin/ai-voice/agents", data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/ai-voice/agents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-voice/agents"] });
       toast({ title: "AI Voice Agent created successfully" });
       resetForm();
     },
@@ -135,11 +135,11 @@ export default function AiVoiceAgentsPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<AgentFormData> }) => {
-      const res = await apiRequest("PATCH", `/api/ai-voice/agents/${id}`, data);
+      const res = await apiRequest("PATCH", `/api/admin/ai-voice/agents/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/ai-voice/agents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-voice/agents"] });
       toast({ title: "AI Voice Agent updated successfully" });
       resetForm();
     },
@@ -150,10 +150,10 @@ export default function AiVoiceAgentsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/ai-voice/agents/${id}`);
+      await apiRequest("DELETE", `/api/admin/ai-voice/agents/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/ai-voice/agents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-voice/agents"] });
       toast({ title: "AI Voice Agent deleted successfully" });
     },
     onError: (error: Error) => {

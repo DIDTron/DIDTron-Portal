@@ -35,6 +35,9 @@ import {
   type Class4ProviderRateCard, type InsertClass4ProviderRateCard,
   type Class4CustomerRateCard, type InsertClass4CustomerRateCard,
   type AiVoiceAgent, type InsertAiVoiceAgent,
+  type AiVoiceFlow, type InsertAiVoiceFlow,
+  type AiVoiceTrainingData, type InsertAiVoiceTrainingData,
+  type AiVoiceCampaign, type InsertAiVoiceCampaign,
   type CmsTheme, type InsertCmsTheme,
   type CmsPage, type InsertCmsPage,
   type CmsMediaItem, type InsertCmsMediaItem,
@@ -359,9 +362,32 @@ export interface IStorage {
 
   // AI Voice Agents
   getAiVoiceAgents(customerId: string): Promise<AiVoiceAgent[]>;
+  getAllAiVoiceAgents(): Promise<AiVoiceAgent[]>;
   getAiVoiceAgent(id: string): Promise<AiVoiceAgent | undefined>;
   createAiVoiceAgent(agent: InsertAiVoiceAgent): Promise<AiVoiceAgent>;
   updateAiVoiceAgent(id: string, data: Partial<InsertAiVoiceAgent>): Promise<AiVoiceAgent | undefined>;
+  deleteAiVoiceAgent(id: string): Promise<boolean>;
+
+  // AI Voice Flows
+  getAiVoiceFlows(agentId: string): Promise<AiVoiceFlow[]>;
+  getAiVoiceFlow(id: string): Promise<AiVoiceFlow | undefined>;
+  createAiVoiceFlow(flow: InsertAiVoiceFlow): Promise<AiVoiceFlow>;
+  updateAiVoiceFlow(id: string, data: Partial<InsertAiVoiceFlow>): Promise<AiVoiceFlow | undefined>;
+  deleteAiVoiceFlow(id: string): Promise<boolean>;
+
+  // AI Voice Training Data
+  getAiVoiceTrainingData(agentId: string): Promise<AiVoiceTrainingData[]>;
+  getAiVoiceTrainingDataItem(id: string): Promise<AiVoiceTrainingData | undefined>;
+  createAiVoiceTrainingData(data: InsertAiVoiceTrainingData): Promise<AiVoiceTrainingData>;
+  updateAiVoiceTrainingData(id: string, data: Partial<InsertAiVoiceTrainingData>): Promise<AiVoiceTrainingData | undefined>;
+  deleteAiVoiceTrainingData(id: string): Promise<boolean>;
+
+  // AI Voice Campaigns
+  getAiVoiceCampaigns(customerId: string): Promise<AiVoiceCampaign[]>;
+  getAiVoiceCampaign(id: string): Promise<AiVoiceCampaign | undefined>;
+  createAiVoiceCampaign(campaign: InsertAiVoiceCampaign): Promise<AiVoiceCampaign>;
+  updateAiVoiceCampaign(id: string, data: Partial<InsertAiVoiceCampaign>): Promise<AiVoiceCampaign | undefined>;
+  deleteAiVoiceCampaign(id: string): Promise<boolean>;
 
   // CMS Themes
   getCmsThemes(): Promise<CmsTheme[]>;
@@ -446,6 +472,9 @@ export class MemStorage implements IStorage {
   private class4ProviderRateCards: Map<string, Class4ProviderRateCard>;
   private class4CustomerRateCards: Map<string, Class4CustomerRateCard>;
   private aiVoiceAgents: Map<string, AiVoiceAgent>;
+  private aiVoiceFlows: Map<string, AiVoiceFlow>;
+  private aiVoiceTrainingData: Map<string, AiVoiceTrainingData>;
+  private aiVoiceCampaigns: Map<string, AiVoiceCampaign>;
   private cmsThemes: Map<string, CmsTheme>;
   private cmsPages: Map<string, CmsPage>;
   private cmsMediaItems: Map<string, CmsMediaItem>;
@@ -501,6 +530,9 @@ export class MemStorage implements IStorage {
     this.class4ProviderRateCards = new Map();
     this.class4CustomerRateCards = new Map();
     this.aiVoiceAgents = new Map();
+    this.aiVoiceFlows = new Map();
+    this.aiVoiceTrainingData = new Map();
+    this.aiVoiceCampaigns = new Map();
     this.cmsThemes = new Map();
     this.cmsPages = new Map();
     this.cmsMediaItems = new Map();
@@ -2079,6 +2111,7 @@ export class MemStorage implements IStorage {
       advancedSettings: config.advancedSettings ?? null,
       alertThresholds: config.alertThresholds ?? null,
       isActive: config.isActive ?? true,
+      isShared: config.isShared ?? false,
       createdBy: config.createdBy ?? null,
       createdAt: now,
       updatedAt: now
@@ -2242,11 +2275,17 @@ export class MemStorage implements IStorage {
 
   async createWebhookDelivery(delivery: InsertWebhookDelivery): Promise<WebhookDelivery> {
     const id = randomUUID();
+    const now = new Date();
     const newDelivery: WebhookDelivery = {
-      ...delivery,
       id,
-      retryCount: delivery.retryCount || 0,
-      createdAt: new Date(),
+      webhookId: delivery.webhookId,
+      event: delivery.event,
+      payload: delivery.payload ?? null,
+      responseStatus: delivery.responseStatus ?? null,
+      responseBody: delivery.responseBody ?? null,
+      deliveredAt: delivery.deliveredAt ?? null,
+      retryCount: delivery.retryCount ?? 0,
+      createdAt: now,
     };
     this.webhookDeliveries.set(id, newDelivery);
     return newDelivery;
@@ -2476,6 +2515,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.aiVoiceAgents.values()).filter(a => a.customerId === customerId);
   }
 
+  async getAllAiVoiceAgents(): Promise<AiVoiceAgent[]> {
+    return Array.from(this.aiVoiceAgents.values());
+  }
+
   async getAiVoiceAgent(id: string): Promise<AiVoiceAgent | undefined> {
     return this.aiVoiceAgents.get(id);
   }
@@ -2515,6 +2558,126 @@ export class MemStorage implements IStorage {
 
   async deleteAiVoiceAgent(id: string): Promise<boolean> {
     return this.aiVoiceAgents.delete(id);
+  }
+
+  // AI Voice Flows
+  async getAiVoiceFlows(agentId: string): Promise<AiVoiceFlow[]> {
+    return Array.from(this.aiVoiceFlows.values()).filter(f => f.agentId === agentId);
+  }
+
+  async getAiVoiceFlow(id: string): Promise<AiVoiceFlow | undefined> {
+    return this.aiVoiceFlows.get(id);
+  }
+
+  async createAiVoiceFlow(flow: InsertAiVoiceFlow): Promise<AiVoiceFlow> {
+    const id = randomUUID();
+    const now = new Date();
+    const f: AiVoiceFlow = {
+      id,
+      agentId: flow.agentId,
+      name: flow.name,
+      flowData: flow.flowData ?? null,
+      isDefault: flow.isDefault ?? false,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiVoiceFlows.set(id, f);
+    return f;
+  }
+
+  async updateAiVoiceFlow(id: string, data: Partial<InsertAiVoiceFlow>): Promise<AiVoiceFlow | undefined> {
+    const flow = this.aiVoiceFlows.get(id);
+    if (!flow) return undefined;
+    const updated = { ...flow, ...data, updatedAt: new Date() };
+    this.aiVoiceFlows.set(id, updated);
+    return updated;
+  }
+
+  async deleteAiVoiceFlow(id: string): Promise<boolean> {
+    return this.aiVoiceFlows.delete(id);
+  }
+
+  // AI Voice Training Data
+  async getAiVoiceTrainingData(agentId: string): Promise<AiVoiceTrainingData[]> {
+    return Array.from(this.aiVoiceTrainingData.values()).filter(t => t.agentId === agentId);
+  }
+
+  async getAiVoiceTrainingDataItem(id: string): Promise<AiVoiceTrainingData | undefined> {
+    return this.aiVoiceTrainingData.get(id);
+  }
+
+  async createAiVoiceTrainingData(data: InsertAiVoiceTrainingData): Promise<AiVoiceTrainingData> {
+    const id = randomUUID();
+    const now = new Date();
+    const t: AiVoiceTrainingData = {
+      id,
+      agentId: data.agentId,
+      category: data.category ?? null,
+      question: data.question,
+      answer: data.answer,
+      isActive: data.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiVoiceTrainingData.set(id, t);
+    return t;
+  }
+
+  async updateAiVoiceTrainingData(id: string, data: Partial<InsertAiVoiceTrainingData>): Promise<AiVoiceTrainingData | undefined> {
+    const item = this.aiVoiceTrainingData.get(id);
+    if (!item) return undefined;
+    const updated = { ...item, ...data, updatedAt: new Date() };
+    this.aiVoiceTrainingData.set(id, updated);
+    return updated;
+  }
+
+  async deleteAiVoiceTrainingData(id: string): Promise<boolean> {
+    return this.aiVoiceTrainingData.delete(id);
+  }
+
+  // AI Voice Campaigns
+  async getAiVoiceCampaigns(customerId: string): Promise<AiVoiceCampaign[]> {
+    return Array.from(this.aiVoiceCampaigns.values()).filter(c => c.customerId === customerId);
+  }
+
+  async getAiVoiceCampaign(id: string): Promise<AiVoiceCampaign | undefined> {
+    return this.aiVoiceCampaigns.get(id);
+  }
+
+  async createAiVoiceCampaign(campaign: InsertAiVoiceCampaign): Promise<AiVoiceCampaign> {
+    const id = randomUUID();
+    const now = new Date();
+    const c: AiVoiceCampaign = {
+      id,
+      customerId: campaign.customerId,
+      agentId: campaign.agentId,
+      name: campaign.name,
+      description: campaign.description ?? null,
+      contactList: campaign.contactList ?? null,
+      scheduledAt: campaign.scheduledAt ?? null,
+      maxConcurrentCalls: campaign.maxConcurrentCalls ?? 5,
+      callsCompleted: campaign.callsCompleted ?? 0,
+      callsTotal: campaign.callsTotal ?? 0,
+      status: campaign.status ?? "draft",
+      startedAt: campaign.startedAt ?? null,
+      completedAt: campaign.completedAt ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiVoiceCampaigns.set(id, c);
+    return c;
+  }
+
+  async updateAiVoiceCampaign(id: string, data: Partial<InsertAiVoiceCampaign>): Promise<AiVoiceCampaign | undefined> {
+    const campaign = this.aiVoiceCampaigns.get(id);
+    if (!campaign) return undefined;
+    const updated = { ...campaign, ...data, updatedAt: new Date() };
+    this.aiVoiceCampaigns.set(id, updated);
+    return updated;
+  }
+
+  async deleteAiVoiceCampaign(id: string): Promise<boolean> {
+    return this.aiVoiceCampaigns.delete(id);
   }
 
   // CMS Themes
