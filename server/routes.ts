@@ -592,6 +592,27 @@ export async function registerRoutes(
     }
   });
 
+  // Get ticket replies
+  app.get("/api/my/tickets/:id/replies", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket || ticket.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+      const replies = await storage.getTicketReplies(req.params.id);
+      res.json(replies.filter(r => !r.isInternal));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch replies" });
+    }
+  });
+
   // Add reply to customer ticket
   app.post("/api/my/tickets/:id/reply", async (req, res) => {
     try {
@@ -602,11 +623,8 @@ export async function registerRoutes(
       if (!user?.customerId) {
         return res.status(404).json({ error: "Customer profile not found" });
       }
-      const customer = await storage.getCustomer(user.customerId);
-      if (!customer) return res.status(404).json({ error: "Customer not found" });
-
       const ticket = await storage.getTicket(req.params.id);
-      if (!ticket || ticket.customerId !== customer.id) {
+      if (!ticket || ticket.customerId !== user.customerId) {
         return res.status(404).json({ error: "Ticket not found" });
       }
 
@@ -615,14 +633,15 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Message required" });
       }
 
-      // Update ticket with new reply (stored in description for simplicity)
-      const updatedDescription = `${ticket.description}\n\n---\n**Customer Reply (${new Date().toISOString()}):**\n${message}`;
-      const updated = await storage.updateTicket(req.params.id, { 
-        description: updatedDescription,
-        status: "pending",
+      const reply = await storage.createTicketReply({
+        ticketId: req.params.id,
+        userId: req.session.userId,
+        message: message.trim(),
+        isInternal: false
       });
 
-      res.json(updated);
+      await storage.updateTicket(req.params.id, { status: "in_progress" });
+      res.status(201).json(reply);
     } catch (error) {
       console.error("Ticket reply error:", error);
       res.status(500).json({ error: "Failed to add reply" });
@@ -1640,6 +1659,67 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete API key" });
+    }
+  });
+
+  // ==================== CUSTOMER PROMO CODES ====================
+  
+  app.post("/api/my/promo-codes/redeem", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      
+      const { code } = req.body;
+      if (!code || typeof code !== "string") {
+        return res.status(400).json({ error: "Promo code required" });
+      }
+      
+      const promoCode = await storage.getPromoCodeByCode(code.toUpperCase().trim());
+      if (!promoCode) {
+        return res.status(404).json({ error: "Invalid promo code" });
+      }
+      
+      if (!promoCode.isActive) {
+        return res.status(400).json({ error: "This promo code is no longer active" });
+      }
+      
+      if (promoCode.validFrom && new Date() < new Date(promoCode.validFrom)) {
+        return res.status(400).json({ error: "This promo code is not yet valid" });
+      }
+      
+      if (promoCode.validUntil && new Date() > new Date(promoCode.validUntil)) {
+        return res.status(400).json({ error: "This promo code has expired" });
+      }
+      
+      if (promoCode.maxUses && promoCode.usedCount && promoCode.usedCount >= promoCode.maxUses) {
+        return res.status(400).json({ error: "This promo code has reached its usage limit" });
+      }
+      
+      const customer = await storage.getCustomer(user.customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      
+      const currentBalance = parseFloat(customer.balance || "0");
+      const discountAmount = parseFloat(promoCode.discountValue);
+      const newBalance = currentBalance + discountAmount;
+      
+      await storage.updateCustomer(user.customerId, { balance: newBalance.toFixed(2) });
+      await storage.updatePromoCode(promoCode.id, { usedCount: (promoCode.usedCount || 0) + 1 });
+      
+      res.json({ 
+        success: true, 
+        message: `Promo code redeemed! $${discountAmount.toFixed(2)} added to your balance.`,
+        newBalance: newBalance.toFixed(2)
+      });
+    } catch (error) {
+      console.error("Promo code redemption error:", error);
+      res.status(500).json({ error: "Failed to redeem promo code" });
     }
   });
 

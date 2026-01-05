@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   CreditCard, DollarSign, TrendingUp, Plus, 
-  ArrowUpRight, Clock, Receipt, Wallet, ArrowDownLeft
+  ArrowUpRight, Clock, Receipt, Wallet, ArrowDownLeft, Gift, Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -20,6 +20,8 @@ import type { Customer, Payment } from "@shared/schema";
 export default function BillingPage() {
   const { toast } = useToast();
   const [showAddFundsDialog, setShowAddFundsDialog] = useState(false);
+  const [showPromoDialog, setShowPromoDialog] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
   const [amount, setAmount] = useState("50");
   const [paymentMethod, setPaymentMethod] = useState("card");
 
@@ -43,6 +45,21 @@ export default function BillingPage() {
     },
     onError: () => {
       toast({ title: "Payment Failed", description: "Unable to process payment. Please try again.", variant: "destructive" });
+    },
+  });
+
+  const redeemPromoMutation = useMutation({
+    mutationFn: async (code: string) => {
+      return await apiRequest("POST", "/api/my/promo-codes/redeem", { code });
+    },
+    onSuccess: (data: { message: string }) => {
+      toast({ title: "Promo Code Redeemed", description: data.message });
+      queryClient.invalidateQueries({ queryKey: ["/api/my/profile"] });
+      setShowPromoDialog(false);
+      setPromoCode("");
+    },
+    onError: (error: Error) => {
+      toast({ title: "Invalid Code", description: error.message, variant: "destructive" });
     },
   });
 
@@ -123,6 +140,49 @@ export default function BillingPage() {
               </Button>
               <Button onClick={handleAddFunds} disabled={addFundsMutation.isPending} data-testid="button-confirm-payment">
                 {addFundsMutation.isPending ? "Processing..." : `Pay $${amount}`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={showPromoDialog} onOpenChange={setShowPromoDialog}>
+          <DialogTrigger asChild>
+            <Button variant="outline" data-testid="button-redeem-promo">
+              <Gift className="h-4 w-4 mr-2" />
+              Redeem Code
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Redeem Promo Code</DialogTitle>
+              <DialogDescription>
+                Enter a promo code to add credits to your account
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Promo Code</Label>
+                <Input
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  placeholder="Enter code"
+                  data-testid="input-promo-code"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowPromoDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => redeemPromoMutation.mutate(promoCode)} 
+                disabled={redeemPromoMutation.isPending || !promoCode.trim()}
+                data-testid="button-confirm-promo"
+              >
+                {redeemPromoMutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Redeeming...</>
+                ) : (
+                  "Redeem"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

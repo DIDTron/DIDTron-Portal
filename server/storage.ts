@@ -23,7 +23,7 @@ import {
   type Ivr, type InsertIvr,
   type RingGroup, type InsertRingGroup,
   type Queue, type InsertQueue,
-  type Ticket, type InsertTicket,
+  type Ticket, type InsertTicket, type TicketReply, type InsertTicketReply,
   type Currency, type InsertCurrency,
   type FxRate, type InsertFxRate,
   type LedgerEntry, type InsertLedgerEntry,
@@ -422,6 +422,7 @@ export class MemStorage implements IStorage {
   private ringGroups: Map<string, RingGroup>;
   private queues: Map<string, Queue>;
   private tickets: Map<string, Ticket>;
+  private ticketReplies: Map<string, TicketReply>;
   private invoices: Map<string, Invoice>;
   private payments: Map<string, Payment>;
   private promoCodes: Map<string, PromoCode>;
@@ -476,6 +477,7 @@ export class MemStorage implements IStorage {
     this.ringGroups = new Map();
     this.queues = new Map();
     this.tickets = new Map();
+    this.ticketReplies = new Map();
     this.invoices = new Map();
     this.payments = new Map();
     this.promoCodes = new Map();
@@ -1594,6 +1596,29 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
+  // Ticket Replies
+  async getTicketReplies(ticketId: string): Promise<TicketReply[]> {
+    return Array.from(this.ticketReplies.values())
+      .filter(r => r.ticketId === ticketId)
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+  }
+
+  async createTicketReply(reply: InsertTicketReply): Promise<TicketReply> {
+    const id = randomUUID();
+    const now = new Date();
+    const r: TicketReply = {
+      id,
+      ticketId: reply.ticketId,
+      userId: reply.userId ?? null,
+      message: reply.message,
+      isInternal: reply.isInternal ?? false,
+      attachments: reply.attachments ?? null,
+      createdAt: now
+    };
+    this.ticketReplies.set(id, r);
+    return r;
+  }
+
   // Invoices
   async getInvoices(customerId?: string): Promise<Invoice[]> {
     const all = Array.from(this.invoices.values());
@@ -2431,6 +2456,10 @@ export class MemStorage implements IStorage {
     const updated = { ...agent, ...data, updatedAt: new Date() };
     this.aiVoiceAgents.set(id, updated);
     return updated;
+  }
+
+  async deleteAiVoiceAgent(id: string): Promise<boolean> {
+    return this.aiVoiceAgents.delete(id);
   }
 
   // CMS Themes
