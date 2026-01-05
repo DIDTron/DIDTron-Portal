@@ -42,6 +42,9 @@ import {
   type CmsPage, type InsertCmsPage,
   type CmsMediaItem, type InsertCmsMediaItem,
   type TenantBranding, type InsertTenantBranding,
+  type PortalLoginPage, type InsertPortalLoginPage,
+  type SiteSetting, type InsertSiteSetting,
+  type WebsiteSection, type InsertWebsiteSection,
   type Integration, type InsertIntegration,
   type Invoice, type Payment, type PromoCode, type Referral,
   type InsertPayment, type InsertPromoCode,
@@ -409,6 +412,24 @@ export interface IStorage {
   createTenantBranding(branding: InsertTenantBranding): Promise<TenantBranding>;
   updateTenantBranding(id: string, data: Partial<InsertTenantBranding>): Promise<TenantBranding | undefined>;
 
+  // Portal Login Pages
+  getPortalLoginPages(): Promise<PortalLoginPage[]>;
+  getPortalLoginPage(portalType: string): Promise<PortalLoginPage | undefined>;
+  createPortalLoginPage(page: InsertPortalLoginPage): Promise<PortalLoginPage>;
+  updatePortalLoginPage(id: string, data: Partial<InsertPortalLoginPage>): Promise<PortalLoginPage | undefined>;
+
+  // Site Settings
+  getSiteSettings(category?: string): Promise<SiteSetting[]>;
+  getSiteSetting(key: string): Promise<SiteSetting | undefined>;
+  upsertSiteSetting(setting: InsertSiteSetting): Promise<SiteSetting>;
+
+  // Website Sections
+  getWebsiteSections(pageSlug?: string): Promise<WebsiteSection[]>;
+  getWebsiteSection(id: string): Promise<WebsiteSection | undefined>;
+  createWebsiteSection(section: InsertWebsiteSection): Promise<WebsiteSection>;
+  updateWebsiteSection(id: string, data: Partial<InsertWebsiteSection>): Promise<WebsiteSection | undefined>;
+  deleteWebsiteSection(id: string): Promise<boolean>;
+
   // Integrations
   getIntegrations(): Promise<Integration[]>;
   getIntegration(id: string): Promise<Integration | undefined>;
@@ -480,6 +501,9 @@ export class MemStorage implements IStorage {
   private cmsPages: Map<string, CmsPage>;
   private cmsMediaItems: Map<string, CmsMediaItem>;
   private tenantBrandings: Map<string, TenantBranding>;
+  private portalLoginPages: Map<string, PortalLoginPage>;
+  private siteSettings: Map<string, SiteSetting>;
+  private websiteSections: Map<string, WebsiteSection>;
   private integrations: Map<string, Integration>;
   private bonusTypes: Map<string, BonusType>;
   private emailTemplates: Map<string, EmailTemplate>;
@@ -538,6 +562,9 @@ export class MemStorage implements IStorage {
     this.cmsPages = new Map();
     this.cmsMediaItems = new Map();
     this.tenantBrandings = new Map();
+    this.portalLoginPages = new Map();
+    this.siteSettings = new Map();
+    this.websiteSections = new Map();
     this.integrations = new Map();
     this.bonusTypes = new Map();
     this.emailTemplates = new Map();
@@ -2836,6 +2863,129 @@ export class MemStorage implements IStorage {
     const updated = { ...branding, ...data, updatedAt: new Date() };
     this.tenantBrandings.set(id, updated);
     return updated;
+  }
+
+  // Portal Login Pages
+  async getPortalLoginPages(): Promise<PortalLoginPage[]> {
+    return Array.from(this.portalLoginPages.values());
+  }
+
+  async getPortalLoginPage(portalType: string): Promise<PortalLoginPage | undefined> {
+    return Array.from(this.portalLoginPages.values()).find(p => p.portalType === portalType);
+  }
+
+  async createPortalLoginPage(page: InsertPortalLoginPage): Promise<PortalLoginPage> {
+    const id = randomUUID();
+    const now = new Date();
+    const p: PortalLoginPage = {
+      id,
+      portalType: page.portalType,
+      title: page.title,
+      subtitle: page.subtitle ?? null,
+      logoUrl: page.logoUrl ?? null,
+      backgroundImageUrl: page.backgroundImageUrl ?? null,
+      backgroundColor: page.backgroundColor ?? null,
+      primaryColor: page.primaryColor ?? null,
+      textColor: page.textColor ?? null,
+      welcomeMessage: page.welcomeMessage ?? null,
+      footerText: page.footerText ?? null,
+      showSocialLogin: page.showSocialLogin ?? false,
+      showRememberMe: page.showRememberMe ?? true,
+      showForgotPassword: page.showForgotPassword ?? true,
+      customCss: page.customCss ?? null,
+      isActive: page.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.portalLoginPages.set(id, p);
+    return p;
+  }
+
+  async updatePortalLoginPage(id: string, data: Partial<InsertPortalLoginPage>): Promise<PortalLoginPage | undefined> {
+    const page = this.portalLoginPages.get(id);
+    if (!page) return undefined;
+    const updated = { ...page, ...data, updatedAt: new Date() };
+    this.portalLoginPages.set(id, updated);
+    return updated;
+  }
+
+  // Site Settings
+  async getSiteSettings(category?: string): Promise<SiteSetting[]> {
+    const all = Array.from(this.siteSettings.values());
+    return category ? all.filter(s => s.category === category) : all;
+  }
+
+  async getSiteSetting(key: string): Promise<SiteSetting | undefined> {
+    return Array.from(this.siteSettings.values()).find(s => s.key === key);
+  }
+
+  async upsertSiteSetting(setting: InsertSiteSetting): Promise<SiteSetting> {
+    const existing = await this.getSiteSetting(setting.key);
+    const now = new Date();
+    if (existing) {
+      const updated = { ...existing, ...setting, updatedAt: now };
+      this.siteSettings.set(existing.id, updated);
+      return updated;
+    }
+    const id = randomUUID();
+    const s: SiteSetting = {
+      id,
+      key: setting.key,
+      value: setting.value ?? null,
+      category: setting.category,
+      label: setting.label,
+      description: setting.description ?? null,
+      inputType: setting.inputType ?? "text",
+      isPublic: setting.isPublic ?? false,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.siteSettings.set(id, s);
+    return s;
+  }
+
+  // Website Sections
+  async getWebsiteSections(pageSlug?: string): Promise<WebsiteSection[]> {
+    const all = Array.from(this.websiteSections.values());
+    const filtered = pageSlug ? all.filter(s => s.pageSlug === pageSlug) : all;
+    return filtered.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  }
+
+  async getWebsiteSection(id: string): Promise<WebsiteSection | undefined> {
+    return this.websiteSections.get(id);
+  }
+
+  async createWebsiteSection(section: InsertWebsiteSection): Promise<WebsiteSection> {
+    const id = randomUUID();
+    const now = new Date();
+    const s: WebsiteSection = {
+      id,
+      pageSlug: section.pageSlug,
+      sectionType: section.sectionType,
+      title: section.title ?? null,
+      subtitle: section.subtitle ?? null,
+      content: section.content ?? null,
+      backgroundImage: section.backgroundImage ?? null,
+      backgroundColor: section.backgroundColor ?? null,
+      displayOrder: section.displayOrder ?? 0,
+      isVisible: section.isVisible ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.websiteSections.set(id, s);
+    return s;
+  }
+
+  async updateWebsiteSection(id: string, data: Partial<InsertWebsiteSection>): Promise<WebsiteSection | undefined> {
+    const section = this.websiteSections.get(id);
+    if (!section) return undefined;
+    const updated = { ...section, ...data, updatedAt: new Date() };
+    this.websiteSections.set(id, updated);
+    return updated;
+  }
+
+  async deleteWebsiteSection(id: string): Promise<boolean> {
+    return this.websiteSections.delete(id);
   }
 
   // Integrations

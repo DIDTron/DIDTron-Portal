@@ -1518,6 +1518,58 @@ export const tenantBranding = pgTable("tenant_branding", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Portal Login Pages - customize login appearance for each portal type
+export const portalLoginPages = pgTable("portal_login_pages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  portalType: text("portal_type").notNull().unique(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  logoUrl: text("logo_url"),
+  backgroundImageUrl: text("background_image_url"),
+  backgroundColor: text("background_color"),
+  primaryColor: text("primary_color"),
+  textColor: text("text_color"),
+  welcomeMessage: text("welcome_message"),
+  footerText: text("footer_text"),
+  showSocialLogin: boolean("show_social_login").default(false),
+  showRememberMe: boolean("show_remember_me").default(true),
+  showForgotPassword: boolean("show_forgot_password").default(true),
+  customCss: text("custom_css"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Site Settings - global website configuration
+export const siteSettings = pgTable("site_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: text("key").notNull().unique(),
+  value: text("value"),
+  category: text("category").notNull(),
+  label: text("label").notNull(),
+  description: text("description"),
+  inputType: text("input_type").default("text"),
+  isPublic: boolean("is_public").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Website Sections - manage homepage and other page sections
+export const websiteSections = pgTable("website_sections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pageSlug: text("page_slug").notNull(),
+  sectionType: text("section_type").notNull(),
+  title: text("title"),
+  subtitle: text("subtitle"),
+  content: jsonb("content"),
+  backgroundImage: text("background_image"),
+  backgroundColor: text("background_color"),
+  displayOrder: integer("display_order").default(0),
+  isVisible: boolean("is_visible").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== DOCUMENTATION PORTAL ====================
 
 export const docCategories = pgTable("doc_categories", {
@@ -1595,6 +1647,9 @@ export const insertCmsMediaItemSchema = createInsertSchema(cmsMediaLibrary).omit
 export const insertDocCategorySchema = createInsertSchema(docCategories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertDocArticleSchema = createInsertSchema(docArticles).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTenantBrandingSchema = createInsertSchema(tenantBranding).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPortalLoginPageSchema = createInsertSchema(portalLoginPages).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSiteSettingSchema = createInsertSchema(siteSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertWebsiteSectionSchema = createInsertSchema(websiteSections).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertIntegrationSchema = createInsertSchema(integrations).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertCustomerCategorySchema = createInsertSchema(customerCategories).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1789,6 +1844,12 @@ export type CmsMenu = typeof cmsMenus.$inferSelect;
 export type CmsMediaItem = typeof cmsMediaLibrary.$inferSelect;
 export type InsertTenantBranding = z.infer<typeof insertTenantBrandingSchema>;
 export type TenantBranding = typeof tenantBranding.$inferSelect;
+export type InsertPortalLoginPage = z.infer<typeof insertPortalLoginPageSchema>;
+export type PortalLoginPage = typeof portalLoginPages.$inferSelect;
+export type InsertSiteSetting = z.infer<typeof insertSiteSettingSchema>;
+export type SiteSetting = typeof siteSettings.$inferSelect;
+export type InsertWebsiteSection = z.infer<typeof insertWebsiteSectionSchema>;
+export type WebsiteSection = typeof websiteSections.$inferSelect;
 
 // Integration types
 export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;

@@ -33,7 +33,6 @@ import ReferralsPage from "./referrals";
 import SupportPage from "./support";
 import SettingsPage from "./settings";
 import UsagePage from "./usage";
-import BrandingPage from "./branding";
 import PortalAiAgentsPage from "./ai-agents";
 import PortalExtensionsPage from "./extensions";
 import PortalIvrPage from "./ivr";
@@ -100,7 +99,6 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/support/new": { section: "support", subItem: "new-ticket" },
   "/portal/support/kb": { section: "support", subItem: "kb" },
   "/portal/settings": { section: "settings", subItem: "profile" },
-  "/portal/settings/branding": { section: "settings", subItem: "branding" },
   "/portal/settings/security": { section: "settings", subItem: "security" },
   "/portal/settings/notifications": { section: "settings", subItem: "notifications" },
 };
@@ -274,7 +272,6 @@ export default function CustomerPortal() {
               <Route path="/portal/support/new" component={NewTicketPage} />
               <Route path="/portal/support/kb" component={KnowledgeBasePage} />
               <Route path="/portal/settings" component={SettingsPage} />
-              <Route path="/portal/settings/branding" component={BrandingPage} />
               <Route path="/portal/settings/security" component={SecuritySettingsPage} />
               <Route path="/portal/settings/notifications" component={NotificationSettingsPage} />
               <Route>

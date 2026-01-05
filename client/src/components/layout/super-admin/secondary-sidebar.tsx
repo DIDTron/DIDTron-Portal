@@ -98,12 +98,14 @@ const sectionConfigs: Record<string, SectionConfig> = {
     ],
   },
   cms: {
-    title: "CMS & Branding",
+    title: "CMS & Website",
     items: [
-      { id: "pages", label: "Pages", route: "/admin/pages", icon: FileText },
+      { id: "pages", label: "CMS Pages", route: "/admin/pages", icon: FileText },
+      { id: "website-sections", label: "Website Sections", route: "/admin/website-sections", icon: Layers },
+      { id: "login-pages", label: "Portal Logins", route: "/admin/login-pages", icon: Key },
+      { id: "site-settings", label: "Site Settings", route: "/admin/site-settings", icon: Settings },
       { id: "themes", label: "Themes", route: "/admin/themes", icon: Palette },
       { id: "media", label: "Media Library", route: "/admin/media", icon: Image },
-      { id: "branding", label: "Tenant Branding", route: "/admin/branding", icon: Building },
       { id: "documentation", label: "Documentation", route: "/admin/documentation", icon: BookOpen },
     ],
   },

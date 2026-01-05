@@ -38,6 +38,9 @@ import {
   insertDocCategorySchema,
   insertDocArticleSchema,
   insertTenantBrandingSchema,
+  insertPortalLoginPageSchema,
+  insertSiteSettingSchema,
+  insertWebsiteSectionSchema,
   insertIntegrationSchema,
   insertBonusTypeSchema,
   insertPromoCodeSchema,
@@ -511,8 +514,8 @@ export async function registerRoutes(
     }
   });
 
-  // Update customer branding
-  app.patch("/api/my/branding", async (req, res) => {
+  // Update customer branding (supports both PUT and PATCH)
+  const handleBrandingUpdate = async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -523,14 +526,23 @@ export async function registerRoutes(
       }
       
       // Extract allowed fields only
-      const { companyName, logoUrl, faviconUrl, primaryColor, secondaryColor } = req.body;
-      const updateData = {
-        companyName: companyName || null,
-        logoUrl: logoUrl || null,
-        faviconUrl: faviconUrl || null,
-        primaryColor: primaryColor || null,
-        secondaryColor: secondaryColor || null,
-      };
+      const { 
+        companyName, logoUrl, faviconUrl, primaryColor, secondaryColor,
+        customDomain, emailFromName, emailFromAddress, footerText, termsUrl, privacyUrl
+      } = req.body;
+      const updateData: Record<string, string | null> = {};
+      
+      if (companyName !== undefined) updateData.companyName = companyName || null;
+      if (logoUrl !== undefined) updateData.logoUrl = logoUrl || null;
+      if (faviconUrl !== undefined) updateData.faviconUrl = faviconUrl || null;
+      if (primaryColor !== undefined) updateData.primaryColor = primaryColor || null;
+      if (secondaryColor !== undefined) updateData.secondaryColor = secondaryColor || null;
+      if (customDomain !== undefined) updateData.customDomain = customDomain || null;
+      if (emailFromName !== undefined) updateData.emailFromName = emailFromName || null;
+      if (emailFromAddress !== undefined) updateData.emailFromAddress = emailFromAddress || null;
+      if (footerText !== undefined) updateData.footerText = footerText || null;
+      if (termsUrl !== undefined) updateData.termsUrl = termsUrl || null;
+      if (privacyUrl !== undefined) updateData.privacyUrl = privacyUrl || null;
       
       const existing = await storage.getTenantBranding(user.customerId);
       if (!existing) {
@@ -548,7 +560,10 @@ export async function registerRoutes(
       console.error("Update branding error:", error);
       res.status(500).json({ error: "Failed to update branding" });
     }
-  });
+  };
+  
+  app.patch("/api/my/branding", handleBrandingUpdate);
+  app.put("/api/my/branding", handleBrandingUpdate);
 
   // ==================== CUSTOMER SUPPORT TICKETS ====================
 
@@ -4823,6 +4838,134 @@ export async function registerRoutes(
       res.json(branding);
     } catch (error) {
       res.status(500).json({ error: "Failed to update tenant branding" });
+    }
+  });
+
+  // ==================== PORTAL LOGIN PAGES ====================
+
+  app.get("/api/portal-login-pages", async (req, res) => {
+    try {
+      const pages = await storage.getPortalLoginPages();
+      res.json(pages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch portal login pages" });
+    }
+  });
+
+  app.get("/api/portal-login-pages/:portalType", async (req, res) => {
+    try {
+      const page = await storage.getPortalLoginPage(req.params.portalType);
+      if (!page) return res.status(404).json({ error: "Portal login page not found" });
+      res.json(page);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch portal login page" });
+    }
+  });
+
+  app.post("/api/portal-login-pages", async (req, res) => {
+    try {
+      const parsed = insertPortalLoginPageSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const page = await storage.createPortalLoginPage(parsed.data);
+      res.status(201).json(page);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create portal login page" });
+    }
+  });
+
+  app.patch("/api/portal-login-pages/:id", async (req, res) => {
+    try {
+      const page = await storage.updatePortalLoginPage(req.params.id, req.body);
+      if (!page) return res.status(404).json({ error: "Portal login page not found" });
+      res.json(page);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update portal login page" });
+    }
+  });
+
+  // ==================== SITE SETTINGS ====================
+
+  app.get("/api/site-settings", async (req, res) => {
+    try {
+      const category = req.query.category as string | undefined;
+      const settings = await storage.getSiteSettings(category);
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch site settings" });
+    }
+  });
+
+  app.get("/api/site-settings/:key", async (req, res) => {
+    try {
+      const setting = await storage.getSiteSetting(req.params.key);
+      if (!setting) return res.status(404).json({ error: "Setting not found" });
+      res.json(setting);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch site setting" });
+    }
+  });
+
+  app.put("/api/site-settings", async (req, res) => {
+    try {
+      const parsed = insertSiteSettingSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const setting = await storage.upsertSiteSetting(parsed.data);
+      res.json(setting);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save site setting" });
+    }
+  });
+
+  // ==================== WEBSITE SECTIONS ====================
+
+  app.get("/api/website-sections", async (req, res) => {
+    try {
+      const pageSlug = req.query.pageSlug as string | undefined;
+      const sections = await storage.getWebsiteSections(pageSlug);
+      res.json(sections);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch website sections" });
+    }
+  });
+
+  app.get("/api/website-sections/:id", async (req, res) => {
+    try {
+      const section = await storage.getWebsiteSection(req.params.id);
+      if (!section) return res.status(404).json({ error: "Section not found" });
+      res.json(section);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch website section" });
+    }
+  });
+
+  app.post("/api/website-sections", async (req, res) => {
+    try {
+      const parsed = insertWebsiteSectionSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const section = await storage.createWebsiteSection(parsed.data);
+      res.status(201).json(section);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create website section" });
+    }
+  });
+
+  app.patch("/api/website-sections/:id", async (req, res) => {
+    try {
+      const section = await storage.updateWebsiteSection(req.params.id, req.body);
+      if (!section) return res.status(404).json({ error: "Section not found" });
+      res.json(section);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update website section" });
+    }
+  });
+
+  app.delete("/api/website-sections/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteWebsiteSection(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Section not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete website section" });
     }
   });
 
