@@ -5,7 +5,7 @@ import { createUser, validateLogin, sanitizeUser } from "./auth";
 import { aiService } from "./ai-service";
 import { connexcs } from "./connexcs";
 import { auditService } from "./audit";
-import { sendWelcomeEmail } from "./brevo";
+import { sendWelcomeEmail, sendPaymentReceived, sendReferralReward, sendLowBalanceAlert } from "./brevo";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { 
@@ -316,7 +316,14 @@ export async function registerRoutes(
         
         // Send confirmation email
         try {
-          await sendPaymentReceivedEmail(payment.customerId, parseFloat(payment.amount), newBalance);
+          await sendPaymentReceived(storage, {
+            email: customer.email,
+            firstName: customer.firstName || "Customer",
+            amount: payment.amount,
+            paymentMethod: payment.paymentMethod || "Credit Card",
+            transactionId: transactionId || payment.id,
+            newBalance,
+          });
         } catch (emailErr) {
           console.error("Failed to send payment email:", emailErr);
         }
@@ -468,6 +475,14 @@ export async function registerRoutes(
         return res.status(400).json({ error: parsed.error.errors });
       }
       
+      // Check for duplicate code on code updates
+      if (parsed.data.code) {
+        const existing = await storage.getPromoCodeByCode(parsed.data.code);
+        if (existing && existing.id !== req.params.id) {
+          return res.status(409).json({ error: "Promo code already exists" });
+        }
+      }
+      
       const updated = await storage.updatePromoCode(req.params.id, parsed.data);
       if (!updated) return res.status(404).json({ error: "Promo code not found" });
       res.json(updated);
@@ -547,6 +562,10 @@ export async function registerRoutes(
           });
         }
       }
+
+      // Note: Customer-specific assignment rules (customerId) are tracked but not enforced
+      // at the validation level - assignment is managed through the admin bonus assignment system
+      // The customerId parameter is accepted for future customer-specific promo targeting
 
       res.json({
         valid: true,
