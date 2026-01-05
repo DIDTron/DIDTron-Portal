@@ -77,7 +77,7 @@ class ConnexCSClient {
     }
   }
 
-  async loadCredentialsFromStorage(storage: { getIntegrationByProvider: (provider: string) => Promise<{ credentials?: unknown; isEnabled?: boolean } | undefined> }): Promise<void> {
+  async loadCredentialsFromStorage(storage: { getIntegrationByProvider: (provider: string) => Promise<{ credentials?: unknown; isEnabled?: boolean | null } | undefined> }): Promise<void> {
     if (this.credentialsLoaded && !this.mockMode) return;
     
     try {
@@ -377,6 +377,31 @@ class ConnexCSClient {
       carrier_id: localRoute.connexcsCarrierId || "",
       priority: localRoute.priority || 1,
       weight: localRoute.weight || 100,
+    });
+    return { connexcsId: created.id, synced: true };
+  }
+
+  async syncCustomer(localCustomer: {
+    id: string;
+    name: string;
+    accountNumber?: string | null;
+  }): Promise<{ connexcsId: string; synced: boolean }> {
+    if (this.mockMode) {
+      return {
+        connexcsId: `cx-cust-${localCustomer.id}`,
+        synced: true,
+      };
+    }
+
+    const existingCustomers = await this.getCustomers();
+    const existing = existingCustomers.find(c => c.name === localCustomer.name);
+
+    if (existing) {
+      return { connexcsId: existing.id, synced: true };
+    }
+
+    const created = await this.createCustomer({
+      name: localCustomer.name,
     });
     return { connexcsId: created.id, synced: true };
   }

@@ -273,6 +273,25 @@ export async function registerRoutes(
         return res.status(400).json({ error: "accountNumber and companyName are required" });
       }
       const customer = await storage.createCustomer({ accountNumber, companyName, ...rest });
+      
+      // Auto-sync to ConnexCS if integration is enabled
+      try {
+        await connexcs.loadCredentialsFromStorage(storage);
+        if (connexcs.isConfigured()) {
+          const syncResult = await connexcs.syncCustomer({
+            id: customer.id,
+            name: customer.companyName,
+            accountNumber: customer.accountNumber,
+          });
+          if (syncResult.connexcsId) {
+            await storage.updateCustomer(customer.id, { connexcsCustomerId: syncResult.connexcsId });
+          }
+          console.log(`[ConnexCS] Customer ${customer.companyName} synced: ${syncResult.connexcsId}`);
+        }
+      } catch (syncError) {
+        console.error("[ConnexCS] Auto-sync customer failed:", syncError);
+      }
+      
       res.status(201).json(customer);
     } catch (error) {
       res.status(500).json({ error: "Failed to create customer" });
@@ -1142,6 +1161,26 @@ export async function registerRoutes(
         recordId: carrier.id,
         newValues: carrier,
       });
+      
+      // Auto-sync to ConnexCS if integration is enabled
+      try {
+        await connexcs.loadCredentialsFromStorage(storage);
+        if (connexcs.isConfigured()) {
+          const syncResult = await connexcs.syncCarrier({
+            id: carrier.id,
+            name: carrier.name,
+            sipHost: carrier.sipHost,
+            sipPort: carrier.sipPort,
+          });
+          if (syncResult.connexcsId) {
+            await storage.updateCarrier(carrier.id, { connexcsCarrierId: syncResult.connexcsId });
+          }
+          console.log(`[ConnexCS] Carrier ${carrier.name} synced: ${syncResult.connexcsId}`);
+        }
+      } catch (syncError) {
+        console.error("[ConnexCS] Auto-sync carrier failed:", syncError);
+      }
+      
       res.status(201).json(carrier);
     } catch (error) {
       res.status(500).json({ error: "Failed to create carrier" });

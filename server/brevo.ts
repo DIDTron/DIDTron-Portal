@@ -40,7 +40,7 @@ class BrevoEmailService {
     }
   }
 
-  async loadCredentialsFromStorage(storage: { getIntegrationByProvider: (provider: string) => Promise<{ credentials?: unknown; isEnabled?: boolean } | undefined> }): Promise<void> {
+  async loadCredentialsFromStorage(storage: { getIntegrationByProvider: (provider: string) => Promise<{ credentials?: unknown; isEnabled?: boolean | null } | undefined> }): Promise<void> {
     if (this.credentialsLoaded && !this.mockMode) return;
     
     try {
