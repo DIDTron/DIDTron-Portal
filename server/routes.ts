@@ -32,6 +32,8 @@ import {
   insertCmsThemeSchema,
   insertCmsPageSchema,
   insertCmsMediaItemSchema,
+  insertDocCategorySchema,
+  insertDocArticleSchema,
   insertTenantBrandingSchema,
   insertIntegrationSchema,
   insertBonusTypeSchema,
@@ -1735,6 +1737,121 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete media item" });
+    }
+  });
+
+  // ==================== DOCUMENTATION CATEGORIES ====================
+
+  app.get("/api/docs/categories", async (req, res) => {
+    try {
+      const categories = await storage.getDocCategories();
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch documentation categories" });
+    }
+  });
+
+  app.get("/api/docs/categories/:id", async (req, res) => {
+    try {
+      const category = await storage.getDocCategory(req.params.id);
+      if (!category) return res.status(404).json({ error: "Category not found" });
+      res.json(category);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch documentation category" });
+    }
+  });
+
+  app.post("/api/docs/categories", async (req, res) => {
+    try {
+      const parsed = insertDocCategorySchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const category = await storage.createDocCategory(parsed.data);
+      res.status(201).json(category);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create documentation category" });
+    }
+  });
+
+  app.patch("/api/docs/categories/:id", async (req, res) => {
+    try {
+      const category = await storage.updateDocCategory(req.params.id, req.body);
+      if (!category) return res.status(404).json({ error: "Category not found" });
+      res.json(category);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update documentation category" });
+    }
+  });
+
+  app.delete("/api/docs/categories/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteDocCategory(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Category not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete documentation category" });
+    }
+  });
+
+  // ==================== DOCUMENTATION ARTICLES ====================
+
+  app.get("/api/docs/articles", async (req, res) => {
+    try {
+      const categoryId = req.query.categoryId as string | undefined;
+      const articles = await storage.getDocArticles(categoryId);
+      res.json(articles);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch documentation articles" });
+    }
+  });
+
+  app.get("/api/docs/articles/:id", async (req, res) => {
+    try {
+      const article = await storage.getDocArticle(req.params.id);
+      if (!article) return res.status(404).json({ error: "Article not found" });
+      res.json(article);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch documentation article" });
+    }
+  });
+
+  app.get("/api/docs/:categorySlug/:articleSlug", async (req, res) => {
+    try {
+      const article = await storage.getDocArticleBySlug(req.params.categorySlug, req.params.articleSlug);
+      if (!article) return res.status(404).json({ error: "Article not found" });
+      res.json(article);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch documentation article" });
+    }
+  });
+
+  app.post("/api/docs/articles", async (req, res) => {
+    try {
+      const parsed = insertDocArticleSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const article = await storage.createDocArticle(parsed.data);
+      res.status(201).json(article);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create documentation article" });
+    }
+  });
+
+  app.patch("/api/docs/articles/:id", async (req, res) => {
+    try {
+      const article = await storage.updateDocArticle(req.params.id, req.body);
+      if (!article) return res.status(404).json({ error: "Article not found" });
+      res.json(article);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update documentation article" });
+    }
+  });
+
+  app.delete("/api/docs/articles/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteDocArticle(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Article not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete documentation article" });
     }
   });
 
