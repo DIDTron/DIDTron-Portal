@@ -48,11 +48,12 @@ export default function ApiWebhooksPage() {
 
   const createApiKey = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/my/api-keys", { name: newKeyName });
+      const res = await apiRequest("POST", "/api/my/api-keys", { name: newKeyName });
+      return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: { fullKey: string }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/my/api-keys"] });
-      setNewKeyResult(data as { fullKey: string });
+      setNewKeyResult(data);
       setNewKeyName("");
       toast({ title: "API Key Created", description: "Copy your key now - it won't be shown again" });
     },
