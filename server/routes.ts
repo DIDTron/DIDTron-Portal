@@ -1468,6 +1468,51 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CUSTOMER CDR EXPORTS ====================
+  
+  app.get("/api/my/cdr-exports", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      // Return mock exports for now
+      res.json([
+        { id: "exp-1", fileName: "CDR_Dec2025.csv", dateRange: "Dec 1-31, 2025", format: "csv", status: "completed", recordCount: 12450, createdAt: "3 days ago" },
+        { id: "exp-2", fileName: "CDR_Nov2025.xlsx", dateRange: "Nov 1-30, 2025", format: "xlsx", status: "completed", recordCount: 10890, createdAt: "1 month ago" },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch CDR exports" });
+    }
+  });
+
+  app.post("/api/my/cdr-exports", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      // Simulate export creation
+      res.status(201).json({
+        id: `exp-${Date.now()}`,
+        fileName: `CDR_Export_${new Date().toISOString().split('T')[0]}.csv`,
+        dateRange: req.body.dateRange || "Custom",
+        format: req.body.format || "csv",
+        status: "processing",
+        recordCount: 0,
+        createdAt: "Just now"
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create CDR export" });
+    }
+  });
+
   // ==================== CUSTOMER CLASS 4 SOFTSWITCH ====================
   
   app.get("/api/my/class4/stats", async (req, res) => {

@@ -42,6 +42,11 @@ import PortalQueuesPage from "./queues";
 import PortalSipTesterPage from "./sip-tester";
 import ApiWebhooksPage from "./api-webhooks";
 import Class4Page from "./class4";
+import CdrExportPage from "./cdr-export";
+import NewTicketPage from "./new-ticket";
+import KnowledgeBasePage from "./knowledge-base";
+import SecuritySettingsPage from "./security-settings";
+import NotificationSettingsPage from "./notification-settings";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -265,24 +270,14 @@ export default function CustomerPortal() {
               <Route path="/portal/billing/invoices" component={InvoicesPage} />
               <Route path="/portal/billing/transactions" component={TransactionsPage} />
               <Route path="/portal/billing/referrals" component={ReferralsPage} />
-              <Route path="/portal/billing/export">
-                <PlaceholderPage title="Export CDRs" />
-              </Route>
+              <Route path="/portal/billing/export" component={CdrExportPage} />
               <Route path="/portal/support" component={SupportPage} />
-              <Route path="/portal/support/new">
-                <PlaceholderPage title="New Support Ticket" />
-              </Route>
-              <Route path="/portal/support/kb">
-                <PlaceholderPage title="Knowledge Base" />
-              </Route>
+              <Route path="/portal/support/new" component={NewTicketPage} />
+              <Route path="/portal/support/kb" component={KnowledgeBasePage} />
               <Route path="/portal/settings" component={SettingsPage} />
               <Route path="/portal/settings/branding" component={BrandingPage} />
-              <Route path="/portal/settings/security">
-                <PlaceholderPage title="Security Settings" />
-              </Route>
-              <Route path="/portal/settings/notifications">
-                <PlaceholderPage title="Notification Settings" />
-              </Route>
+              <Route path="/portal/settings/security" component={SecuritySettingsPage} />
+              <Route path="/portal/settings/notifications" component={NotificationSettingsPage} />
               <Route>
                 <PlaceholderPage title="Page Not Found" />
               </Route>
