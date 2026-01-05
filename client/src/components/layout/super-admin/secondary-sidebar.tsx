@@ -8,7 +8,8 @@ import {
   Server, Layers, Radio, CreditCard, Building2, Globe, Building,
   Route as RouteIcon, Users, UserPlus, Tags, Gift, Ticket,
   FileText, Palette, Image, Mail, BarChart3, Activity, Bell,
-  Shield, Key, Database, History, Settings, Webhook, Cpu, BookOpen
+  Shield, Key, Database, History, Settings, Webhook, Cpu, BookOpen,
+  Bot, Phone, PhoneOutgoing, Network
 } from "lucide-react";
 
 interface NavSubItem {
@@ -78,6 +79,20 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "alerts", label: "Alerts", route: "/admin/alerts", icon: Bell },
       { id: "rules", label: "Rules", route: "/admin/rules", icon: Settings },
       { id: "sip-tester", label: "SIP Tester", route: "/admin/sip-tester", icon: Cpu },
+    ],
+  },
+  ai: {
+    title: "AI Services",
+    items: [
+      { id: "ai-voice-agents", label: "Voice Agents", route: "/admin/ai-voice-agents", icon: Bot },
+    ],
+  },
+  softswitch: {
+    title: "Class 4 Softswitch",
+    items: [
+      { id: "class4-customers", label: "Customers", route: "/admin/class4-customers", icon: Users },
+      { id: "class4-carriers", label: "Carriers", route: "/admin/class4-carriers", icon: Building2 },
+      { id: "class4-rate-cards", label: "Rate Cards", route: "/admin/class4-rate-cards", icon: CreditCard },
     ],
   },
   cms: {

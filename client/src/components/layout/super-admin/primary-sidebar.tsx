@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu } from "lucide-react";
+import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
@@ -19,6 +19,8 @@ export const navSections: NavSection[] = [
   { id: "billing", label: "Billing", icon: CreditCard, defaultRoute: "/admin/invoices" },
   { id: "marketing", label: "Marketing", icon: Megaphone, defaultRoute: "/admin/social-accounts" },
   { id: "monitoring", label: "Monitoring", icon: BarChart3, defaultRoute: "/admin/metrics" },
+  { id: "ai", label: "AI", icon: Bot, defaultRoute: "/admin/ai-voice-agents" },
+  { id: "softswitch", label: "Softswitch", icon: Network, defaultRoute: "/admin/class4-customers" },
   { id: "cms", label: "CMS", icon: FileText, defaultRoute: "/admin/pages" },
   { id: "admin", label: "Admin", icon: Shield, defaultRoute: "/admin/admin-users" },
   { id: "settings", label: "Settings", icon: Settings, defaultRoute: "/admin/settings/general" },

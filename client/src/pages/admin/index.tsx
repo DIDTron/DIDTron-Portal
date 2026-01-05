@@ -45,6 +45,8 @@ import MetricsPage from "./metrics";
 import AlertsPage from "./alerts";
 import MonitoringRulesPage from "./monitoring-rules";
 import RolesPage from "./roles";
+import AiVoiceAgentsPage from "./ai-voice-agents";
+import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./class4-softswitch";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -83,6 +85,10 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/alerts": { section: "monitoring", subItem: "alerts" },
   "/admin/rules": { section: "monitoring", subItem: "rules" },
   "/admin/sip-tester": { section: "monitoring", subItem: "sip-tester" },
+  "/admin/ai-voice-agents": { section: "ai", subItem: "ai-voice-agents" },
+  "/admin/class4-customers": { section: "softswitch", subItem: "class4-customers" },
+  "/admin/class4-carriers": { section: "softswitch", subItem: "class4-carriers" },
+  "/admin/class4-rate-cards": { section: "softswitch", subItem: "class4-rate-cards" },
   "/admin/pages": { section: "cms", subItem: "pages" },
   "/admin/themes": { section: "cms", subItem: "themes" },
   "/admin/media": { section: "cms", subItem: "media" },
@@ -182,6 +188,10 @@ export default function AdminLayout() {
                 <Route path="/admin/alerts" component={AlertsPage} />
                 <Route path="/admin/rules" component={MonitoringRulesPage} />
                 <Route path="/admin/sip-tester" component={SipTesterPage} />
+                <Route path="/admin/ai-voice-agents" component={AiVoiceAgentsPage} />
+                <Route path="/admin/class4-customers" component={Class4CustomersPage} />
+                <Route path="/admin/class4-carriers" component={Class4CarriersPage} />
+                <Route path="/admin/class4-rate-cards" component={Class4RateCardsPage} />
                 <Route path="/admin/pages" component={CmsPagesPage} />
                 <Route path="/admin/themes" component={CmsThemesPage} />
                 <Route path="/admin/media" component={MediaLibraryPage} />
