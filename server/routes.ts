@@ -39,6 +39,7 @@ import {
   insertTenantBrandingSchema,
   insertIntegrationSchema,
   insertBonusTypeSchema,
+  insertPromoCodeSchema,
   insertEmailTemplateSchema,
   insertSocialAccountSchema,
   insertSocialPostSchema
@@ -409,6 +410,221 @@ export async function registerRoutes(
       res.json(referrals);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch referrals" });
+    }
+  });
+
+  // ==================== PROMO CODES ====================
+
+  app.get("/api/promo-codes", async (req, res) => {
+    try {
+      const codes = await storage.getPromoCodes();
+      res.json(codes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch promo codes" });
+    }
+  });
+
+  app.get("/api/promo-codes/:id", async (req, res) => {
+    try {
+      const code = await storage.getPromoCode(req.params.id);
+      if (!code) return res.status(404).json({ error: "Promo code not found" });
+      res.json(code);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch promo code" });
+    }
+  });
+
+  app.post("/api/promo-codes", async (req, res) => {
+    try {
+      // Preprocess code to uppercase
+      if (req.body.code) req.body.code = req.body.code.toUpperCase();
+      
+      const parsed = insertPromoCodeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      
+      // Check for duplicate code
+      const existing = await storage.getPromoCodeByCode(parsed.data.code);
+      if (existing) {
+        return res.status(409).json({ error: "Promo code already exists" });
+      }
+      
+      const promoCode = await storage.createPromoCode(parsed.data);
+      res.status(201).json(promoCode);
+    } catch (error) {
+      console.error("Create promo code error:", error);
+      res.status(500).json({ error: "Failed to create promo code" });
+    }
+  });
+
+  app.patch("/api/promo-codes/:id", async (req, res) => {
+    try {
+      // Validate partial update data
+      const partialSchema = insertPromoCodeSchema.partial();
+      if (req.body.code) req.body.code = req.body.code.toUpperCase();
+      const parsed = partialSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      
+      const updated = await storage.updatePromoCode(req.params.id, parsed.data);
+      if (!updated) return res.status(404).json({ error: "Promo code not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update promo code" });
+    }
+  });
+
+  app.delete("/api/promo-codes/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deletePromoCode(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Promo code not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete promo code" });
+    }
+  });
+
+  // Validate and apply promo code
+  app.post("/api/promo-codes/validate", async (req, res) => {
+    try {
+      const { code, purchaseAmount, productType, customerId } = req.body;
+      if (!code) return res.status(400).json({ error: "Code required" });
+
+      const promoCode = await storage.getPromoCodeByCode(code.toUpperCase());
+      if (!promoCode) {
+        return res.status(404).json({ valid: false, error: "Invalid promo code" });
+      }
+
+      if (!promoCode.isActive) {
+        return res.json({ valid: false, error: "Promo code is inactive" });
+      }
+
+      if (promoCode.maxUses && promoCode.usedCount && promoCode.usedCount >= promoCode.maxUses) {
+        return res.json({ valid: false, error: "Promo code has reached maximum uses" });
+      }
+
+      const now = new Date();
+      if (promoCode.validFrom && now < promoCode.validFrom) {
+        return res.json({ valid: false, error: "Promo code not yet valid" });
+      }
+      if (promoCode.validUntil && now > promoCode.validUntil) {
+        return res.json({ valid: false, error: "Promo code has expired" });
+      }
+
+      // Check minimum purchase requirement - require purchaseAmount when minPurchase is set
+      if (promoCode.minPurchase) {
+        const minPurchase = parseFloat(promoCode.minPurchase);
+        if (minPurchase > 0) {
+          if (typeof purchaseAmount !== "number") {
+            return res.json({ 
+              valid: false, 
+              error: `Purchase amount required for validation (minimum $${minPurchase.toFixed(2)})` 
+            });
+          }
+          if (purchaseAmount < minPurchase) {
+            return res.json({ 
+              valid: false, 
+              error: `Minimum purchase of $${minPurchase.toFixed(2)} required` 
+            });
+          }
+        }
+      }
+
+      // Check applyTo restriction - require productType when applyTo is not "all"
+      if (promoCode.applyTo && promoCode.applyTo !== "all") {
+        if (!productType) {
+          return res.json({ 
+            valid: false, 
+            error: `Product type required (code applies to ${promoCode.applyTo} only)` 
+          });
+        }
+        if (promoCode.applyTo !== productType) {
+          return res.json({ 
+            valid: false, 
+            error: `This promo code only applies to ${promoCode.applyTo}` 
+          });
+        }
+      }
+
+      res.json({
+        valid: true,
+        discountType: promoCode.discountType,
+        discountValue: promoCode.discountValue,
+        description: promoCode.description,
+        minPurchase: promoCode.minPurchase,
+        applyTo: promoCode.applyTo,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to validate promo code" });
+    }
+  });
+
+  // ==================== BONUS TYPES ====================
+
+  app.get("/api/bonus-types", async (req, res) => {
+    try {
+      const types = await storage.getBonusTypes();
+      res.json(types);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bonus types" });
+    }
+  });
+
+  app.get("/api/bonus-types/:id", async (req, res) => {
+    try {
+      const type = await storage.getBonusType(req.params.id);
+      if (!type) return res.status(404).json({ error: "Bonus type not found" });
+      res.json(type);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bonus type" });
+    }
+  });
+
+  app.post("/api/bonus-types", async (req, res) => {
+    try {
+      // Preprocess code to uppercase
+      if (req.body.code) req.body.code = req.body.code.toUpperCase();
+      
+      const parsed = insertBonusTypeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      
+      const bonusType = await storage.createBonusType(parsed.data);
+      res.status(201).json(bonusType);
+    } catch (error) {
+      console.error("Create bonus type error:", error);
+      res.status(500).json({ error: "Failed to create bonus type" });
+    }
+  });
+
+  app.patch("/api/bonus-types/:id", async (req, res) => {
+    try {
+      // Validate partial update data
+      const partialSchema = insertBonusTypeSchema.partial();
+      if (req.body.code) req.body.code = req.body.code.toUpperCase();
+      const parsed = partialSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      
+      const updated = await storage.updateBonusType(req.params.id, parsed.data);
+      if (!updated) return res.status(404).json({ error: "Bonus type not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update bonus type" });
+    }
+  });
+
+  app.delete("/api/bonus-types/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteBonusType(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Bonus type not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete bonus type" });
     }
   });
 
