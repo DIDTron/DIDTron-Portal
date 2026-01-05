@@ -31,6 +31,8 @@ import EmailTemplatesPage from "./email-templates";
 import TicketsPage from "./tickets";
 import SocialAccountsPage from "./social-accounts";
 import SocialPostsPage from "./social-posts";
+import CmsThemesPage from "./cms-themes";
+import CmsPagesPage from "./cms-pages";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -178,12 +180,8 @@ export default function AdminLayout() {
                 <Route path="/admin/sip-tester">
                   <PlaceholderPage title="SIP Tester" />
                 </Route>
-                <Route path="/admin/pages">
-                  <PlaceholderPage title="CMS Pages" />
-                </Route>
-                <Route path="/admin/themes">
-                  <PlaceholderPage title="Themes" />
-                </Route>
+                <Route path="/admin/pages" component={CmsPagesPage} />
+                <Route path="/admin/themes" component={CmsThemesPage} />
                 <Route path="/admin/media">
                   <PlaceholderPage title="Media Library" />
                 </Route>

@@ -1990,12 +1990,13 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const newPage: CmsPage = {
       id,
-      title: page.title,
+      portalId: page.portalId,
       slug: page.slug,
-      content: page.content ?? null,
-      metaTitle: page.metaTitle ?? null,
+      title: page.title,
       metaDescription: page.metaDescription ?? null,
-      status: page.status || "draft",
+      metaKeywords: page.metaKeywords ?? null,
+      content: page.content ?? null,
+      isPublished: page.isPublished ?? false,
       publishedAt: page.publishedAt ?? null,
       createdAt: now,
       updatedAt: now,
