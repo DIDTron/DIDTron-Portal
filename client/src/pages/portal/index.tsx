@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { CustomerPrimarySidebar } from "@/components/layout/customer-portal/primary-sidebar";
 import { CustomerSecondarySidebar } from "@/components/layout/customer-portal/secondary-sidebar";
 import { CustomerWorkspaceTabs } from "@/components/layout/customer-portal/workspace-tabs";
+import { CommandPalette } from "@/components/layout/customer-portal/command-palette";
 import { useCustomerPortalStore } from "@/stores/customer-portal-tabs";
 import { Phone, Bell, LogOut, Search, Loader2, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -223,6 +224,7 @@ function PortalLoginPage() {
 
 export default function CustomerPortal() {
   const [location] = useLocation();
+  const [commandOpen, setCommandOpen] = useState(false);
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const { 
     setActiveSection, 
@@ -257,6 +259,7 @@ export default function CustomerPortal() {
 
   return (
     <TooltipProvider>
+      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
       <div className="flex h-screen w-full bg-background">
         <CustomerPrimarySidebar />
         <CustomerSecondarySidebar />
@@ -278,18 +281,19 @@ export default function CustomerPortal() {
                   <span className="font-bold">DIDTron</span>
                 </div>
               )}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search services, DIDs, tickets..."
-                  className="pl-9 h-8"
-                  data-testid="input-search"
-                />
-                <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+              <Button
+                variant="outline"
+                className="relative flex-1 max-w-md justify-start text-muted-foreground h-8 px-3"
+                onClick={() => setCommandOpen(true)}
+                data-testid="button-global-search"
+              >
+                <Search className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline-flex">Search services, DIDs, tickets...</span>
+                <span className="sm:hidden">Search...</span>
+                <kbd className="pointer-events-none absolute right-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
                   <span className="text-xs">Ctrl</span>K
                 </kbd>
-              </div>
+              </Button>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="relative" data-testid="button-notifications">
