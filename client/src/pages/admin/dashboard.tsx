@@ -185,7 +185,7 @@ export default function AdminDashboard() {
               <InsightItem
                 type="opportunity"
                 title="New DID region available"
-                description="ConnexCS has new DID inventory for UAE. Your customers have requested this region 12 times."
+                description="New DID inventory is available for UAE. Your customers have requested this region 12 times."
                 action="Add Region"
                 onAction={() => handleQuickAction("voip", "did-countries", "DID Countries", "/admin/did-countries")}
               />
@@ -193,11 +193,11 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card data-testid="card-connexcs-status">
+        <Card data-testid="card-platform-status">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Phone className="h-5 w-5" />
-              ConnexCS Status
+              Platform Status
             </CardTitle>
             <CardDescription>Real-time connection status</CardDescription>
           </CardHeader>
@@ -295,7 +295,7 @@ export default function AdminDashboard() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/50">
                 <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                <span>ConnexCS API key not configured</span>
+                <span>Platform API key not configured</span>
               </div>
               <div className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/50">
                 <div className="h-2 w-2 rounded-full bg-yellow-500" />

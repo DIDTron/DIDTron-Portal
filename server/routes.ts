@@ -5617,50 +5617,50 @@ export async function registerRoutes(
     }
   });
 
-  // ==================== CONNEXCS SYNC ====================
+  // ==================== PLATFORM SYNC ====================
 
-  app.get("/api/connexcs/status", async (req, res) => {
+  app.get("/api/platform/status", async (req, res) => {
     try {
       const mockMode = connexcs.isMockMode();
       const metrics = await connexcs.getMetrics();
       res.json({ mockMode, connected: !mockMode, metrics });
     } catch (error) {
-      console.error("ConnexCS status error:", error);
-      res.status(500).json({ error: "Failed to get ConnexCS status", mockMode: true });
+      console.error("Platform status error:", error);
+      res.status(500).json({ error: "Failed to get platform status", mockMode: true });
     }
   });
 
-  app.get("/api/connexcs/carriers", async (req, res) => {
+  app.get("/api/platform/carriers", async (req, res) => {
     try {
       const carriers = await connexcs.getCarriers();
       res.json(carriers);
     } catch (error) {
-      console.error("ConnexCS carriers error:", error);
-      res.status(500).json({ error: "Failed to fetch ConnexCS carriers" });
+      console.error("Platform carriers error:", error);
+      res.status(500).json({ error: "Failed to fetch platform carriers" });
     }
   });
 
-  app.get("/api/connexcs/routes", async (req, res) => {
+  app.get("/api/platform/routes", async (req, res) => {
     try {
       const routes = await connexcs.getRoutes();
       res.json(routes);
     } catch (error) {
-      console.error("ConnexCS routes error:", error);
-      res.status(500).json({ error: "Failed to fetch ConnexCS routes" });
+      console.error("Platform routes error:", error);
+      res.status(500).json({ error: "Failed to fetch platform routes" });
     }
   });
 
-  app.get("/api/connexcs/metrics", async (req, res) => {
+  app.get("/api/platform/metrics", async (req, res) => {
     try {
       const metrics = await connexcs.getMetrics();
       res.json(metrics);
     } catch (error) {
-      console.error("ConnexCS metrics error:", error);
-      res.status(500).json({ error: "Failed to fetch ConnexCS metrics" });
+      console.error("Platform metrics error:", error);
+      res.status(500).json({ error: "Failed to fetch platform metrics" });
     }
   });
 
-  app.post("/api/connexcs/sync-carrier/:id", async (req, res) => {
+  app.post("/api/carriers/:id/sync", async (req, res) => {
     try {
       const carrier = await storage.getCarrier(req.params.id);
       if (!carrier) {
@@ -5675,14 +5675,14 @@ export async function registerRoutes(
       if (result.synced) {
         await storage.updateCarrier(carrier.id, { connexcsCarrierId: result.connexcsId });
       }
-      res.json(result);
+      res.json({ synced: result.synced, platformId: result.connexcsId });
     } catch (error) {
-      console.error("ConnexCS sync carrier error:", error);
-      res.status(500).json({ error: "Failed to sync carrier with ConnexCS" });
+      console.error("Platform sync carrier error:", error);
+      res.status(500).json({ error: "Failed to sync carrier with platform" });
     }
   });
 
-  app.post("/api/connexcs/sync-route/:id", async (req, res) => {
+  app.post("/api/routes/:id/sync", async (req, res) => {
     try {
       const route = await storage.getRoute(req.params.id);
       if (!route) {
@@ -5695,14 +5695,14 @@ export async function registerRoutes(
         priority: route.priority,
         weight: route.weight,
       });
-      res.json(result);
+      res.json({ synced: result.synced, platformId: result.connexcsId });
     } catch (error) {
-      console.error("ConnexCS sync route error:", error);
-      res.status(500).json({ error: "Failed to sync route with ConnexCS" });
+      console.error("Platform sync route error:", error);
+      res.status(500).json({ error: "Failed to sync route with platform" });
     }
   });
 
-  app.post("/api/connexcs/test-route", async (req, res) => {
+  app.post("/api/platform/test-route", async (req, res) => {
     try {
       const { destination } = req.body;
       if (!destination) {
@@ -5711,7 +5711,7 @@ export async function registerRoutes(
       const result = await connexcs.testRoute(destination);
       res.json(result);
     } catch (error) {
-      console.error("ConnexCS test route error:", error);
+      console.error("Platform test route error:", error);
       res.status(500).json({ error: "Failed to test route" });
     }
   });

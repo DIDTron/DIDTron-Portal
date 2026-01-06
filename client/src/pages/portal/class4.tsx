@@ -152,9 +152,9 @@ export default function Class4Page() {
                   <Download className="h-4 w-4" />
                   Export Margin Report
                 </Button>
-                <Button className="w-full justify-start gap-2" variant="outline" data-testid="button-sync-connexcs">
+                <Button className="w-full justify-start gap-2" variant="outline" data-testid="button-sync-platform">
                   <RefreshCw className="h-4 w-4" />
-                  Sync with ConnexCS
+                  Sync Routes
                 </Button>
               </CardContent>
             </Card>
@@ -164,7 +164,7 @@ export default function Class4Page() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">ConnexCS Connection</span>
+                  <span className="text-sm">Platform Connection</span>
                   <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Connected
@@ -196,7 +196,7 @@ export default function Class4Page() {
                   { action: "Rate card updated", detail: "US_Tier1_Rates.csv", time: "5 min ago" },
                   { action: "LCR rule activated", detail: "Premium Routes", time: "1 hour ago" },
                   { action: "Margin threshold alert", detail: "UK Mobile below 5%", time: "3 hours ago" },
-                  { action: "ConnexCS sync completed", detail: "245 prefixes updated", time: "6 hours ago" },
+                  { action: "Route sync completed", detail: "245 prefixes updated", time: "6 hours ago" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>

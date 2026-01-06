@@ -50,7 +50,7 @@ import {
 } from "lucide-react";
 import type { Carrier, CustomerCategory, CustomerGroup, Customer, AuditLog, CarrierAssignment } from "@shared/schema";
 
-interface ConnexCSStatus {
+interface PlatformStatus {
   mockMode: boolean;
   connected: boolean;
   metrics?: {
@@ -107,8 +107,8 @@ export default function CarriersPage() {
     queryKey: ["/api/carriers"],
   });
 
-  const { data: connexcsStatus } = useQuery<ConnexCSStatus>({
-    queryKey: ["/api/connexcs/status"],
+  const { data: platformStatus } = useQuery<PlatformStatus>({
+    queryKey: ["/api/platform/status"],
     refetchInterval: 30000,
   });
 
@@ -165,14 +165,14 @@ export default function CarriersPage() {
 
   const syncCarrierMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await apiRequest("POST", `/api/connexcs/sync-carrier/${id}`);
+      const res = await apiRequest("POST", `/api/carriers/${id}/sync`);
       return res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/carriers"] });
       toast({ 
-        title: data.synced ? "Carrier synced to ConnexCS" : "Sync completed (mock mode)",
-        description: data.connexcsId ? `ConnexCS ID: ${data.connexcsId}` : undefined
+        title: data.synced ? "Carrier synced successfully" : "Sync completed (mock mode)",
+        description: data.platformId ? `Platform ID: ${data.platformId}` : undefined
       });
     },
     onError: () => {
@@ -341,7 +341,7 @@ export default function CarriersPage() {
           </div>
           {editingCarrier?.connexcsCarrierId && (
             <Badge variant="outline" className="text-green-600 border-green-600">
-              <Cloud className="h-3 w-3 mr-1" /> ConnexCS Synced
+              <Cloud className="h-3 w-3 mr-1" /> Platform Synced
             </Badge>
           )}
         </div>
@@ -535,7 +535,7 @@ export default function CarriersPage() {
                 {editingCarrier && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">ConnexCS Integration</CardTitle>
+                      <CardTitle className="text-base">Platform Integration</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -544,7 +544,7 @@ export default function CarriersPage() {
                           <p className="text-sm text-muted-foreground">
                             {editingCarrier.connexcsCarrierId 
                               ? `Synced (ID: ${editingCarrier.connexcsCarrierId})`
-                              : "Not synced to ConnexCS"}
+                              : "Not synced to platform"}
                           </p>
                         </div>
                         <Button
@@ -555,7 +555,7 @@ export default function CarriersPage() {
                           data-testid="button-sync-carrier"
                         >
                           <RefreshCw className={`h-4 w-4 mr-2 ${syncCarrierMutation.isPending ? 'animate-spin' : ''}`} />
-                          {editingCarrier.connexcsCarrierId ? "Re-sync" : "Sync to ConnexCS"}
+                          {editingCarrier.connexcsCarrierId ? "Re-sync" : "Sync to Platform"}
                         </Button>
                       </div>
                     </CardContent>
@@ -740,16 +740,16 @@ export default function CarriersPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-carriers-title">Carriers</h1>
-          <p className="text-muted-foreground">Manage carrier connections and sync with ConnexCS</p>
+          <p className="text-muted-foreground">Manage carrier connections and routing</p>
         </div>
         <div className="flex items-center gap-3">
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted">
-                {connexcsStatus?.connected ? (
+                {platformStatus?.connected ? (
                   <>
                     <Cloud className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">ConnexCS Connected</span>
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400">Platform Connected</span>
                   </>
                 ) : (
                   <>
@@ -760,9 +760,9 @@ export default function CarriersPage() {
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              {connexcsStatus?.mockMode 
-                ? "Running in mock mode - set CONNEXCS_API_KEY for live sync" 
-                : "Connected to ConnexCS API"}
+              {platformStatus?.mockMode 
+                ? "Running in mock mode" 
+                : "Connected to switching platform"}
             </TooltipContent>
           </Tooltip>
           
@@ -773,7 +773,7 @@ export default function CarriersPage() {
         </div>
       </div>
 
-      {connexcsStatus?.metrics && (
+      {platformStatus?.metrics && (
         <div className="grid grid-cols-5 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
@@ -781,7 +781,7 @@ export default function CarriersPage() {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{connexcsStatus.metrics.active_channels ?? 0}</div>
+              <div className="text-2xl font-bold">{platformStatus.metrics.active_channels ?? 0}</div>
             </CardContent>
           </Card>
           <Card>
@@ -790,7 +790,7 @@ export default function CarriersPage() {
               <Zap className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{(connexcsStatus.metrics.total_calls_24h ?? 0).toLocaleString()}</div>
+              <div className="text-2xl font-bold">{(platformStatus.metrics.total_calls_24h ?? 0).toLocaleString()}</div>
             </CardContent>
           </Card>
           <Card>
@@ -799,7 +799,7 @@ export default function CarriersPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{connexcsStatus.metrics.asr ?? 0}%</div>
+              <div className="text-2xl font-bold">{platformStatus.metrics.asr ?? 0}%</div>
             </CardContent>
           </Card>
           <Card>
@@ -808,7 +808,7 @@ export default function CarriersPage() {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{connexcsStatus.metrics.acd ?? 0}s</div>
+              <div className="text-2xl font-bold">{platformStatus.metrics.acd ?? 0}s</div>
             </CardContent>
           </Card>
           <Card>
@@ -817,7 +817,7 @@ export default function CarriersPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${(connexcsStatus.metrics.revenue_24h ?? 0).toLocaleString()}</div>
+              <div className="text-2xl font-bold">${(platformStatus.metrics.revenue_24h ?? 0).toLocaleString()}</div>
             </CardContent>
           </Card>
         </div>
@@ -836,7 +836,7 @@ export default function CarriersPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>SIP Host</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>ConnexCS</TableHead>
+                  <TableHead>Synced</TableHead>
                   <TableHead className="w-32">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -891,7 +891,7 @@ export default function CarriersPage() {
                               <RefreshCw className={`h-4 w-4 ${syncCarrierMutation.isPending ? 'animate-spin' : ''}`} />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Sync to ConnexCS</TooltipContent>
+                          <TooltipContent>Sync to Platform</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>

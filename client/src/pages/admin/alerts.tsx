@@ -36,7 +36,7 @@ export default function AlertsPage() {
       type: "route_failure",
       severity: "critical",
       message: "Route US-MOBILE-T1 failed with ASR below 50%",
-      source: "ConnexCS Sync",
+      source: "Route Monitoring",
       timestamp: new Date(Date.now() - 300000),
       acknowledged: false,
     },

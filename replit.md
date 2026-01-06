@@ -3,7 +3,7 @@
 ## Overview
 DIDTron Communications is building a white-label wholesale VoIP platform designed for various user types: Super Admins, Customers, Carriers, and Class 4 Softswitch operators, alongside a main marketing site and documentation. The platform offers a comprehensive suite of VoIP services including Voice Termination with multiple quality tiers, DIDs with automated KYC, Class 5 PBX features, AI Voice Agents, a Class 4 Softswitch, and a detailed SIP Tester module.
 
-The business model is purely pay-as-you-go, aiming to compete with established players like Voice Hub AI, ZIWO, and ConnexCS by offering competitive pricing across all services. The project's ambition is to provide a modern, AI-first, and highly customizable VoIP solution with an enterprise-grade user experience.
+The business model is purely pay-as-you-go, aiming to compete with established players like Voice Hub AI and ZIWO by offering competitive pricing across all services. The project's ambition is to provide a modern, AI-first, and highly customizable VoIP solution with an enterprise-grade user experience.
 
 ## User Preferences
 - Pure pay-as-you-go pricing (NO subscriptions ever)
@@ -11,7 +11,7 @@ The business model is purely pay-as-you-go, aiming to compete with established p
 - Keep current DIDTron color scheme with light/dark/system mode toggle
 - Features visibility based on customer category/group
 - AI should generate descriptions, marketing copy, and analysis
-- ConnexCS sync for all carrier/route operations
+- Platform sync for all carrier/route operations
 - Assignment system for feature visibility control
 
 ## UI/UX Design Decisions
@@ -167,7 +167,7 @@ Third-Party: Upstash Redis
 |---------|---------|
 | Session Management | Store user sessions across subdomains |
 | FX Rate Cache | Cache currency rates (hourly refresh) |
-| ConnexCS Metrics | Cache real-time metrics |
+| Platform Metrics | Cache real-time metrics |
 | API Rate Limiting | Track request counts |
 | Real-time Data | Cache dashboard widgets |
 
@@ -176,7 +176,7 @@ Third-Party: Upstash Redis
 ### Voice Termination ($0.012/min)
 - POPs, Voice Tiers, Carriers, Routes
 - AI-generated descriptions, quality analysis
-- ConnexCS sync for all config
+- Platform sync for all config
 - Assignment matrix for visibility control
 
 ### DIDs ($1.50/mo)
@@ -229,7 +229,7 @@ Third-Party: Upstash Redis
 
 | Service | Purpose | API Needed |
 |---------|---------|------------|
-| ConnexCS | VoIP switching backend | Yes - CONNEXCS_API_KEY |
+| Switching Platform | VoIP switching backend | Optional - Platform integration |
 | OpenAI GPT-4o | All AI features | Via Replit AI Integrations (no key needed) |
 | Stripe | Payments + KYC Identity | Yes - STRIPE_SECRET_KEY |
 | PayPal | Alternative payments | Yes - PAYPAL_CLIENT_ID, PAYPAL_SECRET |
@@ -251,7 +251,7 @@ Third-Party: Upstash Redis
 
 ### Backend Services
 - server/ai-service.ts - Unified AI functions
-- server/connexcs.ts - ConnexCS API wrapper
+- server/platform.ts - Switching platform API wrapper
 - server/audit.ts - Config audit system
 - server/routes.ts - API endpoints
 

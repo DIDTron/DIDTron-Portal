@@ -206,7 +206,7 @@ function NewTestPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Profile (ConnexCS Server)</Label>
+                <Label>Profile (SBC Server)</Label>
                 <Select value={selectedProfile} onValueChange={setSelectedProfile}>
                   <SelectTrigger data-testid="select-profile">
                     <SelectValue placeholder="Select a profile" />
@@ -811,7 +811,7 @@ function ProfilesTab() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-4">
         <div>
-          <CardTitle>ConnexCS Profiles</CardTitle>
+          <CardTitle>SBC Profiles</CardTitle>
           <CardDescription>Manage server IP addresses for testing</CardDescription>
         </div>
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
@@ -824,7 +824,7 @@ function ProfilesTab() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Profile</DialogTitle>
-              <DialogDescription>Add a new ConnexCS server profile</DialogDescription>
+              <DialogDescription>Add a new SBC server profile</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
