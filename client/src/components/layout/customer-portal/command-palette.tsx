@@ -38,9 +38,9 @@ const allSearchItems: SearchItem[] = [
   { id: "voice-routes", label: "My Routes", section: "voice", sectionLabel: "Voice Termination", path: "/portal/voice/routes", icon: Route, keywords: ["routing", "destinations"] },
   { id: "voice-usage", label: "Voice Usage", section: "voice", sectionLabel: "Voice Termination", path: "/portal/voice/usage", icon: BarChart3, keywords: ["minutes", "calls", "statistics"] },
   
-  { id: "dids-inventory", label: "My DIDs", section: "dids", sectionLabel: "DIDs", path: "/portal/dids", icon: Globe, keywords: ["numbers", "phone numbers", "inventory"] },
-  { id: "dids-search", label: "Search DIDs", section: "dids", sectionLabel: "DIDs", path: "/portal/dids/search", icon: Search, keywords: ["find", "buy", "purchase"] },
-  { id: "dids-kyc", label: "KYC Documents", section: "dids", sectionLabel: "DIDs", path: "/portal/dids/kyc", icon: FileCheck, keywords: ["verification", "identity", "compliance"] },
+  { id: "dids-inventory", label: "My DIDs", section: "dids", sectionLabel: "DIDs", path: "/portal/dids", icon: Globe, keywords: ["did", "numbers", "phone numbers", "inventory", "telephone"] },
+  { id: "dids-search", label: "Search DIDs", section: "dids", sectionLabel: "DIDs", path: "/portal/dids/search", icon: Search, keywords: ["did", "find", "buy", "purchase", "order"] },
+  { id: "dids-kyc", label: "KYC Documents", section: "dids", sectionLabel: "DIDs", path: "/portal/dids/kyc", icon: FileCheck, keywords: ["did", "verification", "identity", "compliance", "document"] },
   
   { id: "pbx-extensions", label: "Extensions", section: "pbx", sectionLabel: "Cloud PBX", path: "/portal/pbx/extensions", icon: Headphones, keywords: ["users", "phones", "sip"] },
   { id: "pbx-ring-groups", label: "Ring Groups", section: "pbx", sectionLabel: "Cloud PBX", path: "/portal/pbx/ring-groups", icon: UsersIcon, keywords: ["hunt groups", "simultaneous"] },
@@ -139,7 +139,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 return (
                   <CommandItem
                     key={item.id}
-                    value={`${item.label} ${item.sectionLabel} ${item.keywords?.join(" ") || ""}`}
+                    value={`${item.id} ${item.label} ${item.sectionLabel} ${item.keywords?.join(" ") || ""}`}
                     onSelect={() => handleSelect(item)}
                     className="cursor-pointer"
                     data-testid={`search-result-${item.id}`}
