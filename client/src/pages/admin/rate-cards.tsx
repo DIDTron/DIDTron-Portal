@@ -74,164 +74,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface RateCard {
-  id: number;
-  name: string;
-  code: string;
-  type: "customer" | "carrier";
-  currency: string;
-  direction: "termination" | "origination";
-  status: "active" | "inactive" | "stale";
-  ratesCount: number;
-  parentCardId?: number;
-  carrierId?: number;
-  carrierName?: string;
-  profitMargin?: number;
-  profitType?: "percentage" | "fixed";
-  billingPrecision: number;
-  techPrefix?: string;
-  createdAt: string;
-  updatedAt: string;
-  revisionCount: number;
-}
+import type { RateCard as SchemaRateCard, RateCardRate } from "@shared/schema";
+
+type RateCard = SchemaRateCard;
 
 interface Rate {
-  id: number;
-  rateCardId: number;
+  id: string;
+  rateCardId: string;
   prefix: string;
-  destination: string;
-  rate: number;
-  connectionFee: number;
-  billingIncrement: number;
-  minimumDuration: number;
-  status: "active" | "blocked";
+  destination: string | null;
+  rate: string;
+  connectionFee: string;
+  interval: number;
+  minDuration: number;
 }
 
 interface ProfitRule {
-  id: number;
-  rateCardId: number;
+  id: string;
+  rateCardId: string;
   matchPrefix: string;
   profitType: "percentage" | "fixed";
   profitValue: number;
   applyTo: "all" | "setup" | "perMinute";
   status: "active" | "inactive";
 }
-
-const mockCustomerRateCards: RateCard[] = [
-  {
-    id: 1,
-    name: "Standard US Termination",
-    code: "US-TERM-STD",
-    type: "customer",
-    currency: "USD",
-    direction: "termination",
-    status: "active",
-    ratesCount: 1250,
-    parentCardId: 101,
-    profitMargin: 15,
-    profitType: "percentage",
-    billingPrecision: 4,
-    createdAt: "2025-01-01",
-    updatedAt: "2025-01-05",
-    revisionCount: 3,
-  },
-  {
-    id: 2,
-    name: "Premium EU Routes",
-    code: "EU-PREM",
-    type: "customer",
-    currency: "EUR",
-    direction: "termination",
-    status: "active",
-    ratesCount: 890,
-    parentCardId: 102,
-    profitMargin: 0.005,
-    profitType: "fixed",
-    billingPrecision: 4,
-    createdAt: "2025-01-02",
-    updatedAt: "2025-01-04",
-    revisionCount: 2,
-  },
-  {
-    id: 3,
-    name: "A-Z Economy",
-    code: "AZ-ECON",
-    type: "customer",
-    currency: "USD",
-    direction: "termination",
-    status: "stale",
-    ratesCount: 4500,
-    parentCardId: 103,
-    profitMargin: 10,
-    profitType: "percentage",
-    billingPrecision: 4,
-    createdAt: "2024-12-15",
-    updatedAt: "2024-12-20",
-    revisionCount: 5,
-  },
-];
-
-const mockCarrierRateCards: RateCard[] = [
-  {
-    id: 101,
-    name: "Carrier A - US Routes",
-    code: "CARR-A-US",
-    type: "carrier",
-    currency: "USD",
-    direction: "termination",
-    status: "active",
-    ratesCount: 1250,
-    carrierId: 1,
-    carrierName: "Carrier Alpha",
-    billingPrecision: 4,
-    techPrefix: "101#",
-    createdAt: "2025-01-01",
-    updatedAt: "2025-01-05",
-    revisionCount: 4,
-  },
-  {
-    id: 102,
-    name: "Carrier B - EU Routes",
-    code: "CARR-B-EU",
-    type: "carrier",
-    currency: "EUR",
-    direction: "termination",
-    status: "active",
-    ratesCount: 890,
-    carrierId: 2,
-    carrierName: "Euro Telecom",
-    billingPrecision: 4,
-    techPrefix: "102#",
-    createdAt: "2025-01-02",
-    updatedAt: "2025-01-04",
-    revisionCount: 2,
-  },
-  {
-    id: 103,
-    name: "Global Routes Provider",
-    code: "GRP-AZ",
-    type: "carrier",
-    currency: "USD",
-    direction: "termination",
-    status: "active",
-    ratesCount: 4500,
-    carrierId: 3,
-    carrierName: "Global Routes Inc",
-    billingPrecision: 4,
-    techPrefix: "103#",
-    createdAt: "2024-12-15",
-    updatedAt: "2024-12-20",
-    revisionCount: 8,
-  },
-];
-
-const mockRates: Rate[] = [
-  { id: 1, rateCardId: 1, prefix: "1", destination: "United States", rate: 0.012, connectionFee: 0, billingIncrement: 6, minimumDuration: 0, status: "active" },
-  { id: 2, rateCardId: 1, prefix: "1201", destination: "US - New Jersey", rate: 0.011, connectionFee: 0, billingIncrement: 6, minimumDuration: 0, status: "active" },
-  { id: 3, rateCardId: 1, prefix: "1212", destination: "US - New York City", rate: 0.010, connectionFee: 0, billingIncrement: 6, minimumDuration: 0, status: "active" },
-  { id: 4, rateCardId: 1, prefix: "1310", destination: "US - Los Angeles", rate: 0.011, connectionFee: 0, billingIncrement: 6, minimumDuration: 0, status: "active" },
-  { id: 5, rateCardId: 1, prefix: "44", destination: "United Kingdom", rate: 0.025, connectionFee: 0, billingIncrement: 1, minimumDuration: 0, status: "active" },
-];
 
 type ViewMode = "list" | "edit" | "rates" | "profits";
 
@@ -247,7 +113,7 @@ function CustomerRatesPage() {
     name: "",
     code: "",
     currency: "USD",
-    direction: "termination" as "termination" | "origination",
+    direction: "outbound" as "outbound" | "inbound",
     parentCardId: "",
     profitMargin: "15",
     profitType: "percentage" as "percentage" | "fixed",
@@ -255,11 +121,61 @@ function CustomerRatesPage() {
     profitAssurance: true,
   });
 
-  const rateCards = mockCustomerRateCards;
+  const { data: rateCards = [], isLoading, refetch } = useQuery<RateCard[]>({
+    queryKey: ['/api/rate-cards', 'customer'],
+    queryFn: async () => {
+      const res = await fetch('/api/rate-cards?type=customer');
+      if (!res.ok) throw new Error('Failed to fetch rate cards');
+      return res.json();
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<RateCard>) => {
+      return apiRequest('/api/rate-cards', {
+        method: 'POST',
+        body: JSON.stringify({ ...data, type: 'customer' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
+      toast({ title: 'Rate card created', description: 'Rate card has been saved.' });
+      setViewMode('list');
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to create rate card', variant: 'destructive' }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<RateCard> }) => {
+      return apiRequest(`/api/rate-cards/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
+      toast({ title: 'Rate card updated', description: 'Rate card has been saved.' });
+      setViewMode('list');
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to update rate card', variant: 'destructive' }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/rate-cards/${id}`, { method: 'DELETE' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
+      toast({ title: 'Rate card deleted' });
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to delete rate card', variant: 'destructive' }),
+  });
 
   const filteredCards = rateCards.filter(card => {
     const matchesSearch = card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         card.code.toLowerCase().includes(searchTerm.toLowerCase());
+                         (card.code || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || card.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -270,7 +186,7 @@ function CustomerRatesPage() {
       name: "",
       code: "",
       currency: "USD",
-      direction: "termination",
+      direction: "outbound",
       parentCardId: "",
       profitMargin: "15",
       profitType: "percentage",
@@ -284,13 +200,13 @@ function CustomerRatesPage() {
     setEditingCard(card);
     setFormData({
       name: card.name,
-      code: card.code,
-      currency: card.currency,
-      direction: card.direction,
-      parentCardId: card.parentCardId?.toString() || "",
-      profitMargin: card.profitMargin?.toString() || "15",
-      profitType: card.profitType || "percentage",
-      billingPrecision: card.billingPrecision.toString(),
+      code: card.code || '',
+      currency: card.currency || 'USD',
+      direction: (card.direction || 'outbound') as "outbound" | "inbound",
+      parentCardId: "",
+      profitMargin: card.profitMargin || "15",
+      profitType: (card.profitType || "percentage") as "percentage" | "fixed",
+      billingPrecision: (card.billingPrecision || 4).toString(),
       profitAssurance: true,
     });
     setViewMode("edit");
@@ -307,11 +223,21 @@ function CustomerRatesPage() {
   };
 
   const handleSave = () => {
-    toast({
-      title: editingCard ? "Rate card updated" : "Rate card created",
-      description: `${formData.name} has been saved successfully.`,
-    });
-    setViewMode("list");
+    const cardData = {
+      name: formData.name,
+      code: formData.code || undefined,
+      currency: formData.currency,
+      direction: formData.direction,
+      profitMargin: formData.profitMargin,
+      profitType: formData.profitType,
+      billingPrecision: parseInt(formData.billingPrecision) || 4,
+    };
+    
+    if (editingCard) {
+      updateMutation.mutate({ id: editingCard.id, data: cardData });
+    } else {
+      createMutation.mutate(cardData);
+    }
   };
 
   const handleBuildAll = () => {
@@ -422,22 +348,7 @@ function CustomerRatesPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="parentCard">Parent Carrier Rate Card</Label>
-                  <Select
-                    value={formData.parentCardId}
-                    onValueChange={(value) => setFormData({ ...formData, parentCardId: value })}
-                  >
-                    <SelectTrigger data-testid="select-parent-card">
-                      <SelectValue placeholder="Select carrier rate card to derive from" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockCarrierRateCards.map((card) => (
-                        <SelectItem key={card.id} value={card.id.toString()}>
-                          {card.name} ({card.ratesCount} rates)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">Customer rates will be derived from the selected carrier rate card</p>
+                  <p className="text-xs text-muted-foreground">Customer rates can be derived from provider rate cards (configured in Carrier Rates tab)</p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-6">
@@ -575,27 +486,15 @@ function CustomerRatesPage() {
                   <TableHead>Destination</TableHead>
                   <TableHead className="text-right">Rate</TableHead>
                   <TableHead className="text-right">Connection Fee</TableHead>
-                  <TableHead className="text-right">Increment</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Interval</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockRates.map((rate) => (
-                  <TableRow key={rate.id} data-testid={`row-rate-${rate.id}`}>
-                    <TableCell className="font-mono font-medium">{rate.prefix}</TableCell>
-                    <TableCell>{rate.destination}</TableCell>
-                    <TableCell className="text-right font-mono">${rate.rate.toFixed(4)}</TableCell>
-                    <TableCell className="text-right font-mono">${rate.connectionFee.toFixed(4)}</TableCell>
-                    <TableCell className="text-right">{rate.billingIncrement}s</TableCell>
-                    <TableCell>
-                      {rate.status === "active" ? (
-                        <Badge variant="default" className="bg-green-600">Active</Badge>
-                      ) : (
-                        <Badge variant="destructive">Blocked</Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    No rates configured. Upload a CSV file to add rates.
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </CardContent>
@@ -819,18 +718,67 @@ function CarrierRatesPage() {
     name: "",
     code: "",
     currency: "USD",
-    direction: "termination" as "termination" | "origination",
+    direction: "outbound" as "outbound" | "inbound",
     carrierId: "",
     techPrefix: "",
     billingPrecision: "4",
   });
 
-  const rateCards = mockCarrierRateCards;
+  const { data: rateCards = [], isLoading, refetch } = useQuery<RateCard[]>({
+    queryKey: ['/api/rate-cards', 'provider'],
+    queryFn: async () => {
+      const res = await fetch('/api/rate-cards?type=provider');
+      if (!res.ok) throw new Error('Failed to fetch rate cards');
+      return res.json();
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<RateCard>) => {
+      return apiRequest('/api/rate-cards', {
+        method: 'POST',
+        body: JSON.stringify({ ...data, type: 'provider' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
+      toast({ title: 'Rate card created', description: 'Rate card has been saved.' });
+      setViewMode('list');
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to create rate card', variant: 'destructive' }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<RateCard> }) => {
+      return apiRequest(`/api/rate-cards/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
+      toast({ title: 'Rate card updated', description: 'Rate card has been saved.' });
+      setViewMode('list');
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to update rate card', variant: 'destructive' }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/rate-cards/${id}`, { method: 'DELETE' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
+      toast({ title: 'Rate card deleted' });
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to delete rate card', variant: 'destructive' }),
+  });
 
   const filteredCards = rateCards.filter(card => {
     const matchesSearch = card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         card.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (card.carrierName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+                         (card.code || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || card.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -841,7 +789,7 @@ function CarrierRatesPage() {
       name: "",
       code: "",
       currency: "USD",
-      direction: "termination",
+      direction: "outbound",
       carrierId: "",
       techPrefix: "",
       billingPrecision: "4",
@@ -853,12 +801,12 @@ function CarrierRatesPage() {
     setEditingCard(card);
     setFormData({
       name: card.name,
-      code: card.code,
-      currency: card.currency,
-      direction: card.direction,
-      carrierId: card.carrierId?.toString() || "",
+      code: card.code || '',
+      currency: card.currency || 'USD',
+      direction: (card.direction || 'outbound') as "outbound" | "inbound",
+      carrierId: card.carrierId || "",
       techPrefix: card.techPrefix || "",
-      billingPrecision: card.billingPrecision.toString(),
+      billingPrecision: (card.billingPrecision || 4).toString(),
     });
     setViewMode("edit");
   };
@@ -869,11 +817,21 @@ function CarrierRatesPage() {
   };
 
   const handleSave = () => {
-    toast({
-      title: editingCard ? "Rate card updated" : "Rate card created",
-      description: `${formData.name} has been saved successfully.`,
-    });
-    setViewMode("list");
+    const cardData = {
+      name: formData.name,
+      code: formData.code || undefined,
+      currency: formData.currency,
+      direction: formData.direction,
+      carrierId: formData.carrierId || undefined,
+      techPrefix: formData.techPrefix || undefined,
+      billingPrecision: parseInt(formData.billingPrecision) || 4,
+    };
+    
+    if (editingCard) {
+      updateMutation.mutate({ id: editingCard.id, data: cardData });
+    } else {
+      createMutation.mutate(cardData);
+    }
   };
 
   const handleUpload = () => {
@@ -1086,7 +1044,7 @@ function CarrierRatesPage() {
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold">{editingCard.name}</h1>
-            <p className="text-muted-foreground">Carrier rates - {editingCard.ratesCount} prefixes from {editingCard.carrierName}</p>
+            <p className="text-muted-foreground">Carrier rates - {editingCard.ratesCount || 0} prefixes</p>
           </div>
           <Button variant="outline" onClick={handleUpload} data-testid="button-upload-rates">
             <Upload className="h-4 w-4 mr-2" />
@@ -1121,23 +1079,15 @@ function CarrierRatesPage() {
                   <TableHead>Destination</TableHead>
                   <TableHead className="text-right">Cost Rate</TableHead>
                   <TableHead className="text-right">Connection Fee</TableHead>
-                  <TableHead className="text-right">Increment</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Interval</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockRates.map((rate) => (
-                  <TableRow key={rate.id} data-testid={`row-carrier-rate-${rate.id}`}>
-                    <TableCell className="font-mono font-medium">{rate.prefix}</TableCell>
-                    <TableCell>{rate.destination}</TableCell>
-                    <TableCell className="text-right font-mono">${(rate.rate * 0.85).toFixed(4)}</TableCell>
-                    <TableCell className="text-right font-mono">${rate.connectionFee.toFixed(4)}</TableCell>
-                    <TableCell className="text-right">{rate.billingIncrement}s</TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-600">Active</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    No rates configured. Upload a CSV file to add rates.
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </CardContent>

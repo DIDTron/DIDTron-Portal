@@ -59,6 +59,8 @@ import {
   type InsertBonusType, type InsertEmailTemplate, type InsertEmailLog,
   type SocialAccount, type InsertSocialAccount,
   type SocialPost, type InsertSocialPost,
+  type RateCard, type InsertRateCard,
+  type RateCardRate, type InsertRateCardRate,
   type DocCategory, type InsertDocCategory,
   type DocArticle, type InsertDocArticle,
   type Webhook, type InsertWebhook,
@@ -289,6 +291,19 @@ export interface IStorage {
   createSocialPost(post: InsertSocialPost): Promise<SocialPost>;
   updateSocialPost(id: string, data: Partial<InsertSocialPost>): Promise<SocialPost | undefined>;
   deleteSocialPost(id: string): Promise<boolean>;
+
+  // Rate Cards
+  getRateCards(type?: string): Promise<RateCard[]>;
+  getRateCard(id: string): Promise<RateCard | undefined>;
+  createRateCard(card: InsertRateCard): Promise<RateCard>;
+  updateRateCard(id: string, data: Partial<InsertRateCard>): Promise<RateCard | undefined>;
+  deleteRateCard(id: string): Promise<boolean>;
+
+  // Rate Card Rates
+  getRateCardRates(rateCardId: string): Promise<RateCardRate[]>;
+  createRateCardRate(rate: InsertRateCardRate): Promise<RateCardRate>;
+  createRateCardRatesBulk(rates: InsertRateCardRate[]): Promise<RateCardRate[]>;
+  deleteRateCardRates(rateCardId: string): Promise<boolean>;
 
   // Dashboard Stats
   getCategoryStats(): Promise<{ categoryId: string; customerCount: number; revenue: number }[]>;
@@ -558,6 +573,8 @@ export class MemStorage implements IStorage {
   private emailLogs: Map<string, EmailLog>;
   private socialAccounts: Map<string, SocialAccount>;
   private socialPosts: Map<string, SocialPost>;
+  private rateCards: Map<string, RateCard>;
+  private rateCardRates: Map<string, RateCardRate>;
   private docCategories: Map<string, DocCategory>;
   private docArticles: Map<string, DocArticle>;
   private webhooks: Map<string, Webhook>;
@@ -619,6 +636,8 @@ export class MemStorage implements IStorage {
     this.emailLogs = new Map();
     this.socialAccounts = new Map();
     this.socialPosts = new Map();
+    this.rateCards = new Map();
+    this.rateCardRates = new Map();
     this.docCategories = new Map();
     this.docArticles = new Map();
     this.webhooks = new Map();
@@ -2057,6 +2076,105 @@ export class MemStorage implements IStorage {
   }
   async deleteSocialPost(id: string): Promise<boolean> {
     return this.socialPosts.delete(id);
+  }
+
+  // Rate Cards
+  async getRateCards(type?: string): Promise<RateCard[]> {
+    const cards = Array.from(this.rateCards.values());
+    if (type) {
+      return cards.filter(c => c.type === type);
+    }
+    return cards;
+  }
+
+  async getRateCard(id: string): Promise<RateCard | undefined> {
+    return this.rateCards.get(id);
+  }
+
+  async createRateCard(card: InsertRateCard): Promise<RateCard> {
+    const id = randomUUID();
+    const now = new Date();
+    const newCard: RateCard = {
+      id,
+      name: card.name,
+      code: card.code ?? null,
+      description: card.description ?? null,
+      type: card.type ?? "provider",
+      status: card.status ?? "active",
+      direction: card.direction ?? "outbound",
+      currency: card.currency ?? "USD",
+      carrierId: card.carrierId ?? null,
+      profitMargin: card.profitMargin ?? "0",
+      profitType: card.profitType ?? "percentage",
+      billingPrecision: card.billingPrecision ?? 6,
+      techPrefix: card.techPrefix ?? null,
+      ratesCount: card.ratesCount ?? 0,
+      revisionCount: card.revisionCount ?? 1,
+      connexcsRateCardId: card.connexcsRateCardId ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.rateCards.set(id, newCard);
+    return newCard;
+  }
+
+  async updateRateCard(id: string, data: Partial<InsertRateCard>): Promise<RateCard | undefined> {
+    const existing = this.rateCards.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data, updatedAt: new Date() };
+    this.rateCards.set(id, updated);
+    return updated;
+  }
+
+  async deleteRateCard(id: string): Promise<boolean> {
+    // Also delete associated rates
+    const ratesToDelete = Array.from(this.rateCardRates.values()).filter(r => r.rateCardId === id);
+    ratesToDelete.forEach(r => this.rateCardRates.delete(r.id));
+    return this.rateCards.delete(id);
+  }
+
+  // Rate Card Rates
+  async getRateCardRates(rateCardId: string): Promise<RateCardRate[]> {
+    return Array.from(this.rateCardRates.values()).filter(r => r.rateCardId === rateCardId);
+  }
+
+  async createRateCardRate(rate: InsertRateCardRate): Promise<RateCardRate> {
+    const id = randomUUID();
+    const now = new Date();
+    const newRate: RateCardRate = {
+      id,
+      rateCardId: rate.rateCardId,
+      prefix: rate.prefix,
+      destination: rate.destination ?? null,
+      country: rate.country ?? null,
+      rate: rate.rate,
+      connectionFee: rate.connectionFee ?? "0",
+      minDuration: rate.minDuration ?? 0,
+      interval: rate.interval ?? 60,
+      asr: rate.asr ?? null,
+      acd: rate.acd ?? null,
+      pdd: rate.pdd ?? null,
+      effectiveDate: rate.effectiveDate ?? null,
+      expiryDate: rate.expiryDate ?? null,
+      createdAt: now,
+    };
+    this.rateCardRates.set(id, newRate);
+    return newRate;
+  }
+
+  async createRateCardRatesBulk(rates: InsertRateCardRate[]): Promise<RateCardRate[]> {
+    const created: RateCardRate[] = [];
+    for (const rate of rates) {
+      const newRate = await this.createRateCardRate(rate);
+      created.push(newRate);
+    }
+    return created;
+  }
+
+  async deleteRateCardRates(rateCardId: string): Promise<boolean> {
+    const ratesToDelete = Array.from(this.rateCardRates.values()).filter(r => r.rateCardId === rateCardId);
+    ratesToDelete.forEach(r => this.rateCardRates.delete(r.id));
+    return true;
   }
 
   // Dashboard Stats

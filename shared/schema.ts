@@ -39,6 +39,12 @@ export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed
 
 export const routeStatusEnum = pgEnum("route_status", ["active", "paused", "disabled", "testing"]);
 
+export const rateCardTypeEnum = pgEnum("rate_card_type", ["provider", "customer"]);
+
+export const rateCardStatusEnum = pgEnum("rate_card_status", ["active", "inactive", "stale", "building"]);
+
+export const rateCardDirectionEnum = pgEnum("rate_card_direction", ["termination", "origination"]);
+
 // ==================== CUSTOMER CATEGORIES & GROUPS ====================
 
 export const customerCategories = pgTable("customer_categories", {
@@ -354,7 +360,20 @@ export const routeGroupAssignments = pgTable("route_group_assignments", {
 export const rateCards = pgTable("rate_cards", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
+  code: text("code").notNull(),
+  type: rateCardTypeEnum("type").default("provider"),
+  direction: rateCardDirectionEnum("direction").default("termination"),
+  currency: text("currency").default("USD"),
+  status: rateCardStatusEnum("status").default("active"),
   carrierId: varchar("carrier_id").references(() => carriers.id),
+  parentCardId: varchar("parent_card_id"),
+  profitMargin: decimal("profit_margin", { precision: 10, scale: 4 }),
+  profitType: text("profit_type").default("percentage"),
+  billingPrecision: integer("billing_precision").default(4),
+  techPrefix: text("tech_prefix"),
+  ratesCount: integer("rates_count").default(0),
+  revisionCount: integer("revision_count").default(1),
+  connexcsRateCardId: text("connexcs_rate_card_id"),
   effectiveDate: timestamp("effective_date"),
   expiryDate: timestamp("expiry_date"),
   isActive: boolean("is_active").default(true),
@@ -1869,6 +1888,8 @@ export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id:
 export const insertWebhookSchema = createInsertSchema(webhooks).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertWebhookDeliverySchema = createInsertSchema(webhookDeliveries).omit({ id: true, createdAt: true });
 export const insertCustomerApiKeySchema = createInsertSchema(customerApiKeys).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRateCardSchema = createInsertSchema(rateCards).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRateCardRateSchema = createInsertSchema(rateCardRates).omit({ id: true, createdAt: true });
 
 // ==================== TYPES ====================
 
@@ -1945,6 +1966,12 @@ export type InsertSocialAccount = z.infer<typeof insertSocialAccountSchema>;
 export type SocialAccount = typeof socialAccounts.$inferSelect;
 export type InsertSocialPost = z.infer<typeof insertSocialPostSchema>;
 export type SocialPost = typeof socialPosts.$inferSelect;
+
+// Rate Card types
+export type InsertRateCard = z.infer<typeof insertRateCardSchema>;
+export type RateCard = typeof rateCards.$inferSelect;
+export type InsertRateCardRate = z.infer<typeof insertRateCardRateSchema>;
+export type RateCardRate = typeof rateCardRates.$inferSelect;
 
 // Currency types
 export type InsertCurrency = z.infer<typeof insertCurrencySchema>;

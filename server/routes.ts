@@ -47,6 +47,8 @@ import {
   insertEmailTemplateSchema,
   insertSocialAccountSchema,
   insertSocialPostSchema,
+  insertRateCardSchema,
+  insertRateCardRateSchema,
   insertDidSchema,
   insertExtensionSchema,
   insertIvrSchema,
@@ -4103,6 +4105,152 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete route" });
+    }
+  });
+
+  // ==================== RATE CARDS ====================
+
+  app.get("/api/rate-cards", async (req, res) => {
+    try {
+      const type = req.query.type as string | undefined;
+      const cards = await storage.getRateCards(type);
+      res.json(cards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rate cards" });
+    }
+  });
+
+  app.get("/api/rate-cards/:id", async (req, res) => {
+    try {
+      const card = await storage.getRateCard(req.params.id);
+      if (!card) return res.status(404).json({ error: "Rate card not found" });
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rate card" });
+    }
+  });
+
+  app.post("/api/rate-cards", async (req, res) => {
+    try {
+      const parsed = insertRateCardSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const card = await storage.createRateCard(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "rate_cards",
+        recordId: card.id,
+        newValues: card,
+      });
+      
+      // Auto-sync to ConnexCS if integration is enabled
+      try {
+        await connexcs.loadCredentialsFromStorage(storage);
+        if (connexcs.isConfigured()) {
+          const syncResult = await connexcs.syncRateCard({
+            id: card.id,
+            name: card.name,
+            currency: card.currency || "USD",
+            direction: card.direction || "outbound",
+          });
+          if (syncResult.connexcsId) {
+            await storage.updateRateCard(card.id, { connexcsRateCardId: syncResult.connexcsId });
+          }
+          console.log(`[ConnexCS] Rate card ${card.name} synced: ${syncResult.connexcsId}`);
+        }
+      } catch (syncError) {
+        console.error("[ConnexCS] Auto-sync rate card failed:", syncError);
+      }
+      
+      res.status(201).json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create rate card" });
+    }
+  });
+
+  app.patch("/api/rate-cards/:id", async (req, res) => {
+    try {
+      const oldCard = await storage.getRateCard(req.params.id);
+      const card = await storage.updateRateCard(req.params.id, req.body);
+      if (!card) return res.status(404).json({ error: "Rate card not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "rate_cards",
+        recordId: req.params.id,
+        oldValues: oldCard,
+        newValues: card,
+      });
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update rate card" });
+    }
+  });
+
+  app.delete("/api/rate-cards/:id", async (req, res) => {
+    try {
+      const oldCard = await storage.getRateCard(req.params.id);
+      const deleted = await storage.deleteRateCard(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Rate card not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "rate_cards",
+        recordId: req.params.id,
+        oldValues: oldCard,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete rate card" });
+    }
+  });
+
+  // Rate Card Rates (individual prefix rates)
+  app.get("/api/rate-cards/:id/rates", async (req, res) => {
+    try {
+      const rates = await storage.getRateCardRates(req.params.id);
+      res.json(rates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rate card rates" });
+    }
+  });
+
+  app.post("/api/rate-cards/:id/rates", async (req, res) => {
+    try {
+      const rateCardId = req.params.id;
+      const card = await storage.getRateCard(rateCardId);
+      if (!card) return res.status(404).json({ error: "Rate card not found" });
+      
+      // Handle bulk upload
+      if (Array.isArray(req.body)) {
+        const rates = req.body.map((r: Record<string, unknown>) => ({ ...r, rateCardId }));
+        const created = await storage.createRateCardRatesBulk(rates);
+        // Update rates count on card
+        const allRates = await storage.getRateCardRates(rateCardId);
+        await storage.updateRateCard(rateCardId, { ratesCount: allRates.length });
+        res.status(201).json(created);
+      } else {
+        const rateData = { ...req.body, rateCardId };
+        const parsed = insertRateCardRateSchema.safeParse(rateData);
+        if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+        const rate = await storage.createRateCardRate(parsed.data);
+        // Update rates count on card
+        const allRates = await storage.getRateCardRates(rateCardId);
+        await storage.updateRateCard(rateCardId, { ratesCount: allRates.length });
+        res.status(201).json(rate);
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create rate card rate" });
+    }
+  });
+
+  app.delete("/api/rate-cards/:id/rates", async (req, res) => {
+    try {
+      await storage.deleteRateCardRates(req.params.id);
+      await storage.updateRateCard(req.params.id, { ratesCount: 0 });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete rate card rates" });
     }
   });
 
