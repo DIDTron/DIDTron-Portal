@@ -4073,8 +4073,8 @@ export async function registerRoutes(
 
   app.post("/api/connexcs/sql", async (req, res) => {
     try {
-      await connexcs.loadCredentialsFromStorage(storage);
-      if (connexcs.isMockMode()) {
+      await connexcsTools.loadCredentialsFromStorage(storage);
+      if (connexcsTools.isMockMode()) {
         res.json({
           success: true,
           data: [
@@ -4094,7 +4094,7 @@ export async function registerRoutes(
         return;
       }
       
-      const result = await connexcs.executeCDRQuery(sql);
+      const result = await connexcsTools.executeSQLQuery(storage, sql);
       res.json({ 
         success: true, 
         data: result,
