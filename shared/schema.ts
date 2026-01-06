@@ -1309,6 +1309,54 @@ export const sipTestRunResults = pgTable("sip_test_run_results", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// SIP Test Profiles (ConnexCS server IPs for testing)
+export const sipTestProfiles = pgTable("sip_test_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id),
+  name: text("name").notNull(),
+  ip: text("ip").notNull(),
+  port: integer("port").default(5060),
+  protocol: text("protocol").default("SIP"),
+  username: text("username"),
+  password: text("password"),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// SIP Test Suppliers (carriers/routes to test through)
+export const sipTestSuppliers = pgTable("sip_test_suppliers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id),
+  name: text("name").notNull(),
+  codec: text("codec").default("G729"),
+  prefix: text("prefix"),
+  protocol: text("protocol").default("SIP"),
+  email: text("email"),
+  isOurTier: boolean("is_our_tier").default(false),
+  tierId: varchar("tier_id").references(() => voiceTiers.id),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// SIP Test Settings (general settings per customer)
+export const sipTestSettings = pgTable("sip_test_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).unique(),
+  concurrentCalls: integer("concurrent_calls").default(10),
+  cliAcceptablePrefixes: text("cli_acceptable_prefixes").default("+00"),
+  defaultAudioId: varchar("default_audio_id").references(() => sipTestAudioFiles.id),
+  maxWaitAnswer: integer("max_wait_answer").default(80),
+  defaultCallsCount: integer("default_calls_count").default(5),
+  defaultCodec: text("default_codec").default("G729"),
+  defaultDuration: integer("default_duration").default(30),
+  timezone: text("timezone").default("UTC"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== CLASS 4 SOFTSWITCH ENHANCEMENTS ====================
 
 export const class4Customers = pgTable("class4_customers", {
@@ -1741,6 +1789,9 @@ export const insertSipTestAudioFileSchema = createInsertSchema(sipTestAudioFiles
 export const insertSipTestNumberSchema = createInsertSchema(sipTestNumbers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSipTestRunSchema = createInsertSchema(sipTestRuns).omit({ id: true, createdAt: true });
 export const insertSipTestRunResultSchema = createInsertSchema(sipTestRunResults).omit({ id: true, createdAt: true });
+export const insertSipTestProfileSchema = createInsertSchema(sipTestProfiles).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSipTestSupplierSchema = createInsertSchema(sipTestSuppliers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSipTestSettingsSchema = createInsertSchema(sipTestSettings).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertClass4CustomerSchema = createInsertSchema(class4Customers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertClass4CarrierSchema = createInsertSchema(class4Carriers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertClass4ProviderRateCardSchema = createInsertSchema(class4ProviderRateCards).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1922,6 +1973,12 @@ export type InsertSipTestRun = z.infer<typeof insertSipTestRunSchema>;
 export type SipTestRun = typeof sipTestRuns.$inferSelect;
 export type InsertSipTestRunResult = z.infer<typeof insertSipTestRunResultSchema>;
 export type SipTestRunResult = typeof sipTestRunResults.$inferSelect;
+export type InsertSipTestProfile = z.infer<typeof insertSipTestProfileSchema>;
+export type SipTestProfile = typeof sipTestProfiles.$inferSelect;
+export type InsertSipTestSupplier = z.infer<typeof insertSipTestSupplierSchema>;
+export type SipTestSupplier = typeof sipTestSuppliers.$inferSelect;
+export type InsertSipTestSettings = z.infer<typeof insertSipTestSettingsSchema>;
+export type SipTestSettings = typeof sipTestSettings.$inferSelect;
 
 // Class 4 Softswitch types
 export type InsertClass4Customer = z.infer<typeof insertClass4CustomerSchema>;

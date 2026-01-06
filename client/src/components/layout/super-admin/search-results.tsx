@@ -44,9 +44,9 @@ const allSearchItems: SearchItem[] = [
   { id: "monitoring-alerts", label: "Alerts", section: "monitoring", sectionLabel: "Monitoring", path: "/admin/alerts", icon: BarChart3, keywords: ["alerts", "notifications", "warnings"] },
   { id: "monitoring-rules", label: "Monitoring Rules", section: "monitoring", sectionLabel: "Monitoring", path: "/admin/rules", icon: Settings, keywords: ["rules", "monitoring", "thresholds"] },
   
-  { id: "sip-tester-run", label: "Run Tests", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester", icon: Phone, keywords: ["sip", "tester", "testing", "quality", "diagnostics"] },
-  { id: "sip-tester-audio", label: "Audio Files", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester?tab=audio", icon: Phone, keywords: ["sip", "audio", "files", "ivr", "prompts"] },
-  { id: "sip-tester-numbers", label: "Number Database", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester?tab=numbers", icon: Phone, keywords: ["sip", "numbers", "database", "crowdsourced"] },
+  { id: "sip-tester-new", label: "New Test", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester/new", icon: Phone, keywords: ["sip", "tester", "testing", "new", "quality"] },
+  { id: "sip-tester-history", label: "History", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester/history", icon: Phone, keywords: ["sip", "history", "tests", "results"] },
+  { id: "sip-tester-settings", label: "Settings", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester/settings", icon: Settings, keywords: ["sip", "settings", "profiles", "suppliers", "audio"] },
   
   { id: "ai-voice-agents", label: "AI Voice Agents", section: "ai", sectionLabel: "AI", path: "/admin/ai-voice-agents", icon: Bot, keywords: ["ai", "voice", "agents", "assistant", "chatbot", "ivr"] },
   
