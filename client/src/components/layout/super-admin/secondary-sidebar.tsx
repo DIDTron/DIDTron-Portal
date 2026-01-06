@@ -41,6 +41,11 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "channel-plans", label: "Channel Plans", route: "/admin/channel-plans", icon: CreditCard },
       { id: "carriers", label: "Carriers", route: "/admin/carriers", icon: Building2 },
       { id: "routes", label: "Routes", route: "/admin/routes", icon: RouteIcon },
+    ],
+  },
+  did: {
+    title: "DID Management",
+    items: [
       { id: "did-countries", label: "DID Countries", route: "/admin/did-countries", icon: Globe },
       { id: "did-providers", label: "DID Providers", route: "/admin/did-providers", icon: Building },
       { id: "did-inventory", label: "DID Inventory", route: "/admin/did-inventory", icon: Phone },

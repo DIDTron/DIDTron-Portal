@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network, Cpu } from "lucide-react";
+import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network, Cpu, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
@@ -15,6 +15,7 @@ export interface NavSection {
 export const navSections: NavSection[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, defaultRoute: "/admin" },
   { id: "voip", label: "VoIP", icon: Phone, defaultRoute: "/admin/carriers" },
+  { id: "did", label: "DID", icon: Globe, defaultRoute: "/admin/did-countries" },
   { id: "customers", label: "Customers", icon: Users, defaultRoute: "/admin/customers" },
   { id: "billing", label: "Billing", icon: CreditCard, defaultRoute: "/admin/invoices" },
   { id: "marketing", label: "Marketing", icon: Megaphone, defaultRoute: "/admin/social-accounts" },
@@ -131,6 +132,7 @@ interface SubItem {
 function getFirstSubItemForSection(sectionId: string): SubItem | null {
   const sectionItems: Record<string, SubItem> = {
     voip: { id: "carriers", label: "Carriers", route: "/admin/carriers" },
+    did: { id: "did-countries", label: "DID Countries", route: "/admin/did-countries" },
     customers: { id: "customers", label: "Customers", route: "/admin/customers" },
     billing: { id: "invoices", label: "Invoices", route: "/admin/invoices" },
     marketing: { id: "social-accounts", label: "Social Accounts", route: "/admin/social-accounts" },
