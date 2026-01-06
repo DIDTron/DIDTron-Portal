@@ -224,6 +224,8 @@ export function SecondarySidebar() {
     setSectionItemOrder
   } = useSuperAdminTabs();
 
+  const config = activeSection ? sectionConfigs[activeSection] : null;
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -235,18 +237,8 @@ export function SecondarySidebar() {
     })
   );
 
-  if (!secondarySidebarOpen) {
-    return null;
-  }
-
-  if (!activeSection || activeSection === "dashboard") {
-    return null;
-  }
-
-  const config = sectionConfigs[activeSection];
-  if (!config) return null;
-
   const orderedItems = useMemo(() => {
+    if (!config || !activeSection) return [];
     const savedOrder = sectionItemOrder[activeSection];
     if (!savedOrder || savedOrder.length === 0) {
       return config.items;
@@ -264,7 +256,17 @@ export function SecondarySidebar() {
       ordered.push(item);
     });
     return ordered;
-  }, [activeSection, sectionItemOrder, config.items]);
+  }, [activeSection, sectionItemOrder, config]);
+
+  if (!secondarySidebarOpen) {
+    return null;
+  }
+
+  if (!activeSection || activeSection === "dashboard") {
+    return null;
+  }
+
+  if (!config) return null;
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
