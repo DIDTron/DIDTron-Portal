@@ -47,14 +47,16 @@ export async function validateLogin(
   email: string,
   password: string
 ): Promise<User | null> {
-  // Test account for development - allows login to all portals
-  if (email === "info@didtron.com" && password === "Adam@0903") {
-    // Check if test user exists, if not create it
-    let testUser = await storage.getUserByEmail("info@didtron.com");
+  // Dev test account - uses environment variables for security
+  const testEmail = process.env.TEST_ADMIN_EMAIL;
+  const testPassword = process.env.TEST_ADMIN_PASSWORD;
+  
+  if (testEmail && testPassword && email === testEmail && password === testPassword) {
+    let testUser = await storage.getUserByEmail(testEmail);
     if (!testUser) {
-      const hashedPassword = await hashPassword("Adam@0903");
+      const hashedPassword = await hashPassword(testPassword);
       testUser = await storage.createUser({
-        email: "info@didtron.com",
+        email: testEmail,
         password: hashedPassword,
         firstName: "DIDTron",
         lastName: "Admin",

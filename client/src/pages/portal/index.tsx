@@ -47,6 +47,7 @@ import KnowledgeBasePage from "./knowledge-base";
 import SecuritySettingsPage from "./security-settings";
 import NotificationSettingsPage from "./notification-settings";
 import PromoCodesPage from "./promo-codes";
+import MyBrandingPage from "./my-branding";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -99,6 +100,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/support/new": { section: "support", subItem: "new-ticket" },
   "/portal/support/kb": { section: "support", subItem: "kb" },
   "/portal/settings": { section: "settings", subItem: "profile" },
+  "/portal/settings/branding": { section: "settings", subItem: "branding" },
   "/portal/settings/security": { section: "settings", subItem: "security" },
   "/portal/settings/notifications": { section: "settings", subItem: "notifications" },
 };
@@ -347,6 +349,7 @@ export default function CustomerPortal() {
               <Route path="/portal/support/new" component={NewTicketPage} />
               <Route path="/portal/support/kb" component={KnowledgeBasePage} />
               <Route path="/portal/settings" component={SettingsPage} />
+              <Route path="/portal/settings/branding" component={MyBrandingPage} />
               <Route path="/portal/settings/security" component={SecuritySettingsPage} />
               <Route path="/portal/settings/notifications" component={NotificationSettingsPage} />
               <Route>

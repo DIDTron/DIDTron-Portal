@@ -8,7 +8,7 @@ import {
   Settings, User, Shield, Bell, Headphones, Users as UsersIcon,
   PhoneCall, Bot, Mic, Workflow, Database, Gift, ListOrdered,
   Zap, Clock, TestTube, Key, Webhook, Network, FileSpreadsheet, 
-  TrendingDown, Calculator, Tag
+  TrendingDown, Calculator, Tag, Palette
 } from "lucide-react";
 
 interface SecondarySidebarProps {
@@ -114,6 +114,7 @@ const sectionMenus: Record<string, { title: string; items: SidebarItem[] }> = {
     title: "Settings",
     items: [
       { id: "profile", label: "Profile", icon: User, path: "/portal/settings" },
+      { id: "branding", label: "My Branding", icon: Palette, path: "/portal/settings/branding" },
       { id: "security", label: "Security", icon: Shield, path: "/portal/settings/security" },
       { id: "notifications", label: "Notifications", icon: Bell, path: "/portal/settings/notifications" },
     ],
