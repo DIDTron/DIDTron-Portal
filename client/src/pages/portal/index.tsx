@@ -3,14 +3,16 @@ import { Switch, Route, useLocation } from "wouter";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { CustomerIconRail } from "@/components/layout/customer-portal/icon-rail";
+import { CustomerPrimarySidebar } from "@/components/layout/customer-portal/primary-sidebar";
 import { CustomerSecondarySidebar } from "@/components/layout/customer-portal/secondary-sidebar";
-import { Phone, Bell, User, LogOut, Search, Plus, Loader2 } from "lucide-react";
+import { useCustomerPortalStore } from "@/stores/customer-portal-tabs";
+import { Phone, Bell, LogOut, Search, Loader2, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { queryClient } from "@/lib/queryClient";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -220,9 +222,13 @@ function PortalLoginPage() {
 
 export default function CustomerPortal() {
   const [location] = useLocation();
-  const [activeSection, setActiveSection] = useState("dashboard");
-  const [activeSubItem, setActiveSubItem] = useState("overview");
   const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { 
+    setActiveSection, 
+    setActiveSubItem,
+    primarySidebarOpen,
+    toggleBothSidebars
+  } = useCustomerPortalStore();
 
   useEffect(() => {
     const mapping = routeToSection[location];
@@ -230,7 +236,7 @@ export default function CustomerPortal() {
       setActiveSection(mapping.section);
       setActiveSubItem(mapping.subItem);
     }
-  }, [location]);
+  }, [location, setActiveSection, setActiveSubItem]);
 
   if (isLoading) {
     return (
@@ -251,47 +257,57 @@ export default function CustomerPortal() {
   return (
     <TooltipProvider>
       <div className="flex h-screen w-full bg-background">
-        <CustomerIconRail 
-          activeSection={activeSection} 
-          onSectionChange={setActiveSection} 
-        />
-        
-        <CustomerSecondarySidebar
-          activeSection={activeSection}
-          activeSubItem={activeSubItem}
-          onSubItemChange={setActiveSubItem}
-        />
+        <CustomerPrimarySidebar />
+        <CustomerSecondarySidebar />
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="h-14 border-b flex items-center justify-between px-4 gap-4 bg-background">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Phone className="h-5 w-5 text-primary" />
-                <span className="font-bold" data-testid="text-logo">DIDTron</span>
-              </div>
-              <div className="relative w-64">
+          <header className="sticky top-0 z-50 flex h-12 items-center justify-between gap-4 border-b bg-background px-4">
+            <div className="flex items-center gap-4 flex-1">
+              {!primarySidebarOpen && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleBothSidebars}
+                    data-testid="header-toggle-sidebars"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                  <Phone className="h-5 w-5 text-primary" />
+                  <span className="font-bold">DIDTron</span>
+                </div>
+              )}
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search..." 
-                  className="pl-10 h-9"
+                <Input
+                  type="search"
+                  placeholder="Search services, DIDs, tickets..."
+                  className="pl-9 h-8"
                   data-testid="input-search"
                 />
+                <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                  <span className="text-xs">Ctrl</span>K
+                </kbd>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" data-testid="button-notifications">
+              <Button variant="ghost" size="icon" className="relative" data-testid="button-notifications">
                 <Bell className="h-4 w-4" />
+                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]" variant="destructive">
+                  2
+                </Badge>
               </Button>
               <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" data-testid="button-profile">
-                    <Avatar className="h-7 w-7">
-                      <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
+                  <Button variant="ghost" className="relative h-8 gap-2 px-2" data-testid="button-profile">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-xs bg-primary text-primary-foreground">{userInitials}</AvatarFallback>
                     </Avatar>
+                    <span className="text-sm hidden md:inline-block">{user?.email}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     {user?.firstName} {user?.lastName}
                     <p className="text-xs font-normal text-muted-foreground">{user?.email}</p>

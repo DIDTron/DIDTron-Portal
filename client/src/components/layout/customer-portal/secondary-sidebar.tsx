@@ -1,21 +1,17 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useCustomerPortalStore } from "@/stores/customer-portal-tabs";
+import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, TrendingUp, Phone, Route, BarChart3,
   Globe, Search, FileCheck, CreditCard, Receipt, 
   History, Download, HelpCircle, MessageSquare, BookOpen,
   Settings, User, Shield, Bell, Headphones, Users as UsersIcon,
   PhoneCall, Bot, Mic, Workflow, Database, Gift, ListOrdered,
-  Zap, Clock, TestTube, Key, Webhook, Network, FileSpreadsheet, 
-  TrendingDown, Calculator, Tag, Palette
+  Zap, Clock, Key, Webhook, Network, FileSpreadsheet, 
+  TrendingDown, Calculator, Tag, Palette, Menu
 } from "lucide-react";
-
-interface SecondarySidebarProps {
-  activeSection: string;
-  activeSubItem: string;
-  onSubItemChange: (item: string) => void;
-}
 
 interface SidebarItem {
   id: string;
@@ -121,36 +117,71 @@ const sectionMenus: Record<string, { title: string; items: SidebarItem[] }> = {
   },
 };
 
-export function CustomerSecondarySidebar({ activeSection, activeSubItem, onSubItemChange }: SecondarySidebarProps) {
-  const [location] = useLocation();
-  const menu = sectionMenus[activeSection];
+export function CustomerSecondarySidebar() {
+  const [location, setLocation] = useLocation();
+  const { 
+    activeSection, 
+    activeSubItem, 
+    setActiveSubItem,
+    secondarySidebarOpen,
+    toggleSecondarySidebar
+  } = useCustomerPortalStore();
 
+  if (!secondarySidebarOpen) {
+    return null;
+  }
+
+  if (activeSection === "dashboard") {
+    return null;
+  }
+
+  const menu = sectionMenus[activeSection];
   if (!menu) return null;
 
+  const handleItemClick = (item: SidebarItem) => {
+    setActiveSubItem(item.id);
+    setLocation(item.path);
+  };
+
   return (
-    <div className="w-56 bg-sidebar border-r flex flex-col">
-      <div className="p-4 border-b">
-        <h2 className="font-semibold text-sm">{menu.title}</h2>
+    <div className="flex flex-col h-full w-48 border-r bg-sidebar shrink-0">
+      <div className="flex h-12 items-center gap-2 px-3 border-b">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSecondarySidebar}
+          className="shrink-0"
+          data-testid="toggle-secondary-sidebar"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <span className="font-semibold text-sm text-sidebar-foreground truncate">{menu.title}</span>
       </div>
+      
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
+        <nav className="py-2 px-2 space-y-0.5">
           {menu.items.map((item) => {
+            const Icon = item.icon;
             const isActive = location === item.path || activeSubItem === item.id;
+            
             return (
-              <Link key={item.id} href={item.path}>
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start gap-2 ${isActive ? "bg-sidebar-accent" : ""}`}
-                  onClick={() => onSubItemChange(item.id)}
-                  data-testid={`nav-${item.id}`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Button>
-              </Link>
+              <div
+                key={item.id}
+                onClick={() => handleItemClick(item)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer hover-elevate",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground"
+                )}
+                data-testid={`nav-item-${item.id}`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </div>
             );
           })}
-        </div>
+        </nav>
       </ScrollArea>
     </div>
   );
