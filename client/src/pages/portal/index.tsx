@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CustomerPrimarySidebar } from "@/components/layout/customer-portal/primary-sidebar";
 import { CustomerSecondarySidebar } from "@/components/layout/customer-portal/secondary-sidebar";
+import { CustomerWorkspaceTabs } from "@/components/layout/customer-portal/workspace-tabs";
 import { useCustomerPortalStore } from "@/stores/customer-portal-tabs";
 import { Phone, Bell, LogOut, Search, Loader2, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -325,6 +326,8 @@ export default function CustomerPortal() {
               </DropdownMenu>
             </div>
           </header>
+
+          <CustomerWorkspaceTabs />
 
           <main className="flex-1 overflow-auto bg-muted/30">
             <Switch>

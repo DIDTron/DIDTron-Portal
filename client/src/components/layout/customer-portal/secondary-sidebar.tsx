@@ -124,7 +124,8 @@ export function CustomerSecondarySidebar() {
     activeSubItem, 
     setActiveSubItem,
     secondarySidebarOpen,
-    toggleSecondarySidebar
+    toggleSecondarySidebar,
+    openTab
   } = useCustomerPortalStore();
 
   if (!secondarySidebarOpen) {
@@ -140,6 +141,11 @@ export function CustomerSecondarySidebar() {
 
   const handleItemClick = (item: SidebarItem) => {
     setActiveSubItem(item.id);
+    openTab({
+      id: `${activeSection}-${item.id}`,
+      label: item.label,
+      route: item.path,
+    });
     setLocation(item.path);
   };
 
