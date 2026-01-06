@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { queryClient } from "@/lib/queryClient";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,10 +127,11 @@ function PortalLoginPage() {
       
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Invalid credentials");
+        throw new Error(data.error || data.message || "Invalid credentials");
       }
       
-      window.location.reload();
+      // Invalidate auth query to refetch user state
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
