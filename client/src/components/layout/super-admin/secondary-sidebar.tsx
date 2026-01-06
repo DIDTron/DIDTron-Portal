@@ -52,6 +52,13 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "carriers", label: "Carriers", route: "/admin/carriers", icon: Building2 },
     ],
   },
+  "rate-cards": {
+    title: "Rate Cards",
+    items: [
+      { id: "customer-rates", label: "Customer Rates", route: "/admin/rate-cards/customer", icon: Users },
+      { id: "carrier-rates", label: "Carrier Rates", route: "/admin/rate-cards/carrier", icon: Building2 },
+    ],
+  },
   did: {
     title: "DID Management",
     items: [

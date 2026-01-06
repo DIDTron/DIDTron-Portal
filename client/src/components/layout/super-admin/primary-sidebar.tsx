@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network, Cpu, Globe, Building2, GripVertical, Cog } from "lucide-react";
+import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network, Cpu, Globe, Building2, GripVertical, Cog, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
@@ -20,6 +20,7 @@ export const navSections: NavSection[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, defaultRoute: "/admin" },
   { id: "voip", label: "VoIP", icon: Phone, defaultRoute: "/admin/pops" },
   { id: "carriers", label: "Carriers", icon: Building2, defaultRoute: "/admin/carriers" },
+  { id: "rate-cards", label: "Rate Cards", icon: Receipt, defaultRoute: "/admin/rate-cards/customer" },
   { id: "did", label: "DID", icon: Globe, defaultRoute: "/admin/did-countries" },
   { id: "customers", label: "Customers", icon: Users, defaultRoute: "/admin/customers" },
   { id: "billing", label: "Billing", icon: CreditCard, defaultRoute: "/admin/invoices" },
@@ -235,6 +236,10 @@ const sectionDefaultItems: Record<string, { id: string; label: string; route: st
     { id: "routes", label: "Routes", route: "/admin/routes" },
   ],
   carriers: [{ id: "carriers", label: "Carriers", route: "/admin/carriers" }],
+  "rate-cards": [
+    { id: "customer-rates", label: "Customer Rates", route: "/admin/rate-cards/customer" },
+    { id: "carrier-rates", label: "Carrier Rates", route: "/admin/rate-cards/carrier" },
+  ],
   did: [
     { id: "did-countries", label: "DID Countries", route: "/admin/did-countries" },
     { id: "did-providers", label: "DID Providers", route: "/admin/did-providers" },

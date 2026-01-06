@@ -54,6 +54,7 @@ import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
 import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization } from "./global-settings";
+import { CustomerRatesPage, CarrierRatesPage } from "./rate-cards";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -74,6 +75,8 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/channel-plans": { section: "voip", subItem: "channel-plans" },
   "/admin/carriers": { section: "carriers", subItem: "carriers" },
   "/admin/routes": { section: "voip", subItem: "routes" },
+  "/admin/rate-cards/customer": { section: "rate-cards", subItem: "customer-rates" },
+  "/admin/rate-cards/carrier": { section: "rate-cards", subItem: "carrier-rates" },
   "/admin/did-countries": { section: "did", subItem: "did-countries" },
   "/admin/did-providers": { section: "did", subItem: "did-providers" },
   "/admin/did-inventory": { section: "did", subItem: "did-inventory" },
@@ -188,6 +191,8 @@ export default function AdminLayout() {
                 <Route path="/admin/codecs" component={CodecsPage} />
                 <Route path="/admin/channel-plans" component={ChannelPlansPage} />
                 <Route path="/admin/carriers" component={CarriersPage} />
+                <Route path="/admin/rate-cards/customer" component={CustomerRatesPage} />
+                <Route path="/admin/rate-cards/carrier" component={CarrierRatesPage} />
                 <Route path="/admin/routes" component={RoutesPage} />
                 <Route path="/admin/did-countries" component={DIDCountriesPage} />
                 <Route path="/admin/did-providers" component={DIDProvidersPage} />
