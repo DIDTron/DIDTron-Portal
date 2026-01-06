@@ -28,6 +28,7 @@ interface SuperAdminTabsState {
   togglePrimarySidebar: () => void;
   toggleSecondarySidebar: () => void;
   toggleBothSidebars: () => void;
+  openSecondarySidebar: () => void;
 }
 
 export const useSuperAdminTabs = create<SuperAdminTabsState>()(
@@ -138,6 +139,10 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
           primarySidebarOpen: !bothOpen, 
           secondarySidebarOpen: !bothOpen 
         });
+      },
+
+      openSecondarySidebar: () => {
+        set({ secondarySidebarOpen: true });
       },
     }),
     {

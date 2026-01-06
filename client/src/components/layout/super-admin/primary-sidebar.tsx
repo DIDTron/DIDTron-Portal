@@ -34,12 +34,16 @@ export function PrimarySidebar() {
     openTab, 
     setActiveSubItem,
     primarySidebarOpen,
-    togglePrimarySidebar,
-    toggleBothSidebars
+    toggleBothSidebars,
+    openSecondarySidebar
   } = useSuperAdminTabs();
 
   const handleSectionClick = (section: NavSection) => {
     setActiveSection(section.id);
+    
+    if (section.id !== "dashboard") {
+      openSecondarySidebar();
+    }
     
     if (section.id === "dashboard") {
       setActiveSubItem(null);
@@ -130,6 +134,8 @@ function getFirstSubItemForSection(sectionId: string): SubItem | null {
     billing: { id: "invoices", label: "Invoices", route: "/admin/invoices" },
     marketing: { id: "social-accounts", label: "Social Accounts", route: "/admin/social-accounts" },
     monitoring: { id: "metrics", label: "Metrics", route: "/admin/metrics" },
+    ai: { id: "ai-voice-agents", label: "AI Voice Agents", route: "/admin/ai-voice-agents" },
+    softswitch: { id: "class4-customers", label: "Class 4 Customers", route: "/admin/class4-customers" },
     cms: { id: "pages", label: "Pages", route: "/admin/pages" },
     admin: { id: "admin-users", label: "Admin Users", route: "/admin/admin-users" },
     settings: { id: "general", label: "General", route: "/admin/settings/general" },
