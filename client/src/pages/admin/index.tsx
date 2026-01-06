@@ -53,7 +53,7 @@ import AiVoiceAgentsPage from "./ai-voice-agents";
 import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./class4-softswitch";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
-import { GlobalSettingsPlatform, GlobalSettingsIntegrations, GlobalSettingsCurrencies, GlobalSettingsLocalization } from "./global-settings";
+import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization } from "./global-settings";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -117,7 +117,6 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/settings/integrations": { section: "settings", subItem: "integrations" },
   "/admin/activity": { section: "dashboard", subItem: "activity" },
   "/admin/global-settings/platform": { section: "global-settings", subItem: "global-platform" },
-  "/admin/global-settings/integrations": { section: "global-settings", subItem: "global-integrations" },
   "/admin/global-settings/currencies": { section: "global-settings", subItem: "global-currencies" },
   "/admin/global-settings/localization": { section: "global-settings", subItem: "global-localization" },
 };
@@ -233,7 +232,6 @@ export default function AdminLayout() {
                 <Route path="/admin/settings/integrations" component={IntegrationsPage} />
                 <Route path="/admin/activity" component={LiveActivityPage} />
                 <Route path="/admin/global-settings/platform" component={GlobalSettingsPlatform} />
-                <Route path="/admin/global-settings/integrations" component={GlobalSettingsIntegrations} />
                 <Route path="/admin/global-settings/currencies" component={GlobalSettingsCurrencies} />
                 <Route path="/admin/global-settings/localization" component={GlobalSettingsLocalization} />
                 <Route>

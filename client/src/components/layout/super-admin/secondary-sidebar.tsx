@@ -143,7 +143,6 @@ const sectionConfigs: Record<string, SectionConfig> = {
     title: "Global Settings",
     items: [
       { id: "global-platform", label: "Platform", route: "/admin/global-settings/platform", icon: Cog },
-      { id: "global-integrations", label: "Integrations", route: "/admin/global-settings/integrations", icon: Link2 },
       { id: "global-currencies", label: "Currencies", route: "/admin/global-settings/currencies", icon: DollarSign },
       { id: "global-localization", label: "Localization", route: "/admin/global-settings/localization", icon: Languages },
     ],
