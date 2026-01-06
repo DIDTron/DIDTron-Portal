@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocation } from "wouter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,29 +10,56 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Play, Plus, Settings, Clock, Activity, CheckCircle2, XCircle, 
   AlertTriangle, Loader2, Phone, Signal, Zap, Timer, BarChart3,
   Trash2, Edit, RefreshCw, Calendar, Music, Upload, FileAudio, 
-  Database, Globe
+  Database, Globe, Search, Copy, Link, ChevronDown, ChevronRight,
+  Download, Import
 } from "lucide-react";
-import type { SipTestConfig, SipTestResult, SipTestSchedule, SipTestAudioFile, SipTestNumber } from "@shared/schema";
+import type { 
+  SipTestAudioFile, SipTestNumber, SipTestRun, SipTestRunResult,
+  VoiceTier, SipTestProfile, SipTestSupplier
+} from "@shared/schema";
 
-const TEST_TYPES = [
-  { value: "quick", label: "Quick Test", description: "Fast basic connectivity check" },
-  { value: "quality", label: "Quality Test", description: "MOS, jitter, packet loss analysis" },
-  { value: "pdd", label: "PDD Test", description: "Post-dial delay measurement" },
-  { value: "dtmf", label: "DTMF Test", description: "Tone detection verification" },
-  { value: "cli", label: "CLI Test", description: "Caller ID passthrough validation" },
-  { value: "codec", label: "Codec Test", description: "Audio codec negotiation test" },
-  { value: "capacity", label: "Capacity Test", description: "Concurrent call load testing" },
-  { value: "failover", label: "Failover Test", description: "Route redundancy verification" },
+const COUNTRIES = [
+  { code: "US", name: "United States", dialCode: "+1" },
+  { code: "GB", name: "United Kingdom", dialCode: "+44" },
+  { code: "DE", name: "Germany", dialCode: "+49" },
+  { code: "FR", name: "France", dialCode: "+33" },
+  { code: "ES", name: "Spain", dialCode: "+34" },
+  { code: "IT", name: "Italy", dialCode: "+39" },
+  { code: "NL", name: "Netherlands", dialCode: "+31" },
+  { code: "BE", name: "Belgium", dialCode: "+32" },
+  { code: "AT", name: "Austria", dialCode: "+43" },
+  { code: "CH", name: "Switzerland", dialCode: "+41" },
+  { code: "AU", name: "Australia", dialCode: "+61" },
+  { code: "CA", name: "Canada", dialCode: "+1" },
+  { code: "MX", name: "Mexico", dialCode: "+52" },
+  { code: "BR", name: "Brazil", dialCode: "+55" },
+  { code: "AR", name: "Argentina", dialCode: "+54" },
+  { code: "CL", name: "Chile", dialCode: "+56" },
+  { code: "IN", name: "India", dialCode: "+91" },
+  { code: "CN", name: "China", dialCode: "+86" },
+  { code: "JP", name: "Japan", dialCode: "+81" },
+  { code: "KR", name: "South Korea", dialCode: "+82" },
+];
+
+const CODECS = ["G729", "G711a", "G711u", "OPUS", "AMR", "AMR-WB"];
+
+const DEFAULT_TIERS = [
+  { id: "tier-standard", name: "Standard", codec: "G729" },
+  { id: "tier-premium", name: "Premium", codec: "G729" },
+  { id: "tier-platinum", name: "Platinum", codec: "G711a" },
+  { id: "tier-diamond", name: "Diamond", codec: "G711a" },
 ];
 
 function getStatusBadge(status: string | null) {
@@ -42,195 +70,1149 @@ function getStatusBadge(status: string | null) {
       return <Badge variant="secondary"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Running</Badge>;
     case "failed":
       return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Failed</Badge>;
-    case "timeout":
-      return <Badge variant="outline"><AlertTriangle className="h-3 w-3 mr-1" />Timeout</Badge>;
     default:
       return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
   }
 }
 
-function getResultBadge(result: string | null) {
-  switch (result) {
-    case "pass":
-      return <Badge variant="default">Pass</Badge>;
-    case "fail":
-      return <Badge variant="destructive">Fail</Badge>;
-    case "partial":
-      return <Badge variant="secondary">Partial</Badge>;
-    default:
-      return <Badge variant="outline">N/A</Badge>;
-  }
+function getResultCircle(result: string | null, label: string) {
+  let bgColor = "bg-muted";
+  if (result === "pass") bgColor = "bg-green-500";
+  else if (result === "fail") bgColor = "bg-red-500";
+  else if (result === "partial") bgColor = "bg-yellow-500";
+  
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className={`w-6 h-6 rounded-full ${bgColor}`} />
+      <span className="text-xs text-muted-foreground">{label}</span>
+    </div>
+  );
 }
 
-export default function SipTesterPage() {
+function NewTestPage() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("quick-test");
-  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
-  const [showConfigDialog, setShowConfigDialog] = useState(false);
-  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
-  const [showAudioDialog, setShowAudioDialog] = useState(false);
+  const [testType, setTestType] = useState("standard");
+  const [testName, setTestName] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState("");
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [manualNumbers, setManualNumbers] = useState("");
+  const [addToDb, setAddToDb] = useState(false);
+  const [useFromDb, setUseFromDb] = useState(false);
+  const [codec, setCodec] = useState("G729");
+  const [audioFile, setAudioFile] = useState("");
+  const [capacity, setCapacity] = useState("1");
+  const [aniMode, setAniMode] = useState("any");
+  const [showAniPopup, setShowAniPopup] = useState(false);
+  const [aniCountries, setAniCountries] = useState<string[]>([]);
+  const [aniSearch, setAniSearch] = useState("");
 
-  const [quickTestForm, setQuickTestForm] = useState({
-    destination: "",
-    testType: "quick",
-    cliNumber: "",
+  const { data: profiles = [] } = useQuery<SipTestProfile[]>({
+    queryKey: ["/api/sip-test-profiles"],
   });
 
-  const [configForm, setConfigForm] = useState({
-    name: "",
-    description: "",
-    testType: "quick",
-    destinations: "",
-    cliNumber: "",
-    isAdvancedMode: false,
+  const { data: suppliers = [] } = useQuery<SipTestSupplier[]>({
+    queryKey: ["/api/sip-test-suppliers"],
   });
 
-  const [scheduleForm, setScheduleForm] = useState({
-    name: "",
-    configId: "",
-    cronExpression: "0 0 * * *",
-    timezone: "UTC",
+  const { data: voiceTiers = [] } = useQuery<VoiceTier[]>({
+    queryKey: ["/api/voice-tiers"],
   });
 
-  const [audioForm, setAudioForm] = useState({
-    name: "",
-    description: "",
-    format: "wav",
-    duration: 0,
-  });
-
-  const { data: configs = [], isLoading: configsLoading } = useQuery<SipTestConfig[]>({
-    queryKey: ["/api/sip-tests/configs"],
-  });
-
-  const { data: results = [], isLoading: resultsLoading } = useQuery<SipTestResult[]>({
-    queryKey: ["/api/sip-tests/results"],
-  });
-
-  const { data: schedules = [], isLoading: schedulesLoading } = useQuery<SipTestSchedule[]>({
-    queryKey: ["/api/sip-tests/schedules"],
-  });
-
-  const { data: audioFiles = [], isLoading: audioLoading } = useQuery<SipTestAudioFile[]>({
+  const { data: audioFiles = [] } = useQuery<SipTestAudioFile[]>({
     queryKey: ["/api/sip-test-audio-files"],
   });
 
-  const { data: testNumbers = [], isLoading: numbersLoading } = useQuery<SipTestNumber[]>({
-    queryKey: ["/api/sip-test-numbers"],
-  });
-
-  const runQuickTest = useMutation({
+  const runTest = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/sip-tests/results", {
-        testType: quickTestForm.testType,
-        destination: quickTestForm.destination,
-        cliSent: quickTestForm.cliNumber,
-        status: "completed",
-        result: "pass",
-        pddMs: Math.floor(Math.random() * 200) + 100,
-        mosScore: (3.5 + Math.random() * 1).toFixed(2),
-        jitterMs: (Math.random() * 20).toFixed(2),
-        packetLossPercent: (Math.random() * 2).toFixed(2),
-        latencyMs: Math.floor(Math.random() * 100) + 20,
-        sipResponseCode: 200,
+      return apiRequest("POST", "/api/sip-test-runs", {
+        testName,
+        testMode: testType,
+        routeSource: "tier",
+        supplierIds: selectedSuppliers,
+        destinations: selectedCountries,
+        manualNumbers: manualNumbers.split("\n").filter(Boolean),
+        addToDb,
+        useDbNumbers: useFromDb,
+        codec,
+        audioFileId: audioFile || null,
+        aniMode,
+        aniCountries,
+        capacity: parseInt(capacity),
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sip-tests/results"] });
-      toast({ title: "Test completed", description: "Quick test finished successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-runs"] });
+      toast({ title: "Test started", description: "SIP test is now running" });
     },
     onError: () => {
-      toast({ title: "Test failed", description: "Failed to run test", variant: "destructive" });
+      toast({ title: "Test failed", description: "Failed to start test", variant: "destructive" });
     },
   });
 
-  const createConfig = useMutation({
+  const allSuppliers = [
+    ...DEFAULT_TIERS.map(t => ({ ...t, isOurTier: true })),
+    ...suppliers.filter(s => s.isActive),
+  ];
+
+  const filteredSuppliers = allSuppliers.filter(s => 
+    s.name.toLowerCase().includes(supplierSearch.toLowerCase())
+  );
+
+  const filteredAniCountries = COUNTRIES.filter(c =>
+    c.name.toLowerCase().includes(aniSearch.toLowerCase()) ||
+    c.code.toLowerCase().includes(aniSearch.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">New Test</h1>
+          <p className="text-muted-foreground">Configure and run a SIP quality test</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-8 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Test Configuration</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Test Type</Label>
+                  <Select value={testType} onValueChange={setTestType}>
+                    <SelectTrigger data-testid="select-test-type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard">Standard</SelectItem>
+                      <SelectItem value="cli">CLI Test</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Test Name</Label>
+                  <Input 
+                    value={testName} 
+                    onChange={(e) => setTestName(e.target.value)}
+                    placeholder="Enter test name"
+                    data-testid="input-test-name"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Profile (ConnexCS Server)</Label>
+                <Select value={selectedProfile} onValueChange={setSelectedProfile}>
+                  <SelectTrigger data-testid="select-profile">
+                    <SelectValue placeholder="Select a profile" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} ({p.ip}:{p.port})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <Label className="text-base font-medium">Suppliers</Label>
+                  <div className="relative w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      className="pl-9"
+                      placeholder="Search suppliers..."
+                      value={supplierSearch}
+                      onChange={(e) => setSupplierSearch(e.target.value)}
+                      data-testid="input-supplier-search"
+                    />
+                  </div>
+                </div>
+                
+                <ScrollArea className="h-48 border rounded-md p-2">
+                  <div className="space-y-2">
+                    {filteredSuppliers.map((supplier) => (
+                      <div key={supplier.id} className="flex items-center gap-3 p-2 hover-elevate rounded-md">
+                        <Checkbox
+                          checked={selectedSuppliers.includes(supplier.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedSuppliers([...selectedSuppliers, supplier.id]);
+                            } else {
+                              setSelectedSuppliers(selectedSuppliers.filter(id => id !== supplier.id));
+                            }
+                          }}
+                          data-testid={`checkbox-supplier-${supplier.id}`}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">{supplier.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {supplier.codec} {supplier.isOurTier && <Badge variant="secondary" className="ml-2">Our Tier</Badge>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <Label className="text-base font-medium">Destinations</Label>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Select Countries</Label>
+                    <ScrollArea className="h-40 border rounded-md p-2">
+                      <div className="space-y-1">
+                        {COUNTRIES.map((country) => (
+                          <div key={country.code} className="flex items-center gap-2 p-1">
+                            <Checkbox
+                              checked={selectedCountries.includes(country.code)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedCountries([...selectedCountries, country.code]);
+                                } else {
+                                  setSelectedCountries(selectedCountries.filter(c => c !== country.code));
+                                }
+                              }}
+                              data-testid={`checkbox-country-${country.code}`}
+                            />
+                            <span className="text-sm">{country.name} ({country.dialCode})</span>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Manual Numbers (one per line)</Label>
+                    <Textarea 
+                      value={manualNumbers}
+                      onChange={(e) => setManualNumbers(e.target.value)}
+                      placeholder="+14155551234&#10;+442071234567"
+                      className="h-40 resize-none"
+                      data-testid="textarea-manual-numbers"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      checked={addToDb} 
+                      onCheckedChange={(c) => setAddToDb(c === true)}
+                      data-testid="checkbox-add-to-db"
+                    />
+                    <Label>Add results to database</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      checked={useFromDb} 
+                      onCheckedChange={(c) => setUseFromDb(c === true)}
+                      data-testid="checkbox-use-from-db"
+                    />
+                    <Label>Use numbers from database</Label>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="col-span-4 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Test Options</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Codec</Label>
+                <Select value={codec} onValueChange={setCodec}>
+                  <SelectTrigger data-testid="select-codec">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CODECS.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Audio File</Label>
+                <Select value={audioFile} onValueChange={setAudioFile}>
+                  <SelectTrigger data-testid="select-audio">
+                    <SelectValue placeholder="Select audio file" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {audioFiles.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Capacity (concurrent calls)</Label>
+                <Select value={capacity} onValueChange={setCapacity}>
+                  <SelectTrigger data-testid="select-capacity">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 call</SelectItem>
+                    <SelectItem value="5">5 calls</SelectItem>
+                    <SelectItem value="10">10 calls</SelectItem>
+                    <SelectItem value="25">25 calls</SelectItem>
+                    <SelectItem value="50">50 calls</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>ANI (Caller ID)</Label>
+                <Select value={aniMode} onValueChange={(v) => {
+                  setAniMode(v);
+                  if (v === "any") {
+                    setShowAniPopup(true);
+                  }
+                }}>
+                  <SelectTrigger data-testid="select-ani">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any</SelectItem>
+                    <SelectItem value="random">Random</SelectItem>
+                    <SelectItem value="fixed">Fixed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                className="w-full" 
+                onClick={() => runTest.mutate()}
+                disabled={runTest.isPending || selectedSuppliers.length === 0}
+                data-testid="button-run-test"
+              >
+                {runTest.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4 mr-2" />
+                )}
+                Run Test
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Test Cost Estimate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Testing fee:</span>
+                  <span>$0.0003/min</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Destination rate:</span>
+                  <span>Per tier pricing</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-medium">
+                  <span>Selected suppliers:</span>
+                  <span>{selectedSuppliers.length}</span>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <span>Selected countries:</span>
+                  <span>{selectedCountries.length}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Dialog open={showAniPopup} onOpenChange={setShowAniPopup}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select ANI Countries</DialogTitle>
+            <DialogDescription>
+              Choose which countries to use for caller ID numbers
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                className="pl-9"
+                placeholder="Search countries..."
+                value={aniSearch}
+                onChange={(e) => setAniSearch(e.target.value)}
+                data-testid="input-ani-search"
+              />
+            </div>
+            <ScrollArea className="h-64 border rounded-md p-2">
+              <div className="space-y-1">
+                {filteredAniCountries.map((country) => (
+                  <div key={country.code} className="flex items-center gap-2 p-1">
+                    <Checkbox
+                      checked={aniCountries.includes(country.code)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setAniCountries([...aniCountries, country.code]);
+                        } else {
+                          setAniCountries(aniCountries.filter(c => c !== country.code));
+                        }
+                      }}
+                      data-testid={`checkbox-ani-${country.code}`}
+                    />
+                    <span className="text-sm">{country.name} ({country.dialCode})</span>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAniPopup(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => setShowAniPopup(false)} data-testid="button-confirm-ani">
+              Confirm ({aniCountries.length} selected)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function HistoryPage() {
+  const { toast } = useToast();
+  const [expandedTests, setExpandedTests] = useState<Set<string>>(new Set());
+
+  const { data: testRuns = [], isLoading } = useQuery<SipTestRun[]>({
+    queryKey: ["/api/sip-test-runs"],
+  });
+
+  const toggleExpanded = (id: string) => {
+    const newExpanded = new Set(expandedTests);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedTests(newExpanded);
+  };
+
+  const copyShareLink = (id: string) => {
+    const url = `${window.location.origin}/admin/sip-tester/history?test=${id}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Link copied", description: "Share link copied to clipboard" });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Test History</h1>
+          <p className="text-muted-foreground">View and analyze past test results</p>
+        </div>
+        <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/sip-test-runs"] })}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-8"></TableHead>
+                <TableHead>Time Initiated</TableHead>
+                <TableHead>Supplier / Profile</TableHead>
+                <TableHead>Test Name / Codec</TableHead>
+                <TableHead>Type / Status</TableHead>
+                <TableHead>Results</TableHead>
+                <TableHead>Extra Info</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {testRuns.map((test) => (
+                <>
+                  <TableRow key={test.id} className="hover-elevate">
+                    <TableCell>
+                      <Button 
+                        size="icon" 
+                        variant="ghost"
+                        onClick={() => toggleExpanded(test.id)}
+                        data-testid={`button-expand-${test.id}`}
+                      >
+                        {expandedTests.has(test.id) ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {test.createdAt ? new Date(test.createdAt).toLocaleString() : 'N/A'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {test.supplierIds?.length || 0} supplier(s)
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">{test.testName || 'Unnamed Test'}</div>
+                      <div className="text-sm text-muted-foreground">{test.codec}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Badge variant="outline">{test.testMode}</Badge>
+                        {getStatusBadge(test.status)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getResultCircle(test.successfulCalls && test.totalCalls && test.successfulCalls > 0 ? "pass" : null, `T:${test.totalCalls || 0}`)}
+                        {getResultCircle(test.successfulCalls && test.successfulCalls > 0 ? "pass" : null, `S:${test.successfulCalls || 0}`)}
+                        {getResultCircle(test.failedCalls && test.failedCalls > 0 ? "fail" : null, `F:${test.failedCalls || 0}`)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm space-y-1">
+                        <div>MOS: {test.avgMos || 'N/A'}</div>
+                        <div>PDD: {test.avgPdd || 'N/A'}ms</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          onClick={() => copyShareLink(test.id)}
+                          data-testid={`button-share-${test.id}`}
+                        >
+                          <Link className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          data-testid={`button-repeat-${test.id}`}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {expandedTests.has(test.id) && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="bg-muted/50">
+                        <TestCallDetails testRunId={test.id} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
+              ))}
+              {testRuns.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    No test runs found. Run a new test to see results here.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function TestCallDetails({ testRunId }: { testRunId: string }) {
+  const { data: results = [], isLoading } = useQuery<SipTestRunResult[]>({
+    queryKey: ["/api/sip-test-runs", testRunId, "results"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4">
+      <h4 className="font-medium mb-3">Individual Call Results</h4>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>#</TableHead>
+            <TableHead>Destination</TableHead>
+            <TableHead>ANI</TableHead>
+            <TableHead>Supplier</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>SIP Code</TableHead>
+            <TableHead>MOS</TableHead>
+            <TableHead>PDD</TableHead>
+            <TableHead>Jitter</TableHead>
+            <TableHead>Loss</TableHead>
+            <TableHead>Duration</TableHead>
+            <TableHead>Cost</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {results.map((r) => (
+            <TableRow key={r.id}>
+              <TableCell>{r.callIndex}</TableCell>
+              <TableCell className="font-mono text-sm">{r.destination}</TableCell>
+              <TableCell className="font-mono text-sm">{r.aniUsed || 'N/A'}</TableCell>
+              <TableCell>{r.supplierName || r.tierName || 'N/A'}</TableCell>
+              <TableCell>{getStatusBadge(r.status)}</TableCell>
+              <TableCell>
+                <Badge variant={r.sipResponseCode === 200 ? "default" : "destructive"}>
+                  {r.sipResponseCode || 'N/A'}
+                </Badge>
+              </TableCell>
+              <TableCell>{r.mosScore || 'N/A'}</TableCell>
+              <TableCell>{r.pddMs ? `${r.pddMs}ms` : 'N/A'}</TableCell>
+              <TableCell>{r.jitterMs ? `${r.jitterMs}ms` : 'N/A'}</TableCell>
+              <TableCell>{r.packetLossPercent ? `${r.packetLossPercent}%` : 'N/A'}</TableCell>
+              <TableCell>{r.durationSec ? `${r.durationSec}s` : 'N/A'}</TableCell>
+              <TableCell>{r.callCost ? `$${r.callCost}` : 'N/A'}</TableCell>
+            </TableRow>
+          ))}
+          {results.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={12} className="text-center py-4 text-muted-foreground">
+                No call results found for this test.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function SettingsPage() {
+  const [activeTab, setActiveTab] = useState("profiles");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Configure SIP tester profiles, suppliers, and general settings</p>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="profiles" data-testid="tab-profiles">Profiles</TabsTrigger>
+          <TabsTrigger value="suppliers" data-testid="tab-suppliers">Suppliers</TabsTrigger>
+          <TabsTrigger value="audios" data-testid="tab-audios">Audios</TabsTrigger>
+          <TabsTrigger value="general" data-testid="tab-general">General</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profiles" className="mt-6">
+          <ProfilesTab />
+        </TabsContent>
+
+        <TabsContent value="suppliers" className="mt-6">
+          <SuppliersTab />
+        </TabsContent>
+
+        <TabsContent value="audios" className="mt-6">
+          <AudiosTab />
+        </TabsContent>
+
+        <TabsContent value="general" className="mt-6">
+          <GeneralSettingsTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function ProfilesTab() {
+  const { toast } = useToast();
+  const [showDialog, setShowDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    ip: "",
+    port: "5060",
+    protocol: "SIP",
+    username: "",
+    password: "",
+  });
+
+  const { data: profiles = [], isLoading } = useQuery<SipTestProfile[]>({
+    queryKey: ["/api/sip-test-profiles"],
+  });
+
+  const createProfile = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/sip-tests/configs", {
-        name: configForm.name,
-        description: configForm.description,
-        testType: configForm.testType,
-        destinations: configForm.destinations.split(",").map(d => d.trim()).filter(Boolean),
-        cliNumber: configForm.cliNumber,
-        isAdvancedMode: configForm.isAdvancedMode,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sip-tests/configs"] });
-      setShowConfigDialog(false);
-      setConfigForm({ name: "", description: "", testType: "quick", destinations: "", cliNumber: "", isAdvancedMode: false });
-      toast({ title: "Config created", description: "Test configuration saved" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create config", variant: "destructive" });
-    },
-  });
-
-  const deleteConfig = useMutation({
-    mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/sip-tests/configs/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sip-tests/configs"] });
-      toast({ title: "Deleted", description: "Configuration removed" });
-    },
-  });
-
-  const createSchedule = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/sip-tests/schedules", {
-        name: scheduleForm.name,
-        configId: scheduleForm.configId,
-        cronExpression: scheduleForm.cronExpression,
-        timezone: scheduleForm.timezone,
+      return apiRequest("POST", "/api/sip-test-profiles", {
+        ...formData,
+        port: parseInt(formData.port),
         isActive: true,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sip-tests/schedules"] });
-      setShowScheduleDialog(false);
-      setScheduleForm({ name: "", configId: "", cronExpression: "0 0 * * *", timezone: "UTC" });
-      toast({ title: "Schedule created", description: "Test schedule saved" });
+      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-profiles"] });
+      setShowDialog(false);
+      setFormData({ name: "", ip: "", port: "5060", protocol: "SIP", username: "", password: "" });
+      toast({ title: "Profile created", description: "New profile added successfully" });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to create schedule", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to create profile", variant: "destructive" });
     },
   });
 
-  const deleteSchedule = useMutation({
+  const deleteProfile = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/sip-tests/schedules/${id}`);
+      return apiRequest("DELETE", `/api/sip-test-profiles/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sip-tests/schedules"] });
-      toast({ title: "Deleted", description: "Schedule removed" });
+      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-profiles"] });
+      toast({ title: "Deleted", description: "Profile removed" });
     },
   });
 
-  const createAudioFile = useMutation({
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-4">
+        <div>
+          <CardTitle>ConnexCS Profiles</CardTitle>
+          <CardDescription>Manage server IP addresses for testing</CardDescription>
+        </div>
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogTrigger asChild>
+            <Button data-testid="button-add-profile">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Profile
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Profile</DialogTitle>
+              <DialogDescription>Add a new ConnexCS server profile</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input 
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Profile name"
+                  data-testid="input-profile-name"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>IP Address</Label>
+                  <Input 
+                    value={formData.ip}
+                    onChange={(e) => setFormData({ ...formData, ip: e.target.value })}
+                    placeholder="192.168.1.1"
+                    data-testid="input-profile-ip"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Port</Label>
+                  <Input 
+                    value={formData.port}
+                    onChange={(e) => setFormData({ ...formData, port: e.target.value })}
+                    placeholder="5060"
+                    data-testid="input-profile-port"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Protocol</Label>
+                <Select value={formData.protocol} onValueChange={(v) => setFormData({ ...formData, protocol: v })}>
+                  <SelectTrigger data-testid="select-profile-protocol">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SIP">SIP (UDP)</SelectItem>
+                    <SelectItem value="SIP-TCP">SIP (TCP)</SelectItem>
+                    <SelectItem value="SIP-TLS">SIP (TLS)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Username (optional)</Label>
+                  <Input 
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    placeholder="Username"
+                    data-testid="input-profile-username"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Password (optional)</Label>
+                  <Input 
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="Password"
+                    data-testid="input-profile-password"
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+              <Button onClick={() => createProfile.mutate()} disabled={createProfile.isPending} data-testid="button-save-profile">
+                {createProfile.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Save Profile
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>IP Address</TableHead>
+                <TableHead>Port</TableHead>
+                <TableHead>Protocol</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {profiles.map((profile) => (
+                <TableRow key={profile.id}>
+                  <TableCell className="font-medium">{profile.name}</TableCell>
+                  <TableCell className="font-mono">{profile.ip}</TableCell>
+                  <TableCell>{profile.port}</TableCell>
+                  <TableCell>{profile.protocol}</TableCell>
+                  <TableCell>
+                    <Badge variant={profile.isActive ? "default" : "secondary"}>
+                      {profile.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button size="icon" variant="ghost" data-testid={`button-edit-profile-${profile.id}`}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="ghost"
+                        onClick={() => deleteProfile.mutate(profile.id)}
+                        data-testid={`button-delete-profile-${profile.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {profiles.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No profiles configured. Add a profile to get started.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SuppliersTab() {
+  const { toast } = useToast();
+  const [showDialog, setShowDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    codec: "G729",
+    prefix: "",
+    protocol: "SIP",
+    email: "",
+  });
+
+  const { data: suppliers = [], isLoading } = useQuery<SipTestSupplier[]>({
+    queryKey: ["/api/sip-test-suppliers"],
+  });
+
+  const { data: voiceTiers = [] } = useQuery<VoiceTier[]>({
+    queryKey: ["/api/voice-tiers"],
+  });
+
+  const createSupplier = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/sip-test-suppliers", {
+        ...formData,
+        isOurTier: false,
+        isActive: true,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-suppliers"] });
+      setShowDialog(false);
+      setFormData({ name: "", codec: "G729", prefix: "", protocol: "SIP", email: "" });
+      toast({ title: "Supplier created", description: "New supplier added successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create supplier", variant: "destructive" });
+    },
+  });
+
+  const deleteSupplier = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/sip-test-suppliers/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-suppliers"] });
+      toast({ title: "Deleted", description: "Supplier removed" });
+    },
+  });
+
+  const allSuppliers = [
+    ...DEFAULT_TIERS.map(t => ({ ...t, isOurTier: true, protocol: "SIP", email: "", prefix: "", isActive: true })),
+    ...suppliers,
+  ];
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-4">
+        <div>
+          <CardTitle>Test Suppliers</CardTitle>
+          <CardDescription>Manage carriers and routes for testing. Our 4 tiers are included by default.</CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" data-testid="button-import-suppliers">
+            <Download className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+          <Button variant="outline" data-testid="button-export-suppliers">
+            <Upload className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Dialog open={showDialog} onOpenChange={setShowDialog}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-add-supplier">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Supplier
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Supplier</DialogTitle>
+                <DialogDescription>Add a new carrier or route for testing</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Supplier Name</Label>
+                  <Input 
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Supplier name"
+                    data-testid="input-supplier-name"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Codec</Label>
+                    <Select value={formData.codec} onValueChange={(v) => setFormData({ ...formData, codec: v })}>
+                      <SelectTrigger data-testid="select-supplier-codec">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CODECS.map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Prefix (optional)</Label>
+                    <Input 
+                      value={formData.prefix}
+                      onChange={(e) => setFormData({ ...formData, prefix: e.target.value })}
+                      placeholder="Prefix"
+                      data-testid="input-supplier-prefix"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Protocol</Label>
+                  <Select value={formData.protocol} onValueChange={(v) => setFormData({ ...formData, protocol: v })}>
+                    <SelectTrigger data-testid="select-supplier-protocol">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SIP">SIP</SelectItem>
+                      <SelectItem value="IAX">IAX</SelectItem>
+                      <SelectItem value="H323">H323</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Email (optional)</Label>
+                  <Input 
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="supplier@example.com"
+                    data-testid="input-supplier-email"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+                <Button onClick={() => createSupplier.mutate()} disabled={createSupplier.isPending} data-testid="button-save-supplier">
+                  {createSupplier.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Save Supplier
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Codec</TableHead>
+                <TableHead>Prefix</TableHead>
+                <TableHead>Protocol</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allSuppliers.map((supplier) => (
+                <TableRow key={supplier.id}>
+                  <TableCell className="font-medium">{supplier.name}</TableCell>
+                  <TableCell>{supplier.codec}</TableCell>
+                  <TableCell>{supplier.prefix || '-'}</TableCell>
+                  <TableCell>{supplier.protocol}</TableCell>
+                  <TableCell>
+                    {supplier.isOurTier ? (
+                      <Badge variant="default">Our Tier</Badge>
+                    ) : (
+                      <Badge variant="outline">External</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={supplier.isActive ? "default" : "secondary"}>
+                      {supplier.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {!supplier.isOurTier && (
+                      <div className="flex items-center justify-end gap-2">
+                        <Button size="icon" variant="ghost" data-testid={`button-edit-supplier-${supplier.id}`}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          onClick={() => deleteSupplier.mutate(supplier.id)}
+                          data-testid={`button-delete-supplier-${supplier.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function AudiosTab() {
+  const { toast } = useToast();
+  const [showDialog, setShowDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    format: "wav",
+    duration: "30",
+  });
+
+  const { data: audioFiles = [], isLoading } = useQuery<SipTestAudioFile[]>({
+    queryKey: ["/api/sip-test-audio-files"],
+  });
+
+  const createAudio = useMutation({
     mutationFn: async () => {
       return apiRequest("POST", "/api/sip-test-audio-files", {
-        name: audioForm.name,
-        description: audioForm.description,
-        format: audioForm.format,
-        duration: audioForm.duration,
-        filename: `${audioForm.name.toLowerCase().replace(/\s+/g, '-')}.${audioForm.format}`,
-        fileUrl: `/audio/${audioForm.name.toLowerCase().replace(/\s+/g, '-')}.${audioForm.format}`,
+        name: formData.name,
+        description: formData.description,
+        format: formData.format,
+        duration: parseInt(formData.duration),
+        filename: `${formData.name.toLowerCase().replace(/\s+/g, '-')}.${formData.format}`,
         isActive: true,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sip-test-audio-files"] });
-      setShowAudioDialog(false);
-      setAudioForm({ name: "", description: "", format: "wav", duration: 0 });
-      toast({ title: "Audio file added", description: "IVR audio file registered" });
+      setShowDialog(false);
+      setFormData({ name: "", description: "", format: "wav", duration: "30" });
+      toast({ title: "Audio file created", description: "New audio file added" });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to add audio file", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to create audio file", variant: "destructive" });
     },
   });
 
-  const deleteAudioFile = useMutation({
+  const deleteAudio = useMutation({
     mutationFn: async (id: string) => {
       return apiRequest("DELETE", `/api/sip-test-audio-files/${id}`);
     },
@@ -240,914 +1222,294 @@ export default function SipTesterPage() {
     },
   });
 
-  const toggleAudioActive = useMutation({
-    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      return apiRequest("PATCH", `/api/sip-test-audio-files/${id}`, { isActive });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-audio-files"] });
-    },
-  });
-
-  const deleteTestNumber = useMutation({
-    mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/sip-test-numbers/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-numbers"] });
-      toast({ title: "Deleted", description: "Test number removed" });
-    },
-  });
-
-  const latestResults = [...results].sort((a, b) => 
-    new Date(b.testedAt || 0).getTime() - new Date(a.testedAt || 0).getTime()
-  ).slice(0, 20);
-
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4">
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">SIP Tester</h1>
-          <p className="text-muted-foreground">Test VoIP routes, quality, and connectivity</p>
+          <CardTitle>Audio Files</CardTitle>
+          <CardDescription>Manage IVR audio files for quality testing</CardDescription>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="advanced-mode" className="text-sm">Advanced Mode</Label>
-            <Switch
-              id="advanced-mode"
-              checked={isAdvancedMode}
-              onCheckedChange={setIsAdvancedMode}
-              data-testid="switch-advanced-mode"
-            />
-          </div>
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList data-testid="tabs-sip-tester">
-          <TabsTrigger value="quick-test" data-testid="tab-quick-test">
-            <Zap className="h-4 w-4 mr-2" />
-            Quick Test
-          </TabsTrigger>
-          <TabsTrigger value="configs" data-testid="tab-configs">
-            <Settings className="h-4 w-4 mr-2" />
-            Configurations
-          </TabsTrigger>
-          <TabsTrigger value="results" data-testid="tab-results">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Results
-          </TabsTrigger>
-          <TabsTrigger value="schedules" data-testid="tab-schedules">
-            <Calendar className="h-4 w-4 mr-2" />
-            Schedules
-          </TabsTrigger>
-          <TabsTrigger value="audio-files" data-testid="tab-audio-files">
-            <Music className="h-4 w-4 mr-2" />
-            Audio Files
-          </TabsTrigger>
-          <TabsTrigger value="test-numbers" data-testid="tab-test-numbers">
-            <Database className="h-4 w-4 mr-2" />
-            Number Database
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="quick-test" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  Run Quick Test
-                </CardTitle>
-                <CardDescription>
-                  Execute an immediate test to a destination
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogTrigger asChild>
+            <Button data-testid="button-add-audio">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Audio
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Audio File</DialogTitle>
+              <DialogDescription>Upload a new audio file for testing</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input 
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Audio file name"
+                  data-testid="input-audio-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea 
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Description"
+                  data-testid="textarea-audio-description"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="destination">Destination Number</Label>
-                  <Input
-                    id="destination"
-                    placeholder="+1234567890"
-                    value={quickTestForm.destination}
-                    onChange={(e) => setQuickTestForm({ ...quickTestForm, destination: e.target.value })}
-                    data-testid="input-destination"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="test-type">Test Type</Label>
-                  <Select
-                    value={quickTestForm.testType}
-                    onValueChange={(v) => setQuickTestForm({ ...quickTestForm, testType: v })}
-                  >
-                    <SelectTrigger data-testid="select-test-type">
+                  <Label>Format</Label>
+                  <Select value={formData.format} onValueChange={(v) => setFormData({ ...formData, format: v })}>
+                    <SelectTrigger data-testid="select-audio-format">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {TEST_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="wav">WAV</SelectItem>
+                      <SelectItem value="mp3">MP3</SelectItem>
+                      <SelectItem value="ogg">OGG</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-
-                {isAdvancedMode && (
-                  <div className="space-y-2">
-                    <Label htmlFor="cli">CLI Number (Optional)</Label>
-                    <Input
-                      id="cli"
-                      placeholder="Caller ID to send"
-                      value={quickTestForm.cliNumber}
-                      onChange={(e) => setQuickTestForm({ ...quickTestForm, cliNumber: e.target.value })}
-                      data-testid="input-cli"
-                    />
-                  </div>
-                )}
-
-                <Button
-                  className="w-full"
-                  onClick={() => runQuickTest.mutate()}
-                  disabled={!quickTestForm.destination || runQuickTest.isPending}
-                  data-testid="button-run-test"
-                >
-                  {runQuickTest.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Play className="h-4 w-4 mr-2" />
-                  )}
-                  Run Test
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Test Types
-                </CardTitle>
-                <CardDescription>
-                  Available test configurations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[280px]">
-                  <div className="space-y-3">
-                    {TEST_TYPES.map((t) => (
-                      <div
-                        key={t.value}
-                        className={`p-3 rounded-md border cursor-pointer hover-elevate ${
-                          quickTestForm.testType === t.value ? "border-primary bg-primary/5" : ""
-                        }`}
-                        onClick={() => setQuickTestForm({ ...quickTestForm, testType: t.value })}
-                        data-testid={`card-test-type-${t.value}`}
-                      >
-                        <div className="font-medium">{t.label}</div>
-                        <div className="text-sm text-muted-foreground">{t.description}</div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
-
-          {latestResults.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Results</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Destination</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Result</TableHead>
-                      <TableHead>PDD</TableHead>
-                      <TableHead>MOS</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {latestResults.slice(0, 5).map((r) => (
-                      <TableRow key={r.id} data-testid={`row-result-${r.id}`}>
-                        <TableCell className="text-sm">
-                          {r.testedAt ? new Date(r.testedAt).toLocaleTimeString() : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{r.testType}</Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{r.destination || "-"}</TableCell>
-                        <TableCell>{getStatusBadge(r.status)}</TableCell>
-                        <TableCell>{getResultBadge(r.result)}</TableCell>
-                        <TableCell>{r.pddMs ? `${r.pddMs}ms` : "-"}</TableCell>
-                        <TableCell>{r.mosScore || "-"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="configs" className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">Test Configurations</h2>
-            <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-add-config">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Configuration
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create Test Configuration</DialogTitle>
-                  <DialogDescription>
-                    Save a reusable test configuration
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input
-                      value={configForm.name}
-                      onChange={(e) => setConfigForm({ ...configForm, name: e.target.value })}
-                      placeholder="US Routes Quality Test"
-                      data-testid="input-config-name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      value={configForm.description}
-                      onChange={(e) => setConfigForm({ ...configForm, description: e.target.value })}
-                      placeholder="Weekly quality check for US termination routes"
-                      data-testid="input-config-description"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Test Type</Label>
-                    <Select
-                      value={configForm.testType}
-                      onValueChange={(v) => setConfigForm({ ...configForm, testType: v })}
-                    >
-                      <SelectTrigger data-testid="select-config-test-type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TEST_TYPES.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>
-                            {t.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Destinations (comma separated)</Label>
-                    <Textarea
-                      value={configForm.destinations}
-                      onChange={(e) => setConfigForm({ ...configForm, destinations: e.target.value })}
-                      placeholder="+12025551234, +14155551234"
-                      data-testid="input-config-destinations"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CLI Number (Optional)</Label>
-                    <Input
-                      value={configForm.cliNumber}
-                      onChange={(e) => setConfigForm({ ...configForm, cliNumber: e.target.value })}
-                      placeholder="+18005551234"
-                      data-testid="input-config-cli"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Duration (seconds)</Label>
+                  <Input 
+                    type="number"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    placeholder="30"
+                    data-testid="input-audio-duration"
+                  />
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowConfigDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => createConfig.mutate()}
-                    disabled={!configForm.name || createConfig.isPending}
-                    data-testid="button-save-config"
-                  >
-                    {createConfig.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Save Configuration
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {configsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
             </div>
-          ) : configs.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No test configurations yet</p>
-                <p className="text-sm">Create a configuration to save reusable test setups</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {configs.map((config) => (
-                <Card key={config.id} data-testid={`card-config-${config.id}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <CardTitle className="text-base">{config.name}</CardTitle>
-                        <CardDescription className="text-xs mt-1">
-                          {config.description || "No description"}
-                        </CardDescription>
-                      </div>
-                      <Badge variant="outline">{config.testType}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Destinations: </span>
-                      <span className="font-mono">
-                        {config.destinations?.length || 0}
-                      </span>
-                    </div>
-                    <Separator />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+              <Button onClick={() => createAudio.mutate()} disabled={createAudio.isPending} data-testid="button-save-audio">
+                {createAudio.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Save Audio
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Format</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {audioFiles.map((audio) => (
+                <TableRow key={audio.id}>
+                  <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      <Button size="sm" className="flex-1" data-testid={`button-run-config-${config.id}`}>
-                        <Play className="h-4 w-4 mr-1" />
-                        Run
+                      <FileAudio className="h-4 w-4 text-muted-foreground" />
+                      {audio.name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{audio.description || '-'}</TableCell>
+                  <TableCell>{audio.format?.toUpperCase()}</TableCell>
+                  <TableCell>{audio.duration ? `${audio.duration}s` : '-'}</TableCell>
+                  <TableCell>
+                    <Badge variant={audio.isActive ? "default" : "secondary"}>
+                      {audio.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button size="icon" variant="ghost" data-testid={`button-edit-audio-${audio.id}`}>
+                        <Edit className="h-4 w-4" />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => deleteConfig.mutate(config.id)}
-                        data-testid={`button-delete-config-${config.id}`}
+                      <Button 
+                        size="icon" 
+                        variant="ghost"
+                        onClick={() => deleteAudio.mutate(audio.id)}
+                        data-testid={`button-delete-audio-${audio.id}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                  </TableCell>
+                </TableRow>
               ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="results" className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">Test Results History</h2>
-            <Button
-              variant="outline"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/sip-tests/results"] })}
-              data-testid="button-refresh-results"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-
-          {resultsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : results.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No test results yet</p>
-                <p className="text-sm">Run a test to see results here</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <ScrollArea className="h-[500px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Destination</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Result</TableHead>
-                        <TableHead>PDD</TableHead>
-                        <TableHead>MOS</TableHead>
-                        <TableHead>Jitter</TableHead>
-                        <TableHead>Packet Loss</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {latestResults.map((r) => (
-                        <TableRow key={r.id} data-testid={`row-result-${r.id}`}>
-                          <TableCell className="text-sm">
-                            {r.testedAt ? new Date(r.testedAt).toLocaleString() : "-"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{r.testType}</Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">{r.destination || "-"}</TableCell>
-                          <TableCell>{getStatusBadge(r.status)}</TableCell>
-                          <TableCell>{getResultBadge(r.result)}</TableCell>
-                          <TableCell>{r.pddMs ? `${r.pddMs}ms` : "-"}</TableCell>
-                          <TableCell>{r.mosScore || "-"}</TableCell>
-                          <TableCell>{r.jitterMs ? `${r.jitterMs}ms` : "-"}</TableCell>
-                          <TableCell>{r.packetLossPercent ? `${r.packetLossPercent}%` : "-"}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="schedules" className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">Scheduled Tests</h2>
-            <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-add-schedule">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Schedule
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create Test Schedule</DialogTitle>
-                  <DialogDescription>
-                    Schedule automated tests
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input
-                      value={scheduleForm.name}
-                      onChange={(e) => setScheduleForm({ ...scheduleForm, name: e.target.value })}
-                      placeholder="Daily US Quality Check"
-                      data-testid="input-schedule-name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Configuration</Label>
-                    <Select
-                      value={scheduleForm.configId}
-                      onValueChange={(v) => setScheduleForm({ ...scheduleForm, configId: v })}
-                    >
-                      <SelectTrigger data-testid="select-schedule-config">
-                        <SelectValue placeholder="Select configuration" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {configs.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Cron Expression</Label>
-                    <Input
-                      value={scheduleForm.cronExpression}
-                      onChange={(e) => setScheduleForm({ ...scheduleForm, cronExpression: e.target.value })}
-                      placeholder="0 0 * * *"
-                      data-testid="input-schedule-cron"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Examples: "0 0 * * *" (daily), "0 */4 * * *" (every 4 hours)
-                    </p>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => createSchedule.mutate()}
-                    disabled={!scheduleForm.name || !scheduleForm.configId || createSchedule.isPending}
-                    data-testid="button-save-schedule"
-                  >
-                    {createSchedule.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Save Schedule
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {schedulesLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : schedules.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No schedules yet</p>
-                <p className="text-sm">Create a schedule to automate tests</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Configuration</TableHead>
-                      <TableHead>Schedule</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Last Run</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {schedules.map((schedule) => (
-                      <TableRow key={schedule.id} data-testid={`row-schedule-${schedule.id}`}>
-                        <TableCell className="font-medium">{schedule.name}</TableCell>
-                        <TableCell>
-                          {configs.find(c => c.id === schedule.configId)?.name || schedule.configId}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{schedule.cronExpression}</TableCell>
-                        <TableCell>
-                          {schedule.isActive ? (
-                            <Badge variant="default">Active</Badge>
-                          ) : (
-                            <Badge variant="secondary">Inactive</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {schedule.lastRunAt ? new Date(schedule.lastRunAt).toLocaleString() : "Never"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => deleteSchedule.mutate(schedule.id)}
-                            data-testid={`button-delete-schedule-${schedule.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="audio-files" className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold">IVR Audio Files</h2>
-              <p className="text-sm text-muted-foreground">
-                Audio files played during quality tests to measure RTP quality
-              </p>
-            </div>
-            <Dialog open={showAudioDialog} onOpenChange={setShowAudioDialog}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-add-audio">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Audio File
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add IVR Audio File</DialogTitle>
-                  <DialogDescription>
-                    Register an audio file for SIP quality testing
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input
-                      value={audioForm.name}
-                      onChange={(e) => setAudioForm({ ...audioForm, name: e.target.value })}
-                      placeholder="Voice Quality Test"
-                      data-testid="input-audio-name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      value={audioForm.description}
-                      onChange={(e) => setAudioForm({ ...audioForm, description: e.target.value })}
-                      placeholder="10-second voice sample for MOS scoring"
-                      data-testid="input-audio-description"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Format</Label>
-                      <Select
-                        value={audioForm.format}
-                        onValueChange={(v) => setAudioForm({ ...audioForm, format: v })}
-                      >
-                        <SelectTrigger data-testid="select-audio-format">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="wav">WAV</SelectItem>
-                          <SelectItem value="mp3">MP3</SelectItem>
-                          <SelectItem value="pcmu">PCM u-law</SelectItem>
-                          <SelectItem value="pcma">PCM a-law</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Duration (seconds)</Label>
-                      <Input
-                        type="number"
-                        value={audioForm.duration}
-                        onChange={(e) => setAudioForm({ ...audioForm, duration: parseInt(e.target.value) || 0 })}
-                        placeholder="10"
-                        data-testid="input-audio-duration"
-                      />
-                    </div>
-                  </div>
-                  <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Audio upload coming soon
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      For now, files are registered with placeholder URLs
-                    </p>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowAudioDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => createAudioFile.mutate()}
-                    disabled={!audioForm.name || createAudioFile.isPending}
-                    data-testid="button-save-audio"
-                  >
-                    {createAudioFile.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Add Audio File
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3 mb-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Files
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{audioFiles.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Active Files
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {audioFiles.filter(f => f.isActive).length}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Default Files
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">3</div>
-                <p className="text-xs text-muted-foreground">Silence, Tone, Voice</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {audioLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : audioFiles.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Music className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No custom audio files yet</p>
-                <p className="text-sm">Default files (Silence, Test Tone, Voice Sample) are always available</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Format</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {audioFiles.map((file) => (
-                      <TableRow key={file.id} data-testid={`row-audio-${file.id}`}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <FileAudio className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{file.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {file.description || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{file.format?.toUpperCase()}</Badge>
-                        </TableCell>
-                        <TableCell>{file.duration ? `${file.duration}s` : "-"}</TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={file.isActive ?? false}
-                            onCheckedChange={(checked) => toggleAudioActive.mutate({ id: file.id, isActive: checked })}
-                            data-testid={`switch-audio-active-${file.id}`}
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => deleteAudioFile.mutate(file.id)}
-                            data-testid={`button-delete-audio-${file.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="test-numbers" className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold">Crowdsourced Test Numbers</h2>
-              <p className="text-sm text-muted-foreground">
-                Shared database of verified test numbers from all customers
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/sip-test-numbers"] })}
-              data-testid="button-refresh-numbers"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-4 mb-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Numbers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{testNumbers.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Verified Numbers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {testNumbers.filter(n => n.verified).length}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Countries
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {new Set(testNumbers.map(n => n.countryCode)).size}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Tests
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {testNumbers.reduce((sum, n) => sum + (n.testCount || 0), 0)}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {numbersLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : testNumbers.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No test numbers in database yet</p>
-                <p className="text-sm">Numbers will be added as customers run tests with "Add to DB" enabled</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <ScrollArea className="h-[500px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Number</TableHead>
-                        <TableHead>Country</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Verified</TableHead>
-                        <TableHead>Times Used</TableHead>
-                        <TableHead>Last Used</TableHead>
-                        <TableHead>Avg MOS</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {testNumbers.map((number) => (
-                        <TableRow key={number.id} data-testid={`row-number-${number.id}`}>
-                          <TableCell className="font-mono">{number.phoneNumber}</TableCell>
-                          <TableCell>{number.countryCode}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{number.numberType || "Unknown"}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {number.verified ? (
-                              <Badge variant="default"><CheckCircle2 className="h-3 w-3 mr-1" />Verified</Badge>
-                            ) : (
-                              <Badge variant="secondary">Pending</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>{number.testCount || 0}</TableCell>
-                          <TableCell className="text-sm">
-                            {number.lastTestedAt ? new Date(number.lastTestedAt).toLocaleDateString() : "Never"}
-                          </TableCell>
-                          <TableCell>
-                            {number.avgMos ? parseFloat(number.avgMos).toFixed(2) : "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => deleteTestNumber.mutate(number.id)}
-                              data-testid={`button-delete-number-${number.id}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+              {audioFiles.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No audio files uploaded. Add an audio file to use in tests.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
   );
+}
+
+function GeneralSettingsTab() {
+  const { toast } = useToast();
+  const [settings, setSettings] = useState({
+    concurrentCalls: "10",
+    cliAcceptablePrefixes: "+00",
+    maxWaitAnswer: "80",
+    defaultCallsCount: "5",
+    defaultCodec: "G729",
+    defaultDuration: "30",
+    timezone: "UTC",
+  });
+
+  const saveSettings = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PUT", "/api/sip-test-settings", {
+        concurrentCalls: parseInt(settings.concurrentCalls),
+        cliAcceptablePrefixes: settings.cliAcceptablePrefixes,
+        maxWaitAnswer: parseInt(settings.maxWaitAnswer),
+        defaultCallsCount: parseInt(settings.defaultCallsCount),
+        defaultCodec: settings.defaultCodec,
+        defaultDuration: parseInt(settings.defaultDuration),
+        timezone: settings.timezone,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Settings saved", description: "Your settings have been updated" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save settings", variant: "destructive" });
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>General Settings</CardTitle>
+        <CardDescription>Configure default testing parameters</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label>Concurrent Calls (Max)</Label>
+            <Input 
+              type="number"
+              value={settings.concurrentCalls}
+              onChange={(e) => setSettings({ ...settings, concurrentCalls: e.target.value })}
+              data-testid="input-concurrent-calls"
+            />
+            <p className="text-sm text-muted-foreground">Maximum simultaneous test calls</p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>CLI Acceptable Prefixes</Label>
+            <Input 
+              value={settings.cliAcceptablePrefixes}
+              onChange={(e) => setSettings({ ...settings, cliAcceptablePrefixes: e.target.value })}
+              data-testid="input-cli-prefixes"
+            />
+            <p className="text-sm text-muted-foreground">Comma-separated valid CLI prefixes</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Max Wait for Answer (seconds)</Label>
+            <Input 
+              type="number"
+              value={settings.maxWaitAnswer}
+              onChange={(e) => setSettings({ ...settings, maxWaitAnswer: e.target.value })}
+              data-testid="input-max-wait"
+            />
+            <p className="text-sm text-muted-foreground">Timeout before marking call as failed</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Default Calls per Test</Label>
+            <Input 
+              type="number"
+              value={settings.defaultCallsCount}
+              onChange={(e) => setSettings({ ...settings, defaultCallsCount: e.target.value })}
+              data-testid="input-default-calls"
+            />
+            <p className="text-sm text-muted-foreground">Number of calls for each test run</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Default Codec</Label>
+            <Select value={settings.defaultCodec} onValueChange={(v) => setSettings({ ...settings, defaultCodec: v })}>
+              <SelectTrigger data-testid="select-default-codec">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CODECS.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">Default audio codec for tests</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Default Call Duration (seconds)</Label>
+            <Input 
+              type="number"
+              value={settings.defaultDuration}
+              onChange={(e) => setSettings({ ...settings, defaultDuration: e.target.value })}
+              data-testid="input-default-duration"
+            />
+            <p className="text-sm text-muted-foreground">Duration of each test call</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Timezone</Label>
+            <Select value={settings.timezone} onValueChange={(v) => setSettings({ ...settings, timezone: v })}>
+              <SelectTrigger data-testid="select-timezone">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="UTC">UTC</SelectItem>
+                <SelectItem value="America/New_York">Eastern (US)</SelectItem>
+                <SelectItem value="America/Los_Angeles">Pacific (US)</SelectItem>
+                <SelectItem value="Europe/London">London</SelectItem>
+                <SelectItem value="Europe/Paris">Paris</SelectItem>
+                <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">Timezone for test scheduling</p>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending} data-testid="button-save-settings">
+          {saveSettings.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Save Settings
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+export default function SipTesterPage() {
+  const [location] = useLocation();
+
+  if (location.includes("/settings")) {
+    return <SettingsPage />;
+  }
+  
+  if (location.includes("/history")) {
+    return <HistoryPage />;
+  }
+
+  return <NewTestPage />;
 }

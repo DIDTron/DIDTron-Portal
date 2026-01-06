@@ -4536,6 +4536,153 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== SIP TEST PROFILES ====================
+
+  app.get("/api/sip-test-profiles", async (_req, res) => {
+    try {
+      const profiles = await storage.getSipTestProfiles();
+      res.json(profiles);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch profiles" });
+    }
+  });
+
+  app.post("/api/sip-test-profiles", async (req, res) => {
+    try {
+      const profile = await storage.createSipTestProfile({
+        name: req.body.name,
+        ip: req.body.ip,
+        port: req.body.port || 5060,
+        protocol: req.body.protocol || 'SIP',
+        username: req.body.username,
+        password: req.body.password,
+        isDefault: req.body.isDefault || false,
+        isActive: req.body.isActive ?? true,
+      });
+      res.status(201).json(profile);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create profile" });
+    }
+  });
+
+  app.delete("/api/sip-test-profiles/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSipTestProfile(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Profile not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete profile" });
+    }
+  });
+
+  // ==================== SIP TEST SUPPLIERS ====================
+
+  app.get("/api/sip-test-suppliers", async (_req, res) => {
+    try {
+      const suppliers = await storage.getSipTestSuppliers();
+      res.json(suppliers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch suppliers" });
+    }
+  });
+
+  app.post("/api/sip-test-suppliers", async (req, res) => {
+    try {
+      const supplier = await storage.createSipTestSupplier({
+        name: req.body.name,
+        codec: req.body.codec || 'G729',
+        prefix: req.body.prefix,
+        protocol: req.body.protocol || 'SIP',
+        email: req.body.email,
+        isOurTier: req.body.isOurTier || false,
+        tierId: req.body.tierId,
+        isActive: req.body.isActive ?? true,
+      });
+      res.status(201).json(supplier);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create supplier" });
+    }
+  });
+
+  app.delete("/api/sip-test-suppliers/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSipTestSupplier(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Supplier not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete supplier" });
+    }
+  });
+
+  // ==================== SIP TEST SETTINGS ====================
+
+  app.get("/api/sip-test-settings", async (req, res) => {
+    try {
+      const customerId = req.user?.customerId || req.user?.id;
+      const settings = await storage.getSipTestSettings(customerId);
+      res.json(settings || {});
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  app.put("/api/sip-test-settings", async (req, res) => {
+    try {
+      const customerId = req.user?.customerId || req.user?.id;
+      const settings = await storage.upsertSipTestSettings({
+        customerId,
+        concurrentCalls: req.body.concurrentCalls,
+        cliAcceptablePrefixes: req.body.cliAcceptablePrefixes,
+        defaultAudioId: req.body.defaultAudioId,
+        maxWaitAnswer: req.body.maxWaitAnswer,
+        defaultCallsCount: req.body.defaultCallsCount,
+        defaultCodec: req.body.defaultCodec,
+        defaultDuration: req.body.defaultDuration,
+        timezone: req.body.timezone,
+      });
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save settings" });
+    }
+  });
+
+  // ==================== SIP TEST RUNS (ADMIN) ====================
+
+  app.get("/api/sip-test-runs", async (_req, res) => {
+    try {
+      const runs = await storage.getAllSipTestRuns();
+      res.json(runs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch test runs" });
+    }
+  });
+
+  app.post("/api/sip-test-runs", async (req, res) => {
+    try {
+      const customerId = req.user?.customerId || req.user?.id || 'admin';
+      const run = await storage.createSipTestRun({
+        customerId,
+        testName: req.body.testName,
+        testMode: req.body.testMode || 'standard',
+        routeSource: req.body.routeSource || 'tier',
+        supplierIds: req.body.supplierIds,
+        destinations: req.body.destinations,
+        countryFilters: req.body.countryFilters,
+        manualNumbers: req.body.manualNumbers,
+        useDbNumbers: req.body.useDbNumbers,
+        addToDb: req.body.addToDb,
+        codec: req.body.codec || 'G729',
+        audioFileId: req.body.audioFileId,
+        aniMode: req.body.aniMode || 'any',
+        aniCountries: req.body.aniCountries,
+        capacity: req.body.capacity || 1,
+      });
+      res.status(201).json(run);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create test run" });
+    }
+  });
+
   // ==================== SIP TEST NUMBERS (CROWDSOURCED) ====================
 
   app.get("/api/sip-test-numbers", async (req, res) => {

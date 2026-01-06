@@ -34,6 +34,9 @@ import {
   type SipTestNumber, type InsertSipTestNumber,
   type SipTestRun, type InsertSipTestRun,
   type SipTestRunResult, type InsertSipTestRunResult,
+  type SipTestProfile, type InsertSipTestProfile,
+  type SipTestSupplier, type InsertSipTestSupplier,
+  type SipTestSettings, type InsertSipTestSettings,
   type Class4Customer, type InsertClass4Customer,
   type Class4Carrier, type InsertClass4Carrier,
   type Class4ProviderRateCard, type InsertClass4ProviderRateCard,
@@ -335,6 +338,23 @@ export interface IStorage {
   createSipTestNumber(number: InsertSipTestNumber): Promise<SipTestNumber>;
   updateSipTestNumber(id: string, data: Partial<InsertSipTestNumber>): Promise<SipTestNumber | undefined>;
   deleteSipTestNumber(id: string): Promise<boolean>;
+
+  // SIP Test Profiles
+  getSipTestProfiles(customerId?: string): Promise<SipTestProfile[]>;
+  createSipTestProfile(profile: InsertSipTestProfile): Promise<SipTestProfile>;
+  deleteSipTestProfile(id: string): Promise<boolean>;
+
+  // SIP Test Suppliers
+  getSipTestSuppliers(customerId?: string): Promise<SipTestSupplier[]>;
+  createSipTestSupplier(supplier: InsertSipTestSupplier): Promise<SipTestSupplier>;
+  deleteSipTestSupplier(id: string): Promise<boolean>;
+
+  // SIP Test Settings
+  getSipTestSettings(customerId?: string): Promise<SipTestSettings | undefined>;
+  upsertSipTestSettings(settings: InsertSipTestSettings): Promise<SipTestSettings>;
+
+  // SIP Test Runs (Admin)
+  getAllSipTestRuns(): Promise<SipTestRun[]>;
 
   // SIP Test Runs
   getSipTestRuns(customerId: string): Promise<SipTestRun[]>;
@@ -2360,6 +2380,116 @@ export class MemStorage implements IStorage {
 
   async deleteSipTestNumber(id: string): Promise<boolean> {
     return this.sipTestNumbers.delete(id);
+  }
+
+  // SIP Test Profiles
+  sipTestProfiles = new Map<string, SipTestProfile>();
+
+  async getSipTestProfiles(customerId?: string): Promise<SipTestProfile[]> {
+    const profiles = Array.from(this.sipTestProfiles.values());
+    if (customerId) return profiles.filter(p => p.customerId === customerId);
+    return profiles;
+  }
+
+  async createSipTestProfile(profile: InsertSipTestProfile): Promise<SipTestProfile> {
+    const id = randomUUID();
+    const now = new Date();
+    const p: SipTestProfile = {
+      id,
+      customerId: profile.customerId ?? null,
+      name: profile.name,
+      ip: profile.ip,
+      port: profile.port ?? 5060,
+      protocol: profile.protocol ?? 'SIP',
+      username: profile.username ?? null,
+      password: profile.password ?? null,
+      isDefault: profile.isDefault ?? false,
+      isActive: profile.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.sipTestProfiles.set(id, p);
+    return p;
+  }
+
+  async deleteSipTestProfile(id: string): Promise<boolean> {
+    return this.sipTestProfiles.delete(id);
+  }
+
+  // SIP Test Suppliers
+  sipTestSuppliers = new Map<string, SipTestSupplier>();
+
+  async getSipTestSuppliers(customerId?: string): Promise<SipTestSupplier[]> {
+    const suppliers = Array.from(this.sipTestSuppliers.values());
+    if (customerId) return suppliers.filter(s => s.customerId === customerId);
+    return suppliers;
+  }
+
+  async createSipTestSupplier(supplier: InsertSipTestSupplier): Promise<SipTestSupplier> {
+    const id = randomUUID();
+    const now = new Date();
+    const s: SipTestSupplier = {
+      id,
+      customerId: supplier.customerId ?? null,
+      name: supplier.name,
+      codec: supplier.codec ?? 'G729',
+      prefix: supplier.prefix ?? null,
+      protocol: supplier.protocol ?? 'SIP',
+      email: supplier.email ?? null,
+      isOurTier: supplier.isOurTier ?? false,
+      tierId: supplier.tierId ?? null,
+      isActive: supplier.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.sipTestSuppliers.set(id, s);
+    return s;
+  }
+
+  async deleteSipTestSupplier(id: string): Promise<boolean> {
+    return this.sipTestSuppliers.delete(id);
+  }
+
+  // SIP Test Settings
+  sipTestSettings = new Map<string, SipTestSettings>();
+
+  async getSipTestSettings(customerId?: string): Promise<SipTestSettings | undefined> {
+    if (!customerId) return undefined;
+    return Array.from(this.sipTestSettings.values()).find(s => s.customerId === customerId);
+  }
+
+  async upsertSipTestSettings(settings: InsertSipTestSettings): Promise<SipTestSettings> {
+    const existing = settings.customerId 
+      ? Array.from(this.sipTestSettings.values()).find(s => s.customerId === settings.customerId)
+      : undefined;
+    
+    const id = existing?.id || randomUUID();
+    const now = new Date();
+    const s: SipTestSettings = {
+      id,
+      customerId: settings.customerId ?? null,
+      concurrentCalls: settings.concurrentCalls ?? 10,
+      cliAcceptablePrefixes: settings.cliAcceptablePrefixes ?? '+00',
+      defaultAudioId: settings.defaultAudioId ?? null,
+      maxWaitAnswer: settings.maxWaitAnswer ?? 80,
+      defaultCallsCount: settings.defaultCallsCount ?? 5,
+      defaultCodec: settings.defaultCodec ?? 'G729',
+      defaultDuration: settings.defaultDuration ?? 30,
+      timezone: settings.timezone ?? 'UTC',
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    };
+    this.sipTestSettings.set(id, s);
+    return s;
+  }
+
+  // SIP Test Runs (Admin)
+  async getAllSipTestRuns(): Promise<SipTestRun[]> {
+    return Array.from(this.sipTestRuns.values()).sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
   }
 
   // SIP Test Runs

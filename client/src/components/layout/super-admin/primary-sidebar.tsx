@@ -19,7 +19,7 @@ export const navSections: NavSection[] = [
   { id: "billing", label: "Billing", icon: CreditCard, defaultRoute: "/admin/invoices" },
   { id: "marketing", label: "Marketing", icon: Megaphone, defaultRoute: "/admin/social-accounts" },
   { id: "monitoring", label: "Monitoring", icon: BarChart3, defaultRoute: "/admin/metrics" },
-  { id: "sip-tester", label: "SIP Tester", icon: Cpu, defaultRoute: "/admin/sip-tester" },
+  { id: "sip-tester", label: "SIP Tester", icon: Cpu, defaultRoute: "/admin/sip-tester/new" },
   { id: "ai", label: "AI", icon: Bot, defaultRoute: "/admin/ai-voice-agents" },
   { id: "softswitch", label: "Softswitch", icon: Network, defaultRoute: "/admin/class4-customers" },
   { id: "cms", label: "CMS", icon: FileText, defaultRoute: "/admin/pages" },

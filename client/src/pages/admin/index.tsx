@@ -92,7 +92,9 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/metrics": { section: "monitoring", subItem: "metrics" },
   "/admin/alerts": { section: "monitoring", subItem: "alerts" },
   "/admin/rules": { section: "monitoring", subItem: "rules" },
-  "/admin/sip-tester": { section: "monitoring", subItem: "sip-tester" },
+  "/admin/sip-tester/new": { section: "sip-tester", subItem: "sip-new-test" },
+  "/admin/sip-tester/history": { section: "sip-tester", subItem: "sip-history" },
+  "/admin/sip-tester/settings": { section: "sip-tester", subItem: "sip-settings" },
   "/admin/ai-voice-agents": { section: "ai", subItem: "ai-voice-agents" },
   "/admin/class4-customers": { section: "softswitch", subItem: "class4-customers" },
   "/admin/class4-carriers": { section: "softswitch", subItem: "class4-carriers" },
@@ -202,7 +204,9 @@ export default function AdminLayout() {
                 <Route path="/admin/metrics" component={MetricsPage} />
                 <Route path="/admin/alerts" component={AlertsPage} />
                 <Route path="/admin/rules" component={MonitoringRulesPage} />
-                <Route path="/admin/sip-tester" component={SipTesterPage} />
+                <Route path="/admin/sip-tester/new" component={SipTesterPage} />
+                <Route path="/admin/sip-tester/history" component={SipTesterPage} />
+                <Route path="/admin/sip-tester/settings" component={SipTesterPage} />
                 <Route path="/admin/ai-voice-agents" component={AiVoiceAgentsPage} />
                 <Route path="/admin/class4-customers" component={Class4CustomersPage} />
                 <Route path="/admin/class4-carriers" component={Class4CarriersPage} />
