@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { CustomerPrimarySidebar } from "@/components/layout/customer-portal/primary-sidebar";
 import { CustomerSecondarySidebar } from "@/components/layout/customer-portal/secondary-sidebar";
 import { CustomerWorkspaceTabs } from "@/components/layout/customer-portal/workspace-tabs";
-import { CommandPalette } from "@/components/layout/customer-portal/command-palette";
+import { SearchResults } from "@/components/layout/customer-portal/search-results";
 import { useCustomerPortalStore } from "@/stores/customer-portal-tabs";
 import { Phone, Bell, LogOut, Search, Loader2, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -223,14 +223,16 @@ function PortalLoginPage() {
 }
 
 export default function CustomerPortal() {
-  const [location] = useLocation();
-  const [commandOpen, setCommandOpen] = useState(false);
+  const [location, setLocation] = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const { 
     setActiveSection, 
     setActiveSubItem,
     primarySidebarOpen,
-    toggleBothSidebars
+    toggleBothSidebars,
+    openTab
   } = useCustomerPortalStore();
 
   useEffect(() => {
@@ -240,6 +242,29 @@ export default function CustomerPortal() {
       setActiveSubItem(mapping.subItem);
     }
   }, [location, setActiveSection, setActiveSubItem]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      openTab({
+        id: "search",
+        label: "Search",
+        route: `/portal/search?q=${encodeURIComponent(searchQuery.trim())}`,
+      });
+      setLocation(`/portal/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -257,9 +282,11 @@ export default function CustomerPortal() {
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : user?.email?.[0]?.toUpperCase() || "U";
 
+  const searchParams = new URLSearchParams(location.split("?")[1] || "");
+  const currentSearchQuery = searchParams.get("q") || "";
+
   return (
     <TooltipProvider>
-      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
       <div className="flex h-screen w-full bg-background">
         <CustomerPrimarySidebar />
         <CustomerSecondarySidebar />
@@ -281,19 +308,21 @@ export default function CustomerPortal() {
                   <span className="font-bold">DIDTron</span>
                 </div>
               )}
-              <Button
-                variant="outline"
-                className="relative flex-1 max-w-md justify-start text-muted-foreground h-8 px-3"
-                onClick={() => setCommandOpen(true)}
-                data-testid="button-global-search"
-              >
-                <Search className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline-flex">Search services, DIDs, tickets...</span>
-                <span className="sm:hidden">Search...</span>
-                <kbd className="pointer-events-none absolute right-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+              <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search services, DIDs, tickets..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-14 h-8"
+                  data-testid="input-global-search"
+                />
+                <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
                   <span className="text-xs">Ctrl</span>K
                 </kbd>
-              </Button>
+              </form>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="relative" data-testid="button-notifications">
@@ -335,6 +364,9 @@ export default function CustomerPortal() {
 
           <main className="flex-1 overflow-auto bg-muted/30">
             <Switch>
+              <Route path="/portal/search">
+                <SearchResults query={currentSearchQuery} />
+              </Route>
               <Route path="/portal" component={CustomerDashboard} />
               <Route path="/portal/usage" component={UsagePage} />
               <Route path="/portal/voice" component={VoiceRatesPage} />
