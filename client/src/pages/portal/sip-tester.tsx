@@ -1,35 +1,77 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
-  Play, Plus, Settings, Clock, Activity, CheckCircle2, XCircle, 
-  AlertTriangle, Loader2, Phone, Signal, Zap, Timer, BarChart3,
-  Trash2, Edit, RefreshCw, Calendar, Cloud
+  Play, CheckCircle2, XCircle, AlertTriangle, Loader2, Phone, Signal,
+  Timer, BarChart3, RefreshCw, Search, X, Plus
 } from "lucide-react";
-import type { SipTestConfig, SipTestResult, SipTestSchedule } from "@shared/schema";
+import type { VoiceTier, Class4Carrier, SipTestRun, SipTestAudioFile } from "@shared/schema";
 
-const TEST_TYPES = [
-  { value: "quick", label: "Quick Test", description: "Fast basic connectivity check" },
-  { value: "quality", label: "Quality Test", description: "MOS, jitter, packet loss analysis" },
-  { value: "pdd", label: "PDD Test", description: "Post-dial delay measurement" },
-  { value: "dtmf", label: "DTMF Test", description: "Tone detection verification" },
-  { value: "cli", label: "CLI Test", description: "Caller ID passthrough validation" },
-  { value: "codec", label: "Codec Test", description: "Audio codec negotiation test" },
+const COUNTRIES = [
+  { code: "AB", name: "Abkhazia" },
+  { code: "AF", name: "Afghanistan" },
+  { code: "AL", name: "Albania" },
+  { code: "DZ", name: "Algeria" },
+  { code: "AS", name: "American Samoa" },
+  { code: "AD", name: "Andorra" },
+  { code: "AO", name: "Angola" },
+  { code: "AI", name: "Anguilla" },
+  { code: "AQ", name: "Antarctica" },
+  { code: "AG", name: "Antigua and Barbuda" },
+  { code: "AR", name: "Argentina" },
+  { code: "AM", name: "Armenia" },
+  { code: "AU", name: "Australia" },
+  { code: "AT", name: "Austria" },
+  { code: "AZ", name: "Azerbaijan" },
+  { code: "BE", name: "Belgium" },
+  { code: "BR", name: "Brazil" },
+  { code: "CA", name: "Canada" },
+  { code: "CN", name: "China" },
+  { code: "DE", name: "Germany" },
+  { code: "ES", name: "Spain" },
+  { code: "FR", name: "France" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "IN", name: "India" },
+  { code: "IT", name: "Italy" },
+  { code: "JP", name: "Japan" },
+  { code: "MX", name: "Mexico" },
+  { code: "NL", name: "Netherlands" },
+  { code: "PL", name: "Poland" },
+  { code: "RU", name: "Russia" },
+  { code: "US", name: "United States" },
 ];
+
+const CODECS = [
+  { value: "G711", label: "G.711" },
+  { value: "G729", label: "G.729" },
+  { value: "OPUS", label: "Opus" },
+  { value: "GSM", label: "GSM" },
+  { value: "SPEEX", label: "Speex" },
+];
+
+const DEFAULT_AUDIO_FILES = [
+  { id: "silence", name: "[DEF] Silence" },
+  { id: "tone", name: "[DEF] Test Tone" },
+  { id: "voice", name: "[DEF] Voice Sample" },
+];
+
+const CAPACITY_OPTIONS = [1, 5, 10, 25, 50, 100];
+const CALLS_COUNT_OPTIONS = [1, 5, 10, 25, 50, 100];
+const DURATION_OPTIONS = [10, 30, 60, 120, 180, 300];
 
 function getStatusBadge(status: string | null) {
   switch (status) {
@@ -42,101 +84,135 @@ function getStatusBadge(status: string | null) {
     case "timeout":
       return <Badge variant="outline"><AlertTriangle className="h-3 w-3 mr-1" />Timeout</Badge>;
     default:
-      return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
-  }
-}
-
-function getResultBadge(result: string | null) {
-  switch (result) {
-    case "pass":
-      return <Badge variant="default">Pass</Badge>;
-    case "fail":
-      return <Badge variant="destructive">Fail</Badge>;
-    case "partial":
-      return <Badge variant="secondary">Partial</Badge>;
-    default:
-      return <Badge variant="outline">N/A</Badge>;
+      return <Badge variant="outline"><Timer className="h-3 w-3 mr-1" />Pending</Badge>;
   }
 }
 
 export default function PortalSipTesterPage() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("quick-test");
-  const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("run-test");
+  const [showDestinationDialog, setShowDestinationDialog] = useState(false);
+  const [showAniDialog, setShowAniDialog] = useState(false);
 
-  const [quickTestForm, setQuickTestForm] = useState({
-    destination: "",
-    testType: "quick",
-    cliNumber: "",
+  const [testForm, setTestForm] = useState({
+    testType: "standard" as "standard" | "cli",
+    testName: "",
+    profile: "",
+    selectedSuppliers: [] as string[],
+    selectedCountries: [] as string[],
+    manualNumbers: "",
+    useDbNumbers: true,
+    addToDb: false,
+    codec: "G729",
+    audioFile: "silence",
+    capacity: 10,
+    aniMode: "any",
+    aniNumber: "",
+    aniCountries: [] as string[],
+    callsCount: 5,
+    maxDuration: 30,
   });
 
-  const [configForm, setConfigForm] = useState({
-    name: "",
-    description: "",
-    testType: "quick",
-    destinations: "",
-    cliNumber: "",
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const [countrySearch, setCountrySearch] = useState("");
+  const [aniCountrySearch, setAniCountrySearch] = useState("");
+
+  const { data: voiceTiers = [] } = useQuery<VoiceTier[]>({
+    queryKey: ["/api/voice-tiers"],
   });
 
-  const { data: configs = [], isLoading: configsLoading } = useQuery<SipTestConfig[]>({
-    queryKey: ["/api/my/sip-tests/configs"],
+  const { data: class4Carriers = [] } = useQuery<Class4Carrier[]>({
+    queryKey: ["/api/my/class4/carriers"],
   });
 
-  const { data: results = [], isLoading: resultsLoading } = useQuery<SipTestResult[]>({
-    queryKey: ["/api/my/sip-tests/results"],
+  const { data: audioFiles = [] } = useQuery<SipTestAudioFile[]>({
+    queryKey: ["/api/sip-test-audio-files"],
   });
 
-  const { data: schedules = [], isLoading: schedulesLoading } = useQuery<SipTestSchedule[]>({
-    queryKey: ["/api/my/sip-tests/schedules"],
+  const { data: testRuns = [], isLoading: runsLoading } = useQuery<SipTestRun[]>({
+    queryKey: ["/api/my/sip-test-runs"],
   });
 
-  const runQuickTest = useMutation({
+  const allAudioFiles = useMemo(() => {
+    const custom = audioFiles.filter(f => f.isActive);
+    return [...DEFAULT_AUDIO_FILES, ...custom.map(f => ({ id: f.id, name: f.name }))];
+  }, [audioFiles]);
+
+  const filteredSuppliers = useMemo(() => {
+    const allSuppliers = [
+      ...voiceTiers.map(t => ({ id: `tier_${t.id}`, name: t.name, type: "tier" })),
+      ...class4Carriers.map(c => ({ id: `carrier_${c.id}`, name: c.name, type: "carrier" })),
+    ];
+    if (!supplierSearch) return allSuppliers;
+    return allSuppliers.filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase()));
+  }, [voiceTiers, class4Carriers, supplierSearch]);
+
+  const filteredCountries = useMemo(() => {
+    if (!countrySearch) return COUNTRIES;
+    return COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()));
+  }, [countrySearch]);
+
+  const runTest = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/my/sip-tests/run", {
-        testType: quickTestForm.testType,
-        destination: quickTestForm.destination,
-        cliSent: quickTestForm.cliNumber,
+      return apiRequest("POST", "/api/my/sip-test-runs", {
+        testName: testForm.testName || `Test ${new Date().toLocaleString()}`,
+        testMode: testForm.testType,
+        routeSource: testForm.profile.startsWith("tier_") ? "didtron_tier" : "class4_supplier",
+        tierId: testForm.profile.startsWith("tier_") ? testForm.profile.replace("tier_", "") : null,
+        supplierIds: testForm.selectedSuppliers,
+        countryFilters: testForm.selectedCountries,
+        manualNumbers: testForm.manualNumbers.split("\n").filter(Boolean),
+        useDbNumbers: testForm.useDbNumbers,
+        addToDb: testForm.addToDb,
+        codec: testForm.codec,
+        audioFileId: testForm.audioFile,
+        aniMode: testForm.aniMode,
+        aniNumber: testForm.aniNumber,
+        aniCountries: testForm.aniCountries,
+        callsCount: testForm.callsCount,
+        maxDuration: testForm.maxDuration,
+        capacity: testForm.capacity,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/my/sip-tests/results"] });
-      toast({ title: "Test completed", description: "Quick test finished successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/my/sip-test-runs"] });
+      toast({ title: "Test started", description: "Your SIP test is now running" });
+      setActiveTab("results");
     },
     onError: (error: Error) => {
       toast({ title: "Test failed", description: error.message, variant: "destructive" });
     },
   });
 
-  const createConfig = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/my/sip-tests/configs", {
-        name: configForm.name,
-        description: configForm.description,
-        testType: configForm.testType,
-        destinations: configForm.destinations.split(",").map(d => d.trim()).filter(Boolean),
-        cliNumber: configForm.cliNumber,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/my/sip-tests/configs"] });
-      toast({ title: "Config created", description: "Test configuration saved successfully" });
-      setShowConfigDialog(false);
-      setConfigForm({ name: "", description: "", testType: "quick", destinations: "", cliNumber: "" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
+  const toggleSupplier = (id: string) => {
+    setTestForm(prev => ({
+      ...prev,
+      selectedSuppliers: prev.selectedSuppliers.includes(id)
+        ? prev.selectedSuppliers.filter(s => s !== id)
+        : [...prev.selectedSuppliers, id]
+    }));
+  };
 
-  const deleteConfig = useMutation({
-    mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/my/sip-tests/configs/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/my/sip-tests/configs"] });
-      toast({ title: "Config deleted", description: "Test configuration removed" });
-    },
-  });
+  const toggleCountry = (code: string) => {
+    setTestForm(prev => ({
+      ...prev,
+      selectedCountries: prev.selectedCountries.includes(code)
+        ? prev.selectedCountries.filter(c => c !== code)
+        : [...prev.selectedCountries, code]
+    }));
+  };
+
+  const toggleAniCountry = (code: string) => {
+    setTestForm(prev => ({
+      ...prev,
+      aniCountries: prev.aniCountries.includes(code)
+        ? prev.aniCountries.filter(c => c !== code)
+        : [...prev.aniCountries, code]
+    }));
+  };
+
+  const selectedDestinationCount = testForm.selectedCountries.length + 
+    (testForm.manualNumbers ? testForm.manualNumbers.split("\n").filter(Boolean).length : 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -145,94 +221,13 @@ export default function PortalSipTesterPage() {
           <h1 className="text-2xl font-semibold" data-testid="text-page-title">SIP Tester</h1>
           <p className="text-muted-foreground">Test your VoIP routes for quality and connectivity</p>
         </div>
-        <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-new-config">
-              <Plus className="h-4 w-4 mr-2" />
-              New Config
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Test Configuration</DialogTitle>
-              <DialogDescription>
-                Save a test configuration for repeated use
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input
-                  value={configForm.name}
-                  onChange={(e) => setConfigForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="My Route Test"
-                  data-testid="input-config-name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={configForm.description}
-                  onChange={(e) => setConfigForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Description of this test configuration..."
-                  data-testid="input-config-description"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Test Type</Label>
-                <Select
-                  value={configForm.testType}
-                  onValueChange={(v) => setConfigForm(prev => ({ ...prev, testType: v }))}
-                >
-                  <SelectTrigger data-testid="select-config-test-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TEST_TYPES.map(t => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Destinations (comma separated)</Label>
-                <Input
-                  value={configForm.destinations}
-                  onChange={(e) => setConfigForm(prev => ({ ...prev, destinations: e.target.value }))}
-                  placeholder="+18001234567, +442071234567"
-                  data-testid="input-config-destinations"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>CLI Number</Label>
-                <Input
-                  value={configForm.cliNumber}
-                  onChange={(e) => setConfigForm(prev => ({ ...prev, cliNumber: e.target.value }))}
-                  placeholder="+19876543210"
-                  data-testid="input-config-cli"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowConfigDialog(false)} data-testid="button-config-cancel">Cancel</Button>
-              <Button onClick={() => createConfig.mutate()} disabled={createConfig.isPending || !configForm.name} data-testid="button-config-save">
-                {createConfig.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Save Config
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="quick-test" data-testid="tab-quick-test">
-            <Zap className="h-4 w-4 mr-2" />
-            Quick Test
-          </TabsTrigger>
-          <TabsTrigger value="configs" data-testid="tab-configs">
-            <Settings className="h-4 w-4 mr-2" />
-            Saved Configs
+          <TabsTrigger value="run-test" data-testid="tab-run-test">
+            <Play className="h-4 w-4 mr-2" />
+            Run Test
           </TabsTrigger>
           <TabsTrigger value="results" data-testid="tab-results">
             <BarChart3 className="h-4 w-4 mr-2" />
@@ -240,171 +235,356 @@ export default function PortalSipTesterPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="quick-test" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                Quick Test
-              </CardTitle>
-              <CardDescription>Run a one-time test to any destination</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Destination Number</Label>
-                  <Input
-                    value={quickTestForm.destination}
-                    onChange={(e) => setQuickTestForm(prev => ({ ...prev, destination: e.target.value }))}
-                    placeholder="+18001234567"
-                    data-testid="input-quick-destination"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Test Type</Label>
+        <TabsContent value="run-test" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Test type:</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup 
+                  value={testForm.testType} 
+                  onValueChange={(v) => setTestForm(prev => ({ ...prev, testType: v as "standard" | "cli" }))}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="standard" id="standard" data-testid="radio-standard" />
+                    <Label htmlFor="standard">Standard</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="cli" id="cli" data-testid="radio-cli" />
+                    <Label htmlFor="cli">CLI</Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Test name:</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Input
+                  value={testForm.testName}
+                  onChange={(e) => setTestForm(prev => ({ ...prev, testName: e.target.value }))}
+                  placeholder="Enter test name here..."
+                  data-testid="input-test-name"
+                />
+                <div className="mt-4">
+                  <Label className="text-sm font-medium">Profile:</Label>
                   <Select
-                    value={quickTestForm.testType}
-                    onValueChange={(v) => setQuickTestForm(prev => ({ ...prev, testType: v }))}
+                    value={testForm.profile}
+                    onValueChange={(v) => setTestForm(prev => ({ ...prev, profile: v }))}
                   >
-                    <SelectTrigger data-testid="select-quick-test-type">
-                      <SelectValue />
+                    <SelectTrigger className="mt-2" data-testid="select-profile">
+                      <SelectValue placeholder="Select profile..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {TEST_TYPES.map(t => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      {voiceTiers.map(tier => (
+                        <SelectItem key={tier.id} value={`tier_${tier.id}`}>
+                          {tier.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>CLI Number (optional)</Label>
-                  <Input
-                    value={quickTestForm.cliNumber}
-                    onChange={(e) => setQuickTestForm(prev => ({ ...prev, cliNumber: e.target.value }))}
-                    placeholder="+19876543210"
-                    data-testid="input-quick-cli"
-                  />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Destination:</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 mb-3">
+                  <Label className="text-sm">Run test on:</Label>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowDestinationDialog(true)}
+                    data-testid="button-select-destination"
+                  >
+                    {selectedDestinationCount > 0 
+                      ? `${selectedDestinationCount} selected`
+                      : "no destination selected"
+                    }
+                  </Button>
                 </div>
-              </div>
-              <Button 
-                onClick={() => runQuickTest.mutate()} 
-                disabled={runQuickTest.isPending || !quickTestForm.destination}
-                data-testid="button-run-quick-test"
-              >
-                {runQuickTest.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Play className="h-4 w-4 mr-2" />
-                )}
-                Run Test
-              </Button>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {TEST_TYPES.map(t => (
-              <Card key={t.value} className="cursor-pointer hover-elevate" onClick={() => setQuickTestForm(prev => ({ ...prev, testType: t.value }))}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    {t.value === "quick" && <Zap className="h-4 w-4 text-primary" />}
-                    {t.value === "quality" && <Signal className="h-4 w-4 text-primary" />}
-                    {t.value === "pdd" && <Timer className="h-4 w-4 text-primary" />}
-                    {t.value === "dtmf" && <Phone className="h-4 w-4 text-primary" />}
-                    {t.value === "cli" && <Activity className="h-4 w-4 text-primary" />}
-                    {t.value === "codec" && <Settings className="h-4 w-4 text-primary" />}
-                    <span className="font-medium text-sm">{t.label}</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Country:</Label>
+                    <ScrollArea className="h-32 border rounded-md mt-1">
+                      <div className="p-2">
+                        <Input
+                          placeholder="Search..."
+                          value={countrySearch}
+                          onChange={(e) => setCountrySearch(e.target.value)}
+                          className="mb-2"
+                          data-testid="input-country-search"
+                        />
+                        {filteredCountries.map(country => (
+                          <div 
+                            key={country.code}
+                            className="text-sm py-1 px-2 hover-elevate rounded cursor-pointer"
+                            onClick={() => toggleCountry(country.code)}
+                            data-testid={`country-${country.code}`}
+                          >
+                            {country.name}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </div>
-                  <p className="text-xs text-muted-foreground">{t.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Manual numbers:</Label>
+                    <Textarea
+                      value={testForm.manualNumbers}
+                      onChange={(e) => setTestForm(prev => ({ ...prev, manualNumbers: e.target.value }))}
+                      placeholder="One number per line..."
+                      className="h-32 mt-1 resize-none text-sm"
+                      data-testid="textarea-manual-numbers"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="addToDb"
+                      checked={testForm.addToDb}
+                      onCheckedChange={(checked) => setTestForm(prev => ({ ...prev, addToDb: !!checked }))}
+                      data-testid="checkbox-add-to-db"
+                    />
+                    <Label htmlFor="addToDb" className="text-sm">Add numbers to database</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useDbNumbers"
+                      checked={testForm.useDbNumbers}
+                      onCheckedChange={(checked) => setTestForm(prev => ({ ...prev, useDbNumbers: !!checked }))}
+                      data-testid="checkbox-use-db"
+                    />
+                    <Label htmlFor="useDbNumbers" className="text-sm">Use numbers from DB</Label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </TabsContent>
 
-        <TabsContent value="configs" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Saved Configurations</CardTitle>
-              <CardDescription>Reusable test configurations for your routes</CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Supplier:</CardTitle>
             </CardHeader>
             <CardContent>
-              {configsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : configs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No saved configurations yet</p>
-                  <p className="text-sm">Create a config to save your test settings</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Destinations</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {configs.map((config) => (
-                      <TableRow key={config.id} data-testid={`row-config-${config.id}`}>
-                        <TableCell>
-                          <div className="flex items-start gap-2">
-                            {config.isShared && (
-                              <Cloud className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-muted-foreground">Supplier list:</Label>
+                  <div className="relative mt-2">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={supplierSearch}
+                      onChange={(e) => setSupplierSearch(e.target.value)}
+                      placeholder="Search..."
+                      className="pl-8"
+                      data-testid="input-supplier-search"
+                    />
+                  </div>
+                  <ScrollArea className="h-48 border rounded-md mt-2">
+                    <div className="p-2 space-y-1">
+                      {filteredSuppliers.map(supplier => (
+                        <div key={supplier.id} className="flex items-center space-x-2 py-1">
+                          <Checkbox
+                            id={supplier.id}
+                            checked={testForm.selectedSuppliers.includes(supplier.id)}
+                            onCheckedChange={() => toggleSupplier(supplier.id)}
+                            data-testid={`checkbox-supplier-${supplier.id}`}
+                          />
+                          <Label htmlFor={supplier.id} className="text-sm cursor-pointer">
+                            {supplier.name}
+                            {supplier.type === "tier" && (
+                              <Badge variant="secondary" className="ml-2 text-xs">Tier</Badge>
                             )}
-                            <div>
-                              <div className="font-medium">{config.name}</div>
-                              {config.description && (
-                                <div className="text-xs text-muted-foreground">{config.description}</div>
-                              )}
-                              {config.isShared && (
-                                <Badge variant="secondary" className="text-xs mt-1">Smart Sync</Badge>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{config.testType}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {config.destinations?.length || 0} destination(s)
-                        </TableCell>
-                        <TableCell>
-                          {config.isActive ? (
-                            <Badge variant="default">Active</Badge>
-                          ) : (
-                            <Badge variant="secondary">Inactive</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button size="icon" variant="ghost" data-testid={`button-run-config-${config.id}`}>
-                              <Play className="h-4 w-4" />
-                            </Button>
-                            {!config.isShared && (
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                onClick={() => deleteConfig.mutate(config.id)}
-                                data-testid={`button-delete-config-${config.id}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+                          </Label>
+                        </div>
+                      ))}
+                      {filteredSuppliers.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No suppliers found
+                        </p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Checked suppliers:</Label>
+                  <div className="mt-2 p-3 border rounded-md min-h-[200px]">
+                    {testForm.selectedSuppliers.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">no suppliers selected</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {testForm.selectedSuppliers.map(id => {
+                          const supplier = filteredSuppliers.find(s => s.id === id);
+                          return (
+                            <Badge key={id} variant="secondary" className="flex items-center gap-1">
+                              {supplier?.name || id}
+                              <X 
+                                className="h-3 w-3 cursor-pointer" 
+                                onClick={() => toggleSupplier(id)}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
+
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <Card>
+              <CardContent className="pt-4">
+                <Label className="text-sm font-medium">Codec:</Label>
+                <Select
+                  value={testForm.codec}
+                  onValueChange={(v) => setTestForm(prev => ({ ...prev, codec: v }))}
+                >
+                  <SelectTrigger className="mt-2" data-testid="select-codec">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CODECS.map(codec => (
+                      <SelectItem key={codec.value} value={codec.value}>{codec.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-4">
+                <Label className="text-sm font-medium">Audio:</Label>
+                <Select
+                  value={testForm.audioFile}
+                  onValueChange={(v) => setTestForm(prev => ({ ...prev, audioFile: v }))}
+                >
+                  <SelectTrigger className="mt-2" data-testid="select-audio">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allAudioFiles.map(audio => (
+                      <SelectItem key={audio.id} value={audio.id}>{audio.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-4">
+                <Label className="text-sm font-medium">Capacity:</Label>
+                <Select
+                  value={testForm.capacity.toString()}
+                  onValueChange={(v) => setTestForm(prev => ({ ...prev, capacity: parseInt(v) }))}
+                >
+                  <SelectTrigger className="mt-2" data-testid="select-capacity">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CAPACITY_OPTIONS.map(cap => (
+                      <SelectItem key={cap} value={cap.toString()}>{cap}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-4">
+                <Label className="text-sm font-medium">ANI:</Label>
+                <Select
+                  value={testForm.aniMode}
+                  onValueChange={(v) => {
+                    if (v === "select") {
+                      setShowAniDialog(true);
+                    } else {
+                      setTestForm(prev => ({ ...prev, aniMode: v }));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="mt-2" data-testid="select-ani">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any</SelectItem>
+                    <SelectItem value="select">Select destinations...</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-4 flex items-end">
+                <Button 
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={() => runTest.mutate()}
+                  disabled={runTest.isPending || testForm.selectedSuppliers.length === 0}
+                  data-testid="button-run-test"
+                >
+                  {runTest.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Play className="h-4 w-4 mr-2" />
+                  )}
+                  Test
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-4">
+                  <Label className="text-sm font-medium whitespace-nowrap">Calls count:</Label>
+                  <Select
+                    value={testForm.callsCount.toString()}
+                    onValueChange={(v) => setTestForm(prev => ({ ...prev, callsCount: parseInt(v) }))}
+                  >
+                    <SelectTrigger data-testid="select-calls-count">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CALLS_COUNT_OPTIONS.map(count => (
+                        <SelectItem key={count} value={count.toString()}>{count}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-4">
+                  <Label className="text-sm font-medium whitespace-nowrap">Maximum duration:</Label>
+                  <Select
+                    value={testForm.maxDuration.toString()}
+                    onValueChange={(v) => setTestForm(prev => ({ ...prev, maxDuration: parseInt(v) }))}
+                  >
+                    <SelectTrigger data-testid="select-max-duration">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DURATION_OPTIONS.map(dur => (
+                        <SelectItem key={dur} value={dur.toString()}>{dur}s</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="results" className="space-y-4">
@@ -412,51 +592,72 @@ export default function PortalSipTesterPage() {
             <CardHeader className="flex flex-row items-center justify-between gap-4">
               <div>
                 <CardTitle>Test Results</CardTitle>
-                <CardDescription>History of your SIP tests</CardDescription>
+                <p className="text-sm text-muted-foreground">History of your SIP tests</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/my/sip-tests/results"] })} data-testid="button-refresh-results">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/my/sip-test-runs"] })} 
+                data-testid="button-refresh-results"
+              >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
             </CardHeader>
             <CardContent>
-              {resultsLoading ? (
+              {runsLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              ) : results.length === 0 ? (
+              ) : testRuns.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No test results yet</p>
-                  <p className="text-sm">Run a quick test to see results here</p>
+                  <p className="text-sm">Run a test to see results here</p>
                 </div>
               ) : (
                 <ScrollArea className="h-[400px]">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Test Type</TableHead>
-                        <TableHead>Destination</TableHead>
+                        <TableHead>Test Name</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Result</TableHead>
-                        <TableHead>PDD</TableHead>
-                        <TableHead>MOS</TableHead>
+                        <TableHead>Calls</TableHead>
+                        <TableHead>Success Rate</TableHead>
+                        <TableHead>Avg MOS</TableHead>
+                        <TableHead>Avg PDD</TableHead>
+                        <TableHead>Cost</TableHead>
                         <TableHead>Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {results.map((result) => (
-                        <TableRow key={result.id} data-testid={`row-result-${result.id}`}>
+                      {testRuns.map((run) => (
+                        <TableRow key={run.id} data-testid={`row-run-${run.id}`}>
+                          <TableCell className="font-medium">{run.testName || "Unnamed Test"}</TableCell>
+                          <TableCell>{getStatusBadge(run.status)}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{result.testType}</Badge>
+                            <span className="text-green-600">{run.successfulCalls || 0}</span>
+                            {" / "}
+                            <span>{run.totalCalls || 0}</span>
                           </TableCell>
-                          <TableCell className="font-mono text-sm">{result.destination || "-"}</TableCell>
-                          <TableCell>{getStatusBadge(result.status)}</TableCell>
-                          <TableCell>{getResultBadge(result.result)}</TableCell>
-                          <TableCell>{result.pddMs ? `${result.pddMs}ms` : "-"}</TableCell>
-                          <TableCell>{result.mosScore || "-"}</TableCell>
+                          <TableCell>
+                            {run.totalCalls && run.totalCalls > 0 
+                              ? `${Math.round(((run.successfulCalls || 0) / run.totalCalls) * 100)}%`
+                              : "-"
+                            }
+                          </TableCell>
+                          <TableCell>
+                            {run.avgMos ? (
+                              <div className="flex items-center gap-1">
+                                <Signal className={`h-3 w-3 ${parseFloat(run.avgMos) >= 4 ? "text-green-500" : parseFloat(run.avgMos) >= 3 ? "text-yellow-500" : "text-red-500"}`} />
+                                {parseFloat(run.avgMos).toFixed(1)}
+                              </div>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell>{run.avgPdd ? `${run.avgPdd}ms` : "-"}</TableCell>
+                          <TableCell>${parseFloat(run.totalCost || "0").toFixed(4)}</TableCell>
                           <TableCell className="text-muted-foreground text-sm">
-                            {result.createdAt ? new Date(result.createdAt).toLocaleString() : "-"}
+                            {run.createdAt ? new Date(run.createdAt).toLocaleString() : "-"}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -468,6 +669,217 @@ export default function PortalSipTesterPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={showDestinationDialog} onOpenChange={setShowDestinationDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Destination:</DialogTitle>
+          </DialogHeader>
+          <div className="flex gap-2 mb-4">
+            <Badge variant="outline">EU</Badge>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label className="text-sm font-medium">Selected destinations:</Label>
+              <div className="relative mt-2">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search..." className="pl-8" />
+              </div>
+              <ScrollArea className="h-64 border rounded-md mt-2">
+                <div className="p-2">
+                  {testForm.selectedCountries.map(code => {
+                    const country = COUNTRIES.find(c => c.code === code);
+                    return (
+                      <div key={code} className="flex items-center justify-between py-1 px-2 hover-elevate rounded">
+                        <span className="text-sm">{country?.name}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-auto py-0 px-1 text-muted-foreground"
+                          onClick={() => toggleCountry(code)}
+                        >
+                          remove
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+              <Button variant="outline" size="sm" className="mt-2" onClick={() => setTestForm(prev => ({ ...prev, selectedCountries: [] }))}>
+                Remove all
+              </Button>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Not selected destinations:</Label>
+              <div className="relative mt-2">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search..." 
+                  className="pl-8"
+                  value={countrySearch}
+                  onChange={(e) => setCountrySearch(e.target.value)}
+                />
+              </div>
+              <ScrollArea className="h-64 border rounded-md mt-2">
+                <div className="p-2">
+                  {filteredCountries.filter(c => !testForm.selectedCountries.includes(c.code)).map(country => (
+                    <div 
+                      key={country.code} 
+                      className="text-sm py-1 px-2 hover-elevate rounded cursor-pointer"
+                      onClick={() => toggleCountry(country.code)}
+                    >
+                      {country.name}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+                onClick={() => setTestForm(prev => ({ ...prev, selectedCountries: COUNTRIES.map(c => c.code) }))}
+              >
+                Add all
+              </Button>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Manual numbers:</Label>
+              <Textarea
+                value={testForm.manualNumbers}
+                onChange={(e) => setTestForm(prev => ({ ...prev, manualNumbers: e.target.value }))}
+                placeholder="One number per line..."
+                className="h-72 mt-2 resize-none"
+              />
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="addToDbDialog"
+                    checked={testForm.addToDb}
+                    onCheckedChange={(checked) => setTestForm(prev => ({ ...prev, addToDb: !!checked }))}
+                  />
+                  <Label htmlFor="addToDbDialog" className="text-sm">Add numbers to database</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useDbNumbersDialog"
+                    checked={testForm.useDbNumbers}
+                    onCheckedChange={(checked) => setTestForm(prev => ({ ...prev, useDbNumbers: !!checked }))}
+                  />
+                  <Label htmlFor="useDbNumbersDialog" className="text-sm">Use numbers from DB</Label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowDestinationDialog(false)} data-testid="button-save-destinations">
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAniDialog} onOpenChange={setShowAniDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>ANI Selection:</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label className="text-sm font-medium">Selected destinations:</Label>
+              <div className="relative mt-2">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search..." className="pl-8" />
+              </div>
+              <ScrollArea className="h-64 border rounded-md mt-2">
+                <div className="p-2">
+                  {testForm.aniCountries.map(code => {
+                    const country = COUNTRIES.find(c => c.code === code);
+                    return (
+                      <div key={code} className="flex items-center justify-between py-1 px-2 hover-elevate rounded">
+                        <span className="text-sm">{country?.name}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-auto py-0 px-1 text-muted-foreground"
+                          onClick={() => toggleAniCountry(code)}
+                        >
+                          remove
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+              <Button variant="outline" size="sm" className="mt-2" onClick={() => setTestForm(prev => ({ ...prev, aniCountries: [] }))}>
+                Remove all
+              </Button>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Not selected destinations:</Label>
+              <div className="relative mt-2">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search..." 
+                  className="pl-8"
+                  value={aniCountrySearch}
+                  onChange={(e) => setAniCountrySearch(e.target.value)}
+                />
+              </div>
+              <ScrollArea className="h-64 border rounded-md mt-2">
+                <div className="p-2">
+                  {COUNTRIES.filter(c => 
+                    !testForm.aniCountries.includes(c.code) &&
+                    (!aniCountrySearch || c.name.toLowerCase().includes(aniCountrySearch.toLowerCase()))
+                  ).map(country => (
+                    <div 
+                      key={country.code} 
+                      className="text-sm py-1 px-2 hover-elevate rounded cursor-pointer"
+                      onClick={() => toggleAniCountry(country.code)}
+                    >
+                      {country.name}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+                onClick={() => setTestForm(prev => ({ ...prev, aniCountries: COUNTRIES.map(c => c.code) }))}
+              >
+                Add all
+              </Button>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Manual ANI number:</Label>
+              <Input
+                value={testForm.aniNumber}
+                onChange={(e) => setTestForm(prev => ({ ...prev, aniNumber: e.target.value }))}
+                placeholder="+1234567890"
+                className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Enter a specific ANI number to use for all test calls
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={() => {
+                setTestForm(prev => ({ ...prev, aniMode: "select" }));
+                setShowAniDialog(false);
+              }} 
+              data-testid="button-save-ani"
+            >
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

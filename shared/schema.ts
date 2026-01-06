@@ -1204,6 +1204,111 @@ export const sipTestAlerts = pgTable("sip_test_alerts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// SIP Test Audio Files (IVR recordings for quality tests)
+export const sipTestAudioFiles = pgTable("sip_test_audio_files", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  filename: text("filename").notNull(),
+  fileUrl: text("file_url"),
+  fileSize: integer("file_size"),
+  duration: integer("duration"),
+  format: text("format").default("wav"),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// SIP Test Numbers (crowdsourced database of test numbers)
+export const sipTestNumbers = pgTable("sip_test_numbers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  countryCode: text("country_code").notNull(),
+  countryName: text("country_name").notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  numberType: text("number_type").default("landline"),
+  carrier: text("carrier"),
+  verified: boolean("verified").default(false),
+  lastTestedAt: timestamp("last_tested_at"),
+  successRate: decimal("success_rate", { precision: 5, scale: 2 }),
+  avgMos: decimal("avg_mos", { precision: 3, scale: 2 }),
+  avgPdd: integer("avg_pdd"),
+  testCount: integer("test_count").default(0),
+  contributedBy: varchar("contributed_by").references(() => customers.id),
+  isPublic: boolean("is_public").default(true),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// SIP Test Runs (actual test execution records)
+export const sipTestRuns = pgTable("sip_test_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  testName: text("test_name"),
+  testMode: text("test_mode").default("standard"),
+  routeSource: text("route_source").notNull(),
+  tierId: varchar("tier_id").references(() => voiceTiers.id),
+  supplierId: varchar("supplier_id").references(() => class4Carriers.id),
+  supplierIds: text("supplier_ids").array(),
+  destinations: text("destinations").array(),
+  countryFilters: text("country_filters").array(),
+  manualNumbers: text("manual_numbers").array(),
+  useDbNumbers: boolean("use_db_numbers").default(false),
+  addToDb: boolean("add_to_db").default(false),
+  codec: text("codec").default("G711"),
+  audioFileId: varchar("audio_file_id").references(() => sipTestAudioFiles.id),
+  aniMode: text("ani_mode").default("any"),
+  aniNumber: text("ani_number"),
+  aniCountries: text("ani_countries").array(),
+  callsCount: integer("calls_count").default(5),
+  maxDuration: integer("max_duration").default(30),
+  capacity: integer("capacity").default(1),
+  status: sipTestStatusEnum("status").default("pending"),
+  totalCalls: integer("total_calls").default(0),
+  successfulCalls: integer("successful_calls").default(0),
+  failedCalls: integer("failed_calls").default(0),
+  avgMos: decimal("avg_mos", { precision: 3, scale: 2 }),
+  avgPdd: integer("avg_pdd"),
+  avgJitter: decimal("avg_jitter", { precision: 10, scale: 2 }),
+  avgPacketLoss: decimal("avg_packet_loss", { precision: 5, scale: 2 }),
+  totalDurationSec: integer("total_duration_sec").default(0),
+  totalCost: decimal("total_cost", { precision: 14, scale: 6 }).default("0"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// SIP Test Run Results (individual call results within a test run)
+export const sipTestRunResults = pgTable("sip_test_run_results", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  testRunId: varchar("test_run_id").references(() => sipTestRuns.id).notNull(),
+  callIndex: integer("call_index").notNull(),
+  destination: text("destination").notNull(),
+  aniUsed: text("ani_used"),
+  supplierName: text("supplier_name"),
+  tierName: text("tier_name"),
+  status: sipTestStatusEnum("status").default("pending"),
+  result: sipTestResultEnum("result"),
+  sipResponseCode: integer("sip_response_code"),
+  pddMs: integer("pdd_ms"),
+  mosScore: decimal("mos_score", { precision: 3, scale: 2 }),
+  jitterMs: decimal("jitter_ms", { precision: 10, scale: 2 }),
+  packetLossPercent: decimal("packet_loss_percent", { precision: 5, scale: 2 }),
+  latencyMs: integer("latency_ms"),
+  codecUsed: text("codec_used"),
+  durationSec: integer("duration_sec"),
+  callCost: decimal("call_cost", { precision: 14, scale: 6 }),
+  ratePerMin: decimal("rate_per_min", { precision: 14, scale: 6 }),
+  errorMessage: text("error_message"),
+  sipTrace: text("sip_trace"),
+  rtpStats: jsonb("rtp_stats"),
+  connexcsCallId: text("connexcs_call_id"),
+  testedAt: timestamp("tested_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // ==================== CLASS 4 SOFTSWITCH ENHANCEMENTS ====================
 
 export const class4Customers = pgTable("class4_customers", {
@@ -1632,6 +1737,10 @@ export const insertLedgerEntrySchema = createInsertSchema(ledgerEntries).omit({ 
 export const insertSipTestConfigSchema = createInsertSchema(sipTestConfigs).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSipTestScheduleSchema = createInsertSchema(sipTestSchedules).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSipTestResultSchema = createInsertSchema(sipTestResults).omit({ id: true, createdAt: true });
+export const insertSipTestAudioFileSchema = createInsertSchema(sipTestAudioFiles).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSipTestNumberSchema = createInsertSchema(sipTestNumbers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSipTestRunSchema = createInsertSchema(sipTestRuns).omit({ id: true, createdAt: true });
+export const insertSipTestRunResultSchema = createInsertSchema(sipTestRunResults).omit({ id: true, createdAt: true });
 export const insertClass4CustomerSchema = createInsertSchema(class4Customers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertClass4CarrierSchema = createInsertSchema(class4Carriers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertClass4ProviderRateCardSchema = createInsertSchema(class4ProviderRateCards).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1805,6 +1914,14 @@ export type InsertSipTestResult = z.infer<typeof insertSipTestResultSchema>;
 export type SipTestResult = typeof sipTestResults.$inferSelect;
 export type SipTestSyncPermission = typeof sipTestSyncPermissions.$inferSelect;
 export type SipTestAlert = typeof sipTestAlerts.$inferSelect;
+export type InsertSipTestAudioFile = z.infer<typeof insertSipTestAudioFileSchema>;
+export type SipTestAudioFile = typeof sipTestAudioFiles.$inferSelect;
+export type InsertSipTestNumber = z.infer<typeof insertSipTestNumberSchema>;
+export type SipTestNumber = typeof sipTestNumbers.$inferSelect;
+export type InsertSipTestRun = z.infer<typeof insertSipTestRunSchema>;
+export type SipTestRun = typeof sipTestRuns.$inferSelect;
+export type InsertSipTestRunResult = z.infer<typeof insertSipTestRunResultSchema>;
+export type SipTestRunResult = typeof sipTestRunResults.$inferSelect;
 
 // Class 4 Softswitch types
 export type InsertClass4Customer = z.infer<typeof insertClass4CustomerSchema>;
