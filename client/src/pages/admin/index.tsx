@@ -53,6 +53,7 @@ import AiVoiceAgentsPage from "./ai-voice-agents";
 import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./class4-softswitch";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
+import { GlobalSettingsPlatform, GlobalSettingsIntegrations, GlobalSettingsCurrencies, GlobalSettingsLocalization } from "./global-settings";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -71,11 +72,11 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/voice-tiers": { section: "voip", subItem: "voice-tiers" },
   "/admin/codecs": { section: "voip", subItem: "codecs" },
   "/admin/channel-plans": { section: "voip", subItem: "channel-plans" },
-  "/admin/carriers": { section: "voip", subItem: "carriers" },
+  "/admin/carriers": { section: "carriers", subItem: "carriers" },
   "/admin/routes": { section: "voip", subItem: "routes" },
-  "/admin/did-countries": { section: "voip", subItem: "did-countries" },
-  "/admin/did-providers": { section: "voip", subItem: "did-providers" },
-  "/admin/did-inventory": { section: "voip", subItem: "did-inventory" },
+  "/admin/did-countries": { section: "did", subItem: "did-countries" },
+  "/admin/did-providers": { section: "did", subItem: "did-providers" },
+  "/admin/did-inventory": { section: "did", subItem: "did-inventory" },
   "/admin/customers": { section: "customers", subItem: "customers" },
   "/admin/categories": { section: "customers", subItem: "categories" },
   "/admin/groups": { section: "customers", subItem: "groups" },
@@ -115,6 +116,10 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/settings/webhooks": { section: "settings", subItem: "webhooks" },
   "/admin/settings/integrations": { section: "settings", subItem: "integrations" },
   "/admin/activity": { section: "dashboard", subItem: "activity" },
+  "/admin/global-settings/platform": { section: "global-settings", subItem: "global-platform" },
+  "/admin/global-settings/integrations": { section: "global-settings", subItem: "global-integrations" },
+  "/admin/global-settings/currencies": { section: "global-settings", subItem: "global-currencies" },
+  "/admin/global-settings/localization": { section: "global-settings", subItem: "global-localization" },
 };
 
 export default function AdminLayout() {
@@ -227,6 +232,10 @@ export default function AdminLayout() {
                 <Route path="/admin/settings/webhooks" component={SettingsPage} />
                 <Route path="/admin/settings/integrations" component={IntegrationsPage} />
                 <Route path="/admin/activity" component={LiveActivityPage} />
+                <Route path="/admin/global-settings/platform" component={GlobalSettingsPlatform} />
+                <Route path="/admin/global-settings/integrations" component={GlobalSettingsIntegrations} />
+                <Route path="/admin/global-settings/currencies" component={GlobalSettingsCurrencies} />
+                <Route path="/admin/global-settings/localization" component={GlobalSettingsLocalization} />
                 <Route>
                   <PlaceholderPage title="Page Not Found" />
                 </Route>

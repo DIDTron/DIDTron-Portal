@@ -260,9 +260,9 @@ export function SecondarySidebar() {
         itemMap.delete(id);
       }
     }
-    for (const item of itemMap.values()) {
+    Array.from(itemMap.values()).forEach((item) => {
       ordered.push(item);
-    }
+    });
     return ordered;
   }, [activeSection, sectionItemOrder, config.items]);
 

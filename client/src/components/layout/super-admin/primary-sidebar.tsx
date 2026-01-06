@@ -97,7 +97,8 @@ export function PrimarySidebar() {
     toggleBothSidebars,
     openSecondarySidebar,
     primarySectionOrder,
-    setPrimarySectionOrder
+    setPrimarySectionOrder,
+    sectionItemOrder
   } = useSuperAdminTabs();
 
   const sensors = useSensors(
@@ -124,9 +125,9 @@ export function PrimarySidebar() {
         sectionMap.delete(id);
       }
     }
-    for (const section of sectionMap.values()) {
+    Array.from(sectionMap.values()).forEach((section) => {
       ordered.push(section);
-    }
+    });
     return ordered;
   }, [primarySectionOrder]);
 
@@ -151,7 +152,7 @@ export function PrimarySidebar() {
       setActiveSubItem(null);
       setLocation("/admin");
     } else {
-      const firstSubItem = getFirstSubItemForSection(section.id);
+      const firstSubItem = getFirstSubItemForSection(section.id, sectionItemOrder);
       if (firstSubItem) {
         setActiveSubItem(firstSubItem.id);
         openTab({
@@ -221,29 +222,98 @@ export function PrimarySidebar() {
   );
 }
 
-interface SubItem {
-  id: string;
-  label: string;
-  route: string;
-}
+const sectionDefaultItems: Record<string, { id: string; label: string; route: string }[]> = {
+  dashboard: [
+    { id: "overview", label: "Overview", route: "/admin" },
+    { id: "activity", label: "Live Activity", route: "/admin/activity" },
+  ],
+  voip: [
+    { id: "pops", label: "POPs", route: "/admin/pops" },
+    { id: "voice-tiers", label: "Voice Tiers", route: "/admin/voice-tiers" },
+    { id: "codecs", label: "Codecs", route: "/admin/codecs" },
+    { id: "channel-plans", label: "Channel Plans", route: "/admin/channel-plans" },
+    { id: "routes", label: "Routes", route: "/admin/routes" },
+  ],
+  carriers: [{ id: "carriers", label: "Carriers", route: "/admin/carriers" }],
+  did: [
+    { id: "did-countries", label: "DID Countries", route: "/admin/did-countries" },
+    { id: "did-providers", label: "DID Providers", route: "/admin/did-providers" },
+    { id: "did-inventory", label: "DID Inventory", route: "/admin/did-inventory" },
+  ],
+  customers: [
+    { id: "customers", label: "Customers", route: "/admin/customers" },
+    { id: "categories", label: "Categories", route: "/admin/categories" },
+    { id: "groups", label: "Groups", route: "/admin/groups" },
+    { id: "kyc", label: "KYC Requests", route: "/admin/kyc" },
+  ],
+  billing: [
+    { id: "invoices", label: "Invoices", route: "/admin/invoices" },
+    { id: "payments", label: "Payments", route: "/admin/payments" },
+    { id: "currencies", label: "Currencies", route: "/admin/currencies" },
+    { id: "referrals", label: "Referrals", route: "/admin/referrals" },
+    { id: "promo-codes", label: "Promo Codes", route: "/admin/promo-codes" },
+    { id: "bonuses", label: "Bonuses", route: "/admin/bonuses" },
+  ],
+  marketing: [
+    { id: "social-accounts", label: "Social Accounts", route: "/admin/social-accounts" },
+    { id: "social-posts", label: "Social Posts", route: "/admin/social-posts" },
+    { id: "email-templates", label: "Email Templates", route: "/admin/email-templates" },
+  ],
+  monitoring: [
+    { id: "metrics", label: "Metrics", route: "/admin/metrics" },
+    { id: "alerts", label: "Alerts", route: "/admin/alerts" },
+    { id: "rules", label: "Rules", route: "/admin/rules" },
+  ],
+  "sip-tester": [
+    { id: "sip-new-test", label: "New Test", route: "/admin/sip-tester/new" },
+    { id: "sip-history", label: "History", route: "/admin/sip-tester/history" },
+    { id: "sip-settings", label: "Settings", route: "/admin/sip-tester/settings" },
+  ],
+  ai: [{ id: "ai-voice-agents", label: "AI Voice Agents", route: "/admin/ai-voice-agents" }],
+  softswitch: [
+    { id: "class4-customers", label: "Class 4 Customers", route: "/admin/class4-customers" },
+    { id: "class4-carriers", label: "Carriers", route: "/admin/class4-carriers" },
+    { id: "class4-rate-cards", label: "Rate Cards", route: "/admin/class4-rate-cards" },
+  ],
+  cms: [
+    { id: "pages", label: "Pages", route: "/admin/pages" },
+    { id: "website-sections", label: "Website Sections", route: "/admin/website-sections" },
+    { id: "login-pages", label: "Portal Logins", route: "/admin/login-pages" },
+    { id: "site-settings", label: "Site Settings", route: "/admin/site-settings" },
+    { id: "themes", label: "Themes", route: "/admin/themes" },
+    { id: "media", label: "Media Library", route: "/admin/media" },
+    { id: "documentation", label: "Documentation", route: "/admin/documentation" },
+  ],
+  admin: [
+    { id: "admin-users", label: "Admin Users", route: "/admin/admin-users" },
+    { id: "roles", label: "Roles", route: "/admin/roles" },
+    { id: "audit-logs", label: "Audit Logs", route: "/admin/audit-logs" },
+    { id: "tickets", label: "Support Tickets", route: "/admin/tickets" },
+  ],
+  "global-settings": [
+    { id: "global-platform", label: "Platform", route: "/admin/global-settings/platform" },
+    { id: "global-integrations", label: "Integrations", route: "/admin/global-settings/integrations" },
+    { id: "global-currencies", label: "Currencies", route: "/admin/global-settings/currencies" },
+    { id: "global-localization", label: "Localization", route: "/admin/global-settings/localization" },
+  ],
+  settings: [
+    { id: "general", label: "General", route: "/admin/settings/general" },
+    { id: "api-keys", label: "API Keys", route: "/admin/settings/api-keys" },
+    { id: "webhooks", label: "Webhooks", route: "/admin/settings/webhooks" },
+    { id: "integrations", label: "Integrations", route: "/admin/settings/integrations" },
+  ],
+};
 
-function getFirstSubItemForSection(sectionId: string): SubItem | null {
-  const sectionItems: Record<string, SubItem> = {
-    voip: { id: "pops", label: "POPs", route: "/admin/pops" },
-    carriers: { id: "carriers", label: "Carriers", route: "/admin/carriers" },
-    did: { id: "did-countries", label: "DID Countries", route: "/admin/did-countries" },
-    customers: { id: "customers", label: "Customers", route: "/admin/customers" },
-    billing: { id: "invoices", label: "Invoices", route: "/admin/invoices" },
-    marketing: { id: "social-accounts", label: "Social Accounts", route: "/admin/social-accounts" },
-    monitoring: { id: "metrics", label: "Metrics", route: "/admin/metrics" },
-    "sip-tester": { id: "sip-new-test", label: "New Test", route: "/admin/sip-tester/new" },
-    ai: { id: "ai-voice-agents", label: "AI Voice Agents", route: "/admin/ai-voice-agents" },
-    softswitch: { id: "class4-customers", label: "Class 4 Customers", route: "/admin/class4-customers" },
-    cms: { id: "pages", label: "Pages", route: "/admin/pages" },
-    admin: { id: "admin-users", label: "Admin Users", route: "/admin/admin-users" },
-    "global-settings": { id: "global-platform", label: "Platform", route: "/admin/global-settings/platform" },
-    settings: { id: "general", label: "General", route: "/admin/settings/general" },
-  };
+export function getFirstSubItemForSection(sectionId: string, sectionItemOrder?: Record<string, string[]>): { id: string; label: string; route: string } | null {
+  const defaultItems = sectionDefaultItems[sectionId];
+  if (!defaultItems || defaultItems.length === 0) return null;
+
+  const savedOrder = sectionItemOrder?.[sectionId];
+  if (savedOrder && savedOrder.length > 0) {
+    const firstId = savedOrder[0];
+    const item = defaultItems.find(i => i.id === firstId);
+    if (item) return item;
+  }
   
-  return sectionItems[sectionId] || null;
+  return defaultItems[0];
 }
