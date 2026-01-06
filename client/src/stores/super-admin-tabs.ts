@@ -16,6 +16,8 @@ interface SuperAdminTabsState {
   activeSubItem: string | null;
   primarySidebarOpen: boolean;
   secondarySidebarOpen: boolean;
+  primarySectionOrder: string[];
+  sectionItemOrder: Record<string, string[]>;
   openTab: (tab: WorkspaceTab) => void;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
@@ -29,6 +31,8 @@ interface SuperAdminTabsState {
   toggleSecondarySidebar: () => void;
   toggleBothSidebars: () => void;
   openSecondarySidebar: () => void;
+  setPrimarySectionOrder: (order: string[]) => void;
+  setSectionItemOrder: (sectionId: string, order: string[]) => void;
 }
 
 export const useSuperAdminTabs = create<SuperAdminTabsState>()(
@@ -40,6 +44,8 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
       activeSubItem: null,
       primarySidebarOpen: true,
       secondarySidebarOpen: true,
+      primarySectionOrder: [],
+      sectionItemOrder: {},
 
       openTab: (tab: WorkspaceTab) => {
         const { tabs } = get();
@@ -144,6 +150,20 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
       openSecondarySidebar: () => {
         set({ secondarySidebarOpen: true });
       },
+
+      setPrimarySectionOrder: (order: string[]) => {
+        set({ primarySectionOrder: order });
+      },
+
+      setSectionItemOrder: (sectionId: string, order: string[]) => {
+        const { sectionItemOrder } = get();
+        set({ 
+          sectionItemOrder: { 
+            ...sectionItemOrder, 
+            [sectionId]: order 
+          } 
+        });
+      },
     }),
     {
       name: 'didtron-admin-tabs',
@@ -151,6 +171,8 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
         tabs: state.tabs,
         activeTabId: state.activeTabId,
         activeSection: state.activeSection,
+        primarySectionOrder: state.primarySectionOrder,
+        sectionItemOrder: state.sectionItemOrder,
       }),
     }
   )
