@@ -39,8 +39,13 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "voice-tiers", label: "Voice Tiers", route: "/admin/voice-tiers", icon: Layers },
       { id: "codecs", label: "Codecs", route: "/admin/codecs", icon: Radio },
       { id: "channel-plans", label: "Channel Plans", route: "/admin/channel-plans", icon: CreditCard },
-      { id: "carriers", label: "Carriers", route: "/admin/carriers", icon: Building2 },
       { id: "routes", label: "Routes", route: "/admin/routes", icon: RouteIcon },
+    ],
+  },
+  carriers: {
+    title: "Carriers",
+    items: [
+      { id: "carriers", label: "Carriers", route: "/admin/carriers", icon: Building2 },
     ],
   },
   did: {
