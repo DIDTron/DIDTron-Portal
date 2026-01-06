@@ -101,7 +101,7 @@ function NewTestPage() {
   const [addToDb, setAddToDb] = useState(false);
   const [useFromDb, setUseFromDb] = useState(false);
   const [codec, setCodec] = useState("G729");
-  const [audioFile, setAudioFile] = useState("");
+  const [audioFile, setAudioFile] = useState("none");
   const [capacity, setCapacity] = useState("1");
   const [aniMode, setAniMode] = useState("any");
   const [showAniPopup, setShowAniPopup] = useState(false);
@@ -136,7 +136,7 @@ function NewTestPage() {
         addToDb,
         useDbNumbers: useFromDb,
         codec,
-        audioFileId: audioFile || null,
+        audioFileId: audioFile === "none" ? null : audioFile,
         aniMode,
         aniCountries,
         capacity: parseInt(capacity),
@@ -357,7 +357,7 @@ function NewTestPage() {
                     <SelectValue placeholder="Select audio file" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {audioFiles.map((a) => (
                       <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                     ))}
