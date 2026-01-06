@@ -6348,7 +6348,14 @@ export async function registerRoutes(
                 body: JSON.stringify({ username: creds.username, password: creds.password })
               });
               if (response.ok) {
-                testResult = { success: true, message: "Connected successfully" };
+                const data = await response.json();
+                if (data.auth === false) {
+                  testResult = { success: false, message: "Invalid username or password" };
+                } else if (data.jwt || data.token) {
+                  testResult = { success: true, message: "Connected successfully" };
+                } else {
+                  testResult = { success: false, message: "Unexpected response from ConnexCS" };
+                }
               } else {
                 testResult = { success: false, message: `Authentication failed: ${response.status}` };
               }
