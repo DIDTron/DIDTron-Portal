@@ -2988,53 +2988,35 @@ export class MemStorage implements IStorage {
     return this.websiteSections.delete(id);
   }
 
-  // Integrations
+  // Integrations - delegated to database repository
   async getIntegrations(): Promise<Integration[]> {
-    return Array.from(this.integrations.values());
+    const { integrationsRepository } = await import("./integrations-repository");
+    return integrationsRepository.getIntegrations();
   }
 
   async getIntegration(id: string): Promise<Integration | undefined> {
-    return this.integrations.get(id);
+    const { integrationsRepository } = await import("./integrations-repository");
+    return integrationsRepository.getIntegration(id);
   }
 
   async getIntegrationByProvider(provider: string): Promise<Integration | undefined> {
-    return Array.from(this.integrations.values()).find(i => i.provider === provider);
+    const { integrationsRepository } = await import("./integrations-repository");
+    return integrationsRepository.getIntegrationByProvider(provider);
   }
 
   async createIntegration(integration: InsertIntegration): Promise<Integration> {
-    const id = randomUUID();
-    const now = new Date();
-    const i: Integration = {
-      id,
-      provider: integration.provider,
-      displayName: integration.displayName,
-      description: integration.description ?? null,
-      category: integration.category,
-      icon: integration.icon ?? null,
-      status: integration.status ?? "not_configured",
-      isEnabled: integration.isEnabled ?? false,
-      credentials: integration.credentials ?? null,
-      settings: integration.settings ?? null,
-      lastTestedAt: integration.lastTestedAt ?? null,
-      lastSyncedAt: integration.lastSyncedAt ?? null,
-      testResult: integration.testResult ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.integrations.set(id, i);
-    return i;
+    const { integrationsRepository } = await import("./integrations-repository");
+    return integrationsRepository.createIntegration(integration);
   }
 
   async updateIntegration(id: string, data: Partial<InsertIntegration>): Promise<Integration | undefined> {
-    const integration = this.integrations.get(id);
-    if (!integration) return undefined;
-    const updated = { ...integration, ...data, updatedAt: new Date() };
-    this.integrations.set(id, updated);
-    return updated;
+    const { integrationsRepository } = await import("./integrations-repository");
+    return integrationsRepository.updateIntegration(id, data);
   }
 
   async deleteIntegration(id: string): Promise<boolean> {
-    return this.integrations.delete(id);
+    const { integrationsRepository } = await import("./integrations-repository");
+    return integrationsRepository.deleteIntegration(id);
   }
 
   // Documentation Categories

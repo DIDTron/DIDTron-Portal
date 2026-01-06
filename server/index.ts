@@ -6,6 +6,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { hashPassword } from "./auth";
+import { integrationsRepository } from "./integrations-repository";
 
 const app = express();
 const httpServer = createServer(app);
@@ -789,9 +790,19 @@ Failed deliveries are retried:
   log(`Documentation complete: ${totalCategories} categories, ${totalArticles} articles`, "seed");
 }
 
+async function seedIntegrations() {
+  try {
+    await integrationsRepository.seedIntegrationsIfMissing();
+    log("Integrations seeding complete", "seed");
+  } catch (error) {
+    log(`Failed to seed integrations: ${error}`, "seed");
+  }
+}
+
 (async () => {
   await seedSuperAdmin();
   await seedDocumentation();
+  await seedIntegrations();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
