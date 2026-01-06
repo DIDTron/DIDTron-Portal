@@ -353,6 +353,17 @@ class ConnexCSClient {
     return this.request<ConnexCSCDR[]>("GET", `/cdr${queryString}`);
   }
 
+  async executeCDRQuery(sql: string): Promise<ConnexCSCDR[]> {
+    if (this.mockMode) {
+      return [
+        { id: "mock-1", call_id: "abc123", destination: "15559876543", duration: 120, cost: 0.024, status: "ANSWERED", timestamp: new Date().toISOString() },
+        { id: "mock-2", call_id: "def456", destination: "442071234567", duration: 90, cost: 0.045, status: "ANSWERED", timestamp: new Date().toISOString() },
+        { id: "mock-3", call_id: "ghi789", destination: "15551112222", duration: 0, cost: 0, status: "NO ANSWER", timestamp: new Date().toISOString() },
+      ];
+    }
+    return this.request<ConnexCSCDR[]>("POST", "/cdr", { sql });
+  }
+
   async getMetrics(): Promise<ConnexCSMetrics> {
     return this.request<ConnexCSMetrics>("GET", "/metrics");
   }

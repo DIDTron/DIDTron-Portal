@@ -4070,6 +4070,43 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/connexcs/sql", async (req, res) => {
+    try {
+      await connexcs.loadCredentialsFromStorage(storage);
+      if (connexcs.isMockMode()) {
+        res.json({
+          success: true,
+          data: [
+            { id: "mock-1", call_id: "abc123", src: "15551234567", dst: "15559876543", duration: 120, billsec: 118, dt: new Date().toISOString(), cost: 0.024, status: "ANSWERED" },
+            { id: "mock-2", call_id: "def456", src: "15551234567", dst: "442071234567", duration: 90, billsec: 87, dt: new Date().toISOString(), cost: 0.045, status: "ANSWERED" },
+            { id: "mock-3", call_id: "ghi789", src: "15559998888", dst: "15551112222", duration: 0, billsec: 0, dt: new Date().toISOString(), cost: 0, status: "NO ANSWER" },
+          ],
+          rowCount: 3,
+          mockMode: true,
+        });
+        return;
+      }
+      
+      const { sql } = req.body;
+      if (!sql || typeof sql !== "string") {
+        res.status(400).json({ success: false, error: "SQL query is required" });
+        return;
+      }
+      
+      const result = await connexcs.executeCDRQuery(sql);
+      res.json({ 
+        success: true, 
+        data: result,
+        rowCount: result.length,
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Query failed" 
+      });
+    }
+  });
+
   // ==================== CARRIERS ====================
 
   app.get("/api/carriers", async (req, res) => {

@@ -1,0 +1,58 @@
+https://www.npmjs.com/package/connexcs-tools
+
+how this can help us in our work
+
+
+Show less
+The user is asking about the connexcs-tools npm package. Let me search for information about what this package does and how it could help with our ConnexCS integration.
+
+This is very useful! The connexcs-tools npm package provides several key features that could help us:
+
+SQL Query Execution - Direct CDR database queries
+Key-Value Store Operations - For configuration storage
+ScriptForge Execution - Run server-side scripts
+Environment Variables - Server-side env management
+JWT-based Authentication - Better auth handling than what we currently have
+Let me explain to the user how this could help.
+
+This is a great find! The connexcs-tools package is an official ConnexCS CLI tool that could significantly improve our integration. Here's how it can help:
+
+Key Benefits for DIDTron
+1. Direct SQL/CDR Queries
+Instead of using the REST API for CDRs, we can execute SQL queries directly:
+
+cx sql "SELECT * FROM cdr WHERE dt > DATE_SUB(NOW(), INTERVAL 1 DAY) LIMIT 100"
+This gives us much more flexibility for filtering, aggregating, and analyzing call data.
+
+2. Better Authentication
+The package uses JWT tokens with automatic 30-day refresh - more secure than storing username/password:
+
+Automatic token renewal when < 15 days remaining
+Short-lived access tokens for each request
+3. Key-Value Store
+We can use ConnexCS's built-in KV store for:
+
+Caching rate cards
+Storing customer configurations
+Syncing settings between DIDTron and ConnexCS
+4. ScriptForge Integration
+Run server-side scripts directly on ConnexCS for:
+
+Custom rating logic
+Real-time call processing
+Automated provisioning
+5. Environment Variables
+Manage ConnexCS server-side configuration remotely.
+
+Should I Integrate This?
+I can replace our current manual API implementation with this official package. It would:
+
+Simplify authentication (JWT instead of Basic Auth)
+Add direct SQL access for better CDR queries
+Provide KV store for caching
+Be more maintainable (official ConnexCS support)
+Would you like me to integrate connexcs-tools into DIDTron to replace our current custom ConnexCS API wrapper?
+
+Worked for 26 seconds
+Would you like me to integrate connexcs-tools into DIDTron to replace our current custom ConnexCS API wrapper?
+yes do that but create a page for it under settings --> new page name it ( Connexcs status ) inside of it show me the details
