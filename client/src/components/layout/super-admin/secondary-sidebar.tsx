@@ -80,7 +80,14 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "metrics", label: "Metrics", route: "/admin/metrics", icon: BarChart3 },
       { id: "alerts", label: "Alerts", route: "/admin/alerts", icon: Bell },
       { id: "rules", label: "Rules", route: "/admin/rules", icon: Settings },
-      { id: "sip-tester", label: "SIP Tester", route: "/admin/sip-tester", icon: Cpu },
+    ],
+  },
+  "sip-tester": {
+    title: "SIP Tester",
+    items: [
+      { id: "sip-tester", label: "Run Tests", route: "/admin/sip-tester", icon: Cpu },
+      { id: "sip-audio", label: "Audio Files", route: "/admin/sip-tester?tab=audio", icon: Phone },
+      { id: "sip-numbers", label: "Number Database", route: "/admin/sip-tester?tab=numbers", icon: Database },
     ],
   },
   ai: {

@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network } from "lucide-react";
+import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
@@ -19,6 +19,7 @@ export const navSections: NavSection[] = [
   { id: "billing", label: "Billing", icon: CreditCard, defaultRoute: "/admin/invoices" },
   { id: "marketing", label: "Marketing", icon: Megaphone, defaultRoute: "/admin/social-accounts" },
   { id: "monitoring", label: "Monitoring", icon: BarChart3, defaultRoute: "/admin/metrics" },
+  { id: "sip-tester", label: "SIP Tester", icon: Cpu, defaultRoute: "/admin/sip-tester" },
   { id: "ai", label: "AI", icon: Bot, defaultRoute: "/admin/ai-voice-agents" },
   { id: "softswitch", label: "Softswitch", icon: Network, defaultRoute: "/admin/class4-customers" },
   { id: "cms", label: "CMS", icon: FileText, defaultRoute: "/admin/pages" },
@@ -134,6 +135,7 @@ function getFirstSubItemForSection(sectionId: string): SubItem | null {
     billing: { id: "invoices", label: "Invoices", route: "/admin/invoices" },
     marketing: { id: "social-accounts", label: "Social Accounts", route: "/admin/social-accounts" },
     monitoring: { id: "metrics", label: "Metrics", route: "/admin/metrics" },
+    "sip-tester": { id: "sip-tester", label: "SIP Tester", route: "/admin/sip-tester" },
     ai: { id: "ai-voice-agents", label: "AI Voice Agents", route: "/admin/ai-voice-agents" },
     softswitch: { id: "class4-customers", label: "Class 4 Customers", route: "/admin/class4-customers" },
     cms: { id: "pages", label: "Pages", route: "/admin/pages" },
