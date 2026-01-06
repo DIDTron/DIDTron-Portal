@@ -62,6 +62,10 @@ const categoryLabels: Record<string, string> = {
 };
 
 const credentialFields: Record<string, { label: string; type: string; key: string }[]> = {
+  connexcs: [
+    { label: "Username", type: "text", key: "username" },
+    { label: "Password", type: "password", key: "password" },
+  ],
   stripe: [
     { label: "Secret Key", type: "password", key: "secret_key" },
     { label: "Publishable Key", type: "text", key: "publishable_key" },
