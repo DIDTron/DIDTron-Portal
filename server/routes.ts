@@ -3955,6 +3955,121 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/connexcs/status/detailed", async (req, res) => {
+    try {
+      await connexcs.loadCredentialsFromStorage(storage);
+      const mockMode = connexcs.isMockMode();
+      
+      if (mockMode) {
+        res.json({
+          connected: false,
+          mockMode: true,
+          message: "Running in mock mode - no credentials configured",
+          stats: {
+            carriers: 3,
+            customers: 3,
+            rateCards: 3,
+            routes: 3,
+            cdrs: 20,
+          },
+        });
+      } else {
+        try {
+          const [carriers, customers, rateCards, routes] = await Promise.all([
+            connexcs.getCarriers(),
+            connexcs.getCustomers(),
+            connexcs.getRateCards(),
+            connexcs.getRoutes(),
+          ]);
+          
+          res.json({
+            connected: true,
+            mockMode: false,
+            message: "Connected to ConnexCS",
+            lastSync: new Date().toISOString(),
+            stats: {
+              carriers: carriers.length,
+              customers: customers.length,
+              rateCards: rateCards.length,
+              routes: routes.length,
+              cdrs: 0,
+            },
+          });
+        } catch (apiError) {
+          res.json({
+            connected: false,
+            mockMode: false,
+            message: "Failed to connect to ConnexCS API",
+            error: apiError instanceof Error ? apiError.message : "Connection error",
+            stats: { carriers: 0, customers: 0, rateCards: 0, routes: 0, cdrs: 0 },
+          });
+        }
+      }
+    } catch (error) {
+      res.status(500).json({
+        connected: false,
+        mockMode: true,
+        message: "Error checking ConnexCS status",
+        error: error instanceof Error ? error.message : "Unknown error",
+        stats: { carriers: 0, customers: 0, rateCards: 0, routes: 0, cdrs: 0 },
+      });
+    }
+  });
+
+  app.post("/api/connexcs/test-connection", async (req, res) => {
+    try {
+      await connexcs.loadCredentialsFromStorage(storage);
+      if (connexcs.isMockMode()) {
+        res.status(400).json({ error: "Cannot test connection in mock mode" });
+        return;
+      }
+      
+      const carriers = await connexcs.getCarriers();
+      res.json({ 
+        success: true, 
+        message: `Connection successful - found ${carriers.length} carriers` 
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Connection test failed" 
+      });
+    }
+  });
+
+  app.post("/api/connexcs/sync", async (req, res) => {
+    try {
+      await connexcs.loadCredentialsFromStorage(storage);
+      if (connexcs.isMockMode()) {
+        res.status(400).json({ error: "Cannot sync in mock mode" });
+        return;
+      }
+      
+      const [carriers, customers, rateCards, routes] = await Promise.all([
+        connexcs.getCarriers(),
+        connexcs.getCustomers(),
+        connexcs.getRateCards(),
+        connexcs.getRoutes(),
+      ]);
+      
+      res.json({ 
+        success: true, 
+        message: "Data synchronized successfully",
+        synced: {
+          carriers: carriers.length,
+          customers: customers.length,
+          rateCards: rateCards.length,
+          routes: routes.length,
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Sync failed" 
+      });
+    }
+  });
+
   // ==================== CARRIERS ====================
 
   app.get("/api/carriers", async (req, res) => {

@@ -56,6 +56,7 @@ import CurrenciesPage from "./currencies";
 import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization } from "./global-settings";
 import { CustomerRatesPage, CarrierRatesPage } from "./rate-cards";
 import CdrsPage from "./cdrs";
+import ConnexCSStatusPage from "./connexcs-status";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -120,6 +121,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/settings/api-keys": { section: "settings", subItem: "api-keys" },
   "/admin/settings/webhooks": { section: "settings", subItem: "webhooks" },
   "/admin/settings/integrations": { section: "settings", subItem: "integrations" },
+  "/admin/settings/connexcs-status": { section: "settings", subItem: "connexcs-status" },
   "/admin/activity": { section: "dashboard", subItem: "activity" },
   "/admin/global-settings/platform": { section: "global-settings", subItem: "global-platform" },
   "/admin/global-settings/currencies": { section: "global-settings", subItem: "global-currencies" },
@@ -238,6 +240,7 @@ export default function AdminLayout() {
                 <Route path="/admin/settings/api-keys" component={SettingsPage} />
                 <Route path="/admin/settings/webhooks" component={SettingsPage} />
                 <Route path="/admin/settings/integrations" component={IntegrationsPage} />
+                <Route path="/admin/settings/connexcs-status" component={ConnexCSStatusPage} />
                 <Route path="/admin/activity" component={LiveActivityPage} />
                 <Route path="/admin/global-settings/platform" component={GlobalSettingsPlatform} />
                 <Route path="/admin/global-settings/currencies" component={GlobalSettingsCurrencies} />

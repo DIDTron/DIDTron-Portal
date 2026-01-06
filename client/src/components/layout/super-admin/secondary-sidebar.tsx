@@ -162,6 +162,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "api-keys", label: "API Keys", route: "/admin/settings/api-keys", icon: Key },
       { id: "webhooks", label: "Webhooks", route: "/admin/settings/webhooks", icon: Webhook },
       { id: "integrations", label: "Integrations", route: "/admin/settings/integrations", icon: Database },
+      { id: "connexcs-status", label: "ConnexCS Status", route: "/admin/settings/connexcs-status", icon: Server },
     ],
   },
 };
