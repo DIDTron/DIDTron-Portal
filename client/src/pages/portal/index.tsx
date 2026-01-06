@@ -282,9 +282,6 @@ export default function CustomerPortal() {
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : user?.email?.[0]?.toUpperCase() || "U";
 
-  const searchParams = new URLSearchParams(location.split("?")[1] || "");
-  const currentSearchQuery = searchParams.get("q") || "";
-
   return (
     <TooltipProvider>
       <div className="flex h-screen w-full bg-background">
@@ -364,9 +361,7 @@ export default function CustomerPortal() {
 
           <main className="flex-1 overflow-auto bg-muted/30">
             <Switch>
-              <Route path="/portal/search">
-                <SearchResults query={currentSearchQuery} />
-              </Route>
+              <Route path="/portal/search" component={SearchResults} />
               <Route path="/portal" component={CustomerDashboard} />
               <Route path="/portal/usage" component={UsagePage} />
               <Route path="/portal/voice" component={VoiceRatesPage} />

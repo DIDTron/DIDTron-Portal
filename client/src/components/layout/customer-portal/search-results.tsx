@@ -76,14 +76,12 @@ const allSearchItems: SearchItem[] = [
   { id: "reports-ivr-stats", label: "IVR Stats", section: "reports", sectionLabel: "Reports", path: "/portal/reports/ivr-stats", icon: BarChart3, keywords: ["ivr", "statistics", "analytics", "reports"] },
 ];
 
-interface SearchResultsProps {
-  query: string;
-}
-
-export function SearchResults({ query }: SearchResultsProps) {
+export function SearchResults() {
   const [, setLocation] = useLocation();
   const { setActiveSection, setActiveSubItem, openTab, closeTab } = useCustomerPortalStore();
   
+  const searchParams = new URLSearchParams(window.location.search);
+  const query = searchParams.get("q") || "";
   const searchTerm = query.toLowerCase().trim();
   
   const filteredItems = searchTerm
