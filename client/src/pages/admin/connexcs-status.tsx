@@ -128,6 +128,35 @@ export default function ConnexCSStatusPage() {
     },
   });
 
+  const testJWTAuthMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/connexcs/tools/test-auth");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "JWT Auth Test Passed",
+          description: `Token valid for ${data.tokenDaysRemaining} days`,
+        });
+      } else {
+        toast({
+          title: "JWT Auth Test Failed",
+          description: data.error || data.message,
+          variant: "destructive",
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/connexcs/status/detailed"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "JWT Auth Test Failed",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -387,6 +416,21 @@ export default function ConnexCSStatusPage() {
                   <p className="text-sm text-muted-foreground">
                     Secure 30-day refresh tokens with automatic renewal when expiring
                   </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={() => testJWTAuthMutation.mutate()}
+                    disabled={testJWTAuthMutation.isPending || isMockMode}
+                    data-testid="button-test-jwt-auth"
+                  >
+                    {testJWTAuthMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Test JWT Auth
+                  </Button>
                 </div>
                 <div className="p-4 rounded-md border space-y-2">
                   <div className="flex items-center gap-2">

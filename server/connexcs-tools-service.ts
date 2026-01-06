@@ -245,6 +245,55 @@ class ConnexCSToolsService {
     return result;
   }
 
+  async testAuth(storage: StorageInterface): Promise<{
+    success: boolean;
+    message: string;
+    tokenDaysRemaining?: number;
+    error?: string;
+  }> {
+    await this.loadCredentialsFromStorage(storage);
+
+    if (this.mockMode) {
+      return {
+        success: false,
+        message: "Cannot test authentication in mock mode - no credentials configured",
+      };
+    }
+
+    try {
+      const refreshToken = await this.getRefreshToken(storage);
+      const { daysRemaining } = this.checkTokenExpiration(refreshToken);
+      
+      const accessToken = await this.getAccessToken(storage);
+      if (!accessToken) {
+        return {
+          success: false,
+          message: "Failed to obtain access token",
+          error: "Token exchange failed",
+        };
+      }
+
+      return {
+        success: true,
+        message: "JWT authentication successful",
+        tokenDaysRemaining: daysRemaining,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      
+      if (errorMessage.includes("401") || errorMessage.includes("Invalid")) {
+        this.credentials = null;
+        this.mockMode = true;
+      }
+      
+      return {
+        success: false,
+        message: "Authentication failed",
+        error: errorMessage,
+      };
+    }
+  }
+
   async getStatus(storage: StorageInterface): Promise<ConnexCSStatus> {
     await this.loadCredentialsFromStorage(storage);
 

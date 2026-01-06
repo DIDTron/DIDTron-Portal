@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { createUser, validateLogin, sanitizeUser } from "./auth";
 import { aiService } from "./ai-service";
 import { connexcs } from "./connexcs";
+import { connexcsTools } from "./connexcs-tools-service";
 import { auditService } from "./audit";
 import { sendWelcomeEmail, sendPaymentReceived, sendReferralReward, sendLowBalanceAlert } from "./brevo";
 import { z } from "zod";
@@ -4103,6 +4104,31 @@ export async function registerRoutes(
       res.status(500).json({ 
         success: false, 
         error: error instanceof Error ? error.message : "Query failed" 
+      });
+    }
+  });
+
+  app.post("/api/connexcs/tools/test-auth", async (req, res) => {
+    try {
+      const result = await connexcsTools.testAuth(storage);
+      if (result.success) {
+        res.json({
+          success: true,
+          message: result.message,
+          tokenDaysRemaining: result.tokenDaysRemaining,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.message,
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Authentication test failed",
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
