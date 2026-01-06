@@ -113,7 +113,7 @@ function CustomerRatesPage() {
     name: "",
     code: "",
     currency: "USD",
-    direction: "outbound" as "outbound" | "inbound",
+    direction: "termination" as "termination" | "origination",
     parentCardId: "",
     profitMargin: "15",
     profitType: "percentage" as "percentage" | "fixed",
@@ -132,11 +132,7 @@ function CustomerRatesPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: Partial<RateCard>) => {
-      return apiRequest('/api/rate-cards', {
-        method: 'POST',
-        body: JSON.stringify({ ...data, type: 'customer' }),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('POST', '/api/rate-cards', { ...data, type: 'customer' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
@@ -148,11 +144,7 @@ function CustomerRatesPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<RateCard> }) => {
-      return apiRequest(`/api/rate-cards/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('PATCH', `/api/rate-cards/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
@@ -164,7 +156,7 @@ function CustomerRatesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/rate-cards/${id}`, { method: 'DELETE' });
+      return apiRequest('DELETE', `/api/rate-cards/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
@@ -186,7 +178,7 @@ function CustomerRatesPage() {
       name: "",
       code: "",
       currency: "USD",
-      direction: "outbound",
+      direction: "termination",
       parentCardId: "",
       profitMargin: "15",
       profitType: "percentage",
@@ -202,7 +194,7 @@ function CustomerRatesPage() {
       name: card.name,
       code: card.code || '',
       currency: card.currency || 'USD',
-      direction: (card.direction || 'outbound') as "outbound" | "inbound",
+      direction: (card.direction || 'termination') as "termination" | "origination",
       parentCardId: "",
       profitMargin: card.profitMargin || "15",
       profitType: (card.profitType || "percentage") as "percentage" | "fixed",
@@ -652,19 +644,19 @@ function CustomerRatesPage() {
               {filteredCards.map((card) => (
                 <TableRow key={card.id} data-testid={`row-customer-ratecard-${card.id}`}>
                   <TableCell className="font-medium">{card.name}</TableCell>
-                  <TableCell className="font-mono text-sm">{card.code}</TableCell>
+                  <TableCell className="font-mono text-sm">{card.code || '-'}</TableCell>
                   <TableCell>{card.currency}</TableCell>
                   <TableCell className="capitalize">{card.direction}</TableCell>
-                  <TableCell className="text-right">{card.ratesCount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{(card.ratesCount || 0).toLocaleString()}</TableCell>
                   <TableCell>
                     {card.profitType === "percentage" ? (
-                      <span className="font-mono">{card.profitMargin}%</span>
+                      <span className="font-mono">{card.profitMargin || 0}%</span>
                     ) : (
-                      <span className="font-mono">${card.profitMargin}</span>
+                      <span className="font-mono">${card.profitMargin || 0}</span>
                     )}
                   </TableCell>
-                  <TableCell>{getStatusBadge(card.status)}</TableCell>
-                  <TableCell className="text-right">{card.revisionCount}</TableCell>
+                  <TableCell>{getStatusBadge(card.status || 'active')}</TableCell>
+                  <TableCell className="text-right">{card.revisionCount || 1}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -718,7 +710,7 @@ function CarrierRatesPage() {
     name: "",
     code: "",
     currency: "USD",
-    direction: "outbound" as "outbound" | "inbound",
+    direction: "termination" as "termination" | "origination",
     carrierId: "",
     techPrefix: "",
     billingPrecision: "4",
@@ -735,11 +727,7 @@ function CarrierRatesPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: Partial<RateCard>) => {
-      return apiRequest('/api/rate-cards', {
-        method: 'POST',
-        body: JSON.stringify({ ...data, type: 'provider' }),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('POST', '/api/rate-cards', { ...data, type: 'provider' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
@@ -751,11 +739,7 @@ function CarrierRatesPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<RateCard> }) => {
-      return apiRequest(`/api/rate-cards/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('PATCH', `/api/rate-cards/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
@@ -767,7 +751,7 @@ function CarrierRatesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/rate-cards/${id}`, { method: 'DELETE' });
+      return apiRequest('DELETE', `/api/rate-cards/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/rate-cards'] });
@@ -789,7 +773,7 @@ function CarrierRatesPage() {
       name: "",
       code: "",
       currency: "USD",
-      direction: "outbound",
+      direction: "termination",
       carrierId: "",
       techPrefix: "",
       billingPrecision: "4",
@@ -803,7 +787,7 @@ function CarrierRatesPage() {
       name: card.name,
       code: card.code || '',
       currency: card.currency || 'USD',
-      direction: (card.direction || 'outbound') as "outbound" | "inbound",
+      direction: (card.direction || 'termination') as "termination" | "origination",
       carrierId: card.carrierId || "",
       techPrefix: card.techPrefix || "",
       billingPrecision: (card.billingPrecision || 4).toString(),
@@ -1130,7 +1114,7 @@ function CarrierRatesPage() {
                 <Globe className="h-5 w-5 text-green-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{rateCards.reduce((sum, c) => sum + c.ratesCount, 0).toLocaleString()}</p>
+                <p className="text-2xl font-bold">{rateCards.reduce((sum, c) => sum + (c.ratesCount || 0), 0).toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">Total Prefixes</p>
               </div>
             </div>
@@ -1195,14 +1179,14 @@ function CarrierRatesPage() {
               {filteredCards.map((card) => (
                 <TableRow key={card.id} data-testid={`row-carrier-ratecard-${card.id}`}>
                   <TableCell className="font-medium">{card.name}</TableCell>
-                  <TableCell className="font-mono text-sm">{card.code}</TableCell>
-                  <TableCell>{card.carrierName}</TableCell>
+                  <TableCell className="font-mono text-sm">{card.code || '-'}</TableCell>
+                  <TableCell>{card.carrierId || '-'}</TableCell>
                   <TableCell>{card.currency}</TableCell>
                   <TableCell className="capitalize">{card.direction}</TableCell>
-                  <TableCell className="text-right">{card.ratesCount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{(card.ratesCount || 0).toLocaleString()}</TableCell>
                   <TableCell className="font-mono">{card.techPrefix || "-"}</TableCell>
-                  <TableCell>{getStatusBadge(card.status)}</TableCell>
-                  <TableCell className="text-right">{card.revisionCount}</TableCell>
+                  <TableCell>{getStatusBadge(card.status || 'active')}</TableCell>
+                  <TableCell className="text-right">{card.revisionCount || 1}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

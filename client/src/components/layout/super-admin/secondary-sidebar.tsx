@@ -99,6 +99,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
     title: "Monitoring & Alerts",
     items: [
       { id: "metrics", label: "Metrics", route: "/admin/metrics", icon: BarChart3 },
+      { id: "cdrs", label: "CDRs", route: "/admin/cdrs", icon: Phone },
       { id: "alerts", label: "Alerts", route: "/admin/alerts", icon: Bell },
       { id: "rules", label: "Rules", route: "/admin/rules", icon: Settings },
     ],

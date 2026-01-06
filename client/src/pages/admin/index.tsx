@@ -55,6 +55,7 @@ import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
 import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization } from "./global-settings";
 import { CustomerRatesPage, CarrierRatesPage } from "./rate-cards";
+import CdrsPage from "./cdrs";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -94,6 +95,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/social-posts": { section: "marketing", subItem: "social-posts" },
   "/admin/email-templates": { section: "marketing", subItem: "email-templates" },
   "/admin/metrics": { section: "monitoring", subItem: "metrics" },
+  "/admin/cdrs": { section: "monitoring", subItem: "cdrs" },
   "/admin/alerts": { section: "monitoring", subItem: "alerts" },
   "/admin/rules": { section: "monitoring", subItem: "rules" },
   "/admin/sip-tester/new": { section: "sip-tester", subItem: "sip-new-test" },
@@ -211,6 +213,7 @@ export default function AdminLayout() {
                 <Route path="/admin/social-posts" component={SocialPostsPage} />
                 <Route path="/admin/email-templates" component={EmailTemplatesPage} />
                 <Route path="/admin/metrics" component={MetricsPage} />
+                <Route path="/admin/cdrs" component={CdrsPage} />
                 <Route path="/admin/alerts" component={AlertsPage} />
                 <Route path="/admin/rules" component={MonitoringRulesPage} />
                 <Route path="/admin/sip-tester/new" component={SipTesterPage} />
