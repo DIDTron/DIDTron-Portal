@@ -3916,6 +3916,45 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CONNEXCS STATUS ====================
+  
+  app.get("/api/connexcs/status", async (req, res) => {
+    try {
+      await connexcs.loadCredentialsFromStorage(storage);
+      const mockMode = connexcs.isMockMode();
+      if (mockMode) {
+        res.json({
+          connected: false,
+          mockMode: true,
+          message: "Running in mock mode - no credentials configured",
+        });
+      } else {
+        try {
+          const carriers = await connexcs.getCarriers();
+          res.json({
+            connected: true,
+            mockMode: false,
+            message: `Connected to ConnexCS (${carriers.length} carriers)`,
+          });
+        } catch (apiError) {
+          res.json({
+            connected: false,
+            mockMode: false,
+            message: "Failed to connect to ConnexCS API",
+            error: apiError instanceof Error ? apiError.message : "Connection error",
+          });
+        }
+      }
+    } catch (error) {
+      res.status(500).json({
+        connected: false,
+        mockMode: true,
+        message: "Error checking ConnexCS status",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   // ==================== CARRIERS ====================
 
   app.get("/api/carriers", async (req, res) => {

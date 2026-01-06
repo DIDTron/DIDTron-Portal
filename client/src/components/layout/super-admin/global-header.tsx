@@ -1,6 +1,7 @@
 import { useState, KeyboardEvent } from "react";
 import { useLocation } from "wouter";
-import { Search, Bell, LogOut, Menu, Phone } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Search, Bell, LogOut, Menu, Phone, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -15,6 +16,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface ConnexCSStatus {
+  connected: boolean;
+  mockMode: boolean;
+  message: string;
+}
 
 interface GlobalHeaderProps {
   userEmail: string;
@@ -26,6 +34,11 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
   const initials = userEmail?.substring(0, 2).toUpperCase() || "SA";
   const { primarySidebarOpen, toggleBothSidebars, openTab } = useSuperAdminTabs();
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { data: connexcsStatus, isLoading: statusLoading } = useQuery<ConnexCSStatus>({
+    queryKey: ["/api/connexcs/status"],
+    refetchInterval: 60000,
+  });
 
   const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && searchQuery.trim()) {
@@ -73,6 +86,30 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative" 
+              data-testid="button-connexcs-status"
+            >
+              {statusLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : connexcsStatus?.connected ? (
+                <Cloud className="h-4 w-4 text-green-500" />
+              ) : connexcsStatus?.mockMode ? (
+                <CloudOff className="h-4 w-4 text-yellow-500" />
+              ) : (
+                <CloudOff className="h-4 w-4 text-destructive" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p className="text-xs">{connexcsStatus?.message || "Checking ConnexCS status..."}</p>
+          </TooltipContent>
+        </Tooltip>
+
         <Button variant="ghost" size="icon" className="relative" data-testid="button-notifications">
           <Bell className="h-4 w-4" />
           <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]" variant="destructive">
