@@ -18,9 +18,10 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Play, Plus, Settings, Clock, Activity, CheckCircle2, XCircle, 
   AlertTriangle, Loader2, Phone, Signal, Zap, Timer, BarChart3,
-  Trash2, Edit, RefreshCw, Calendar
+  Trash2, Edit, RefreshCw, Calendar, Music, Upload, FileAudio, 
+  Database, Globe
 } from "lucide-react";
-import type { SipTestConfig, SipTestResult, SipTestSchedule } from "@shared/schema";
+import type { SipTestConfig, SipTestResult, SipTestSchedule, SipTestAudioFile, SipTestNumber } from "@shared/schema";
 
 const TEST_TYPES = [
   { value: "quick", label: "Quick Test", description: "Fast basic connectivity check" },
@@ -67,7 +68,7 @@ export default function SipTesterPage() {
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
-  const [editingConfig, setEditingConfig] = useState<SipTestConfig | null>(null);
+  const [showAudioDialog, setShowAudioDialog] = useState(false);
 
   const [quickTestForm, setQuickTestForm] = useState({
     destination: "",
@@ -91,6 +92,13 @@ export default function SipTesterPage() {
     timezone: "UTC",
   });
 
+  const [audioForm, setAudioForm] = useState({
+    name: "",
+    description: "",
+    format: "wav",
+    duration: 0,
+  });
+
   const { data: configs = [], isLoading: configsLoading } = useQuery<SipTestConfig[]>({
     queryKey: ["/api/sip-tests/configs"],
   });
@@ -101,6 +109,14 @@ export default function SipTesterPage() {
 
   const { data: schedules = [], isLoading: schedulesLoading } = useQuery<SipTestSchedule[]>({
     queryKey: ["/api/sip-tests/schedules"],
+  });
+
+  const { data: audioFiles = [], isLoading: audioLoading } = useQuery<SipTestAudioFile[]>({
+    queryKey: ["/api/sip-test-audio-files"],
+  });
+
+  const { data: testNumbers = [], isLoading: numbersLoading } = useQuery<SipTestNumber[]>({
+    queryKey: ["/api/sip-test-numbers"],
   });
 
   const runQuickTest = useMutation({
@@ -191,6 +207,58 @@ export default function SipTesterPage() {
     },
   });
 
+  const createAudioFile = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/sip-test-audio-files", {
+        name: audioForm.name,
+        description: audioForm.description,
+        format: audioForm.format,
+        duration: audioForm.duration,
+        filename: `${audioForm.name.toLowerCase().replace(/\s+/g, '-')}.${audioForm.format}`,
+        fileUrl: `/audio/${audioForm.name.toLowerCase().replace(/\s+/g, '-')}.${audioForm.format}`,
+        isActive: true,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-audio-files"] });
+      setShowAudioDialog(false);
+      setAudioForm({ name: "", description: "", format: "wav", duration: 0 });
+      toast({ title: "Audio file added", description: "IVR audio file registered" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to add audio file", variant: "destructive" });
+    },
+  });
+
+  const deleteAudioFile = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/sip-test-audio-files/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-audio-files"] });
+      toast({ title: "Deleted", description: "Audio file removed" });
+    },
+  });
+
+  const toggleAudioActive = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      return apiRequest("PATCH", `/api/sip-test-audio-files/${id}`, { isActive });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-audio-files"] });
+    },
+  });
+
+  const deleteTestNumber = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/sip-test-numbers/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sip-test-numbers"] });
+      toast({ title: "Deleted", description: "Test number removed" });
+    },
+  });
+
   const latestResults = [...results].sort((a, b) => 
     new Date(b.testedAt || 0).getTime() - new Date(a.testedAt || 0).getTime()
   ).slice(0, 20);
@@ -232,6 +300,14 @@ export default function SipTesterPage() {
           <TabsTrigger value="schedules" data-testid="tab-schedules">
             <Calendar className="h-4 w-4 mr-2" />
             Schedules
+          </TabsTrigger>
+          <TabsTrigger value="audio-files" data-testid="tab-audio-files">
+            <Music className="h-4 w-4 mr-2" />
+            Audio Files
+          </TabsTrigger>
+          <TabsTrigger value="test-numbers" data-testid="tab-test-numbers">
+            <Database className="h-4 w-4 mr-2" />
+            Number Database
           </TabsTrigger>
         </TabsList>
 
@@ -553,41 +629,43 @@ export default function SipTesterPage() {
             </Card>
           ) : (
             <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date/Time</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Destination</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Result</TableHead>
-                      <TableHead>PDD (ms)</TableHead>
-                      <TableHead>MOS</TableHead>
-                      <TableHead>Jitter</TableHead>
-                      <TableHead>Packet Loss</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {latestResults.map((r) => (
-                      <TableRow key={r.id} data-testid={`row-result-history-${r.id}`}>
-                        <TableCell className="text-sm whitespace-nowrap">
-                          {r.testedAt ? new Date(r.testedAt).toLocaleString() : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{r.testType}</Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{r.destination || "-"}</TableCell>
-                        <TableCell>{getStatusBadge(r.status)}</TableCell>
-                        <TableCell>{getResultBadge(r.result)}</TableCell>
-                        <TableCell>{r.pddMs ?? "-"}</TableCell>
-                        <TableCell>{r.mosScore ?? "-"}</TableCell>
-                        <TableCell>{r.jitterMs ? `${r.jitterMs}ms` : "-"}</TableCell>
-                        <TableCell>{r.packetLossPercent ? `${r.packetLossPercent}%` : "-"}</TableCell>
+              <CardContent className="pt-6">
+                <ScrollArea className="h-[500px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Destination</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Result</TableHead>
+                        <TableHead>PDD</TableHead>
+                        <TableHead>MOS</TableHead>
+                        <TableHead>Jitter</TableHead>
+                        <TableHead>Packet Loss</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {latestResults.map((r) => (
+                        <TableRow key={r.id} data-testid={`row-result-${r.id}`}>
+                          <TableCell className="text-sm">
+                            {r.testedAt ? new Date(r.testedAt).toLocaleString() : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{r.testType}</Badge>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{r.destination || "-"}</TableCell>
+                          <TableCell>{getStatusBadge(r.status)}</TableCell>
+                          <TableCell>{getResultBadge(r.result)}</TableCell>
+                          <TableCell>{r.pddMs ? `${r.pddMs}ms` : "-"}</TableCell>
+                          <TableCell>{r.mosScore || "-"}</TableCell>
+                          <TableCell>{r.jitterMs ? `${r.jitterMs}ms` : "-"}</TableCell>
+                          <TableCell>{r.packetLossPercent ? `${r.packetLossPercent}%` : "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               </CardContent>
             </Card>
           )}
@@ -607,27 +685,27 @@ export default function SipTesterPage() {
                 <DialogHeader>
                   <DialogTitle>Create Test Schedule</DialogTitle>
                   <DialogDescription>
-                    Schedule automated tests to run periodically
+                    Schedule automated tests
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label>Schedule Name</Label>
+                    <Label>Name</Label>
                     <Input
                       value={scheduleForm.name}
                       onChange={(e) => setScheduleForm({ ...scheduleForm, name: e.target.value })}
-                      placeholder="Daily US Route Test"
+                      placeholder="Daily US Quality Check"
                       data-testid="input-schedule-name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Test Configuration</Label>
+                    <Label>Configuration</Label>
                     <Select
                       value={scheduleForm.configId}
                       onValueChange={(v) => setScheduleForm({ ...scheduleForm, configId: v })}
                     >
                       <SelectTrigger data-testid="select-schedule-config">
-                        <SelectValue placeholder="Select a configuration" />
+                        <SelectValue placeholder="Select configuration" />
                       </SelectTrigger>
                       <SelectContent>
                         {configs.map((c) => (
@@ -644,29 +722,11 @@ export default function SipTesterPage() {
                       value={scheduleForm.cronExpression}
                       onChange={(e) => setScheduleForm({ ...scheduleForm, cronExpression: e.target.value })}
                       placeholder="0 0 * * *"
-                      className="font-mono"
                       data-testid="input-schedule-cron"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Examples: "0 0 * * *" (daily), "0 */6 * * *" (every 6 hours)
+                      Examples: "0 0 * * *" (daily), "0 */4 * * *" (every 4 hours)
                     </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Timezone</Label>
-                    <Select
-                      value={scheduleForm.timezone}
-                      onValueChange={(v) => setScheduleForm({ ...scheduleForm, timezone: v })}
-                    >
-                      <SelectTrigger data-testid="select-schedule-timezone">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="UTC">UTC</SelectItem>
-                        <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                        <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-                        <SelectItem value="Europe/London">London</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
                 <DialogFooter>
@@ -679,7 +739,7 @@ export default function SipTesterPage() {
                     data-testid="button-save-schedule"
                   >
                     {createSchedule.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Create Schedule
+                    Save Schedule
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -694,48 +754,48 @@ export default function SipTesterPage() {
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No scheduled tests</p>
-                <p className="text-sm">Create a schedule to run tests automatically</p>
+                <p>No schedules yet</p>
+                <p className="text-sm">Create a schedule to automate tests</p>
               </CardContent>
             </Card>
           ) : (
             <Card>
-              <CardContent className="p-0">
+              <CardContent className="pt-6">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
+                      <TableHead>Configuration</TableHead>
                       <TableHead>Schedule</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Last Run</TableHead>
-                      <TableHead>Next Run</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {schedules.map((s) => (
-                      <TableRow key={s.id} data-testid={`row-schedule-${s.id}`}>
-                        <TableCell className="font-medium">{s.name}</TableCell>
-                        <TableCell className="font-mono text-sm">{s.cronExpression}</TableCell>
+                    {schedules.map((schedule) => (
+                      <TableRow key={schedule.id} data-testid={`row-schedule-${schedule.id}`}>
+                        <TableCell className="font-medium">{schedule.name}</TableCell>
                         <TableCell>
-                          {s.isActive ? (
+                          {configs.find(c => c.id === schedule.configId)?.name || schedule.configId}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{schedule.cronExpression}</TableCell>
+                        <TableCell>
+                          {schedule.isActive ? (
                             <Badge variant="default">Active</Badge>
                           ) : (
-                            <Badge variant="secondary">Paused</Badge>
+                            <Badge variant="secondary">Inactive</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {s.lastRunAt ? new Date(s.lastRunAt).toLocaleString() : "Never"}
+                          {schedule.lastRunAt ? new Date(schedule.lastRunAt).toLocaleString() : "Never"}
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {s.nextRunAt ? new Date(s.nextRunAt).toLocaleString() : "-"}
-                        </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right">
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => deleteSchedule.mutate(s.id)}
-                            data-testid={`button-delete-schedule-${s.id}`}
+                            onClick={() => deleteSchedule.mutate(schedule.id)}
+                            data-testid={`button-delete-schedule-${schedule.id}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -744,6 +804,345 @@ export default function SipTesterPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="audio-files" className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold">IVR Audio Files</h2>
+              <p className="text-sm text-muted-foreground">
+                Audio files played during quality tests to measure RTP quality
+              </p>
+            </div>
+            <Dialog open={showAudioDialog} onOpenChange={setShowAudioDialog}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-add-audio">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Audio File
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add IVR Audio File</DialogTitle>
+                  <DialogDescription>
+                    Register an audio file for SIP quality testing
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Name</Label>
+                    <Input
+                      value={audioForm.name}
+                      onChange={(e) => setAudioForm({ ...audioForm, name: e.target.value })}
+                      placeholder="Voice Quality Test"
+                      data-testid="input-audio-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea
+                      value={audioForm.description}
+                      onChange={(e) => setAudioForm({ ...audioForm, description: e.target.value })}
+                      placeholder="10-second voice sample for MOS scoring"
+                      data-testid="input-audio-description"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Format</Label>
+                      <Select
+                        value={audioForm.format}
+                        onValueChange={(v) => setAudioForm({ ...audioForm, format: v })}
+                      >
+                        <SelectTrigger data-testid="select-audio-format">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="wav">WAV</SelectItem>
+                          <SelectItem value="mp3">MP3</SelectItem>
+                          <SelectItem value="pcmu">PCM u-law</SelectItem>
+                          <SelectItem value="pcma">PCM a-law</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Duration (seconds)</Label>
+                      <Input
+                        type="number"
+                        value={audioForm.duration}
+                        onChange={(e) => setAudioForm({ ...audioForm, duration: parseInt(e.target.value) || 0 })}
+                        placeholder="10"
+                        data-testid="input-audio-duration"
+                      />
+                    </div>
+                  </div>
+                  <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Audio upload coming soon
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      For now, files are registered with placeholder URLs
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowAudioDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => createAudioFile.mutate()}
+                    disabled={!audioForm.name || createAudioFile.isPending}
+                    data-testid="button-save-audio"
+                  >
+                    {createAudioFile.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Add Audio File
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3 mb-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Files
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{audioFiles.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Active Files
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {audioFiles.filter(f => f.isActive).length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Default Files
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">3</div>
+                <p className="text-xs text-muted-foreground">Silence, Tone, Voice</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {audioLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : audioFiles.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Music className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No custom audio files yet</p>
+                <p className="text-sm">Default files (Silence, Test Tone, Voice Sample) are always available</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Format</TableHead>
+                      <TableHead>Duration</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {audioFiles.map((file) => (
+                      <TableRow key={file.id} data-testid={`row-audio-${file.id}`}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <FileAudio className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{file.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {file.description || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{file.format?.toUpperCase()}</Badge>
+                        </TableCell>
+                        <TableCell>{file.duration ? `${file.duration}s` : "-"}</TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={file.isActive ?? false}
+                            onCheckedChange={(checked) => toggleAudioActive.mutate({ id: file.id, isActive: checked })}
+                            data-testid={`switch-audio-active-${file.id}`}
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteAudioFile.mutate(file.id)}
+                            data-testid={`button-delete-audio-${file.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="test-numbers" className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold">Crowdsourced Test Numbers</h2>
+              <p className="text-sm text-muted-foreground">
+                Shared database of verified test numbers from all customers
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/sip-test-numbers"] })}
+              data-testid="button-refresh-numbers"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-4 mb-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Numbers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{testNumbers.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Verified Numbers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {testNumbers.filter(n => n.verified).length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Countries
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {new Set(testNumbers.map(n => n.countryCode)).size}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Tests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {testNumbers.reduce((sum, n) => sum + (n.testCount || 0), 0)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {numbersLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : testNumbers.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No test numbers in database yet</p>
+                <p className="text-sm">Numbers will be added as customers run tests with "Add to DB" enabled</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <ScrollArea className="h-[500px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Number</TableHead>
+                        <TableHead>Country</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Verified</TableHead>
+                        <TableHead>Times Used</TableHead>
+                        <TableHead>Last Used</TableHead>
+                        <TableHead>Avg MOS</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {testNumbers.map((number) => (
+                        <TableRow key={number.id} data-testid={`row-number-${number.id}`}>
+                          <TableCell className="font-mono">{number.phoneNumber}</TableCell>
+                          <TableCell>{number.countryCode}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{number.numberType || "Unknown"}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {number.verified ? (
+                              <Badge variant="default"><CheckCircle2 className="h-3 w-3 mr-1" />Verified</Badge>
+                            ) : (
+                              <Badge variant="secondary">Pending</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>{number.testCount || 0}</TableCell>
+                          <TableCell className="text-sm">
+                            {number.lastTestedAt ? new Date(number.lastTestedAt).toLocaleDateString() : "Never"}
+                          </TableCell>
+                          <TableCell>
+                            {number.avgMos ? parseFloat(number.avgMos).toFixed(2) : "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => deleteTestNumber.mutate(number.id)}
+                              data-testid={`button-delete-number-${number.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               </CardContent>
             </Card>
           )}

@@ -560,6 +560,144 @@ class ConnexCSClient {
   isMockMode(): boolean {
     return this.mockMode;
   }
+
+  async executeSipTest(params: {
+    destination: string;
+    callerId?: string;
+    codec?: string;
+    maxDuration?: number;
+    routeId?: string;
+    carrierId?: string;
+  }): Promise<{
+    callId: string;
+    destination: string;
+    status: "completed" | "failed" | "no_answer" | "busy";
+    sipResponseCode: number;
+    pddMs: number;
+    durationSec: number;
+    mosScore: number | null;
+    jitterMs: number | null;
+    packetLossPercent: number | null;
+    latencyMs: number | null;
+    cliReceived: string | null;
+  }> {
+    const callId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    
+    if (this.mockMode) {
+      const success = Math.random() > 0.15;
+      const noAnswer = !success && Math.random() > 0.5;
+      
+      return {
+        callId,
+        destination: params.destination,
+        status: success ? "completed" : noAnswer ? "no_answer" : "failed",
+        sipResponseCode: success ? 200 : noAnswer ? 408 : 503,
+        pddMs: Math.floor(100 + Math.random() * 300),
+        durationSec: success ? Math.floor(5 + Math.random() * (params.maxDuration || 30)) : 0,
+        mosScore: success ? Number((3.5 + Math.random() * 1.0).toFixed(2)) : null,
+        jitterMs: success ? Number((5 + Math.random() * 25).toFixed(2)) : null,
+        packetLossPercent: success ? Number((Math.random() * 2).toFixed(2)) : null,
+        latencyMs: success ? Math.floor(20 + Math.random() * 100) : null,
+        cliReceived: params.callerId || null,
+      };
+    }
+
+    try {
+      const token = await this.authenticate();
+      const response = await fetch(`${this.config.baseUrl}/api/test/call`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          destination: params.destination,
+          caller_id: params.callerId,
+          codec: params.codec || "G729",
+          max_duration: params.maxDuration || 30,
+          route_id: params.routeId,
+          carrier_id: params.carrierId,
+        }),
+      });
+
+      if (!response.ok) {
+        return {
+          callId,
+          destination: params.destination,
+          status: "failed",
+          sipResponseCode: 500,
+          pddMs: 0,
+          durationSec: 0,
+          mosScore: null,
+          jitterMs: null,
+          packetLossPercent: null,
+          latencyMs: null,
+          cliReceived: null,
+        };
+      }
+
+      const result = await response.json();
+      return {
+        callId: result.call_id || callId,
+        destination: params.destination,
+        status: result.status || "completed",
+        sipResponseCode: result.sip_code || 200,
+        pddMs: result.pdd_ms || 0,
+        durationSec: result.duration || 0,
+        mosScore: result.mos || null,
+        jitterMs: result.jitter || null,
+        packetLossPercent: result.packet_loss || null,
+        latencyMs: result.latency || null,
+        cliReceived: result.cli_received || null,
+      };
+    } catch (error) {
+      console.error("[ConnexCS] Test call error:", error);
+      return {
+        callId,
+        destination: params.destination,
+        status: "failed",
+        sipResponseCode: 500,
+        pddMs: 0,
+        durationSec: 0,
+        mosScore: null,
+        jitterMs: null,
+        packetLossPercent: null,
+        latencyMs: null,
+        cliReceived: null,
+      };
+    }
+  }
+
+  async executeBatchSipTest(destinations: string[], options: {
+    callerId?: string;
+    codec?: string;
+    maxDuration?: number;
+    routeId?: string;
+    carrierId?: string;
+    concurrency?: number;
+  } = {}): Promise<Array<Awaited<ReturnType<ConnexCSClient["executeSipTest"]>>>> {
+    const concurrency = options.concurrency || 1;
+    const results: Array<Awaited<ReturnType<ConnexCSClient["executeSipTest"]>>> = [];
+    
+    for (let i = 0; i < destinations.length; i += concurrency) {
+      const batch = destinations.slice(i, i + concurrency);
+      const batchResults = await Promise.all(
+        batch.map(destination => 
+          this.executeSipTest({
+            destination,
+            callerId: options.callerId,
+            codec: options.codec,
+            maxDuration: options.maxDuration,
+            routeId: options.routeId,
+            carrierId: options.carrierId,
+          })
+        )
+      );
+      results.push(...batchResults);
+    }
+    
+    return results;
+  }
 }
 
 export const connexcs = new ConnexCSClient();

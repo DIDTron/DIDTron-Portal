@@ -69,6 +69,185 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+const COUNTRY_CODES: Record<string, { code: string; name: string }> = {
+  '+1': { code: 'US', name: 'United States' },
+  '+44': { code: 'GB', name: 'United Kingdom' },
+  '+61': { code: 'AU', name: 'Australia' },
+  '+33': { code: 'FR', name: 'France' },
+  '+49': { code: 'DE', name: 'Germany' },
+  '+81': { code: 'JP', name: 'Japan' },
+  '+86': { code: 'CN', name: 'China' },
+  '+91': { code: 'IN', name: 'India' },
+  '+55': { code: 'BR', name: 'Brazil' },
+  '+52': { code: 'MX', name: 'Mexico' },
+  '+39': { code: 'IT', name: 'Italy' },
+  '+34': { code: 'ES', name: 'Spain' },
+  '+31': { code: 'NL', name: 'Netherlands' },
+  '+7': { code: 'RU', name: 'Russia' },
+  '+82': { code: 'KR', name: 'South Korea' },
+  '+65': { code: 'SG', name: 'Singapore' },
+  '+60': { code: 'MY', name: 'Malaysia' },
+  '+63': { code: 'PH', name: 'Philippines' },
+  '+66': { code: 'TH', name: 'Thailand' },
+  '+84': { code: 'VN', name: 'Vietnam' },
+};
+
+function getCountryFromNumber(phone: string): { code: string; name: string } {
+  for (const [prefix, country] of Object.entries(COUNTRY_CODES)) {
+    if (phone.startsWith(prefix)) {
+      return country;
+    }
+  }
+  return { code: 'XX', name: 'Unknown' };
+}
+
+async function executeSipTestRun(
+  runId: string,
+  storageInstance: typeof storage,
+  connexcsClient: typeof connexcs
+): Promise<void> {
+  try {
+    const run = await storageInstance.getSipTestRun(runId);
+    if (!run) {
+      console.error(`[SIP Test] Run ${runId} not found`);
+      return;
+    }
+
+    await connexcsClient.loadCredentialsFromStorage(storageInstance);
+
+    await storageInstance.updateSipTestRun(runId, { 
+      status: 'running',
+      startedAt: new Date(),
+    } as any);
+
+    let destinations: string[] = [];
+    
+    if (run.manualNumbers && Array.isArray(run.manualNumbers)) {
+      destinations.push(...run.manualNumbers);
+    }
+
+    if (run.useDbNumbers) {
+      const dbNumbers = await storageInstance.getSipTestNumbers();
+      let filteredNumbers = dbNumbers.filter(n => n.isPublic && n.isActive && n.verified);
+      
+      if (run.countryFilters && run.countryFilters.length > 0) {
+        filteredNumbers = filteredNumbers.filter(n => run.countryFilters?.includes(n.countryCode));
+      }
+      
+      destinations.push(...filteredNumbers.slice(0, 50).map(n => n.phoneNumber));
+    }
+
+    if (destinations.length === 0) {
+      destinations = ['+14155551234', '+442071234567', '+61291234567'];
+    }
+
+    const testLimit = Math.min(destinations.length, run.callsCount || 5);
+    const testDestinations = destinations.slice(0, testLimit);
+    
+    const callerId = run.aniMode === 'specific' ? run.aniNumber : undefined;
+    
+    const results = await connexcsClient.executeBatchSipTest(testDestinations, {
+      callerId: callerId || undefined,
+      codec: run.codec || 'G729',
+      maxDuration: run.maxDuration || 30,
+      concurrency: run.capacity || 1,
+    });
+
+    let successCount = 0;
+    let failCount = 0;
+    let totalDuration = 0;
+    let totalMos = 0;
+    let totalPdd = 0;
+    let mosCount = 0;
+    let totalCost = 0;
+    const RATE_PER_MIN = 0.012;
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const callCost = result.durationSec > 0 ? (result.durationSec / 60) * RATE_PER_MIN : 0;
+      totalCost += callCost;
+      
+      if (result.status === 'completed') {
+        successCount++;
+        totalDuration += result.durationSec;
+        if (result.mosScore) {
+          totalMos += result.mosScore;
+          mosCount++;
+        }
+      } else {
+        failCount++;
+      }
+      totalPdd += result.pddMs;
+
+      await storageInstance.createSipTestRunResult({
+        testRunId: runId,
+        callIndex: i + 1,
+        destination: result.destination,
+        aniUsed: callerId,
+        status: result.status === 'completed' ? 'completed' : 'failed',
+        result: result.status === 'completed' ? 'pass' : 'fail',
+        sipResponseCode: result.sipResponseCode,
+        pddMs: result.pddMs,
+        mosScore: result.mosScore?.toString(),
+        jitterMs: result.jitterMs?.toString(),
+        packetLossPercent: result.packetLossPercent?.toString(),
+        latencyMs: result.latencyMs,
+        codecUsed: run.codec,
+        durationSec: result.durationSec,
+        callCost: callCost.toFixed(6),
+        ratePerMin: RATE_PER_MIN.toFixed(6),
+      });
+    }
+
+    const avgMos = mosCount > 0 ? (totalMos / mosCount).toFixed(2) : null;
+    const avgPdd = results.length > 0 ? Math.round(totalPdd / results.length) : null;
+
+    await storageInstance.updateSipTestRun(runId, {
+      status: 'completed',
+      completedAt: new Date(),
+      totalCalls: results.length,
+      successfulCalls: successCount,
+      failedCalls: failCount,
+      totalDurationSec: totalDuration,
+      totalCost: totalCost.toFixed(6),
+      avgMos: avgMos,
+      avgPdd: avgPdd,
+    } as any);
+
+    if (run.addToDb) {
+      for (const result of results) {
+        if (result.status === 'completed') {
+          const country = getCountryFromNumber(result.destination);
+          
+          const existing = await storageInstance.getSipTestNumbers(country.code);
+          const exists = existing.some(n => n.phoneNumber === result.destination);
+          
+          if (!exists) {
+            await storageInstance.createSipTestNumber({
+              countryCode: country.code,
+              countryName: country.name,
+              phoneNumber: result.destination,
+              numberType: 'landline',
+              verified: true,
+              contributedBy: run.customerId,
+              isPublic: true,
+              isActive: true,
+            });
+          }
+        }
+      }
+    }
+
+    console.log(`[SIP Test] Run ${runId} completed: ${successCount}/${results.length} successful`);
+  } catch (error) {
+    console.error(`[SIP Test] Run ${runId} failed:`, error);
+    await storageInstance.updateSipTestRun(runId, {
+      status: 'failed',
+      completedAt: new Date(),
+    } as any);
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -4295,6 +4474,223 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete SIP test schedule" });
+    }
+  });
+
+  // ==================== SIP TEST AUDIO FILES ====================
+
+  app.get("/api/sip-test-audio-files", async (_req, res) => {
+    try {
+      const files = await storage.getSipTestAudioFiles();
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch audio files" });
+    }
+  });
+
+  app.get("/api/sip-test-audio-files/:id", async (req, res) => {
+    try {
+      const file = await storage.getSipTestAudioFile(req.params.id);
+      if (!file) return res.status(404).json({ error: "Audio file not found" });
+      res.json(file);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch audio file" });
+    }
+  });
+
+  app.post("/api/sip-test-audio-files", async (req, res) => {
+    try {
+      const file = await storage.createSipTestAudioFile({
+        name: req.body.name,
+        description: req.body.description,
+        filename: req.body.name?.toLowerCase().replace(/\s+/g, '-') || 'audio-file',
+        fileUrl: req.body.fileUrl,
+        fileSize: req.body.fileSize,
+        duration: req.body.durationSeconds || req.body.duration,
+        format: req.body.format || 'wav',
+        isActive: req.body.isActive ?? true,
+      });
+      res.status(201).json(file);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create audio file" });
+    }
+  });
+
+  app.patch("/api/sip-test-audio-files/:id", async (req, res) => {
+    try {
+      const file = await storage.updateSipTestAudioFile(req.params.id, req.body);
+      if (!file) return res.status(404).json({ error: "Audio file not found" });
+      res.json(file);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update audio file" });
+    }
+  });
+
+  app.delete("/api/sip-test-audio-files/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSipTestAudioFile(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Audio file not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete audio file" });
+    }
+  });
+
+  // ==================== SIP TEST NUMBERS (CROWDSOURCED) ====================
+
+  app.get("/api/sip-test-numbers", async (req, res) => {
+    try {
+      const countryCode = req.query.countryCode as string | undefined;
+      const numbers = await storage.getSipTestNumbers(countryCode);
+      res.json(numbers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch test numbers" });
+    }
+  });
+
+  app.get("/api/sip-test-numbers/:id", async (req, res) => {
+    try {
+      const number = await storage.getSipTestNumber(req.params.id);
+      if (!number) return res.status(404).json({ error: "Test number not found" });
+      res.json(number);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch test number" });
+    }
+  });
+
+  app.post("/api/sip-test-numbers", async (req, res) => {
+    try {
+      const number = await storage.createSipTestNumber({
+        countryCode: req.body.countryCode,
+        countryName: req.body.countryName,
+        phoneNumber: req.body.phoneNumber,
+        numberType: req.body.numberType,
+        carrier: req.body.carrier,
+        verified: false,
+        contributedBy: req.body.contributedBy,
+        isPublic: req.body.isPublic ?? true,
+        isActive: true,
+      });
+      res.status(201).json(number);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create test number" });
+    }
+  });
+
+  app.patch("/api/sip-test-numbers/:id", async (req, res) => {
+    try {
+      const number = await storage.updateSipTestNumber(req.params.id, req.body);
+      if (!number) return res.status(404).json({ error: "Test number not found" });
+      res.json(number);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update test number" });
+    }
+  });
+
+  app.delete("/api/sip-test-numbers/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSipTestNumber(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Test number not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete test number" });
+    }
+  });
+
+  // ==================== SIP TEST RUNS (CUSTOMER PORTAL) ====================
+
+  app.get("/api/my/sip-test-runs", async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const runs = await storage.getSipTestRuns(req.user.customerId || req.user.id);
+      res.json(runs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch test runs" });
+    }
+  });
+
+  app.post("/api/my/sip-test-runs", async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const run = await storage.createSipTestRun({
+        customerId: req.user.customerId || req.user.id,
+        testName: req.body.testName,
+        testMode: req.body.testMode || 'standard',
+        routeSource: req.body.routeSource,
+        tierId: req.body.tierId,
+        supplierIds: req.body.supplierIds,
+        countryFilters: req.body.countryFilters,
+        manualNumbers: req.body.manualNumbers,
+        useDbNumbers: req.body.useDbNumbers,
+        addToDb: req.body.addToDb,
+        codec: req.body.codec || 'G729',
+        audioFileId: req.body.audioFileId,
+        aniMode: req.body.aniMode || 'any',
+        aniNumber: req.body.aniNumber,
+        aniCountries: req.body.aniCountries,
+        callsCount: req.body.callsCount || 5,
+        maxDuration: req.body.maxDuration || 30,
+        capacity: req.body.capacity || 1,
+        status: 'running',
+      });
+
+      executeSipTestRun(run.id, storage, connexcs).catch(err => {
+        console.error("[SIP Test] Background execution error:", err);
+      });
+
+      res.status(201).json(run);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create test run" });
+    }
+  });
+
+  app.post("/api/my/sip-test-runs/:id/start", async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const run = await storage.getSipTestRun(req.params.id);
+      if (!run) return res.status(404).json({ error: "Test run not found" });
+      if (run.customerId !== req.user.customerId && run.customerId !== req.user.id) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      await storage.updateSipTestRun(run.id, { status: 'running' } as any);
+      
+      executeSipTestRun(run.id, storage, connexcs).catch(err => {
+        console.error("[SIP Test] Background execution error:", err);
+      });
+
+      res.json({ message: "Test started", runId: run.id });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to start test run" });
+    }
+  });
+
+  app.get("/api/my/sip-test-runs/:id", async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const run = await storage.getSipTestRun(req.params.id);
+      if (!run) return res.status(404).json({ error: "Test run not found" });
+      if (run.customerId !== req.user.customerId && run.customerId !== req.user.id) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      res.json(run);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch test run" });
+    }
+  });
+
+  app.get("/api/my/sip-test-runs/:id/results", async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const run = await storage.getSipTestRun(req.params.id);
+      if (!run) return res.status(404).json({ error: "Test run not found" });
+      if (run.customerId !== req.user.customerId && run.customerId !== req.user.id) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const results = await storage.getSipTestRunResults(req.params.id);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch test results" });
     }
   });
 

@@ -19,7 +19,7 @@ import {
   Play, CheckCircle2, XCircle, AlertTriangle, Loader2, Phone, Signal,
   Timer, BarChart3, RefreshCw, Search, X, Plus
 } from "lucide-react";
-import type { VoiceTier, Class4Carrier, SipTestRun, SipTestAudioFile } from "@shared/schema";
+import type { VoiceTier, Class4Carrier, SipTestRun, SipTestAudioFile, SipTestNumber } from "@shared/schema";
 
 const COUNTRIES = [
   { code: "AB", name: "Abkhazia" },
@@ -132,6 +132,23 @@ export default function PortalSipTesterPage() {
   const { data: testRuns = [], isLoading: runsLoading } = useQuery<SipTestRun[]>({
     queryKey: ["/api/my/sip-test-runs"],
   });
+
+  const { data: testNumbers = [] } = useQuery<SipTestNumber[]>({
+    queryKey: ["/api/sip-test-numbers"],
+  });
+
+  const dbNumbersByCountry = useMemo(() => {
+    const grouped: Record<string, SipTestNumber[]> = {};
+    testNumbers.filter(n => n.isPublic && n.isActive).forEach(n => {
+      if (!grouped[n.countryCode]) grouped[n.countryCode] = [];
+      grouped[n.countryCode].push(n);
+    });
+    return grouped;
+  }, [testNumbers]);
+
+  const dbCountriesWithNumbers = useMemo(() => {
+    return Object.keys(dbNumbersByCountry).sort();
+  }, [dbNumbersByCountry]);
 
   const allAudioFiles = useMemo(() => {
     const custom = audioFiles.filter(f => f.isActive);
@@ -364,7 +381,27 @@ export default function PortalSipTesterPage() {
                       data-testid="checkbox-use-db"
                     />
                     <Label htmlFor="useDbNumbers" className="text-sm">Use numbers from DB</Label>
+                    {testNumbers.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">{testNumbers.length} available</Badge>
+                    )}
                   </div>
+                  {testForm.useDbNumbers && dbCountriesWithNumbers.length > 0 && (
+                    <div className="mt-2 p-3 bg-muted/50 rounded-md">
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Database has {testNumbers.filter(n => n.isPublic).length} verified numbers from {dbCountriesWithNumbers.length} countries:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {dbCountriesWithNumbers.slice(0, 10).map(code => (
+                          <Badge key={code} variant="outline" className="text-xs">
+                            {code} ({dbNumbersByCountry[code]?.length})
+                          </Badge>
+                        ))}
+                        {dbCountriesWithNumbers.length > 10 && (
+                          <Badge variant="outline" className="text-xs">+{dbCountriesWithNumbers.length - 10} more</Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

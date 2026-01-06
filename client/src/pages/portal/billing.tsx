@@ -55,9 +55,10 @@ export default function BillingPage() {
 
   const redeemPromoMutation = useMutation({
     mutationFn: async (code: string) => {
-      return await apiRequest("POST", "/api/my/promo-codes/redeem", { code });
+      const res = await apiRequest("POST", "/api/my/promo-codes/redeem", { code });
+      return res.json() as Promise<{ message: string }>;
     },
-    onSuccess: (data: { message: string }) => {
+    onSuccess: (data) => {
       toast({ title: "Promo Code Redeemed", description: data.message });
       queryClient.invalidateQueries({ queryKey: ["/api/my/profile"] });
       setShowPromoDialog(false);

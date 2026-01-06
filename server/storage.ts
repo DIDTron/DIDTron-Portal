@@ -30,6 +30,10 @@ import {
   type SipTestConfig, type InsertSipTestConfig,
   type SipTestResult, type InsertSipTestResult,
   type SipTestSchedule, type InsertSipTestSchedule,
+  type SipTestAudioFile, type InsertSipTestAudioFile,
+  type SipTestNumber, type InsertSipTestNumber,
+  type SipTestRun, type InsertSipTestRun,
+  type SipTestRunResult, type InsertSipTestRunResult,
   type Class4Customer, type InsertClass4Customer,
   type Class4Carrier, type InsertClass4Carrier,
   type Class4ProviderRateCard, type InsertClass4ProviderRateCard,
@@ -317,6 +321,30 @@ export interface IStorage {
   createSipTestSchedule(schedule: InsertSipTestSchedule): Promise<SipTestSchedule>;
   updateSipTestSchedule(id: string, data: Partial<InsertSipTestSchedule>): Promise<SipTestSchedule | undefined>;
   deleteSipTestSchedule(id: string): Promise<boolean>;
+
+  // SIP Test Audio Files
+  getSipTestAudioFiles(): Promise<SipTestAudioFile[]>;
+  getSipTestAudioFile(id: string): Promise<SipTestAudioFile | undefined>;
+  createSipTestAudioFile(file: InsertSipTestAudioFile): Promise<SipTestAudioFile>;
+  updateSipTestAudioFile(id: string, data: Partial<InsertSipTestAudioFile>): Promise<SipTestAudioFile | undefined>;
+  deleteSipTestAudioFile(id: string): Promise<boolean>;
+
+  // SIP Test Numbers (Crowdsourced)
+  getSipTestNumbers(countryCode?: string): Promise<SipTestNumber[]>;
+  getSipTestNumber(id: string): Promise<SipTestNumber | undefined>;
+  createSipTestNumber(number: InsertSipTestNumber): Promise<SipTestNumber>;
+  updateSipTestNumber(id: string, data: Partial<InsertSipTestNumber>): Promise<SipTestNumber | undefined>;
+  deleteSipTestNumber(id: string): Promise<boolean>;
+
+  // SIP Test Runs
+  getSipTestRuns(customerId: string): Promise<SipTestRun[]>;
+  getSipTestRun(id: string): Promise<SipTestRun | undefined>;
+  createSipTestRun(run: InsertSipTestRun): Promise<SipTestRun>;
+  updateSipTestRun(id: string, data: Partial<InsertSipTestRun>): Promise<SipTestRun | undefined>;
+
+  // SIP Test Run Results (Individual call results)
+  getSipTestRunResults(testRunId: string): Promise<SipTestRunResult[]>;
+  createSipTestRunResult(result: InsertSipTestRunResult): Promise<SipTestRunResult>;
 
   // Webhooks
   getWebhooks(customerId: string): Promise<Webhook[]>;
@@ -2236,6 +2264,199 @@ export class MemStorage implements IStorage {
 
   async deleteSipTestSchedule(id: string): Promise<boolean> {
     return this.sipTestSchedules.delete(id);
+  }
+
+  // SIP Test Audio Files
+  sipTestAudioFiles = new Map<string, SipTestAudioFile>();
+  
+  async getSipTestAudioFiles(): Promise<SipTestAudioFile[]> {
+    return Array.from(this.sipTestAudioFiles.values());
+  }
+
+  async getSipTestAudioFile(id: string): Promise<SipTestAudioFile | undefined> {
+    return this.sipTestAudioFiles.get(id);
+  }
+
+  async createSipTestAudioFile(file: InsertSipTestAudioFile): Promise<SipTestAudioFile> {
+    const id = randomUUID();
+    const now = new Date();
+    const f: SipTestAudioFile = {
+      id,
+      name: file.name,
+      description: file.description ?? null,
+      filename: file.filename,
+      fileUrl: file.fileUrl ?? null,
+      fileSize: file.fileSize ?? null,
+      duration: file.duration ?? null,
+      format: file.format ?? 'wav',
+      isDefault: file.isDefault ?? false,
+      isActive: file.isActive ?? true,
+      createdBy: file.createdBy ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.sipTestAudioFiles.set(id, f);
+    return f;
+  }
+
+  async updateSipTestAudioFile(id: string, data: Partial<InsertSipTestAudioFile>): Promise<SipTestAudioFile | undefined> {
+    const file = this.sipTestAudioFiles.get(id);
+    if (!file) return undefined;
+    const updated = { ...file, ...data, updatedAt: new Date() };
+    this.sipTestAudioFiles.set(id, updated);
+    return updated;
+  }
+
+  async deleteSipTestAudioFile(id: string): Promise<boolean> {
+    return this.sipTestAudioFiles.delete(id);
+  }
+
+  // SIP Test Numbers (Crowdsourced)
+  sipTestNumbers = new Map<string, SipTestNumber>();
+
+  async getSipTestNumbers(countryCode?: string): Promise<SipTestNumber[]> {
+    const numbers = Array.from(this.sipTestNumbers.values());
+    if (countryCode) return numbers.filter(n => n.countryCode === countryCode);
+    return numbers;
+  }
+
+  async getSipTestNumber(id: string): Promise<SipTestNumber | undefined> {
+    return this.sipTestNumbers.get(id);
+  }
+
+  async createSipTestNumber(number: InsertSipTestNumber): Promise<SipTestNumber> {
+    const id = randomUUID();
+    const now = new Date();
+    const n: SipTestNumber = {
+      id,
+      countryCode: number.countryCode,
+      countryName: number.countryName,
+      phoneNumber: number.phoneNumber,
+      numberType: number.numberType ?? 'landline',
+      carrier: number.carrier ?? null,
+      verified: number.verified ?? false,
+      lastTestedAt: null,
+      successRate: null,
+      avgMos: null,
+      avgPdd: null,
+      testCount: 0,
+      contributedBy: number.contributedBy ?? null,
+      isPublic: number.isPublic ?? true,
+      isActive: number.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.sipTestNumbers.set(id, n);
+    return n;
+  }
+
+  async updateSipTestNumber(id: string, data: Partial<InsertSipTestNumber>): Promise<SipTestNumber | undefined> {
+    const number = this.sipTestNumbers.get(id);
+    if (!number) return undefined;
+    const updated = { ...number, ...data, updatedAt: new Date() };
+    this.sipTestNumbers.set(id, updated);
+    return updated;
+  }
+
+  async deleteSipTestNumber(id: string): Promise<boolean> {
+    return this.sipTestNumbers.delete(id);
+  }
+
+  // SIP Test Runs
+  sipTestRuns = new Map<string, SipTestRun>();
+
+  async getSipTestRuns(customerId: string): Promise<SipTestRun[]> {
+    return Array.from(this.sipTestRuns.values()).filter(r => r.customerId === customerId);
+  }
+
+  async getSipTestRun(id: string): Promise<SipTestRun | undefined> {
+    return this.sipTestRuns.get(id);
+  }
+
+  async createSipTestRun(run: InsertSipTestRun): Promise<SipTestRun> {
+    const id = randomUUID();
+    const now = new Date();
+    const r: SipTestRun = {
+      id,
+      customerId: run.customerId,
+      testName: run.testName ?? null,
+      testMode: run.testMode ?? 'standard',
+      routeSource: run.routeSource ?? null,
+      tierId: run.tierId ?? null,
+      supplierIds: run.supplierIds ?? null,
+      countryFilters: run.countryFilters ?? null,
+      manualNumbers: run.manualNumbers ?? null,
+      useDbNumbers: run.useDbNumbers ?? true,
+      addToDb: run.addToDb ?? false,
+      codec: run.codec ?? 'G729',
+      audioFileId: run.audioFileId ?? null,
+      aniMode: run.aniMode ?? 'any',
+      aniNumber: run.aniNumber ?? null,
+      aniCountries: run.aniCountries ?? null,
+      callsCount: run.callsCount ?? 5,
+      maxDuration: run.maxDuration ?? 30,
+      capacity: run.capacity ?? 1,
+      status: run.status ?? 'pending',
+      totalCalls: 0,
+      successfulCalls: 0,
+      failedCalls: 0,
+      avgMos: null,
+      avgPdd: null,
+      avgJitter: null,
+      avgPacketLoss: null,
+      totalDurationSec: 0,
+      totalCost: '0',
+      startedAt: null,
+      completedAt: null,
+      createdAt: now
+    };
+    this.sipTestRuns.set(id, r);
+    return r;
+  }
+
+  async updateSipTestRun(id: string, data: Partial<InsertSipTestRun>): Promise<SipTestRun | undefined> {
+    const run = this.sipTestRuns.get(id);
+    if (!run) return undefined;
+    const updated = { ...run, ...data };
+    this.sipTestRuns.set(id, updated);
+    return updated;
+  }
+
+  // SIP Test Run Results (Individual call results)
+  sipTestRunResults = new Map<string, SipTestRunResult>();
+
+  async getSipTestRunResults(testRunId: string): Promise<SipTestRunResult[]> {
+    return Array.from(this.sipTestRunResults.values()).filter(r => r.testRunId === testRunId);
+  }
+
+  async createSipTestRunResult(result: InsertSipTestRunResult): Promise<SipTestRunResult> {
+    const id = randomUUID();
+    const now = new Date();
+    const r: SipTestRunResult = {
+      id,
+      testRunId: result.testRunId,
+      callIndex: result.callIndex,
+      destination: result.destination,
+      aniUsed: result.aniUsed ?? null,
+      supplierName: result.supplierName ?? null,
+      tierName: result.tierName ?? null,
+      status: result.status ?? 'pending',
+      result: result.result ?? null,
+      sipResponseCode: result.sipResponseCode ?? null,
+      pddMs: result.pddMs ?? null,
+      mosScore: result.mosScore ?? null,
+      jitterMs: result.jitterMs ?? null,
+      packetLossPercent: result.packetLossPercent ?? null,
+      latencyMs: result.latencyMs ?? null,
+      codecUsed: result.codecUsed ?? null,
+      durationSec: result.durationSec ?? null,
+      callCost: result.callCost ?? null,
+      ratePerMin: result.ratePerMin ?? null,
+      errorMessage: result.errorMessage ?? null,
+      createdAt: now,
+    };
+    this.sipTestRunResults.set(id, r);
+    return r;
   }
 
   // Webhooks
