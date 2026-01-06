@@ -7,6 +7,7 @@ import { GlobalHeader } from "@/components/layout/super-admin/global-header";
 import { PrimarySidebar } from "@/components/layout/super-admin/primary-sidebar";
 import { SecondarySidebar } from "@/components/layout/super-admin/secondary-sidebar";
 import { WorkspaceTabs } from "@/components/layout/super-admin/workspace-tabs";
+import { AdminSearchResults } from "@/components/layout/super-admin/search-results";
 import { useSuperAdminTabs } from "@/stores/super-admin-tabs";
 
 import AdminDashboard from "./dashboard";
@@ -174,6 +175,7 @@ export default function AdminLayout() {
             
             <main className="flex-1 overflow-auto p-6">
               <Switch>
+                <Route path="/admin/search" component={AdminSearchResults} />
                 <Route path="/admin" component={AdminDashboard} />
                 <Route path="/admin/pops" component={POPsPage} />
                 <Route path="/admin/voice-tiers" component={VoiceTiersPage} />

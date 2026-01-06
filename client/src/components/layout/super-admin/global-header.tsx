@@ -1,3 +1,5 @@
+import { useState, KeyboardEvent } from "react";
+import { useLocation } from "wouter";
 import { Search, Bell, LogOut, Menu, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +22,21 @@ interface GlobalHeaderProps {
 }
 
 export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
+  const [, setLocation] = useLocation();
   const initials = userEmail?.substring(0, 2).toUpperCase() || "SA";
-  const { primarySidebarOpen, toggleBothSidebars } = useSuperAdminTabs();
+  const { primarySidebarOpen, toggleBothSidebars, openTab } = useSuperAdminTabs();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      openTab({
+        id: "search",
+        label: "Search",
+        route: `/admin/search?q=${encodeURIComponent(searchQuery.trim())}`,
+      });
+      setLocation(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 flex h-12 items-center justify-between gap-4 border-b bg-background px-4">
@@ -46,6 +61,9 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
             type="search"
             placeholder="Search carriers, routes, customers..."
             className="pl-9 h-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             data-testid="input-global-search"
           />
           <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
