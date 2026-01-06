@@ -104,6 +104,37 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
 };
 
 function PortalLoginPage() {
+  const [, setLocation] = useLocation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Invalid credentials");
+      }
+      
+      window.location.reload();
+    } catch (err: any) {
+      setError(err.message || "Login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30">
       <div className="w-full max-w-md p-8">
@@ -118,14 +149,58 @@ function PortalLoginPage() {
           </p>
         </div>
         <div className="bg-card border rounded-lg p-6 space-y-4">
-          <a href="/api/login" className="block">
-            <Button className="w-full" size="lg" data-testid="button-login">
-              Sign in with Replit
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="text-sm text-destructive text-center bg-destructive/10 p-2 rounded">
+                {error}
+              </div>
+            )}
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium">Email</label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                data-testid="input-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="password" className="text-sm font-medium">Password</label>
+                <a href="#" className="text-xs text-primary hover:underline" data-testid="link-forgot-password">
+                  Forgot password?
+                </a>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                data-testid="input-password"
+              />
+            </div>
+            <Button type="submit" className="w-full" size="lg" disabled={isLoading} data-testid="button-login">
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign In"
+              )}
             </Button>
-          </a>
-          <p className="text-xs text-center text-muted-foreground">
-            Sign in with Google, GitHub, Apple, or email
-          </p>
+          </form>
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">Don't have an account? </span>
+            <Link href="/register" className="text-primary hover:underline" data-testid="link-register">
+              Sign up
+            </Link>
+          </div>
         </div>
         <div className="mt-6 text-center">
           <Link href="/">

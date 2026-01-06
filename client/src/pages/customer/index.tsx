@@ -75,12 +75,12 @@ export default function CustomerPortal() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await getCurrentUser();
-        if (!currentUser) {
+        const result = await getCurrentUser();
+        if (!result) {
           navigate("/login");
           return;
         }
-        setUser(currentUser);
+        setUser(result.user);
       } catch {
         navigate("/login");
       } finally {
