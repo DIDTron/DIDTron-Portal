@@ -295,7 +295,7 @@ export default function ConnexCSStatusPage() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => window.location.href = "/admin/integrations"}
+              onClick={() => window.location.href = "/admin/settings/integrations"}
               data-testid="button-configure-credentials"
             >
               <Key className="h-4 w-4 mr-2" />
