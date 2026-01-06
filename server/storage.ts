@@ -504,7 +504,7 @@ export class MemStorage implements IStorage {
   private portalLoginPages: Map<string, PortalLoginPage>;
   private siteSettings: Map<string, SiteSetting>;
   private websiteSections: Map<string, WebsiteSection>;
-  private integrations: Map<string, Integration>;
+  // integrations are stored in PostgreSQL via integrationsRepository
   private bonusTypes: Map<string, BonusType>;
   private emailTemplates: Map<string, EmailTemplate>;
   private emailLogs: Map<string, EmailLog>;
@@ -565,7 +565,7 @@ export class MemStorage implements IStorage {
     this.portalLoginPages = new Map();
     this.siteSettings = new Map();
     this.websiteSections = new Map();
-    this.integrations = new Map();
+    // integrations are now stored in PostgreSQL via integrationsRepository
     this.bonusTypes = new Map();
     this.emailTemplates = new Map();
     this.emailLogs = new Map();
@@ -612,21 +612,7 @@ export class MemStorage implements IStorage {
     ];
     groups.forEach(grp => this.customerGroups.set(grp.id, grp));
 
-    // Seed default integrations
-    const defaultIntegrations: Integration[] = [
-      { id: randomUUID(), provider: "connexcs", displayName: "ConnexCS", description: "VoIP switching and routing platform", category: "voip", icon: "phone", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "stripe", displayName: "Stripe", description: "Payment processing and billing", category: "payments", icon: "credit-card", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "paypal", displayName: "PayPal", description: "Alternative payment processing", category: "payments", icon: "wallet", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "brevo", displayName: "Brevo (Sendinblue)", description: "Transactional and marketing emails", category: "email", icon: "mail", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "ayrshare", displayName: "Ayrshare", description: "Social media management and posting", category: "social", icon: "share-2", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "openexchangerates", displayName: "Open Exchange Rates", description: "Currency conversion and FX rates", category: "finance", icon: "dollar-sign", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "cloudflare_r2", displayName: "Cloudflare R2", description: "Object storage for recordings and files", category: "storage", icon: "hard-drive", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "upstash_redis", displayName: "Upstash Redis", description: "Caching and session management", category: "cache", icon: "database", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "twilio", displayName: "Twilio", description: "SIP testing and verification", category: "sip_testing", icon: "phone-call", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "signalwire", displayName: "SignalWire", description: "Budget SIP testing provider", category: "sip_testing", icon: "phone-forwarded", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-      { id: randomUUID(), provider: "nowpayments", displayName: "NOWPayments", description: "Crypto payment gateway - 160+ cryptocurrencies", category: "payments", icon: "bitcoin", status: "not_configured", isEnabled: false, credentials: null, settings: null, lastTestedAt: null, lastSyncedAt: null, testResult: null, createdAt: now, updatedAt: now },
-    ];
-    defaultIntegrations.forEach(i => this.integrations.set(i.id, i));
+    // Integrations are now seeded in PostgreSQL via seedIntegrations() in index.ts
   }
 
   // Users
