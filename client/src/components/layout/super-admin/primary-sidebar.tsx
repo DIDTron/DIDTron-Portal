@@ -1,9 +1,13 @@
 import { useLocation } from "wouter";
-import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network, Cpu, Globe, Building2 } from "lucide-react";
+import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network, Cpu, Globe, Building2, GripVertical, Cog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useMemo } from "react";
 
 export interface NavSection {
   id: string;
@@ -26,8 +30,61 @@ export const navSections: NavSection[] = [
   { id: "softswitch", label: "Softswitch", icon: Network, defaultRoute: "/admin/class4-customers" },
   { id: "cms", label: "CMS", icon: FileText, defaultRoute: "/admin/pages" },
   { id: "admin", label: "Admin", icon: Shield, defaultRoute: "/admin/admin-users" },
+  { id: "global-settings", label: "Global Settings", icon: Cog, defaultRoute: "/admin/global-settings/platform" },
   { id: "settings", label: "Settings", icon: Settings, defaultRoute: "/admin/settings/general" },
 ];
+
+interface SortableNavItemProps {
+  section: NavSection;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+function SortableNavItem({ section, isActive, onClick }: SortableNavItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const Icon = section.icon;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center gap-2 px-2 py-2 rounded-md text-sm cursor-pointer group",
+        isActive
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "text-sidebar-foreground hover-elevate"
+      )}
+      data-testid={`nav-section-${section.id}`}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity"
+        data-testid={`drag-handle-${section.id}`}
+      >
+        <GripVertical className="h-4 w-4" />
+      </div>
+      <div className="flex items-center gap-3 flex-1" onClick={onClick}>
+        <Icon className="h-5 w-5 shrink-0" />
+        <span className="truncate">{section.label}</span>
+      </div>
+    </div>
+  );
+}
 
 export function PrimarySidebar() {
   const [, setLocation] = useLocation();
@@ -38,8 +95,50 @@ export function PrimarySidebar() {
     setActiveSubItem,
     primarySidebarOpen,
     toggleBothSidebars,
-    openSecondarySidebar
+    openSecondarySidebar,
+    primarySectionOrder,
+    setPrimarySectionOrder
   } = useSuperAdminTabs();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const orderedSections = useMemo(() => {
+    if (primarySectionOrder.length === 0) {
+      return navSections;
+    }
+    const sectionMap = new Map(navSections.map(s => [s.id, s]));
+    const ordered: NavSection[] = [];
+    for (const id of primarySectionOrder) {
+      const section = sectionMap.get(id);
+      if (section) {
+        ordered.push(section);
+        sectionMap.delete(id);
+      }
+    }
+    for (const section of sectionMap.values()) {
+      ordered.push(section);
+    }
+    return ordered;
+  }, [primarySectionOrder]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = orderedSections.findIndex((s) => s.id === active.id);
+      const newIndex = orderedSections.findIndex((s) => s.id === over.id);
+      const newOrder = arrayMove(orderedSections, oldIndex, newIndex);
+      setPrimarySectionOrder(newOrder.map((s) => s.id));
+    }
+  };
 
   const handleSectionClick = (section: NavSection) => {
     setActiveSection(section.id);
@@ -70,7 +169,7 @@ export function PrimarySidebar() {
   }
 
   return (
-    <div className="flex flex-col h-full w-44 border-r bg-sidebar shrink-0">
+    <div className="flex flex-col h-full w-48 border-r bg-sidebar shrink-0">
       <div className="flex h-12 items-center gap-2 px-3 border-b">
         <Button
           variant="ghost"
@@ -87,27 +186,25 @@ export function PrimarySidebar() {
       
       <ScrollArea className="flex-1">
         <nav className="py-2 px-2 space-y-0.5">
-          {navSections.map((section) => {
-            const Icon = section.icon;
-            const isActive = activeSection === section.id;
-            
-            return (
-              <div
-                key={section.id}
-                onClick={() => handleSectionClick(section)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer hover-elevate",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground"
-                )}
-                data-testid={`nav-section-${section.id}`}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                <span className="truncate">{section.label}</span>
-              </div>
-            );
-          })}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={orderedSections.map((s) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {orderedSections.map((section) => (
+                <SortableNavItem
+                  key={section.id}
+                  section={section}
+                  isActive={activeSection === section.id}
+                  onClick={() => handleSectionClick(section)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </nav>
       </ScrollArea>
 
@@ -144,6 +241,7 @@ function getFirstSubItemForSection(sectionId: string): SubItem | null {
     softswitch: { id: "class4-customers", label: "Class 4 Customers", route: "/admin/class4-customers" },
     cms: { id: "pages", label: "Pages", route: "/admin/pages" },
     admin: { id: "admin-users", label: "Admin Users", route: "/admin/admin-users" },
+    "global-settings": { id: "global-platform", label: "Platform", route: "/admin/global-settings/platform" },
     settings: { id: "general", label: "General", route: "/admin/settings/general" },
   };
   

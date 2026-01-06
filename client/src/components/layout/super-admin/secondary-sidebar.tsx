@@ -3,14 +3,18 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Menu } from "lucide-react";
+import { Menu, GripVertical } from "lucide-react";
 import {
   Server, Layers, Radio, CreditCard, Building2, Globe, Building,
   Route as RouteIcon, Users, UserPlus, Tags, Gift, Ticket,
   FileText, Palette, Image, Mail, BarChart3, Activity, Bell,
   Shield, Key, Database, History, Settings, Webhook, Cpu, BookOpen,
-  Bot, Phone, PhoneOutgoing, Network
+  Bot, Phone, PhoneOutgoing, Network, Cog, Link2, Languages, DollarSign
 } from "lucide-react";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useMemo } from "react";
 
 interface NavSubItem {
   id: string;
@@ -135,6 +139,15 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "tickets", label: "Support Tickets", route: "/admin/tickets", icon: Ticket },
     ],
   },
+  "global-settings": {
+    title: "Global Settings",
+    items: [
+      { id: "global-platform", label: "Platform", route: "/admin/global-settings/platform", icon: Cog },
+      { id: "global-integrations", label: "Integrations", route: "/admin/global-settings/integrations", icon: Link2 },
+      { id: "global-currencies", label: "Currencies", route: "/admin/global-settings/currencies", icon: DollarSign },
+      { id: "global-localization", label: "Localization", route: "/admin/global-settings/localization", icon: Languages },
+    ],
+  },
   settings: {
     title: "Settings",
     items: [
@@ -146,6 +159,58 @@ const sectionConfigs: Record<string, SectionConfig> = {
   },
 };
 
+interface SortableSubItemProps {
+  item: NavSubItem;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+function SortableSubItem({ item, isActive, onClick }: SortableSubItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const Icon = item.icon;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center gap-1 px-2 py-2 rounded-md text-sm cursor-pointer group",
+        isActive
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "text-sidebar-foreground hover-elevate"
+      )}
+      data-testid={`nav-item-${item.id}`}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity"
+        data-testid={`drag-handle-item-${item.id}`}
+      >
+        <GripVertical className="h-3 w-3" />
+      </div>
+      <div className="flex items-center gap-2 flex-1" onClick={onClick}>
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="truncate">{item.label}</span>
+      </div>
+    </div>
+  );
+}
+
 export function SecondarySidebar() {
   const [, setLocation] = useLocation();
   const { 
@@ -154,8 +219,21 @@ export function SecondarySidebar() {
     setActiveSubItem, 
     openTab,
     secondarySidebarOpen,
-    toggleSecondarySidebar
+    toggleSecondarySidebar,
+    sectionItemOrder,
+    setSectionItemOrder
   } = useSuperAdminTabs();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   if (!secondarySidebarOpen) {
     return null;
@@ -167,6 +245,36 @@ export function SecondarySidebar() {
 
   const config = sectionConfigs[activeSection];
   if (!config) return null;
+
+  const orderedItems = useMemo(() => {
+    const savedOrder = sectionItemOrder[activeSection];
+    if (!savedOrder || savedOrder.length === 0) {
+      return config.items;
+    }
+    const itemMap = new Map(config.items.map(i => [i.id, i]));
+    const ordered: NavSubItem[] = [];
+    for (const id of savedOrder) {
+      const item = itemMap.get(id);
+      if (item) {
+        ordered.push(item);
+        itemMap.delete(id);
+      }
+    }
+    for (const item of itemMap.values()) {
+      ordered.push(item);
+    }
+    return ordered;
+  }, [activeSection, sectionItemOrder, config.items]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = orderedItems.findIndex((i) => i.id === active.id);
+      const newIndex = orderedItems.findIndex((i) => i.id === over.id);
+      const newOrder = arrayMove(orderedItems, oldIndex, newIndex);
+      setSectionItemOrder(activeSection, newOrder.map((i) => i.id));
+    }
+  };
 
   const handleItemClick = (item: NavSubItem) => {
     setActiveSubItem(item.id);
@@ -196,27 +304,25 @@ export function SecondarySidebar() {
       
       <ScrollArea className="flex-1">
         <nav className="py-2 px-2 space-y-0.5">
-          {config.items.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSubItem === item.id;
-            
-            return (
-              <div
-                key={item.id}
-                onClick={() => handleItemClick(item)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer hover-elevate",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground"
-                )}
-                data-testid={`nav-item-${item.id}`}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{item.label}</span>
-              </div>
-            );
-          })}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={orderedItems.map((i) => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {orderedItems.map((item) => (
+                <SortableSubItem
+                  key={item.id}
+                  item={item}
+                  isActive={activeSubItem === item.id}
+                  onClick={() => handleItemClick(item)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </nav>
       </ScrollArea>
     </div>
