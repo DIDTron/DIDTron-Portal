@@ -1811,6 +1811,91 @@ export const aiVoiceWebhooks = pgTable("ai_voice_webhooks", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ==================== CRM INTEGRATIONS ====================
+
+export const crmProviderEnum = pgEnum("crm_provider", ["salesforce", "hubspot"]);
+
+export const crmConnectionStatusEnum = pgEnum("crm_connection_status", ["connected", "disconnected", "error", "pending"]);
+
+export const crmSyncDirectionEnum = pgEnum("crm_sync_direction", ["inbound", "outbound", "bidirectional"]);
+
+export const crmConnections = pgTable("crm_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  provider: crmProviderEnum("provider").notNull(),
+  name: text("name").notNull(),
+  status: crmConnectionStatusEnum("status").default("pending"),
+  instanceUrl: text("instance_url"),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  scopes: text("scopes").array(),
+  settings: jsonb("settings"),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastError: text("last_error"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const crmFieldMappings = pgTable("crm_field_mappings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  connectionId: varchar("connection_id").references(() => crmConnections.id).notNull(),
+  localEntity: text("local_entity").notNull(),
+  localField: text("local_field").notNull(),
+  crmEntity: text("crm_entity").notNull(),
+  crmField: text("crm_field").notNull(),
+  direction: crmSyncDirectionEnum("direction").default("bidirectional"),
+  transformFunction: text("transform_function"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const crmSyncSettings = pgTable("crm_sync_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  connectionId: varchar("connection_id").references(() => crmConnections.id).notNull(),
+  syncCallLogs: boolean("sync_call_logs").default(true),
+  syncContacts: boolean("sync_contacts").default(true),
+  syncCampaigns: boolean("sync_campaigns").default(false),
+  syncInterval: integer("sync_interval").default(15),
+  autoCreateContacts: boolean("auto_create_contacts").default(false),
+  autoLogActivities: boolean("auto_log_activities").default(true),
+  contactMatchField: text("contact_match_field").default("phone"),
+  defaultOwnerEmail: text("default_owner_email"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const crmSyncLogs = pgTable("crm_sync_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  connectionId: varchar("connection_id").references(() => crmConnections.id).notNull(),
+  syncType: text("sync_type").notNull(),
+  direction: crmSyncDirectionEnum("direction").notNull(),
+  status: text("status").notNull(),
+  recordsProcessed: integer("records_processed").default(0),
+  recordsCreated: integer("records_created").default(0),
+  recordsUpdated: integer("records_updated").default(0),
+  recordsFailed: integer("records_failed").default(0),
+  errorDetails: jsonb("error_details"),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const crmContactMappings = pgTable("crm_contact_mappings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  connectionId: varchar("connection_id").references(() => crmConnections.id).notNull(),
+  localContactId: varchar("local_contact_id"),
+  crmContactId: text("crm_contact_id").notNull(),
+  crmContactType: text("crm_contact_type").default("Contact"),
+  phoneNumber: text("phone_number"),
+  email: text("email"),
+  fullName: text("full_name"),
+  crmData: jsonb("crm_data"),
+  lastSyncAt: timestamp("last_sync_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // ==================== CMS & WHITE-LABEL ====================
 
 export const cmsPortals = pgTable("cms_portals", {
@@ -2039,6 +2124,11 @@ export const insertAiVoiceUsageSchema = createInsertSchema(aiVoiceUsage).omit({ 
 export const insertAiVoiceAssignmentSchema = createInsertSchema(aiVoiceAssignments).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAiVoiceSettingSchema = createInsertSchema(aiVoiceSettings).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAiVoiceWebhookSchema = createInsertSchema(aiVoiceWebhooks).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCrmConnectionSchema = createInsertSchema(crmConnections).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCrmFieldMappingSchema = createInsertSchema(crmFieldMappings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCrmSyncSettingsSchema = createInsertSchema(crmSyncSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCrmSyncLogSchema = createInsertSchema(crmSyncLogs).omit({ id: true, startedAt: true });
+export const insertCrmContactMappingSchema = createInsertSchema(crmContactMappings).omit({ id: true, createdAt: true, lastSyncAt: true });
 export const insertCmsPortalSchema = createInsertSchema(cmsPortals).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsThemeSchema = createInsertSchema(cmsThemes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsPageSchema = createInsertSchema(cmsPages).omit({ id: true, createdAt: true, updatedAt: true });
@@ -2274,6 +2364,18 @@ export type InsertAiVoiceSetting = z.infer<typeof insertAiVoiceSettingSchema>;
 export type AiVoiceSetting = typeof aiVoiceSettings.$inferSelect;
 export type InsertAiVoiceWebhook = z.infer<typeof insertAiVoiceWebhookSchema>;
 export type AiVoiceWebhook = typeof aiVoiceWebhooks.$inferSelect;
+
+// CRM Integration types
+export type InsertCrmConnection = z.infer<typeof insertCrmConnectionSchema>;
+export type CrmConnection = typeof crmConnections.$inferSelect;
+export type InsertCrmFieldMapping = z.infer<typeof insertCrmFieldMappingSchema>;
+export type CrmFieldMapping = typeof crmFieldMappings.$inferSelect;
+export type InsertCrmSyncSettings = z.infer<typeof insertCrmSyncSettingsSchema>;
+export type CrmSyncSettings = typeof crmSyncSettings.$inferSelect;
+export type InsertCrmSyncLog = z.infer<typeof insertCrmSyncLogSchema>;
+export type CrmSyncLog = typeof crmSyncLogs.$inferSelect;
+export type InsertCrmContactMapping = z.infer<typeof insertCrmContactMappingSchema>;
+export type CrmContactMapping = typeof crmContactMappings.$inferSelect;
 
 // CMS & White-label types
 export type InsertCmsPortal = z.infer<typeof insertCmsPortalSchema>;
