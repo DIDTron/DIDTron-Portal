@@ -9,7 +9,7 @@ import {
   Route as RouteIcon, Users, UserPlus, Tags, Gift, Ticket,
   FileText, Palette, Image, Mail, BarChart3, Activity, Bell,
   Shield, Key, Database, History, Settings, Webhook, Cpu, BookOpen,
-  Bot, Phone, PhoneOutgoing, Network, Cog, Link2, Languages, DollarSign
+  Bot, Phone, PhoneOutgoing, Network, Cog, Link2, Languages, DollarSign, ListTodo
 } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -145,6 +145,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "roles", label: "Roles", route: "/admin/roles", icon: Shield },
       { id: "audit-logs", label: "Audit Logs", route: "/admin/audit-logs", icon: History },
       { id: "tickets", label: "Support Tickets", route: "/admin/tickets", icon: Ticket },
+      { id: "job-queue", label: "Job Queue", route: "/admin/job-queue", icon: ListTodo },
     ],
   },
   "global-settings": {

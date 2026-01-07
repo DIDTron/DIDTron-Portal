@@ -57,6 +57,7 @@ import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocaliz
 import { CustomerRatesPage, CarrierRatesPage } from "./rate-cards";
 import CdrsPage from "./cdrs";
 import ConnexCSStatusPage from "./connexcs-status";
+import JobQueuePage from "./job-queue";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -117,6 +118,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/roles": { section: "admin", subItem: "roles" },
   "/admin/audit-logs": { section: "admin", subItem: "audit-logs" },
   "/admin/tickets": { section: "admin", subItem: "tickets" },
+  "/admin/job-queue": { section: "admin", subItem: "job-queue" },
   "/admin/settings/general": { section: "settings", subItem: "general" },
   "/admin/settings/api-keys": { section: "settings", subItem: "api-keys" },
   "/admin/settings/webhooks": { section: "settings", subItem: "webhooks" },
@@ -236,6 +238,7 @@ export default function AdminLayout() {
                 <Route path="/admin/roles" component={RolesPage} />
                 <Route path="/admin/audit-logs" component={AuditLogsPage} />
                 <Route path="/admin/tickets" component={TicketsPage} />
+                <Route path="/admin/job-queue" component={JobQueuePage} />
                 <Route path="/admin/settings/general" component={SettingsPage} />
                 <Route path="/admin/settings/api-keys" component={SettingsPage} />
                 <Route path="/admin/settings/webhooks" component={SettingsPage} />

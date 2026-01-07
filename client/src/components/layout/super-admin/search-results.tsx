@@ -66,6 +66,7 @@ const allSearchItems: SearchItem[] = [
   { id: "admin-roles", label: "Roles & Permissions", section: "admin", sectionLabel: "Admin", path: "/admin/roles", icon: Shield, keywords: ["roles", "permissions", "access", "security"] },
   { id: "admin-audit-logs", label: "Audit Logs", section: "admin", sectionLabel: "Admin", path: "/admin/audit-logs", icon: FileText, keywords: ["audit", "logs", "history", "changes"] },
   { id: "admin-tickets", label: "Support Tickets", section: "admin", sectionLabel: "Admin", path: "/admin/tickets", icon: MessageSquare, keywords: ["tickets", "support", "help", "issues"] },
+  { id: "admin-job-queue", label: "Job Queue", section: "admin", sectionLabel: "Admin", path: "/admin/job-queue", icon: Settings, keywords: ["jobs", "queue", "background", "tasks", "worker", "async"] },
   
   { id: "settings-general", label: "General Settings", section: "settings", sectionLabel: "Settings", path: "/admin/settings/general", icon: Settings, keywords: ["settings", "general", "configuration"] },
   { id: "settings-api-keys", label: "API Keys", section: "settings", sectionLabel: "Settings", path: "/admin/settings/api-keys", icon: Settings, keywords: ["api", "keys", "integration", "tokens"] },
