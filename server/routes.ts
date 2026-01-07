@@ -3933,13 +3933,16 @@ export async function registerRoutes(
         try {
           const authResult = await connexcsTools.testAuth(storage);
           if (authResult.success) {
-            const carriers = await connexcsTools.getCarriers(storage);
-            res.json({
+            const carriers = await connexcsTools.getCarriers(storage).catch(() => []);
+            const response: any = {
               connected: true,
               mockMode: false,
               message: `Connected to ConnexCS (${carriers.length} carriers)`,
               tokenDaysRemaining: authResult.tokenDaysRemaining,
-            });
+            };
+            if (authResult.warning) response.warning = authResult.warning;
+            if (authResult.tokenExpiringSoon) response.tokenExpiringSoon = authResult.tokenExpiringSoon;
+            res.json(response);
           } else {
             res.json({
               connected: false,
@@ -4007,14 +4010,17 @@ export async function registerRoutes(
               };
             } catch {}
             
-            res.json({
+            const response: any = {
               connected: true,
               mockMode: false,
               message: "Connected to ConnexCS",
               tokenDaysRemaining: authResult.tokenDaysRemaining,
               lastSync: new Date().toISOString(),
               stats,
-            });
+            };
+            if (authResult.warning) response.warning = authResult.warning;
+            if (authResult.tokenExpiringSoon) response.tokenExpiringSoon = authResult.tokenExpiringSoon;
+            res.json(response);
           } else {
             res.json({
               connected: false,
