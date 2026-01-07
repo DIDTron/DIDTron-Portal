@@ -23,6 +23,8 @@ interface ConnexCSStatus {
   tokenDaysRemaining?: number;
   lastSync?: string;
   error?: string;
+  warning?: string;
+  tokenExpiringSoon?: boolean;
 }
 
 interface ConnexCSCarrier {
@@ -116,9 +118,14 @@ class ConnexCSToolsService {
     }
   }
 
-  private checkTokenExpiration(token: string): { needsRenewal: boolean; daysRemaining: number } {
+  private checkTokenExpiration(token: string): { 
+    needsRenewal: boolean; 
+    daysRemaining: number; 
+    isExpired: boolean;
+    expiringSoon: boolean;
+  } {
     const payload = this.decodeJWT(token);
-    if (!payload.exp) return { needsRenewal: false, daysRemaining: 30 };
+    if (!payload.exp) return { needsRenewal: false, daysRemaining: 30, isExpired: false, expiringSoon: false };
 
     const now = Math.floor(Date.now() / 1000);
     const secondsRemaining = payload.exp - now;
@@ -127,6 +134,8 @@ class ConnexCSToolsService {
     return {
       needsRenewal: daysRemaining < 15,
       daysRemaining: Math.max(0, daysRemaining),
+      isExpired: secondsRemaining <= 0,
+      expiringSoon: daysRemaining > 0 && daysRemaining <= 7,
     };
   }
 
@@ -136,12 +145,22 @@ class ConnexCSToolsService {
     }
 
     if (this.credentials.refreshToken) {
-      const { needsRenewal } = this.checkTokenExpiration(this.credentials.refreshToken);
-      if (!needsRenewal) {
+      const { needsRenewal, isExpired, expiringSoon } = this.checkTokenExpiration(this.credentials.refreshToken);
+      
+      if (isExpired) {
+        console.log("[ConnexCS Tools] Token expired - auto re-authenticating with stored credentials");
+        this.credentials.refreshToken = undefined;
+      } else if (!needsRenewal) {
+        if (expiringSoon) {
+          console.log(`[ConnexCS Tools] Token expiring soon - will renew on next API call`);
+        }
         return this.credentials.refreshToken;
+      } else {
+        console.log("[ConnexCS Tools] Token needs renewal - refreshing now");
       }
     }
 
+    console.log("[ConnexCS Tools] Obtaining new refresh token with username/password");
     const url = `${CX_BASE_URL}auth/jwt/refresh`;
     const response = await fetch(url, {
       method: "POST",
@@ -158,13 +177,14 @@ class ConnexCSToolsService {
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new Error("Invalid ConnexCS credentials");
+        throw new Error("Invalid ConnexCS credentials - please update username/password");
       }
       throw new Error(`Failed to get refresh token: HTTP ${response.status}`);
     }
 
     const data = (await response.json()) as ConnexCSTokenResponse;
     this.credentials.refreshToken = data.token;
+    console.log("[ConnexCS Tools] Successfully obtained new 30-day refresh token");
 
     return data.token;
   }
@@ -184,8 +204,26 @@ class ConnexCSToolsService {
 
     if (!response.ok) {
       if (response.status === 401) {
+        console.log("[ConnexCS Tools] Access token request failed - attempting auto re-authentication");
         this.credentials!.refreshToken = undefined;
-        throw new Error("Refresh token expired - please reconfigure");
+        const newRefreshToken = await this.getRefreshToken(storage);
+        
+        const retryResponse = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${newRefreshToken}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
+        
+        if (!retryResponse.ok) {
+          throw new Error("Auto re-authentication failed - please update credentials");
+        }
+        
+        const retryData = (await retryResponse.json()) as ConnexCSTokenResponse;
+        console.log("[ConnexCS Tools] Auto re-authentication successful");
+        return retryData.token;
       }
       throw new Error(`Failed to get access token: HTTP ${response.status}`);
     }
@@ -249,6 +287,8 @@ class ConnexCSToolsService {
     success: boolean;
     message: string;
     tokenDaysRemaining?: number;
+    warning?: string;
+    tokenExpiringSoon?: boolean;
     error?: string;
   }> {
     await this.loadCredentialsFromStorage(storage);
@@ -262,7 +302,7 @@ class ConnexCSToolsService {
 
     try {
       const refreshToken = await this.getRefreshToken(storage);
-      const { daysRemaining } = this.checkTokenExpiration(refreshToken);
+      const { daysRemaining, expiringSoon } = this.checkTokenExpiration(refreshToken);
       
       const accessToken = await this.getAccessToken(storage);
       if (!accessToken) {
@@ -273,11 +313,24 @@ class ConnexCSToolsService {
         };
       }
 
-      return {
+      const result: {
+        success: boolean;
+        message: string;
+        tokenDaysRemaining?: number;
+        warning?: string;
+        tokenExpiringSoon?: boolean;
+      } = {
         success: true,
         message: "JWT authentication successful",
         tokenDaysRemaining: daysRemaining,
       };
+
+      if (expiringSoon) {
+        result.warning = `Token expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} - will auto-renew on next API call`;
+        result.tokenExpiringSoon = true;
+      }
+
+      return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       
@@ -307,17 +360,24 @@ class ConnexCSToolsService {
 
     try {
       const refreshToken = await this.getRefreshToken(storage);
-      const { daysRemaining } = this.checkTokenExpiration(refreshToken);
+      const { daysRemaining, expiringSoon } = this.checkTokenExpiration(refreshToken);
 
-      const carriers = await this.getCarriers(storage);
+      const carriers = await this.getCarriers(storage).catch(() => []);
 
-      return {
+      const status: ConnexCSStatus = {
         connected: true,
         mockMode: false,
-        message: `Connected to ConnexCS`,
+        message: `Connected to ConnexCS (${carriers.length} carriers)`,
         tokenDaysRemaining: daysRemaining,
         lastSync: new Date().toISOString(),
       };
+
+      if (expiringSoon) {
+        status.warning = `Token expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} - will auto-renew on next API call`;
+        status.tokenExpiringSoon = true;
+      }
+
+      return status;
     } catch (error) {
       return {
         connected: false,
