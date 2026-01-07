@@ -4,6 +4,116 @@ import { aiVoiceService } from "./ai-voice-service";
 import { storage } from "./storage";
 import { z } from "zod";
 
+const pricingTierSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  ratePerMinute: z.string().min(1, "Rate is required"),
+  setupFee: z.string().optional(),
+  minimumBillableSeconds: z.number().int().positive().optional(),
+  billingIncrement: z.number().int().positive().optional(),
+  llmProvider: z.enum(["openai", "anthropic", "custom"]).optional(),
+  ttsProvider: z.enum(["openai", "elevenlabs", "custom"]).optional(),
+  sttProvider: z.enum(["openai", "whisper", "custom"]).optional(),
+  maxCallDuration: z.number().int().positive().optional(),
+  isDefault: z.boolean().optional(),
+  isActive: z.boolean().optional()
+});
+
+const rateConfigSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  destinationPrefix: z.string().optional(),
+  countryCode: z.string().optional(),
+  ratePerMinute: z.string().min(1, "Rate is required"),
+  connectionFee: z.string().optional(),
+  minimumDuration: z.number().int().optional(),
+  billingIncrement: z.number().int().optional(),
+  llmCostPerToken: z.string().optional(),
+  ttsCostPerChar: z.string().optional(),
+  sttCostPerSecond: z.string().optional(),
+  priority: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+
+const knowledgeBaseSchema = z.object({
+  customerId: z.string().uuid("Invalid customer ID"),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional()
+});
+
+const kbSourceSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  sourceType: z.enum(["text", "file", "url", "api"]),
+  content: z.string().optional(),
+  fileUrl: z.string().optional(),
+  mimeType: z.string().optional(),
+  fileSize: z.number().optional()
+});
+
+const phonebookSchema = z.object({
+  customerId: z.string().uuid("Invalid customer ID"),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional()
+});
+
+const contactSchema = z.object({
+  phoneNumber: z.string().min(1, "Phone number is required"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  company: z.string().optional(),
+  customFields: z.record(z.any()).optional()
+});
+
+const templateSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  icon: z.string().optional(),
+  systemPrompt: z.string().optional(),
+  greetingMessage: z.string().optional(),
+  fallbackMessage: z.string().optional(),
+  voiceId: z.string().optional(),
+  voiceProvider: z.string().optional(),
+  defaultFlowData: z.any().optional(),
+  isGlobal: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  displayOrder: z.number().int().optional()
+});
+
+const assignmentSchema = z.object({
+  featureName: z.string().min(1, "Feature name is required"),
+  assignmentType: z.enum(["all", "category", "group", "customer"]).optional(),
+  categoryIds: z.array(z.string()).optional(),
+  groupIds: z.array(z.string()).optional(),
+  customerIds: z.array(z.string()).optional(),
+  pricingTierId: z.string().optional(),
+  maxAgents: z.number().int().optional(),
+  maxCallsPerDay: z.number().int().optional(),
+  maxConcurrentCalls: z.number().int().optional(),
+  allowOutbound: z.boolean().optional(),
+  allowInbound: z.boolean().optional(),
+  isActive: z.boolean().optional()
+});
+
+const settingSchema = z.object({
+  settingKey: z.string().min(1, "Setting key is required"),
+  settingValue: z.string().optional(),
+  settingType: z.enum(["string", "number", "boolean", "json"]).optional(),
+  description: z.string().optional(),
+  isPublic: z.boolean().optional()
+});
+
+const webhookSchema = z.object({
+  customerId: z.string().uuid("Invalid customer ID"),
+  name: z.string().min(1, "Name is required"),
+  url: z.string().url("Invalid URL"),
+  events: z.array(z.string()).optional(),
+  headers: z.record(z.string()).optional(),
+  isActive: z.boolean().optional(),
+  secretKey: z.string().optional()
+});
+
 export function registerAiVoiceRoutes(app: Express) {
   
   app.get("/api/admin/ai-voice/dashboard", async (req, res) => {
@@ -46,17 +156,11 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/pricing-tiers", async (req, res) => {
     try {
-      const { name, description, ratePerMinute, setupFee, minimumBillableSeconds,
-              billingIncrement, llmProvider, ttsProvider, sttProvider, maxCallDuration,
-              isDefault, isActive } = req.body;
-      if (!name || !ratePerMinute) {
-        return res.status(400).json({ error: "name and ratePerMinute are required" });
+      const parsed = pricingTierSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
       }
-      const tier = await aiVoiceStorage.createPricingTier({
-        name, description, ratePerMinute, setupFee, minimumBillableSeconds,
-        billingIncrement, llmProvider, ttsProvider, sttProvider, maxCallDuration,
-        isDefault, isActive
-      });
+      const tier = await aiVoiceStorage.createPricingTier(parsed.data);
       res.status(201).json(tier);
     } catch (error) {
       res.status(500).json({ error: "Failed to create pricing tier" });
@@ -94,7 +198,11 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/rate-configs", async (req, res) => {
     try {
-      const config = await aiVoiceStorage.createRateConfig(req.body);
+      const parsed = rateConfigSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
+      }
+      const config = await aiVoiceStorage.createRateConfig(parsed.data);
       res.status(201).json(config);
     } catch (error) {
       res.status(500).json({ error: "Failed to create rate config" });
@@ -144,11 +252,11 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/knowledge-bases", async (req, res) => {
     try {
-      const { customerId, name, description } = req.body;
-      if (!customerId || !name) {
-        return res.status(400).json({ error: "customerId and name are required" });
+      const parsed = knowledgeBaseSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
       }
-      const kb = await aiVoiceStorage.createKnowledgeBase({ customerId, name, description });
+      const kb = await aiVoiceStorage.createKnowledgeBase(parsed.data);
       res.status(201).json(kb);
     } catch (error) {
       res.status(500).json({ error: "Failed to create knowledge base" });
@@ -205,18 +313,13 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/knowledge-bases/:id/sources", async (req, res) => {
     try {
-      const { name, sourceType, content, fileUrl, mimeType, fileSize } = req.body;
-      if (!name || !sourceType) {
-        return res.status(400).json({ error: "name and sourceType are required" });
+      const parsed = kbSourceSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
       }
       const source = await aiVoiceStorage.createKbSource({
-        knowledgeBaseId: req.params.id,
-        name,
-        sourceType,
-        content,
-        fileUrl,
-        mimeType,
-        fileSize
+        ...parsed.data,
+        knowledgeBaseId: req.params.id
       });
       res.status(201).json(source);
     } catch (error) {
@@ -257,11 +360,11 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/phonebooks", async (req, res) => {
     try {
-      const { customerId, name, description } = req.body;
-      if (!customerId || !name) {
-        return res.status(400).json({ error: "customerId and name are required" });
+      const parsed = phonebookSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
       }
-      const pb = await aiVoiceStorage.createPhonebook({ customerId, name, description });
+      const pb = await aiVoiceStorage.createPhonebook(parsed.data);
       res.status(201).json(pb);
     } catch (error) {
       res.status(500).json({ error: "Failed to create phonebook" });
@@ -299,18 +402,13 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/phonebooks/:id/contacts", async (req, res) => {
     try {
-      const { phoneNumber, firstName, lastName, email, company, customFields } = req.body;
-      if (!phoneNumber) {
-        return res.status(400).json({ error: "phoneNumber is required" });
+      const parsed = contactSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
       }
       const contact = await aiVoiceStorage.createContact({
-        phonebookId: req.params.id,
-        phoneNumber,
-        firstName,
-        lastName,
-        email,
-        company,
-        customFields
+        ...parsed.data,
+        phonebookId: req.params.id
       });
       res.status(201).json(contact);
     } catch (error) {
@@ -363,7 +461,11 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/templates", async (req, res) => {
     try {
-      const template = await aiVoiceStorage.createTemplate(req.body);
+      const parsed = templateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
+      }
+      const template = await aiVoiceStorage.createTemplate(parsed.data);
       res.status(201).json(template);
     } catch (error) {
       res.status(500).json({ error: "Failed to create template" });
@@ -387,6 +489,74 @@ export function registerAiVoiceRoutes(app: Express) {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete template" });
+    }
+  });
+
+  app.get("/api/admin/ai-voice/campaigns", async (req, res) => {
+    try {
+      const campaigns = await aiVoiceStorage.getAiVoiceCampaigns();
+      res.json(campaigns);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch campaigns" });
+    }
+  });
+
+  app.get("/api/admin/ai-voice/campaigns/:id", async (req, res) => {
+    try {
+      const campaign = await aiVoiceStorage.getAiVoiceCampaign(req.params.id);
+      if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+      res.json(campaign);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch campaign" });
+    }
+  });
+
+  app.post("/api/admin/ai-voice/campaigns", async (req, res) => {
+    try {
+      const campaign = await aiVoiceStorage.createAiVoiceCampaign(req.body);
+      res.status(201).json(campaign);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create campaign" });
+    }
+  });
+
+  app.patch("/api/admin/ai-voice/campaigns/:id", async (req, res) => {
+    try {
+      const campaign = await aiVoiceStorage.updateAiVoiceCampaign(req.params.id, req.body);
+      if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+      res.json(campaign);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update campaign" });
+    }
+  });
+
+  app.delete("/api/admin/ai-voice/campaigns/:id", async (req, res) => {
+    try {
+      const deleted = await aiVoiceStorage.deleteAiVoiceCampaign(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Campaign not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete campaign" });
+    }
+  });
+
+  app.post("/api/admin/ai-voice/campaigns/:id/start", async (req, res) => {
+    try {
+      const campaign = await aiVoiceStorage.updateAiVoiceCampaign(req.params.id, { status: "running" });
+      if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+      res.json(campaign);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to start campaign" });
+    }
+  });
+
+  app.post("/api/admin/ai-voice/campaigns/:id/pause", async (req, res) => {
+    try {
+      const campaign = await aiVoiceStorage.updateAiVoiceCampaign(req.params.id, { status: "paused" });
+      if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+      res.json(campaign);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to pause campaign" });
     }
   });
 
@@ -447,7 +617,11 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/assignments", async (req, res) => {
     try {
-      const assignment = await aiVoiceStorage.createAssignment(req.body);
+      const parsed = assignmentSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
+      }
+      const assignment = await aiVoiceStorage.createAssignment(parsed.data);
       res.status(201).json(assignment);
     } catch (error) {
       res.status(500).json({ error: "Failed to create assignment" });
@@ -485,17 +659,11 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/settings", async (req, res) => {
     try {
-      const { settingKey, settingValue, settingType, description, isPublic } = req.body;
-      if (!settingKey) {
-        return res.status(400).json({ error: "settingKey is required" });
+      const parsed = settingSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
       }
-      const setting = await aiVoiceStorage.upsertSetting({
-        settingKey,
-        settingValue,
-        settingType,
-        description,
-        isPublic
-      });
+      const setting = await aiVoiceStorage.upsertSetting(parsed.data);
       res.json(setting);
     } catch (error) {
       res.status(500).json({ error: "Failed to save setting" });
@@ -514,7 +682,11 @@ export function registerAiVoiceRoutes(app: Express) {
 
   app.post("/api/admin/ai-voice/webhooks", async (req, res) => {
     try {
-      const webhook = await aiVoiceStorage.createWebhook(req.body);
+      const parsed = webhookSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Validation failed" });
+      }
+      const webhook = await aiVoiceStorage.createWebhook(parsed.data);
       res.status(201).json(webhook);
     } catch (error) {
       res.status(500).json({ error: "Failed to create webhook" });

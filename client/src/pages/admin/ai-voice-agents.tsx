@@ -40,6 +40,21 @@ import {
 } from "lucide-react";
 import type { AiVoiceAgent, Customer } from "@shared/schema";
 
+type AiVoiceTemplate = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  icon: string | null;
+  systemPrompt: string | null;
+  greetingMessage: string | null;
+  fallbackMessage: string | null;
+  voiceId: string | null;
+  voiceProvider: string | null;
+  isGlobal: boolean;
+  isActive: boolean;
+};
+
 type AgentFormData = {
   customerId: string;
   name: string;
@@ -118,6 +133,10 @@ export default function AiVoiceAgentsPage() {
     queryKey: ["/api/customers"],
   });
 
+  const { data: templates = [] } = useQuery<AiVoiceTemplate[]>({
+    queryKey: ["/api/admin/ai-voice/templates"],
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: AgentFormData) => {
       const res = await apiRequest("POST", "/api/admin/ai-voice/agents", data);
@@ -166,6 +185,20 @@ export default function AiVoiceAgentsPage() {
     setEditingAgent(null);
     setIsOpen(false);
     setActiveTab("general");
+  };
+
+  const applyTemplate = (template: AiVoiceTemplate) => {
+    setForm({
+      ...form,
+      name: template.name,
+      description: template.description || "",
+      systemPrompt: template.systemPrompt || "",
+      greetingMessage: template.greetingMessage || "",
+      fallbackMessage: template.fallbackMessage || "",
+      voiceId: template.voiceId || "alloy",
+      voiceProvider: template.voiceProvider || "openai",
+    });
+    toast({ title: `Applied template: ${template.name}` });
   };
 
   const handleEdit = (agent: AiVoiceAgent) => {
@@ -251,6 +284,32 @@ export default function AiVoiceAgentsPage() {
               </TabsList>
               
               <TabsContent value="general" className="space-y-4 mt-4">
+                {!editingAgent && templates.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Start from Template (optional)</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {templates.slice(0, 4).map((template) => (
+                        <Button
+                          key={template.id}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="justify-start h-auto py-2"
+                          data-testid={`button-template-${template.id}`}
+                          onClick={() => applyTemplate(template)}
+                        >
+                          <Bot className="h-4 w-4 mr-2 flex-shrink-0" />
+                          <div className="text-left">
+                            <div className="font-medium">{template.name}</div>
+                            <div className="text-xs text-muted-foreground capitalize">
+                              {template.category || "General"}
+                            </div>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="customer">Customer</Label>
                   <Select value={form.customerId} onValueChange={(v) => setForm({ ...form, customerId: v })}>

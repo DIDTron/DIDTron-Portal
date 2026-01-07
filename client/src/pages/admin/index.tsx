@@ -50,6 +50,13 @@ import AlertsPage from "./alerts";
 import MonitoringRulesPage from "./monitoring-rules";
 import RolesPage from "./roles";
 import AiVoiceAgentsPage from "./ai-voice-agents";
+import AiVoiceDashboard from "./ai-voice-dashboard";
+import AiVoiceKnowledgeBasesPage from "./ai-voice-knowledge-bases";
+import AiVoiceBillingPage from "./ai-voice-billing";
+import AiVoiceCampaignsPage from "./ai-voice-campaigns";
+import AiVoiceCallLogsPage from "./ai-voice-call-logs";
+import AiVoiceAnalyticsPage from "./ai-voice-analytics";
+import AiVoiceSettingsPage from "./ai-voice-settings";
 import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./class4-softswitch";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
@@ -230,14 +237,14 @@ export default function AdminLayout() {
                 <Route path="/admin/sip-tester/new" component={SipTesterPage} />
                 <Route path="/admin/sip-tester/history" component={SipTesterPage} />
                 <Route path="/admin/sip-tester/settings" component={SipTesterPage} />
-                <Route path="/admin/ai-voice/dashboard" component={() => <PlaceholderPage title="AI Voice Dashboard" />} />
+                <Route path="/admin/ai-voice/dashboard" component={AiVoiceDashboard} />
                 <Route path="/admin/ai-voice/agents" component={AiVoiceAgentsPage} />
-                <Route path="/admin/ai-voice/knowledge-bases" component={() => <PlaceholderPage title="AI Voice Knowledge Bases" />} />
-                <Route path="/admin/ai-voice/campaigns" component={() => <PlaceholderPage title="AI Voice Campaigns" />} />
-                <Route path="/admin/ai-voice/call-logs" component={() => <PlaceholderPage title="AI Voice Call Logs" />} />
-                <Route path="/admin/ai-voice/analytics" component={() => <PlaceholderPage title="AI Voice Analytics" />} />
-                <Route path="/admin/ai-voice/billing" component={() => <PlaceholderPage title="AI Voice Billing" />} />
-                <Route path="/admin/ai-voice/settings" component={() => <PlaceholderPage title="AI Voice Settings" />} />
+                <Route path="/admin/ai-voice/knowledge-bases" component={AiVoiceKnowledgeBasesPage} />
+                <Route path="/admin/ai-voice/campaigns" component={AiVoiceCampaignsPage} />
+                <Route path="/admin/ai-voice/call-logs" component={AiVoiceCallLogsPage} />
+                <Route path="/admin/ai-voice/analytics" component={AiVoiceAnalyticsPage} />
+                <Route path="/admin/ai-voice/billing" component={AiVoiceBillingPage} />
+                <Route path="/admin/ai-voice/settings" component={AiVoiceSettingsPage} />
                 <Route path="/admin/class4-customers" component={Class4CustomersPage} />
                 <Route path="/admin/class4-carriers" component={Class4CarriersPage} />
                 <Route path="/admin/class4-rate-cards" component={Class4RateCardsPage} />
