@@ -1245,6 +1245,108 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CUSTOMER AI VOICE KNOWLEDGE BASES ====================
+
+  app.get("/api/my/ai-voice/knowledge-bases", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const kbs = await storage.getAiVoiceKnowledgeBases(user.customerId);
+      res.json(kbs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch knowledge bases" });
+    }
+  });
+
+  app.get("/api/my/ai-voice/knowledge-bases/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const kb = await storage.getAiVoiceKnowledgeBase(req.params.id);
+      if (!kb || kb.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Knowledge base not found" });
+      }
+      res.json(kb);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch knowledge base" });
+    }
+  });
+
+  app.post("/api/my/ai-voice/knowledge-bases", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const { name, description } = req.body;
+      if (!name) {
+        return res.status(400).json({ error: "Name is required" });
+      }
+      const kb = await storage.createAiVoiceKnowledgeBase({
+        customerId: user.customerId,
+        name,
+        description: description || null
+      });
+      res.status(201).json(kb);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create knowledge base" });
+    }
+  });
+
+  app.post("/api/my/ai-voice/knowledge-bases/:id/train", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const kb = await storage.getAiVoiceKnowledgeBase(req.params.id);
+      if (!kb || kb.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Knowledge base not found" });
+      }
+      // Update status to processing
+      await storage.updateAiVoiceKnowledgeBase(req.params.id, { status: "processing" });
+      res.json({ message: "Training started", id: req.params.id });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to start training" });
+    }
+  });
+
+  app.delete("/api/my/ai-voice/knowledge-bases/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const kb = await storage.getAiVoiceKnowledgeBase(req.params.id);
+      if (!kb || kb.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Knowledge base not found" });
+      }
+      await storage.deleteAiVoiceKnowledgeBase(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete knowledge base" });
+    }
+  });
+
   // ==================== CUSTOMER PBX EXTENSIONS ====================
 
   app.get("/api/my/extensions", async (req, res) => {

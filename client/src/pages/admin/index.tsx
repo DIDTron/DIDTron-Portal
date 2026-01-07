@@ -57,6 +57,7 @@ import AiVoiceCampaignsPage from "./ai-voice-campaigns";
 import AiVoiceCallLogsPage from "./ai-voice-call-logs";
 import AiVoiceAnalyticsPage from "./ai-voice-analytics";
 import AiVoiceSettingsPage from "./ai-voice-settings";
+import AiVoiceAssignmentsPage from "./ai-voice-assignments";
 import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./class4-softswitch";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
@@ -118,6 +119,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/ai-voice/analytics": { section: "ai-voice", subItem: "ai-voice-analytics" },
   "/admin/ai-voice/billing": { section: "ai-voice", subItem: "ai-voice-billing" },
   "/admin/ai-voice/settings": { section: "ai-voice", subItem: "ai-voice-settings" },
+  "/admin/ai-voice/assignments": { section: "ai-voice", subItem: "ai-voice-assignments" },
   "/admin/class4-customers": { section: "softswitch", subItem: "class4-customers" },
   "/admin/class4-carriers": { section: "softswitch", subItem: "class4-carriers" },
   "/admin/class4-rate-cards": { section: "softswitch", subItem: "class4-rate-cards" },
@@ -245,6 +247,7 @@ export default function AdminLayout() {
                 <Route path="/admin/ai-voice/analytics" component={AiVoiceAnalyticsPage} />
                 <Route path="/admin/ai-voice/billing" component={AiVoiceBillingPage} />
                 <Route path="/admin/ai-voice/settings" component={AiVoiceSettingsPage} />
+                <Route path="/admin/ai-voice/assignments" component={AiVoiceAssignmentsPage} />
                 <Route path="/admin/class4-customers" component={Class4CustomersPage} />
                 <Route path="/admin/class4-carriers" component={Class4CarriersPage} />
                 <Route path="/admin/class4-rate-cards" component={Class4RateCardsPage} />

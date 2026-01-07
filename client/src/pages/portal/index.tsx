@@ -53,6 +53,13 @@ import SecuritySettingsPage from "./security-settings";
 import NotificationSettingsPage from "./notification-settings";
 import PromoCodesPage from "./promo-codes";
 import MyBrandingPage from "./my-branding";
+import CustomerAiVoiceDashboard from "./ai-voice-dashboard";
+import FlowDesignerPage from "./ai-voice-flow-designer";
+import CustomerKnowledgeWorkspace from "./ai-voice-knowledge";
+import CustomerCampaignsPage from "./ai-voice-campaigns";
+import CustomerCallLogsPage from "./ai-voice-call-logs";
+import CustomerAnalyticsPage from "./ai-voice-analytics";
+import CustomerAiVoiceBillingPage from "./ai-voice-billing";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -80,10 +87,14 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/pbx/ring-groups": { section: "pbx", subItem: "ring-groups" },
   "/portal/pbx/ivr": { section: "pbx", subItem: "ivr" },
   "/portal/pbx/queues": { section: "pbx", subItem: "queues" },
-  "/portal/ai-agent": { section: "ai-agent", subItem: "agents" },
-  "/portal/ai-agent/personas": { section: "ai-agent", subItem: "personas" },
+  "/portal/ai-agent": { section: "ai-agent", subItem: "dashboard" },
+  "/portal/ai-agent/agents": { section: "ai-agent", subItem: "agents" },
   "/portal/ai-agent/flows": { section: "ai-agent", subItem: "flows" },
-  "/portal/ai-agent/training": { section: "ai-agent", subItem: "training" },
+  "/portal/ai-agent/knowledge": { section: "ai-agent", subItem: "knowledge" },
+  "/portal/ai-agent/campaigns": { section: "ai-agent", subItem: "campaigns" },
+  "/portal/ai-agent/call-logs": { section: "ai-agent", subItem: "call-logs" },
+  "/portal/ai-agent/analytics": { section: "ai-agent", subItem: "analytics" },
+  "/portal/ai-agent/billing": { section: "ai-agent", subItem: "billing" },
   "/portal/sip-tester": { section: "sip-tester", subItem: "quick-test" },
   "/portal/sip-tester/configs": { section: "sip-tester", subItem: "configs" },
   "/portal/sip-tester/results": { section: "sip-tester", subItem: "results" },
@@ -376,10 +387,14 @@ export default function CustomerPortal() {
               <Route path="/portal/pbx/ring-groups" component={PortalRingGroupsPage} />
               <Route path="/portal/pbx/ivr" component={PortalIvrPage} />
               <Route path="/portal/pbx/queues" component={PortalQueuesPage} />
-              <Route path="/portal/ai-agent" component={PortalAiAgentsPage} />
-              <Route path="/portal/ai-agent/personas" component={PortalAiAgentsPage} />
-              <Route path="/portal/ai-agent/flows" component={PortalAiAgentsPage} />
-              <Route path="/portal/ai-agent/training" component={PortalAiAgentsPage} />
+              <Route path="/portal/ai-agent" component={CustomerAiVoiceDashboard} />
+              <Route path="/portal/ai-agent/agents" component={PortalAiAgentsPage} />
+              <Route path="/portal/ai-agent/flows" component={FlowDesignerPage} />
+              <Route path="/portal/ai-agent/knowledge" component={CustomerKnowledgeWorkspace} />
+              <Route path="/portal/ai-agent/campaigns" component={CustomerCampaignsPage} />
+              <Route path="/portal/ai-agent/call-logs" component={CustomerCallLogsPage} />
+              <Route path="/portal/ai-agent/analytics" component={CustomerAnalyticsPage} />
+              <Route path="/portal/ai-agent/billing" component={CustomerAiVoiceBillingPage} />
               <Route path="/portal/sip-tester" component={PortalSipTesterPage} />
               <Route path="/portal/sip-tester/configs" component={PortalSipTesterPage} />
               <Route path="/portal/sip-tester/results" component={PortalSipTesterPage} />

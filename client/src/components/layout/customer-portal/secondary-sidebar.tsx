@@ -56,10 +56,14 @@ const sectionMenus: Record<string, { title: string; items: SidebarItem[] }> = {
   "ai-agent": {
     title: "AI Voice Agent",
     items: [
-      { id: "agents", label: "My Agents", icon: Bot, path: "/portal/ai-agent" },
-      { id: "personas", label: "Personas", icon: Mic, path: "/portal/ai-agent/personas" },
-      { id: "flows", label: "Flows", icon: Workflow, path: "/portal/ai-agent/flows" },
-      { id: "training", label: "Training Data", icon: Database, path: "/portal/ai-agent/training" },
+      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/portal/ai-agent" },
+      { id: "agents", label: "My Agents", icon: Bot, path: "/portal/ai-agent/agents" },
+      { id: "flows", label: "Flow Designer", icon: Workflow, path: "/portal/ai-agent/flows" },
+      { id: "knowledge", label: "Knowledge Base", icon: Database, path: "/portal/ai-agent/knowledge" },
+      { id: "campaigns", label: "Campaigns", icon: UsersIcon, path: "/portal/ai-agent/campaigns" },
+      { id: "call-logs", label: "Call Logs", icon: Phone, path: "/portal/ai-agent/call-logs" },
+      { id: "analytics", label: "Analytics", icon: BarChart3, path: "/portal/ai-agent/analytics" },
+      { id: "billing", label: "Billing", icon: CreditCard, path: "/portal/ai-agent/billing" },
     ],
   },
   "sip-tester": {

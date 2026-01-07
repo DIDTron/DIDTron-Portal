@@ -2,7 +2,7 @@ import { db } from "./db";
 import {
   aiVoicePricingTiers, aiVoiceRateConfigs, aiVoiceKnowledgeBases, aiVoiceKbSources,
   aiVoicePhonebooks, aiVoiceContacts, aiVoiceTemplates, aiVoiceUsage,
-  aiVoiceAssignments, aiVoiceSettings, aiVoiceWebhooks, aiVoiceCallLogs,
+  aiVoiceAssignments, aiVoiceSettings, aiVoiceWebhooks, aiVoiceCallLogs, aiVoiceCampaigns,
   type AiVoicePricingTier, type InsertAiVoicePricingTier,
   type AiVoiceRateConfig, type InsertAiVoiceRateConfig,
   type AiVoiceKnowledgeBase, type InsertAiVoiceKnowledgeBase,
@@ -14,7 +14,7 @@ import {
   type AiVoiceAssignment, type InsertAiVoiceAssignment,
   type AiVoiceSetting, type InsertAiVoiceSetting,
   type AiVoiceWebhook, type InsertAiVoiceWebhook,
-  type AiVoiceCallLog
+  type AiVoiceCallLog, type AiVoiceCampaign, type InsertAiVoiceCampaign
 } from "@shared/schema";
 import { eq, and, desc, asc, sql, like, gte, lte, or, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -32,6 +32,7 @@ class AiVoiceStorage {
   private settings: Map<string, AiVoiceSetting> = new Map();
   private webhooks: Map<string, AiVoiceWebhook> = new Map();
   private callLogs: Map<string, AiVoiceCallLog> = new Map();
+  private campaigns: Map<string, AiVoiceCampaign> = new Map();
 
   async getPricingTiers(): Promise<AiVoicePricingTier[]> {
     return Array.from(this.pricingTiers.values());
@@ -524,6 +525,62 @@ class AiVoiceStorage {
     };
     this.callLogs.set(id, log);
     return log;
+  }
+
+  async getAiVoiceCampaigns(customerId?: string): Promise<AiVoiceCampaign[]> {
+    let all = Array.from(this.campaigns.values());
+    if (customerId) all = all.filter(c => c.customerId === customerId);
+    return all.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
+  async getAiVoiceCampaign(id: string): Promise<AiVoiceCampaign | undefined> {
+    return this.campaigns.get(id);
+  }
+
+  async createAiVoiceCampaign(data: InsertAiVoiceCampaign): Promise<AiVoiceCampaign> {
+    const id = randomUUID();
+    const campaign: AiVoiceCampaign = {
+      id,
+      customerId: data.customerId,
+      agentId: data.agentId,
+      name: data.name,
+      description: data.description || null,
+      phonebookId: data.phonebookId || null,
+      sipTrunkId: data.sipTrunkId || null,
+      callerId: data.callerId || null,
+      contactList: data.contactList || null,
+      scheduledAt: data.scheduledAt || null,
+      scheduleEndAt: data.scheduleEndAt || null,
+      timeZone: data.timeZone || "UTC",
+      callWindowStart: data.callWindowStart || null,
+      callWindowEnd: data.callWindowEnd || null,
+      maxConcurrentCalls: data.maxConcurrentCalls || 5,
+      maxRetries: data.maxRetries || 2,
+      retryDelay: data.retryDelay || 3600,
+      callsCompleted: 0,
+      callsTotal: 0,
+      callsSuccessful: 0,
+      callsFailed: 0,
+      status: data.status || "draft",
+      startedAt: null,
+      completedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.campaigns.set(id, campaign);
+    return campaign;
+  }
+
+  async updateAiVoiceCampaign(id: string, data: Partial<InsertAiVoiceCampaign>): Promise<AiVoiceCampaign | undefined> {
+    const campaign = this.campaigns.get(id);
+    if (!campaign) return undefined;
+    const updated = { ...campaign, ...data, updatedAt: new Date() } as AiVoiceCampaign;
+    this.campaigns.set(id, updated);
+    return updated;
+  }
+
+  async deleteAiVoiceCampaign(id: string): Promise<boolean> {
+    return this.campaigns.delete(id);
   }
 
   seedDefaultData() {

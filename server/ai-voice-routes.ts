@@ -43,7 +43,7 @@ const knowledgeBaseSchema = z.object({
 
 const kbSourceSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  sourceType: z.enum(["text", "file", "url", "api"]),
+  sourceType: z.enum(["text", "file", "url", "faq"]),
   content: z.string().optional(),
   fileUrl: z.string().optional(),
   mimeType: z.string().optional(),
@@ -83,7 +83,7 @@ const templateSchema = z.object({
 
 const assignmentSchema = z.object({
   featureName: z.string().min(1, "Feature name is required"),
-  assignmentType: z.enum(["all", "category", "group", "customer"]).optional(),
+  assignmentType: z.enum(["all", "categories", "groups", "specific"]).optional(),
   categoryIds: z.array(z.string()).optional(),
   groupIds: z.array(z.string()).optional(),
   customerIds: z.array(z.string()).optional(),

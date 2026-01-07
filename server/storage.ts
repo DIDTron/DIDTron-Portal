@@ -45,6 +45,7 @@ import {
   type AiVoiceFlow, type InsertAiVoiceFlow,
   type AiVoiceTrainingData, type InsertAiVoiceTrainingData,
   type AiVoiceCampaign, type InsertAiVoiceCampaign,
+  type AiVoiceKnowledgeBase, type InsertAiVoiceKnowledgeBase,
   type CmsTheme, type InsertCmsTheme,
   type CmsPage, type InsertCmsPage,
   type CmsMediaItem, type InsertCmsMediaItem,
@@ -455,6 +456,13 @@ export interface IStorage {
   updateAiVoiceCampaign(id: string, data: Partial<InsertAiVoiceCampaign>): Promise<AiVoiceCampaign | undefined>;
   deleteAiVoiceCampaign(id: string): Promise<boolean>;
 
+  // AI Voice Knowledge Bases
+  getAiVoiceKnowledgeBases(customerId?: string): Promise<AiVoiceKnowledgeBase[]>;
+  getAiVoiceKnowledgeBase(id: string): Promise<AiVoiceKnowledgeBase | undefined>;
+  createAiVoiceKnowledgeBase(kb: InsertAiVoiceKnowledgeBase): Promise<AiVoiceKnowledgeBase>;
+  updateAiVoiceKnowledgeBase(id: string, data: Partial<InsertAiVoiceKnowledgeBase>): Promise<AiVoiceKnowledgeBase | undefined>;
+  deleteAiVoiceKnowledgeBase(id: string): Promise<boolean>;
+
   // CMS Themes
   getCmsThemes(): Promise<CmsTheme[]>;
   getCmsTheme(id: string): Promise<CmsTheme | undefined>;
@@ -560,6 +568,7 @@ export class MemStorage implements IStorage {
   private aiVoiceFlows: Map<string, AiVoiceFlow>;
   private aiVoiceTrainingData: Map<string, AiVoiceTrainingData>;
   private aiVoiceCampaigns: Map<string, AiVoiceCampaign>;
+  private aiVoiceKnowledgeBases: Map<string, AiVoiceKnowledgeBase>;
   private cmsThemes: Map<string, CmsTheme>;
   private cmsPages: Map<string, CmsPage>;
   private cmsMediaItems: Map<string, CmsMediaItem>;
@@ -623,6 +632,7 @@ export class MemStorage implements IStorage {
     this.aiVoiceFlows = new Map();
     this.aiVoiceTrainingData = new Map();
     this.aiVoiceCampaigns = new Map();
+    this.aiVoiceKnowledgeBases = new Map();
     this.cmsThemes = new Map();
     this.cmsPages = new Map();
     this.cmsMediaItems = new Map();
@@ -3161,6 +3171,54 @@ export class MemStorage implements IStorage {
 
   async deleteAiVoiceCampaign(id: string): Promise<boolean> {
     return this.aiVoiceCampaigns.delete(id);
+  }
+
+  // AI Voice Knowledge Bases
+  async getAiVoiceKnowledgeBases(customerId?: string): Promise<AiVoiceKnowledgeBase[]> {
+    let all = Array.from(this.aiVoiceKnowledgeBases.values());
+    if (customerId) all = all.filter(kb => kb.customerId === customerId);
+    return all;
+  }
+
+  async getAiVoiceKnowledgeBase(id: string): Promise<AiVoiceKnowledgeBase | undefined> {
+    return this.aiVoiceKnowledgeBases.get(id);
+  }
+
+  async createAiVoiceKnowledgeBase(kb: InsertAiVoiceKnowledgeBase): Promise<AiVoiceKnowledgeBase> {
+    const id = randomUUID();
+    const now = new Date();
+    const k: AiVoiceKnowledgeBase = {
+      id,
+      customerId: kb.customerId,
+      name: kb.name,
+      description: kb.description ?? null,
+      connexcsKbId: kb.connexcsKbId ?? null,
+      status: kb.status ?? "pending",
+      documentCount: kb.documentCount ?? 0,
+      totalTokens: kb.totalTokens ?? 0,
+      learnedTopics: kb.learnedTopics ?? null,
+      extractedFaqs: kb.extractedFaqs ?? null,
+      keyPhrases: kb.keyPhrases ?? null,
+      confidenceScore: kb.confidenceScore ?? null,
+      trainingSummary: kb.trainingSummary ?? null,
+      lastTrainedAt: kb.lastTrainedAt ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiVoiceKnowledgeBases.set(id, k);
+    return k;
+  }
+
+  async updateAiVoiceKnowledgeBase(id: string, data: Partial<InsertAiVoiceKnowledgeBase>): Promise<AiVoiceKnowledgeBase | undefined> {
+    const kb = this.aiVoiceKnowledgeBases.get(id);
+    if (!kb) return undefined;
+    const updated = { ...kb, ...data, updatedAt: new Date() };
+    this.aiVoiceKnowledgeBases.set(id, updated);
+    return updated;
+  }
+
+  async deleteAiVoiceKnowledgeBase(id: string): Promise<boolean> {
+    return this.aiVoiceKnowledgeBases.delete(id);
   }
 
   // CMS Themes
