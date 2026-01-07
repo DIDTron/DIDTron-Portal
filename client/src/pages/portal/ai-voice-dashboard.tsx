@@ -78,7 +78,7 @@ export default function CustomerAiVoiceDashboard() {
             Manage your AI voice agents and monitor performance
           </p>
         </div>
-        <Link href="/portal/ai-agent">
+        <Link href="/portal/ai-agent/wizard">
           <Button data-testid="button-create-agent">
             <Plus className="h-4 w-4 mr-2" />
             Create Agent
@@ -97,7 +97,7 @@ export default function CustomerAiVoiceDashboard() {
               Create your first AI voice agent to handle calls automatically. 
               Choose from templates or build a custom agent.
             </p>
-            <Link href="/portal/ai-agent">
+            <Link href="/portal/ai-agent/wizard">
               <Button data-testid="button-get-started">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Your First Agent

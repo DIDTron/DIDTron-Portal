@@ -1245,6 +1245,61 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/my/ai-voice/campaigns/:id/start", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const campaign = await storage.getAiVoiceCampaign(req.params.id);
+      if (!campaign || campaign.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Campaign not found" });
+      }
+      if (campaign.status === "running") {
+        return res.status(400).json({ error: "Campaign is already running" });
+      }
+      const { enqueueJob } = await import("./job-queue");
+      const jobId = await enqueueJob("ai_voice_campaign_start", {
+        campaignId: req.params.id,
+        customerId: user.customerId,
+        userId: req.session.userId,
+      });
+      await storage.updateAiVoiceCampaign(req.params.id, { 
+        status: "running",
+        startedAt: new Date()
+      });
+      res.json({ success: true, jobId, message: "Campaign started" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to start campaign" });
+    }
+  });
+
+  app.post("/api/my/ai-voice/campaigns/:id/pause", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.customerId) {
+        return res.status(404).json({ error: "Customer profile not found" });
+      }
+      const campaign = await storage.getAiVoiceCampaign(req.params.id);
+      if (!campaign || campaign.customerId !== user.customerId) {
+        return res.status(404).json({ error: "Campaign not found" });
+      }
+      if (campaign.status !== "running") {
+        return res.status(400).json({ error: "Campaign is not running" });
+      }
+      await storage.updateAiVoiceCampaign(req.params.id, { status: "paused" });
+      res.json({ success: true, message: "Campaign paused" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to pause campaign" });
+    }
+  });
+
   // ==================== CUSTOMER AI VOICE KNOWLEDGE BASES ====================
 
   app.get("/api/my/ai-voice/knowledge-bases", async (req, res) => {
@@ -1319,9 +1374,18 @@ export async function registerRoutes(
       if (!kb || kb.customerId !== user.customerId) {
         return res.status(404).json({ error: "Knowledge base not found" });
       }
-      // Update status to processing
+      if (kb.status === "processing") {
+        return res.status(400).json({ error: "Training already in progress" });
+      }
       await storage.updateAiVoiceKnowledgeBase(req.params.id, { status: "processing" });
-      res.json({ message: "Training started", id: req.params.id });
+      const { enqueueJob } = await import("./job-queue");
+      const jobId = await enqueueJob("ai_voice_kb_train", {
+        knowledgeBaseId: req.params.id,
+        agentId: req.body.agentId || "",
+        customerId: user.customerId,
+        userId: req.session.userId,
+      });
+      res.json({ success: true, jobId, message: "Training started", id: req.params.id });
     } catch (error) {
       res.status(500).json({ error: "Failed to start training" });
     }

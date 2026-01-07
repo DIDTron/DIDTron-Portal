@@ -60,6 +60,7 @@ import CustomerCampaignsPage from "./ai-voice-campaigns";
 import CustomerCallLogsPage from "./ai-voice-call-logs";
 import CustomerAnalyticsPage from "./ai-voice-analytics";
 import CustomerAiVoiceBillingPage from "./ai-voice-billing";
+import AIVoiceWizard from "./ai-voice-wizard";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -389,6 +390,7 @@ export default function CustomerPortal() {
               <Route path="/portal/pbx/queues" component={PortalQueuesPage} />
               <Route path="/portal/ai-agent" component={CustomerAiVoiceDashboard} />
               <Route path="/portal/ai-agent/agents" component={PortalAiAgentsPage} />
+              <Route path="/portal/ai-agent/wizard" component={AIVoiceWizard} />
               <Route path="/portal/ai-agent/flows" component={FlowDesignerPage} />
               <Route path="/portal/ai-agent/knowledge" component={CustomerKnowledgeWorkspace} />
               <Route path="/portal/ai-agent/campaigns" component={CustomerCampaignsPage} />
