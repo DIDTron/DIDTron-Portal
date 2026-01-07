@@ -3921,8 +3921,8 @@ export async function registerRoutes(
   
   app.get("/api/connexcs/status", async (req, res) => {
     try {
-      await connexcs.loadCredentialsFromStorage(storage);
-      const mockMode = connexcs.isMockMode();
+      await connexcsTools.loadCredentialsFromStorage(storage);
+      const mockMode = connexcsTools.isMockMode();
       if (mockMode) {
         res.json({
           connected: false,
@@ -3931,12 +3931,23 @@ export async function registerRoutes(
         });
       } else {
         try {
-          const carriers = await connexcs.getCarriers();
-          res.json({
-            connected: true,
-            mockMode: false,
-            message: `Connected to ConnexCS (${carriers.length} carriers)`,
-          });
+          const authResult = await connexcsTools.testAuth(storage);
+          if (authResult.success) {
+            const carriers = await connexcsTools.getCarriers(storage);
+            res.json({
+              connected: true,
+              mockMode: false,
+              message: `Connected to ConnexCS (${carriers.length} carriers)`,
+              tokenDaysRemaining: authResult.tokenDaysRemaining,
+            });
+          } else {
+            res.json({
+              connected: false,
+              mockMode: false,
+              message: "Failed to authenticate with ConnexCS",
+              error: authResult.error,
+            });
+          }
         } catch (apiError) {
           res.json({
             connected: false,
@@ -3958,8 +3969,8 @@ export async function registerRoutes(
 
   app.get("/api/connexcs/status/detailed", async (req, res) => {
     try {
-      await connexcs.loadCredentialsFromStorage(storage);
-      const mockMode = connexcs.isMockMode();
+      await connexcsTools.loadCredentialsFromStorage(storage);
+      const mockMode = connexcsTools.isMockMode();
       
       if (mockMode) {
         res.json({
@@ -3976,26 +3987,43 @@ export async function registerRoutes(
         });
       } else {
         try {
-          const [carriers, customers, rateCards, routes] = await Promise.all([
-            connexcs.getCarriers(),
-            connexcs.getCustomers(),
-            connexcs.getRateCards(),
-            connexcs.getRoutes(),
-          ]);
-          
-          res.json({
-            connected: true,
-            mockMode: false,
-            message: "Connected to ConnexCS",
-            lastSync: new Date().toISOString(),
-            stats: {
-              carriers: carriers.length,
-              customers: customers.length,
-              rateCards: rateCards.length,
-              routes: routes.length,
-              cdrs: 0,
-            },
-          });
+          const authResult = await connexcsTools.testAuth(storage);
+          if (authResult.success) {
+            let stats = { carriers: 0, customers: 0, rateCards: 0, routes: 0, cdrs: 0 };
+            
+            try {
+              const [carriers, customers, rateCards, routes] = await Promise.all([
+                connexcsTools.getCarriers(storage).catch(() => []),
+                connexcsTools.getCustomers(storage).catch(() => []),
+                connexcsTools.getRateCards(storage).catch(() => []),
+                connexcsTools.getRoutes(storage).catch(() => []),
+              ]);
+              stats = {
+                carriers: carriers.length,
+                customers: customers.length,
+                rateCards: rateCards.length,
+                routes: routes.length,
+                cdrs: 0,
+              };
+            } catch {}
+            
+            res.json({
+              connected: true,
+              mockMode: false,
+              message: "Connected to ConnexCS",
+              tokenDaysRemaining: authResult.tokenDaysRemaining,
+              lastSync: new Date().toISOString(),
+              stats,
+            });
+          } else {
+            res.json({
+              connected: false,
+              mockMode: false,
+              message: "Failed to authenticate with ConnexCS",
+              error: authResult.error,
+              stats: { carriers: 0, customers: 0, rateCards: 0, routes: 0, cdrs: 0 },
+            });
+          }
         } catch (apiError) {
           res.json({
             connected: false,
@@ -4019,17 +4047,26 @@ export async function registerRoutes(
 
   app.post("/api/connexcs/test-connection", async (req, res) => {
     try {
-      await connexcs.loadCredentialsFromStorage(storage);
-      if (connexcs.isMockMode()) {
+      await connexcsTools.loadCredentialsFromStorage(storage);
+      if (connexcsTools.isMockMode()) {
         res.status(400).json({ error: "Cannot test connection in mock mode" });
         return;
       }
       
-      const carriers = await connexcs.getCarriers();
-      res.json({ 
-        success: true, 
-        message: `Connection successful - found ${carriers.length} carriers` 
-      });
+      const authResult = await connexcsTools.testAuth(storage);
+      if (authResult.success) {
+        const carriers = await connexcsTools.getCarriers(storage);
+        res.json({ 
+          success: true, 
+          message: `Connection successful - found ${carriers.length} carriers`,
+          tokenDaysRemaining: authResult.tokenDaysRemaining,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: authResult.error || "Authentication failed",
+        });
+      }
     } catch (error) {
       res.status(500).json({ 
         success: false, 
@@ -4040,17 +4077,17 @@ export async function registerRoutes(
 
   app.post("/api/connexcs/sync", async (req, res) => {
     try {
-      await connexcs.loadCredentialsFromStorage(storage);
-      if (connexcs.isMockMode()) {
+      await connexcsTools.loadCredentialsFromStorage(storage);
+      if (connexcsTools.isMockMode()) {
         res.status(400).json({ error: "Cannot sync in mock mode" });
         return;
       }
       
       const [carriers, customers, rateCards, routes] = await Promise.all([
-        connexcs.getCarriers(),
-        connexcs.getCustomers(),
-        connexcs.getRateCards(),
-        connexcs.getRoutes(),
+        connexcsTools.getCarriers(storage),
+        connexcsTools.getCustomers(storage),
+        connexcsTools.getRateCards(storage),
+        connexcsTools.getRoutes(storage),
       ]);
       
       res.json({ 
@@ -6405,25 +6442,18 @@ export async function registerRoutes(
           const creds = integration.credentials as { username?: string; password?: string } | null;
           if (creds?.username && creds?.password) {
             try {
-              const response = await fetch("https://app.connexcs.com/api/cp/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: creds.username, password: creds.password })
-              });
-              if (response.ok) {
-                const data = await response.json();
-                if (data.auth === false) {
-                  testResult = { success: false, message: "Invalid username or password" };
-                } else if (data.jwt || data.token) {
-                  testResult = { success: true, message: "Connected successfully" };
-                } else {
-                  testResult = { success: false, message: "Unexpected response from ConnexCS" };
-                }
+              await connexcsTools.loadCredentialsFromStorage(storage);
+              const authResult = await connexcsTools.testAuth(storage);
+              if (authResult.success) {
+                testResult = { 
+                  success: true, 
+                  message: `Connected - JWT valid for ${authResult.tokenDaysRemaining} days` 
+                };
               } else {
-                testResult = { success: false, message: `Authentication failed: ${response.status}` };
+                testResult = { success: false, message: authResult.error || "Authentication failed" };
               }
-            } catch (e) {
-              testResult = { success: false, message: "Connection failed" };
+            } catch (e: any) {
+              testResult = { success: false, message: e.message || "Connection failed" };
             }
           } else {
             testResult = { success: false, message: "Credentials not configured" };
