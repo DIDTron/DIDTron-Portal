@@ -10,6 +10,7 @@ import { auditService } from "./audit";
 import { sendWelcomeEmail, sendPaymentReceived, sendReferralReward, sendLowBalanceAlert } from "./brevo";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { registerAiVoiceRoutes } from "./ai-voice-routes";
 import { 
   insertCustomerCategorySchema, 
   insertCustomerGroupSchema,
@@ -259,6 +260,9 @@ export async function registerRoutes(
   // ==================== REPLIT AUTH (OIDC) ====================
   await setupAuth(app);
   registerAuthRoutes(app);
+
+  // ==================== AI VOICE ROUTES ====================
+  registerAiVoiceRoutes(app);
 
   // ==================== LEGACY AUTHENTICATION ====================
 
