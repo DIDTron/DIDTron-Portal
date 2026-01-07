@@ -26,6 +26,13 @@ import {
   AuditCleanupPayload,
   CDRProcessPayload,
 } from "./job-queue";
+import {
+  handleKBTrain,
+  handleKBIndex,
+  handleCampaignStart,
+  handleCampaignCall,
+  handleAgentSync,
+} from "./ai-voice-handlers";
 
 const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
   rate_card_import: async (payload: RateCardImportPayload, signal?: AbortSignal) => {
@@ -81,23 +88,23 @@ const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
   },
   
   ai_voice_kb_train: async (payload: AIVoiceKBTrainPayload, signal?: AbortSignal) => {
-    console.log(`[AIVoiceJob] Training knowledge base ${payload.knowledgeBaseId} for agent ${payload.agentId}`);
+    await handleKBTrain(payload, signal);
   },
   
   ai_voice_kb_index: async (payload: AIVoiceKBIndexPayload, signal?: AbortSignal) => {
-    console.log(`[AIVoiceJob] Indexing source ${payload.sourceId} (${payload.sourceType}) for KB ${payload.knowledgeBaseId}`);
+    await handleKBIndex(payload, signal);
   },
   
   ai_voice_campaign_start: async (payload: AIVoiceCampaignStartPayload, signal?: AbortSignal) => {
-    console.log(`[AIVoiceJob] Starting campaign ${payload.campaignId}`);
+    await handleCampaignStart(payload, signal);
   },
   
   ai_voice_campaign_call: async (payload: AIVoiceCampaignCallPayload, signal?: AbortSignal) => {
-    console.log(`[AIVoiceJob] Making campaign call to ${payload.phoneNumber}`);
+    await handleCampaignCall(payload, signal);
   },
   
   ai_voice_agent_sync: async (payload: AIVoiceAgentSyncPayload, signal?: AbortSignal) => {
-    console.log(`[AIVoiceJob] Syncing agent ${payload.agentId} (${payload.direction})`);
+    await handleAgentSync(payload, signal);
   },
   
   webhook_deliver: async (payload: WebhookDeliverPayload, signal?: AbortSignal) => {

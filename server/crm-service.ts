@@ -491,9 +491,11 @@ export async function syncCallLogToCrm(
   connection: CrmConnection,
   settings: CrmSyncSettings,
   callLog: AiVoiceCallLog,
+  customerId: string,
   existingMapping?: CrmContactMapping
 ): Promise<{ activity?: CrmActivity; contact?: CrmContact; error?: string }> {
   try {
+    console.log(`[CRMSync] Syncing call for customer ${customerId} to ${connection.provider}`);
     const client = getCrmClient(connection, settings);
     let contact: CrmContact | null = null;
     let contactId: string | undefined;
@@ -516,11 +518,13 @@ export async function syncCallLogToCrm(
 
     if (settings.autoLogActivities) {
       const activity = await client.logCallActivity(callLog, contactId);
+      console.log(`[CRMSync] Logged call activity for customer ${customerId}`);
       return { activity, contact: contact || undefined };
     }
 
     return { contact: contact || undefined };
   } catch (err) {
+    console.error(`[CRMSync] Failed for customer ${customerId}:`, err);
     return { error: err instanceof Error ? err.message : "Sync failed" };
   }
 }

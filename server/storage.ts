@@ -46,6 +46,10 @@ import {
   type AiVoiceTrainingData, type InsertAiVoiceTrainingData,
   type AiVoiceCampaign, type InsertAiVoiceCampaign,
   type AiVoiceKnowledgeBase, type InsertAiVoiceKnowledgeBase,
+  type AiVoiceKbSource, type InsertAiVoiceKbSource,
+  type AiVoicePhonebook, type InsertAiVoicePhonebook,
+  type AiVoiceContact, type InsertAiVoiceContact,
+  type AiVoiceCallLog, type InsertAiVoiceCallLog,
   type CrmConnection, type InsertCrmConnection,
   type CrmFieldMapping, type InsertCrmFieldMapping,
   type CrmSyncSettings, type InsertCrmSyncSettings,
@@ -468,6 +472,33 @@ export interface IStorage {
   updateAiVoiceKnowledgeBase(id: string, data: Partial<InsertAiVoiceKnowledgeBase>): Promise<AiVoiceKnowledgeBase | undefined>;
   deleteAiVoiceKnowledgeBase(id: string): Promise<boolean>;
 
+  // AI Voice KB Sources
+  getAiVoiceKbSources(knowledgeBaseId: string): Promise<AiVoiceKbSource[]>;
+  getAiVoiceKbSource(id: string): Promise<AiVoiceKbSource | undefined>;
+  createAiVoiceKbSource(source: InsertAiVoiceKbSource): Promise<AiVoiceKbSource>;
+  updateAiVoiceKbSource(id: string, data: Partial<InsertAiVoiceKbSource>): Promise<AiVoiceKbSource | undefined>;
+  deleteAiVoiceKbSource(id: string): Promise<boolean>;
+
+  // AI Voice Phonebooks
+  getAiVoicePhonebooks(customerId: string): Promise<AiVoicePhonebook[]>;
+  getAiVoicePhonebook(id: string): Promise<AiVoicePhonebook | undefined>;
+  createAiVoicePhonebook(phonebook: InsertAiVoicePhonebook): Promise<AiVoicePhonebook>;
+  updateAiVoicePhonebook(id: string, data: Partial<InsertAiVoicePhonebook>): Promise<AiVoicePhonebook | undefined>;
+  deleteAiVoicePhonebook(id: string): Promise<boolean>;
+
+  // AI Voice Contacts
+  getAiVoiceContacts(phonebookId: string): Promise<AiVoiceContact[]>;
+  getAiVoiceContact(id: string): Promise<AiVoiceContact | undefined>;
+  createAiVoiceContact(contact: InsertAiVoiceContact): Promise<AiVoiceContact>;
+  updateAiVoiceContact(id: string, data: Partial<InsertAiVoiceContact>): Promise<AiVoiceContact | undefined>;
+  deleteAiVoiceContact(id: string): Promise<boolean>;
+
+  // AI Voice Call Logs
+  getAiVoiceCallLogs(agentId?: string, campaignId?: string): Promise<AiVoiceCallLog[]>;
+  getAiVoiceCallLog(id: string): Promise<AiVoiceCallLog | undefined>;
+  createAiVoiceCallLog(log: InsertAiVoiceCallLog): Promise<AiVoiceCallLog>;
+  updateAiVoiceCallLog(id: string, data: Partial<InsertAiVoiceCallLog>): Promise<AiVoiceCallLog | undefined>;
+
   // CRM Connections
   getCrmConnections(customerId: string): Promise<CrmConnection[]>;
   getCrmConnection(id: string): Promise<CrmConnection | undefined>;
@@ -603,6 +634,10 @@ export class MemStorage implements IStorage {
   private aiVoiceTrainingData: Map<string, AiVoiceTrainingData>;
   private aiVoiceCampaigns: Map<string, AiVoiceCampaign>;
   private aiVoiceKnowledgeBases: Map<string, AiVoiceKnowledgeBase>;
+  private aiVoiceKbSources: Map<string, AiVoiceKbSource>;
+  private aiVoicePhonebooks: Map<string, AiVoicePhonebook>;
+  private aiVoiceContacts: Map<string, AiVoiceContact>;
+  private aiVoiceCallLogs: Map<string, AiVoiceCallLog>;
   private crmConnections: Map<string, CrmConnection>;
   private crmFieldMappings: Map<string, CrmFieldMapping>;
   private crmSyncSettings: Map<string, CrmSyncSettings>;
@@ -672,6 +707,10 @@ export class MemStorage implements IStorage {
     this.aiVoiceTrainingData = new Map();
     this.aiVoiceCampaigns = new Map();
     this.aiVoiceKnowledgeBases = new Map();
+    this.aiVoiceKbSources = new Map();
+    this.aiVoicePhonebooks = new Map();
+    this.aiVoiceContacts = new Map();
+    this.aiVoiceCallLogs = new Map();
     this.crmConnections = new Map();
     this.crmFieldMappings = new Map();
     this.crmSyncSettings = new Map();
@@ -3263,6 +3302,176 @@ export class MemStorage implements IStorage {
 
   async deleteAiVoiceKnowledgeBase(id: string): Promise<boolean> {
     return this.aiVoiceKnowledgeBases.delete(id);
+  }
+
+  // AI Voice KB Sources
+  async getAiVoiceKbSources(knowledgeBaseId: string): Promise<AiVoiceKbSource[]> {
+    return Array.from(this.aiVoiceKbSources.values()).filter(s => s.knowledgeBaseId === knowledgeBaseId);
+  }
+
+  async getAiVoiceKbSource(id: string): Promise<AiVoiceKbSource | undefined> {
+    return this.aiVoiceKbSources.get(id);
+  }
+
+  async createAiVoiceKbSource(source: InsertAiVoiceKbSource): Promise<AiVoiceKbSource> {
+    const id = randomUUID();
+    const now = new Date();
+    const s: AiVoiceKbSource = {
+      id,
+      knowledgeBaseId: source.knowledgeBaseId,
+      name: source.name,
+      sourceType: source.sourceType,
+      content: source.content ?? null,
+      fileUrl: source.fileUrl ?? null,
+      mimeType: source.mimeType ?? null,
+      fileSize: source.fileSize ?? null,
+      status: source.status ?? "pending",
+      tokenCount: source.tokenCount ?? 0,
+      lastIndexedAt: source.lastIndexedAt ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiVoiceKbSources.set(id, s);
+    return s;
+  }
+
+  async updateAiVoiceKbSource(id: string, data: Partial<InsertAiVoiceKbSource>): Promise<AiVoiceKbSource | undefined> {
+    const s = this.aiVoiceKbSources.get(id);
+    if (!s) return undefined;
+    const updated = { ...s, ...data, updatedAt: new Date() };
+    this.aiVoiceKbSources.set(id, updated);
+    return updated;
+  }
+
+  async deleteAiVoiceKbSource(id: string): Promise<boolean> {
+    return this.aiVoiceKbSources.delete(id);
+  }
+
+  // AI Voice Phonebooks
+  async getAiVoicePhonebooks(customerId: string): Promise<AiVoicePhonebook[]> {
+    return Array.from(this.aiVoicePhonebooks.values()).filter(p => p.customerId === customerId);
+  }
+
+  async getAiVoicePhonebook(id: string): Promise<AiVoicePhonebook | undefined> {
+    return this.aiVoicePhonebooks.get(id);
+  }
+
+  async createAiVoicePhonebook(phonebook: InsertAiVoicePhonebook): Promise<AiVoicePhonebook> {
+    const id = randomUUID();
+    const now = new Date();
+    const p: AiVoicePhonebook = {
+      id,
+      customerId: phonebook.customerId,
+      name: phonebook.name,
+      description: phonebook.description ?? null,
+      contactCount: phonebook.contactCount ?? 0,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiVoicePhonebooks.set(id, p);
+    return p;
+  }
+
+  async updateAiVoicePhonebook(id: string, data: Partial<InsertAiVoicePhonebook>): Promise<AiVoicePhonebook | undefined> {
+    const p = this.aiVoicePhonebooks.get(id);
+    if (!p) return undefined;
+    const updated = { ...p, ...data, updatedAt: new Date() };
+    this.aiVoicePhonebooks.set(id, updated);
+    return updated;
+  }
+
+  async deleteAiVoicePhonebook(id: string): Promise<boolean> {
+    return this.aiVoicePhonebooks.delete(id);
+  }
+
+  // AI Voice Contacts
+  async getAiVoiceContacts(phonebookId: string): Promise<AiVoiceContact[]> {
+    return Array.from(this.aiVoiceContacts.values()).filter(c => c.phonebookId === phonebookId);
+  }
+
+  async getAiVoiceContact(id: string): Promise<AiVoiceContact | undefined> {
+    return this.aiVoiceContacts.get(id);
+  }
+
+  async createAiVoiceContact(contact: InsertAiVoiceContact): Promise<AiVoiceContact> {
+    const id = randomUUID();
+    const now = new Date();
+    const c: AiVoiceContact = {
+      id,
+      phonebookId: contact.phonebookId,
+      phoneNumber: contact.phoneNumber,
+      firstName: contact.firstName ?? null,
+      lastName: contact.lastName ?? null,
+      email: contact.email ?? null,
+      company: contact.company ?? null,
+      customFields: contact.customFields ?? null,
+      isActive: contact.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiVoiceContacts.set(id, c);
+    return c;
+  }
+
+  async updateAiVoiceContact(id: string, data: Partial<InsertAiVoiceContact>): Promise<AiVoiceContact | undefined> {
+    const c = this.aiVoiceContacts.get(id);
+    if (!c) return undefined;
+    const updated = { ...c, ...data, updatedAt: new Date() };
+    this.aiVoiceContacts.set(id, updated);
+    return updated;
+  }
+
+  async deleteAiVoiceContact(id: string): Promise<boolean> {
+    return this.aiVoiceContacts.delete(id);
+  }
+
+  // AI Voice Call Logs
+  async getAiVoiceCallLogs(agentId?: string, campaignId?: string): Promise<AiVoiceCallLog[]> {
+    let logs = Array.from(this.aiVoiceCallLogs.values());
+    if (agentId) {
+      logs = logs.filter(l => l.agentId === agentId);
+    }
+    if (campaignId) {
+      logs = logs.filter(l => l.campaignId === campaignId);
+    }
+    return logs;
+  }
+
+  async getAiVoiceCallLog(id: string): Promise<AiVoiceCallLog | undefined> {
+    return this.aiVoiceCallLogs.get(id);
+  }
+
+  async createAiVoiceCallLog(log: InsertAiVoiceCallLog): Promise<AiVoiceCallLog> {
+    const id = randomUUID();
+    const now = new Date();
+    const l: AiVoiceCallLog = {
+      id,
+      agentId: log.agentId,
+      campaignId: log.campaignId ?? null,
+      callId: log.callId ?? null,
+      callerNumber: log.callerNumber ?? null,
+      calledNumber: log.calledNumber ?? null,
+      direction: log.direction ?? null,
+      duration: log.duration ?? null,
+      transcript: log.transcript ?? null,
+      summary: log.summary ?? null,
+      sentiment: log.sentiment ?? null,
+      outcome: log.outcome ?? null,
+      tokensUsed: log.tokensUsed ?? null,
+      cost: log.cost ?? null,
+      recordingUrl: log.recordingUrl ?? null,
+      createdAt: now
+    };
+    this.aiVoiceCallLogs.set(id, l);
+    return l;
+  }
+
+  async updateAiVoiceCallLog(id: string, data: Partial<InsertAiVoiceCallLog>): Promise<AiVoiceCallLog | undefined> {
+    const l = this.aiVoiceCallLogs.get(id);
+    if (!l) return undefined;
+    const updated = { ...l, ...data };
+    this.aiVoiceCallLogs.set(id, updated);
+    return updated;
   }
 
   // CRM Connections
