@@ -1602,6 +1602,199 @@ export const aiVoiceCallLogs = pgTable("ai_voice_call_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// AI Voice Rate Configurations (detailed rate settings per tier/destination)
+export const aiVoiceRateConfigs = pgTable("ai_voice_rate_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  destinationPrefix: text("destination_prefix"),
+  countryCode: text("country_code"),
+  ratePerMinute: decimal("rate_per_minute", { precision: 10, scale: 6 }).notNull(),
+  connectionFee: decimal("connection_fee", { precision: 10, scale: 4 }).default("0"),
+  minimumDuration: integer("minimum_duration").default(0),
+  billingIncrement: integer("billing_increment").default(1),
+  effectiveFrom: timestamp("effective_from"),
+  effectiveTo: timestamp("effective_to"),
+  llmCostPerToken: decimal("llm_cost_per_token", { precision: 12, scale: 8 }),
+  ttsCostPerChar: decimal("tts_cost_per_char", { precision: 12, scale: 8 }),
+  sttCostPerSecond: decimal("stt_cost_per_second", { precision: 10, scale: 6 }),
+  priority: integer("priority").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Voice Pricing Tiers (configurable by admin)
+export const aiVoicePricingTiers = pgTable("ai_voice_pricing_tiers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  ratePerMinute: decimal("rate_per_minute", { precision: 10, scale: 6 }).notNull(),
+  setupFee: decimal("setup_fee", { precision: 10, scale: 4 }).default("0"),
+  minimumBillableSeconds: integer("minimum_billable_seconds").default(60),
+  billingIncrement: integer("billing_increment").default(6),
+  llmProvider: text("llm_provider").default("openai"),
+  ttsProvider: text("tts_provider").default("openai"),
+  sttProvider: text("stt_provider").default("openai"),
+  maxCallDuration: integer("max_call_duration").default(1800),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Voice Knowledge Bases (document/file uploads)
+export const aiVoiceKnowledgeBaseStatusEnum = pgEnum("ai_voice_kb_status", [
+  "pending", "processing", "ready", "failed"
+]);
+
+export const aiVoiceKnowledgeBases = pgTable("ai_voice_knowledge_bases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  connexcsKbId: text("connexcs_kb_id"),
+  status: aiVoiceKnowledgeBaseStatusEnum("status").default("pending"),
+  documentCount: integer("document_count").default(0),
+  totalTokens: integer("total_tokens").default(0),
+  lastTrainedAt: timestamp("last_trained_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Voice Knowledge Base Sources (individual files/urls)
+export const aiVoiceKbSourceTypeEnum = pgEnum("ai_voice_kb_source_type", [
+  "file", "url", "text", "faq"
+]);
+
+export const aiVoiceKbSources = pgTable("ai_voice_kb_sources", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  knowledgeBaseId: varchar("knowledge_base_id").references(() => aiVoiceKnowledgeBases.id).notNull(),
+  name: text("name").notNull(),
+  sourceType: aiVoiceKbSourceTypeEnum("source_type").notNull(),
+  content: text("content"),
+  fileUrl: text("file_url"),
+  mimeType: text("mime_type"),
+  fileSize: integer("file_size"),
+  status: aiVoiceKnowledgeBaseStatusEnum("status").default("pending"),
+  tokenCount: integer("token_count").default(0),
+  lastIndexedAt: timestamp("last_indexed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Voice Phonebooks (contact lists for campaigns)
+export const aiVoicePhonebooks = pgTable("ai_voice_phonebooks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  contactCount: integer("contact_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Voice Phonebook Contacts
+export const aiVoiceContacts = pgTable("ai_voice_contacts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  phonebookId: varchar("phonebook_id").references(() => aiVoicePhonebooks.id).notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  email: text("email"),
+  company: text("company"),
+  customFields: jsonb("custom_fields"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Voice Templates (pre-built agent templates)
+export const aiVoiceTemplates = pgTable("ai_voice_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category"),
+  icon: text("icon"),
+  systemPrompt: text("system_prompt"),
+  greetingMessage: text("greeting_message"),
+  fallbackMessage: text("fallback_message"),
+  voiceId: text("voice_id"),
+  voiceProvider: text("voice_provider").default("openai"),
+  defaultFlowData: jsonb("default_flow_data"),
+  isGlobal: boolean("is_global").default(true),
+  customerId: varchar("customer_id").references(() => customers.id),
+  isActive: boolean("is_active").default(true),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Voice Usage (per-call billing records)
+export const aiVoiceUsage = pgTable("ai_voice_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  agentId: varchar("agent_id").references(() => aiVoiceAgents.id),
+  callLogId: varchar("call_log_id").references(() => aiVoiceCallLogs.id),
+  pricingTierId: varchar("pricing_tier_id").references(() => aiVoicePricingTiers.id),
+  durationSeconds: integer("duration_seconds").default(0),
+  billableSeconds: integer("billable_seconds").default(0),
+  ratePerMinute: decimal("rate_per_minute", { precision: 10, scale: 6 }),
+  totalCost: decimal("total_cost", { precision: 10, scale: 6 }),
+  llmTokens: integer("llm_tokens").default(0),
+  ttsCharacters: integer("tts_characters").default(0),
+  invoiceId: varchar("invoice_id").references(() => invoices.id),
+  billingPeriod: text("billing_period"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// AI Voice Feature Assignments (by category, group, customer)
+export const aiVoiceAssignments = pgTable("ai_voice_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  featureName: text("feature_name").notNull(),
+  assignmentType: assignmentTypeEnum("assignment_type").default("all"),
+  categoryIds: text("category_ids").array(),
+  groupIds: text("group_ids").array(),
+  customerIds: text("customer_ids").array(),
+  pricingTierId: varchar("pricing_tier_id").references(() => aiVoicePricingTiers.id),
+  maxAgents: integer("max_agents"),
+  maxCallsPerDay: integer("max_calls_per_day"),
+  maxConcurrentCalls: integer("max_concurrent_calls"),
+  allowOutbound: boolean("allow_outbound").default(true),
+  allowInbound: boolean("allow_inbound").default(true),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Voice Global Settings
+export const aiVoiceSettings = pgTable("ai_voice_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  settingKey: text("setting_key").notNull().unique(),
+  settingValue: text("setting_value"),
+  settingType: text("setting_type").default("string"),
+  description: text("description"),
+  isPublic: boolean("is_public").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Voice Webhooks
+export const aiVoiceWebhooks = pgTable("ai_voice_webhooks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  events: text("events").array(),
+  headers: jsonb("headers"),
+  isActive: boolean("is_active").default(true),
+  secretKey: text("secret_key"),
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  failureCount: integer("failure_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== CMS & WHITE-LABEL ====================
 
 export const cmsPortals = pgTable("cms_portals", {
@@ -1819,6 +2012,17 @@ export const insertAiVoiceAgentSchema = createInsertSchema(aiVoiceAgents).omit({
 export const insertAiVoiceFlowSchema = createInsertSchema(aiVoiceFlows).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAiVoiceTrainingDataSchema = createInsertSchema(aiVoiceTrainingData).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAiVoiceCampaignSchema = createInsertSchema(aiVoiceCampaigns).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceRateConfigSchema = createInsertSchema(aiVoiceRateConfigs).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoicePricingTierSchema = createInsertSchema(aiVoicePricingTiers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceKnowledgeBaseSchema = createInsertSchema(aiVoiceKnowledgeBases).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceKbSourceSchema = createInsertSchema(aiVoiceKbSources).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoicePhonebookSchema = createInsertSchema(aiVoicePhonebooks).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceContactSchema = createInsertSchema(aiVoiceContacts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceTemplateSchema = createInsertSchema(aiVoiceTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceUsageSchema = createInsertSchema(aiVoiceUsage).omit({ id: true, createdAt: true });
+export const insertAiVoiceAssignmentSchema = createInsertSchema(aiVoiceAssignments).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceSettingSchema = createInsertSchema(aiVoiceSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiVoiceWebhookSchema = createInsertSchema(aiVoiceWebhooks).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsPortalSchema = createInsertSchema(cmsPortals).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsThemeSchema = createInsertSchema(cmsThemes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsPageSchema = createInsertSchema(cmsPages).omit({ id: true, createdAt: true, updatedAt: true });
@@ -2032,6 +2236,28 @@ export type AiVoiceTrainingData = typeof aiVoiceTrainingData.$inferSelect;
 export type InsertAiVoiceCampaign = z.infer<typeof insertAiVoiceCampaignSchema>;
 export type AiVoiceCampaign = typeof aiVoiceCampaigns.$inferSelect;
 export type AiVoiceCallLog = typeof aiVoiceCallLogs.$inferSelect;
+export type InsertAiVoiceRateConfig = z.infer<typeof insertAiVoiceRateConfigSchema>;
+export type AiVoiceRateConfig = typeof aiVoiceRateConfigs.$inferSelect;
+export type InsertAiVoicePricingTier = z.infer<typeof insertAiVoicePricingTierSchema>;
+export type AiVoicePricingTier = typeof aiVoicePricingTiers.$inferSelect;
+export type InsertAiVoiceKnowledgeBase = z.infer<typeof insertAiVoiceKnowledgeBaseSchema>;
+export type AiVoiceKnowledgeBase = typeof aiVoiceKnowledgeBases.$inferSelect;
+export type InsertAiVoiceKbSource = z.infer<typeof insertAiVoiceKbSourceSchema>;
+export type AiVoiceKbSource = typeof aiVoiceKbSources.$inferSelect;
+export type InsertAiVoicePhonebook = z.infer<typeof insertAiVoicePhonebookSchema>;
+export type AiVoicePhonebook = typeof aiVoicePhonebooks.$inferSelect;
+export type InsertAiVoiceContact = z.infer<typeof insertAiVoiceContactSchema>;
+export type AiVoiceContact = typeof aiVoiceContacts.$inferSelect;
+export type InsertAiVoiceTemplate = z.infer<typeof insertAiVoiceTemplateSchema>;
+export type AiVoiceTemplate = typeof aiVoiceTemplates.$inferSelect;
+export type InsertAiVoiceUsage = z.infer<typeof insertAiVoiceUsageSchema>;
+export type AiVoiceUsage = typeof aiVoiceUsage.$inferSelect;
+export type InsertAiVoiceAssignment = z.infer<typeof insertAiVoiceAssignmentSchema>;
+export type AiVoiceAssignment = typeof aiVoiceAssignments.$inferSelect;
+export type InsertAiVoiceSetting = z.infer<typeof insertAiVoiceSettingSchema>;
+export type AiVoiceSetting = typeof aiVoiceSettings.$inferSelect;
+export type InsertAiVoiceWebhook = z.infer<typeof insertAiVoiceWebhookSchema>;
+export type AiVoiceWebhook = typeof aiVoiceWebhooks.$inferSelect;
 
 // CMS & White-label types
 export type InsertCmsPortal = z.infer<typeof insertCmsPortalSchema>;
@@ -2055,13 +2281,6 @@ export type WebsiteSection = typeof websiteSections.$inferSelect;
 // Integration types
 export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
 export type Integration = typeof integrations.$inferSelect;
-
-// Email System types
-export type EmailTemplate = typeof emailTemplates.$inferSelect;
-export type EmailLog = typeof emailLogs.$inferSelect;
-
-// Bonus types
-export type BonusType = typeof bonusTypes.$inferSelect;
 
 // Documentation types
 export type InsertDocCategory = z.infer<typeof insertDocCategorySchema>;
