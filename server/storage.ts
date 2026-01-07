@@ -46,6 +46,11 @@ import {
   type AiVoiceTrainingData, type InsertAiVoiceTrainingData,
   type AiVoiceCampaign, type InsertAiVoiceCampaign,
   type AiVoiceKnowledgeBase, type InsertAiVoiceKnowledgeBase,
+  type CrmConnection, type InsertCrmConnection,
+  type CrmFieldMapping, type InsertCrmFieldMapping,
+  type CrmSyncSettings, type InsertCrmSyncSettings,
+  type CrmSyncLog, type InsertCrmSyncLog,
+  type CrmContactMapping, type InsertCrmContactMapping,
   type CmsTheme, type InsertCmsTheme,
   type CmsPage, type InsertCmsPage,
   type CmsMediaItem, type InsertCmsMediaItem,
@@ -463,6 +468,35 @@ export interface IStorage {
   updateAiVoiceKnowledgeBase(id: string, data: Partial<InsertAiVoiceKnowledgeBase>): Promise<AiVoiceKnowledgeBase | undefined>;
   deleteAiVoiceKnowledgeBase(id: string): Promise<boolean>;
 
+  // CRM Connections
+  getCrmConnections(customerId: string): Promise<CrmConnection[]>;
+  getCrmConnection(id: string): Promise<CrmConnection | undefined>;
+  createCrmConnection(connection: InsertCrmConnection): Promise<CrmConnection>;
+  updateCrmConnection(id: string, data: Partial<InsertCrmConnection>): Promise<CrmConnection | undefined>;
+  deleteCrmConnection(id: string): Promise<boolean>;
+
+  // CRM Field Mappings
+  getCrmFieldMappings(connectionId: string): Promise<CrmFieldMapping[]>;
+  createCrmFieldMapping(mapping: InsertCrmFieldMapping): Promise<CrmFieldMapping>;
+  updateCrmFieldMapping(id: string, data: Partial<InsertCrmFieldMapping>): Promise<CrmFieldMapping | undefined>;
+  deleteCrmFieldMapping(id: string): Promise<boolean>;
+
+  // CRM Sync Settings
+  getCrmSyncSettings(connectionId: string): Promise<CrmSyncSettings | undefined>;
+  upsertCrmSyncSettings(settings: InsertCrmSyncSettings): Promise<CrmSyncSettings>;
+
+  // CRM Sync Logs
+  getCrmSyncLogs(connectionId: string, limit?: number): Promise<CrmSyncLog[]>;
+  createCrmSyncLog(log: InsertCrmSyncLog): Promise<CrmSyncLog>;
+  updateCrmSyncLog(id: string, data: Partial<InsertCrmSyncLog>): Promise<CrmSyncLog | undefined>;
+
+  // CRM Contact Mappings
+  getCrmContactMappings(connectionId: string): Promise<CrmContactMapping[]>;
+  getCrmContactMappingByPhone(connectionId: string, phone: string): Promise<CrmContactMapping | undefined>;
+  getCrmContactMappingByEmail(connectionId: string, email: string): Promise<CrmContactMapping | undefined>;
+  createCrmContactMapping(mapping: InsertCrmContactMapping): Promise<CrmContactMapping>;
+  updateCrmContactMapping(id: string, data: Partial<InsertCrmContactMapping>): Promise<CrmContactMapping | undefined>;
+
   // CMS Themes
   getCmsThemes(): Promise<CmsTheme[]>;
   getCmsTheme(id: string): Promise<CmsTheme | undefined>;
@@ -569,6 +603,11 @@ export class MemStorage implements IStorage {
   private aiVoiceTrainingData: Map<string, AiVoiceTrainingData>;
   private aiVoiceCampaigns: Map<string, AiVoiceCampaign>;
   private aiVoiceKnowledgeBases: Map<string, AiVoiceKnowledgeBase>;
+  private crmConnections: Map<string, CrmConnection>;
+  private crmFieldMappings: Map<string, CrmFieldMapping>;
+  private crmSyncSettings: Map<string, CrmSyncSettings>;
+  private crmSyncLogs: Map<string, CrmSyncLog>;
+  private crmContactMappings: Map<string, CrmContactMapping>;
   private cmsThemes: Map<string, CmsTheme>;
   private cmsPages: Map<string, CmsPage>;
   private cmsMediaItems: Map<string, CmsMediaItem>;
@@ -633,6 +672,11 @@ export class MemStorage implements IStorage {
     this.aiVoiceTrainingData = new Map();
     this.aiVoiceCampaigns = new Map();
     this.aiVoiceKnowledgeBases = new Map();
+    this.crmConnections = new Map();
+    this.crmFieldMappings = new Map();
+    this.crmSyncSettings = new Map();
+    this.crmSyncLogs = new Map();
+    this.crmContactMappings = new Map();
     this.cmsThemes = new Map();
     this.cmsPages = new Map();
     this.cmsMediaItems = new Map();
@@ -3219,6 +3263,203 @@ export class MemStorage implements IStorage {
 
   async deleteAiVoiceKnowledgeBase(id: string): Promise<boolean> {
     return this.aiVoiceKnowledgeBases.delete(id);
+  }
+
+  // CRM Connections
+  async getCrmConnections(customerId: string): Promise<CrmConnection[]> {
+    return Array.from(this.crmConnections.values()).filter(c => c.customerId === customerId);
+  }
+
+  async getCrmConnection(id: string): Promise<CrmConnection | undefined> {
+    return this.crmConnections.get(id);
+  }
+
+  async createCrmConnection(connection: InsertCrmConnection): Promise<CrmConnection> {
+    const id = randomUUID();
+    const now = new Date();
+    const c: CrmConnection = {
+      id,
+      customerId: connection.customerId,
+      provider: connection.provider,
+      name: connection.name,
+      status: connection.status ?? "pending",
+      instanceUrl: connection.instanceUrl ?? null,
+      accessToken: connection.accessToken ?? null,
+      refreshToken: connection.refreshToken ?? null,
+      tokenExpiresAt: connection.tokenExpiresAt ?? null,
+      scopes: connection.scopes ?? null,
+      settings: connection.settings ?? null,
+      lastSyncAt: connection.lastSyncAt ?? null,
+      lastError: connection.lastError ?? null,
+      isActive: connection.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.crmConnections.set(id, c);
+    return c;
+  }
+
+  async updateCrmConnection(id: string, data: Partial<InsertCrmConnection>): Promise<CrmConnection | undefined> {
+    const c = this.crmConnections.get(id);
+    if (!c) return undefined;
+    const updated = { ...c, ...data, updatedAt: new Date() };
+    this.crmConnections.set(id, updated);
+    return updated;
+  }
+
+  async deleteCrmConnection(id: string): Promise<boolean> {
+    return this.crmConnections.delete(id);
+  }
+
+  // CRM Field Mappings
+  async getCrmFieldMappings(connectionId: string): Promise<CrmFieldMapping[]> {
+    return Array.from(this.crmFieldMappings.values()).filter(m => m.connectionId === connectionId);
+  }
+
+  async createCrmFieldMapping(mapping: InsertCrmFieldMapping): Promise<CrmFieldMapping> {
+    const id = randomUUID();
+    const now = new Date();
+    const m: CrmFieldMapping = {
+      id,
+      connectionId: mapping.connectionId,
+      localEntity: mapping.localEntity,
+      localField: mapping.localField,
+      crmEntity: mapping.crmEntity,
+      crmField: mapping.crmField,
+      direction: mapping.direction ?? "bidirectional",
+      transformFunction: mapping.transformFunction ?? null,
+      isActive: mapping.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.crmFieldMappings.set(id, m);
+    return m;
+  }
+
+  async updateCrmFieldMapping(id: string, data: Partial<InsertCrmFieldMapping>): Promise<CrmFieldMapping | undefined> {
+    const m = this.crmFieldMappings.get(id);
+    if (!m) return undefined;
+    const updated = { ...m, ...data, updatedAt: new Date() };
+    this.crmFieldMappings.set(id, updated);
+    return updated;
+  }
+
+  async deleteCrmFieldMapping(id: string): Promise<boolean> {
+    return this.crmFieldMappings.delete(id);
+  }
+
+  // CRM Sync Settings
+  async getCrmSyncSettings(connectionId: string): Promise<CrmSyncSettings | undefined> {
+    return Array.from(this.crmSyncSettings.values()).find(s => s.connectionId === connectionId);
+  }
+
+  async upsertCrmSyncSettings(settings: InsertCrmSyncSettings): Promise<CrmSyncSettings> {
+    const existing = await this.getCrmSyncSettings(settings.connectionId);
+    const now = new Date();
+    if (existing) {
+      const updated = { ...existing, ...settings, updatedAt: now };
+      this.crmSyncSettings.set(existing.id, updated);
+      return updated;
+    }
+    const id = randomUUID();
+    const s: CrmSyncSettings = {
+      id,
+      connectionId: settings.connectionId,
+      syncCallLogs: settings.syncCallLogs ?? true,
+      syncContacts: settings.syncContacts ?? true,
+      syncCampaigns: settings.syncCampaigns ?? false,
+      syncInterval: settings.syncInterval ?? 15,
+      autoCreateContacts: settings.autoCreateContacts ?? false,
+      autoLogActivities: settings.autoLogActivities ?? true,
+      contactMatchField: settings.contactMatchField ?? "phone",
+      defaultOwnerEmail: settings.defaultOwnerEmail ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.crmSyncSettings.set(id, s);
+    return s;
+  }
+
+  // CRM Sync Logs
+  async getCrmSyncLogs(connectionId: string, limit = 50): Promise<CrmSyncLog[]> {
+    const logs = Array.from(this.crmSyncLogs.values())
+      .filter(l => l.connectionId === connectionId)
+      .sort((a, b) => (b.startedAt?.getTime() || 0) - (a.startedAt?.getTime() || 0));
+    return logs.slice(0, limit);
+  }
+
+  async createCrmSyncLog(log: InsertCrmSyncLog): Promise<CrmSyncLog> {
+    const id = randomUUID();
+    const l: CrmSyncLog = {
+      id,
+      connectionId: log.connectionId,
+      syncType: log.syncType,
+      direction: log.direction,
+      status: log.status,
+      recordsProcessed: log.recordsProcessed ?? 0,
+      recordsCreated: log.recordsCreated ?? 0,
+      recordsUpdated: log.recordsUpdated ?? 0,
+      recordsFailed: log.recordsFailed ?? 0,
+      errorDetails: log.errorDetails ?? null,
+      startedAt: new Date(),
+      completedAt: log.completedAt ?? null
+    };
+    this.crmSyncLogs.set(id, l);
+    return l;
+  }
+
+  async updateCrmSyncLog(id: string, data: Partial<InsertCrmSyncLog>): Promise<CrmSyncLog | undefined> {
+    const l = this.crmSyncLogs.get(id);
+    if (!l) return undefined;
+    const updated = { ...l, ...data };
+    this.crmSyncLogs.set(id, updated);
+    return updated;
+  }
+
+  // CRM Contact Mappings
+  async getCrmContactMappings(connectionId: string): Promise<CrmContactMapping[]> {
+    return Array.from(this.crmContactMappings.values()).filter(m => m.connectionId === connectionId);
+  }
+
+  async getCrmContactMappingByPhone(connectionId: string, phone: string): Promise<CrmContactMapping | undefined> {
+    const normalized = phone.replace(/\D/g, "");
+    return Array.from(this.crmContactMappings.values()).find(
+      m => m.connectionId === connectionId && m.phoneNumber?.replace(/\D/g, "") === normalized
+    );
+  }
+
+  async getCrmContactMappingByEmail(connectionId: string, email: string): Promise<CrmContactMapping | undefined> {
+    return Array.from(this.crmContactMappings.values()).find(
+      m => m.connectionId === connectionId && m.email?.toLowerCase() === email.toLowerCase()
+    );
+  }
+
+  async createCrmContactMapping(mapping: InsertCrmContactMapping): Promise<CrmContactMapping> {
+    const id = randomUUID();
+    const now = new Date();
+    const m: CrmContactMapping = {
+      id,
+      connectionId: mapping.connectionId,
+      localContactId: mapping.localContactId ?? null,
+      crmContactId: mapping.crmContactId,
+      crmContactType: mapping.crmContactType ?? "Contact",
+      phoneNumber: mapping.phoneNumber ?? null,
+      email: mapping.email ?? null,
+      fullName: mapping.fullName ?? null,
+      crmData: mapping.crmData ?? null,
+      lastSyncAt: now,
+      createdAt: now
+    };
+    this.crmContactMappings.set(id, m);
+    return m;
+  }
+
+  async updateCrmContactMapping(id: string, data: Partial<InsertCrmContactMapping>): Promise<CrmContactMapping | undefined> {
+    const m = this.crmContactMappings.get(id);
+    if (!m) return undefined;
+    const updated = { ...m, ...data, lastSyncAt: new Date() };
+    this.crmContactMappings.set(id, updated);
+    return updated;
   }
 
   // CMS Themes
