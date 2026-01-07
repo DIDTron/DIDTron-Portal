@@ -18,7 +18,8 @@ import {
   Terminal,
   Play,
   HardDrive,
-  Code
+  Code,
+  AlertTriangle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,8 @@ interface ConnexCSStatus {
   tokenDaysRemaining?: number;
   lastSync?: string;
   error?: string;
+  warning?: string;
+  tokenExpiringSoon?: boolean;
   stats?: {
     carriers: number;
     customers: number;
@@ -135,10 +138,17 @@ export default function ConnexCSStatusPage() {
     },
     onSuccess: (data) => {
       if (data.success) {
-        toast({
-          title: "JWT Auth Test Passed",
-          description: `Token valid for ${data.tokenDaysRemaining} days`,
-        });
+        if (data.tokenExpiringSoon) {
+          toast({
+            title: "JWT Auth Test Passed (Warning)",
+            description: data.warning || `Token expires in ${data.tokenDaysRemaining} days - will auto-renew`,
+          });
+        } else {
+          toast({
+            title: "JWT Auth Test Passed",
+            description: `Token valid for ${data.tokenDaysRemaining} days`,
+          });
+        }
       } else {
         toast({
           title: "JWT Auth Test Failed",
@@ -238,10 +248,22 @@ export default function ConnexCSStatusPage() {
             {status?.tokenDaysRemaining !== undefined && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Token Expires</span>
-                <span className="text-sm flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
+                <span className={`text-sm flex items-center gap-1 ${status.tokenExpiringSoon ? "text-yellow-600 dark:text-yellow-400 font-medium" : ""}`}>
+                  {status.tokenExpiringSoon ? (
+                    <AlertTriangle className="h-3 w-3" />
+                  ) : (
+                    <Clock className="h-3 w-3" />
+                  )}
                   {status.tokenDaysRemaining} days
                 </span>
+              </div>
+            )}
+            {status?.warning && (
+              <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
+                <p className="text-sm text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  {status.warning}
+                </p>
               </div>
             )}
             {status?.lastSync && (
