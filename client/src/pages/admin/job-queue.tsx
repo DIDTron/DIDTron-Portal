@@ -425,12 +425,12 @@ export default function JobQueuePage() {
                       data-testid="input-search-jobs"
                     />
                   </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
                     <SelectTrigger className="w-[130px]" data-testid="select-status-filter">
                       <SelectValue placeholder="All statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All statuses</SelectItem>
+                      <SelectItem value="all">All statuses</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="processing">Processing</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
@@ -438,12 +438,12 @@ export default function JobQueuePage() {
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <Select value={typeFilter || "all"} onValueChange={(v) => setTypeFilter(v === "all" ? "" : v)}>
                     <SelectTrigger className="w-[180px]" data-testid="select-type-filter">
                       <SelectValue placeholder="All types" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All types</SelectItem>
+                      <SelectItem value="all">All types</SelectItem>
                       {Object.entries(labels).map(([type, label]) => (
                         <SelectItem key={type} value={type}>{label}</SelectItem>
                       ))}

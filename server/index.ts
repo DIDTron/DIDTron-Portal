@@ -834,8 +834,17 @@ async function seedIntegrations() {
       host: "0.0.0.0",
       reusePort: true,
     },
-    () => {
+    async () => {
       log(`serving on port ${port}`);
+      
+      // Auto-start job worker in background
+      try {
+        const { startJobWorker } = await import("./job-worker");
+        await startJobWorker();
+        log("Job worker started automatically", "job-queue");
+      } catch (error) {
+        log(`Job worker auto-start failed: ${error}`, "job-queue");
+      }
     },
   );
 })();

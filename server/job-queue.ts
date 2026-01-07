@@ -196,7 +196,7 @@ class InMemoryJobQueue {
   private useMockMode = true;
 
   constructor() {
-    console.log("[JobQueue] Running in mock/in-memory mode - no DATABASE_URL configured");
+    console.log("[JobQueue] Running in in-memory mode (development)");
   }
 
   async addJob(options: {
@@ -409,21 +409,12 @@ class MockProcessor {
 
 type JobQueue = DataQueueJobQueue<DIDTronPayloadMap> | InMemoryJobQueue;
 let queueInstance: JobQueue | null = null;
-let isUsingMockQueue = false;
+let isUsingMockQueue = true;
 
 export function getJobQueue(): JobQueue {
   if (!queueInstance) {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      isUsingMockQueue = true;
-      queueInstance = new InMemoryJobQueue();
-    } else {
-      queueInstance = initJobQueue<DIDTronPayloadMap>({
-        databaseConfig: {
-          connectionString,
-        },
-      });
-    }
+    isUsingMockQueue = true;
+    queueInstance = new InMemoryJobQueue();
   }
   return queueInstance;
 }
