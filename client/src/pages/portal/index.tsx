@@ -61,6 +61,7 @@ import CustomerCallLogsPage from "./ai-voice-call-logs";
 import CustomerAnalyticsPage from "./ai-voice-analytics";
 import CustomerAiVoiceBillingPage from "./ai-voice-billing";
 import AIVoiceWizard from "./ai-voice-wizard";
+import CrmIntegrationsPage from "./crm-integrations";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -96,6 +97,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/portal/ai-agent/call-logs": { section: "ai-agent", subItem: "call-logs" },
   "/portal/ai-agent/analytics": { section: "ai-agent", subItem: "analytics" },
   "/portal/ai-agent/billing": { section: "ai-agent", subItem: "billing" },
+  "/portal/ai-agent/crm": { section: "ai-agent", subItem: "crm" },
   "/portal/sip-tester": { section: "sip-tester", subItem: "quick-test" },
   "/portal/sip-tester/configs": { section: "sip-tester", subItem: "configs" },
   "/portal/sip-tester/results": { section: "sip-tester", subItem: "results" },
@@ -397,6 +399,7 @@ export default function CustomerPortal() {
               <Route path="/portal/ai-agent/call-logs" component={CustomerCallLogsPage} />
               <Route path="/portal/ai-agent/analytics" component={CustomerAnalyticsPage} />
               <Route path="/portal/ai-agent/billing" component={CustomerAiVoiceBillingPage} />
+              <Route path="/portal/ai-agent/crm" component={CrmIntegrationsPage} />
               <Route path="/portal/sip-tester" component={PortalSipTesterPage} />
               <Route path="/portal/sip-tester/configs" component={PortalSipTesterPage} />
               <Route path="/portal/sip-tester/results" component={PortalSipTesterPage} />

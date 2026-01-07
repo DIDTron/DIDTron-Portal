@@ -1423,11 +1423,10 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Customer profile not found" });
       }
       const connections = await storage.getCrmConnections(user.customerId);
-      const safeConnections = connections.map(c => ({
-        ...c,
-        accessToken: c.accessToken ? "***" : null,
-        refreshToken: c.refreshToken ? "***" : null,
-      }));
+      const safeConnections = connections.map(c => {
+        const { accessToken, refreshToken, ...rest } = c;
+        return { ...rest, hasCredentials: !!accessToken };
+      });
       res.json(safeConnections);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch CRM connections" });
@@ -1447,11 +1446,8 @@ export async function registerRoutes(
       if (!connection || connection.customerId !== user.customerId) {
         return res.status(404).json({ error: "Connection not found" });
       }
-      res.json({
-        ...connection,
-        accessToken: connection.accessToken ? "***" : null,
-        refreshToken: connection.refreshToken ? "***" : null,
-      });
+      const { accessToken, refreshToken, ...rest } = connection;
+      res.json({ ...rest, hasCredentials: !!accessToken });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch CRM connection" });
     }
@@ -1488,11 +1484,8 @@ export async function registerRoutes(
         syncContacts: true,
         autoLogActivities: true,
       });
-      res.status(201).json({
-        ...connection,
-        accessToken: connection.accessToken ? "***" : null,
-        refreshToken: connection.refreshToken ? "***" : null,
-      });
+      const { accessToken: _at, refreshToken: _rt, ...rest } = connection;
+      res.status(201).json({ ...rest, hasCredentials: !!connection.accessToken });
     } catch (error) {
       res.status(500).json({ error: "Failed to create CRM connection" });
     }
@@ -1512,11 +1505,11 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Connection not found" });
       }
       const updated = await storage.updateCrmConnection(req.params.id, req.body);
-      res.json({
-        ...updated,
-        accessToken: updated?.accessToken ? "***" : null,
-        refreshToken: updated?.refreshToken ? "***" : null,
-      });
+      if (!updated) {
+        return res.status(404).json({ error: "Connection not found" });
+      }
+      const { accessToken: _at, refreshToken: _rt, ...rest } = updated;
+      res.json({ ...rest, hasCredentials: !!updated.accessToken });
     } catch (error) {
       res.status(500).json({ error: "Failed to update CRM connection" });
     }

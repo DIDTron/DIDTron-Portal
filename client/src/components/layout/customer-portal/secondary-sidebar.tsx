@@ -10,7 +10,7 @@ import {
   Settings, User, Shield, Bell, Headphones, Users as UsersIcon,
   PhoneCall, Bot, Mic, Workflow, Database, Gift, ListOrdered,
   Zap, Clock, Key, Webhook, Network, FileSpreadsheet, 
-  TrendingDown, Calculator, Tag, Palette, Menu
+  TrendingDown, Calculator, Tag, Palette, Menu, Link2
 } from "lucide-react";
 
 interface SidebarItem {
@@ -64,6 +64,7 @@ const sectionMenus: Record<string, { title: string; items: SidebarItem[] }> = {
       { id: "call-logs", label: "Call Logs", icon: Phone, path: "/portal/ai-agent/call-logs" },
       { id: "analytics", label: "Analytics", icon: BarChart3, path: "/portal/ai-agent/analytics" },
       { id: "billing", label: "Billing", icon: CreditCard, path: "/portal/ai-agent/billing" },
+      { id: "crm", label: "CRM Integrations", icon: Link2, path: "/portal/ai-agent/crm" },
     ],
   },
   "sip-tester": {
