@@ -103,7 +103,14 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/sip-tester/new": { section: "sip-tester", subItem: "sip-new-test" },
   "/admin/sip-tester/history": { section: "sip-tester", subItem: "sip-history" },
   "/admin/sip-tester/settings": { section: "sip-tester", subItem: "sip-settings" },
-  "/admin/ai-voice-agents": { section: "ai", subItem: "ai-voice-agents" },
+  "/admin/ai-voice/dashboard": { section: "ai-voice", subItem: "ai-voice-dashboard" },
+  "/admin/ai-voice/agents": { section: "ai-voice", subItem: "ai-voice-agents" },
+  "/admin/ai-voice/knowledge-bases": { section: "ai-voice", subItem: "ai-voice-knowledge-bases" },
+  "/admin/ai-voice/campaigns": { section: "ai-voice", subItem: "ai-voice-campaigns" },
+  "/admin/ai-voice/call-logs": { section: "ai-voice", subItem: "ai-voice-call-logs" },
+  "/admin/ai-voice/analytics": { section: "ai-voice", subItem: "ai-voice-analytics" },
+  "/admin/ai-voice/billing": { section: "ai-voice", subItem: "ai-voice-billing" },
+  "/admin/ai-voice/settings": { section: "ai-voice", subItem: "ai-voice-settings" },
   "/admin/class4-customers": { section: "softswitch", subItem: "class4-customers" },
   "/admin/class4-carriers": { section: "softswitch", subItem: "class4-carriers" },
   "/admin/class4-rate-cards": { section: "softswitch", subItem: "class4-rate-cards" },
@@ -223,7 +230,14 @@ export default function AdminLayout() {
                 <Route path="/admin/sip-tester/new" component={SipTesterPage} />
                 <Route path="/admin/sip-tester/history" component={SipTesterPage} />
                 <Route path="/admin/sip-tester/settings" component={SipTesterPage} />
-                <Route path="/admin/ai-voice-agents" component={AiVoiceAgentsPage} />
+                <Route path="/admin/ai-voice/dashboard" component={() => <PlaceholderPage title="AI Voice Dashboard" />} />
+                <Route path="/admin/ai-voice/agents" component={AiVoiceAgentsPage} />
+                <Route path="/admin/ai-voice/knowledge-bases" component={() => <PlaceholderPage title="AI Voice Knowledge Bases" />} />
+                <Route path="/admin/ai-voice/campaigns" component={() => <PlaceholderPage title="AI Voice Campaigns" />} />
+                <Route path="/admin/ai-voice/call-logs" component={() => <PlaceholderPage title="AI Voice Call Logs" />} />
+                <Route path="/admin/ai-voice/analytics" component={() => <PlaceholderPage title="AI Voice Analytics" />} />
+                <Route path="/admin/ai-voice/billing" component={() => <PlaceholderPage title="AI Voice Billing" />} />
+                <Route path="/admin/ai-voice/settings" component={() => <PlaceholderPage title="AI Voice Settings" />} />
                 <Route path="/admin/class4-customers" component={Class4CustomersPage} />
                 <Route path="/admin/class4-carriers" component={Class4CarriersPage} />
                 <Route path="/admin/class4-rate-cards" component={Class4RateCardsPage} />

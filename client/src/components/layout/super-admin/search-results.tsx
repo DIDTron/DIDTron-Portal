@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Phone, Globe, Users, CreditCard, BarChart3, Shield, Settings, MessageSquare, FileText, Palette, Bot, Radio, Database } from "lucide-react";
+import { Search, Phone, Globe, Users, CreditCard, BarChart3, Shield, Settings, MessageSquare, FileText, Palette, Bot, Radio, Database, LayoutDashboard, Megaphone } from "lucide-react";
 import { useSuperAdminTabs } from "@/stores/super-admin-tabs";
 
 interface SearchItem {
@@ -48,7 +48,14 @@ const allSearchItems: SearchItem[] = [
   { id: "sip-tester-history", label: "History", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester/history", icon: Phone, keywords: ["sip", "history", "tests", "results"] },
   { id: "sip-tester-settings", label: "Settings", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester/settings", icon: Settings, keywords: ["sip", "settings", "profiles", "suppliers", "audio"] },
   
-  { id: "ai-voice-agents", label: "AI Voice Agents", section: "ai", sectionLabel: "AI", path: "/admin/ai-voice-agents", icon: Bot, keywords: ["ai", "voice", "agents", "assistant", "chatbot", "ivr"] },
+  { id: "ai-voice-dashboard", label: "Dashboard", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/dashboard", icon: LayoutDashboard, keywords: ["ai", "voice", "dashboard", "overview"] },
+  { id: "ai-voice-agents", label: "Agents", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/agents", icon: Bot, keywords: ["ai", "voice", "agents", "assistant", "chatbot", "ivr"] },
+  { id: "ai-voice-knowledge-bases", label: "Knowledge Bases", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/knowledge-bases", icon: Database, keywords: ["ai", "voice", "knowledge", "training", "documents"] },
+  { id: "ai-voice-campaigns", label: "Campaigns", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/campaigns", icon: Megaphone, keywords: ["ai", "voice", "campaigns", "outbound", "phonebook"] },
+  { id: "ai-voice-call-logs", label: "Call Logs", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/call-logs", icon: Phone, keywords: ["ai", "voice", "calls", "logs", "history", "recordings"] },
+  { id: "ai-voice-analytics", label: "Analytics", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/analytics", icon: BarChart3, keywords: ["ai", "voice", "analytics", "reports", "usage"] },
+  { id: "ai-voice-billing", label: "Billing", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/billing", icon: CreditCard, keywords: ["ai", "voice", "billing", "pricing", "usage"] },
+  { id: "ai-voice-settings", label: "Settings", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/settings", icon: Settings, keywords: ["ai", "voice", "settings", "configuration", "providers"] },
   
   { id: "softswitch-customers", label: "Class 4 Customers", section: "softswitch", sectionLabel: "Softswitch", path: "/admin/class4-customers", icon: Users, keywords: ["class4", "softswitch", "customers", "wholesale"] },
   { id: "softswitch-carriers", label: "Class 4 Carriers", section: "softswitch", sectionLabel: "Softswitch", path: "/admin/class4-carriers", icon: Phone, keywords: ["class4", "softswitch", "carriers", "upstream"] },

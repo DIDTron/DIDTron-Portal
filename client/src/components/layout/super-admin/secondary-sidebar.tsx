@@ -9,7 +9,8 @@ import {
   Route as RouteIcon, Users, UserPlus, Tags, Gift, Ticket,
   FileText, Palette, Image, Mail, BarChart3, Activity, Bell,
   Shield, Key, Database, History, Settings, Webhook, Cpu, BookOpen,
-  Bot, Phone, PhoneOutgoing, Network, Cog, Link2, Languages, DollarSign, ListTodo
+  Bot, Phone, PhoneOutgoing, Network, Cog, Link2, Languages, DollarSign, ListTodo,
+  LayoutDashboard, Megaphone
 } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -112,10 +113,17 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "sip-settings", label: "Settings", route: "/admin/sip-tester/settings", icon: Settings },
     ],
   },
-  ai: {
-    title: "AI Services",
+  "ai-voice": {
+    title: "AI Voice",
     items: [
-      { id: "ai-voice-agents", label: "Voice Agents", route: "/admin/ai-voice-agents", icon: Bot },
+      { id: "ai-voice-dashboard", label: "Dashboard", route: "/admin/ai-voice/dashboard", icon: LayoutDashboard },
+      { id: "ai-voice-agents", label: "Agents", route: "/admin/ai-voice/agents", icon: Bot },
+      { id: "ai-voice-knowledge-bases", label: "Knowledge Bases", route: "/admin/ai-voice/knowledge-bases", icon: Database },
+      { id: "ai-voice-campaigns", label: "Campaigns", route: "/admin/ai-voice/campaigns", icon: Megaphone },
+      { id: "ai-voice-call-logs", label: "Call Logs", route: "/admin/ai-voice/call-logs", icon: Phone },
+      { id: "ai-voice-analytics", label: "Analytics", route: "/admin/ai-voice/analytics", icon: BarChart3 },
+      { id: "ai-voice-billing", label: "Billing", route: "/admin/ai-voice/billing", icon: CreditCard },
+      { id: "ai-voice-settings", label: "Settings", route: "/admin/ai-voice/settings", icon: Settings },
     ],
   },
   softswitch: {
