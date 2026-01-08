@@ -299,14 +299,15 @@ export default function MonitoringRulesPage() {
                       checked={rule.isActive}
                       onCheckedChange={() => handleToggleRule(rule.id, rule.isActive)}
                       data-testid={`switch-rule-${rule.id}`}
+                      aria-label={`Toggle ${rule.name} rule`}
                     />
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Button size="icon" variant="ghost">
+                      <Button size="icon" variant="ghost" aria-label="Edit rule">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost">
+                      <Button size="icon" variant="ghost" aria-label="Delete rule">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>

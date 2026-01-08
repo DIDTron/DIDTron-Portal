@@ -218,6 +218,7 @@ export default function AlertsPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-64"
                   data-testid="input-search-alerts"
+                  aria-label="Search alerts"
                 />
               </div>
               <Select value={severityFilter} onValueChange={setSeverityFilter}>

@@ -1,0 +1,42 @@
+Accessibility Issues Report
+Generated: Jan 9, 2026, 1:12:17 AM
+Total Pages with Issues: 4
+
+==================================================
+
+Module: Monitoring
+Page: Metrics
+Route: /admin/metrics
+Score: 94
+Accessibility Issues:
+[critical] Ensure buttons have discernible text (1 elements)
+[serious] Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds (6 elements)
+
+---
+
+Module: Monitoring
+Page: CDRs
+Route: /admin/cdrs
+Score: 97
+Accessibility Issues:
+[critical] Ensure buttons have discernible text (28 elements)
+
+---
+
+Module: Monitoring
+Page: Alerts
+Route: /admin/alerts
+Score: 94
+Accessibility Issues:
+[critical] Ensure buttons have discernible text (2 elements)
+[serious] Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds (5 elements)
+
+---
+
+Module: Monitoring
+Page: Rules
+Route: /admin/rules
+Score: 94
+Accessibility Issues:
+[critical] Ensure buttons have discernible text (13 elements)
+[serious] Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds (2 elements)

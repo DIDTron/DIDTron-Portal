@@ -241,6 +241,7 @@ export default function CdrsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
                 data-testid="input-search-cdrs"
+                aria-label="Search call records"
               />
             </div>
             
@@ -355,6 +356,7 @@ export default function CdrsPage() {
                             size="icon"
                             onClick={() => setSelectedCdr(cdr)}
                             data-testid={`button-view-cdr-${cdr.id}`}
+                            aria-label="View call details"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
