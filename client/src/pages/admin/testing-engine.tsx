@@ -335,13 +335,13 @@ export default function TestingEngine() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-8"></TableHead>
-                          <TableHead>Module</TableHead>
-                          <TableHead>Page</TableHead>
-                          <TableHead>Route</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>A11y</TableHead>
-                          <TableHead>Duration</TableHead>
+                          <TableHead className="w-10"></TableHead>
+                          <TableHead className="text-left">Module</TableHead>
+                          <TableHead className="text-left">Page</TableHead>
+                          <TableHead className="text-left">Route</TableHead>
+                          <TableHead className="text-left">Status</TableHead>
+                          <TableHead className="text-left">A11y</TableHead>
+                          <TableHead className="text-left">Duration</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
