@@ -101,15 +101,13 @@ export default function TestingEngine() {
       const response = await apiRequest("POST", "/api/e2e/run", { scope: testScope });
       return response.json();
     },
-    onMutate: () => {
-      setActiveTab("results");
-    },
     onSuccess: async (data) => {
-      setRunningRunId(null);
-      await refetchRuns();
       if (data?.runId) {
         setSelectedRunId(data.runId);
+        setRunningRunId(data.runId);
+        setActiveTab("results");
       }
+      await refetchRuns();
     },
     onError: () => {
       setRunningRunId(null);

@@ -228,11 +228,7 @@ async function testPage(page: Page, pageData: PageToTest): Promise<PageResult> {
   }
 }
 
-export async function runE2eTests(
-  scope: string = "all",
-  triggeredBy?: string,
-  onProgress?: (progress: E2eRunProgress) => void
-): Promise<{ runId: string; results: PageResult[] }> {
+function getScopeDetails(scope: string): { pagesToTest: PageToTest[]; scopeName: string } {
   let pagesToTest: PageToTest[];
   let scopeName = scope;
   
@@ -247,6 +243,141 @@ export async function runE2eTests(
     pagesToTest = ALL_PAGES.filter(p => p.moduleName.toLowerCase() === scope.toLowerCase());
     scopeName = scope;
   }
+  
+  return { pagesToTest, scopeName };
+}
+
+export async function createE2eRun(scope: string, triggeredBy?: string): Promise<string> {
+  const { pagesToTest, scopeName } = getScopeDetails(scope);
+  
+  const [run] = await db.insert(e2eRuns).values({
+    name: `E2E Test: ${scopeName}`,
+    scope: scopeName,
+    status: "running",
+    totalTests: pagesToTest.length,
+    passedTests: 0,
+    failedTests: 0,
+    currentIndex: 0,
+    startedAt: new Date(),
+    triggeredBy,
+  }).returning();
+  
+  return run.id;
+}
+
+export async function executeE2eTests(runId: string): Promise<PageResult[]> {
+  const [run] = await db.select().from(e2eRuns).where(eq(e2eRuns.id, runId));
+  if (!run) throw new Error(`Run not found: ${runId}`);
+  
+  const { pagesToTest } = getScopeDetails(run.scope);
+
+  const results: PageResult[] = [];
+  let browser: Browser | null = null;
+
+  try {
+    const chromiumPath = "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+    browser = await chromium.launch({
+      headless: true,
+      executablePath: fs.existsSync(chromiumPath) ? chromiumPath : undefined,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    });
+
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+      ignoreHTTPSErrors: true,
+    });
+
+    const page = await context.newPage();
+
+    await page.addInitScript(() => {
+      (window as any).__consoleErrors = [];
+      const originalError = console.error;
+      console.error = (...args) => {
+        (window as any).__consoleErrors.push(args.join(" "));
+        originalError.apply(console, args);
+      };
+    });
+
+    const loggedIn = await loginAsSuperAdmin(page);
+    if (!loggedIn) {
+      throw new Error("Failed to login as super admin");
+    }
+
+    for (let i = 0; i < pagesToTest.length; i++) {
+      const pageToTest = pagesToTest[i];
+
+      await db.update(e2eRuns).set({
+        currentIndex: i + 1,
+        currentPage: pageToTest.route,
+      }).where(eq(e2eRuns.id, runId));
+
+      console.log(`[E2E] Testing ${pageToTest.moduleName}/${pageToTest.pageName} (${i + 1}/${pagesToTest.length})`);
+      const result = await testPage(page, pageToTest);
+      results.push(result);
+
+      const passedSoFar = results.filter(r => r.status === "passed").length;
+      const failedSoFar = results.filter(r => r.status === "failed").length;
+
+      await db.insert(e2eResults).values({
+        runId,
+        moduleName: result.moduleName,
+        pageName: result.pageName,
+        route: result.route,
+        status: result.status,
+        duration: result.duration,
+        screenshotPath: result.screenshotPath,
+        accessibilityScore: result.accessibilityScore,
+        accessibilityIssues: result.accessibilityIssues,
+        checks: result.checks,
+        errorMessage: result.errorMessage,
+      });
+
+      await db.update(e2eRuns).set({
+        passedTests: passedSoFar,
+        failedTests: failedSoFar,
+      }).where(eq(e2eRuns.id, runId));
+    }
+
+    await context.close();
+  } catch (error: any) {
+    console.error("[E2E] Test run failed:", error);
+    await db.update(e2eRuns).set({
+      status: "failed",
+      completedAt: new Date(),
+      duration: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
+    }).where(eq(e2eRuns.id, runId));
+
+    throw error;
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+
+  const passedCount = results.filter(r => r.status === "passed").length;
+  const failedCount = results.filter(r => r.status === "failed").length;
+  const avgAccessibility = results.length > 0 
+    ? results.reduce((sum, r) => sum + r.accessibilityScore, 0) / results.length 
+    : 0;
+
+  await db.update(e2eRuns).set({
+    status: "completed",
+    passedTests: passedCount,
+    failedTests: failedCount,
+    accessibilityScore: Math.round(avgAccessibility),
+    completedAt: new Date(),
+    duration: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
+  }).where(eq(e2eRuns.id, runId));
+
+  return results;
+}
+
+export async function runE2eTests(
+  scope: string = "all",
+  triggeredBy?: string,
+  onProgress?: (progress: E2eRunProgress) => void
+): Promise<{ runId: string; results: PageResult[] }> {
+  const { pagesToTest, scopeName } = getScopeDetails(scope);
 
   const [run] = await db.insert(e2eRuns).values({
     name: `E2E Test: ${scopeName}`,

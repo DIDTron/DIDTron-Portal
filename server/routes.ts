@@ -8109,25 +8109,36 @@ export async function registerRoutes(
     }
   });
 
-  // Run E2E tests
+  // Run E2E tests (async - returns immediately, tests run in background)
   app.post("/api/e2e/run", async (req, res) => {
     try {
       const userId = (req as any).user?.id;
       const scope = req.body.scope || "all";
       
       console.log(`[E2E] Starting test run - scope: ${scope}`);
-      const result = await runE2eTests(scope, userId);
       
+      // Import the function that creates the run record first
+      const { createE2eRun, executeE2eTests } = await import("./e2e-runner");
+      
+      // Create run record and return immediately
+      const runId = await createE2eRun(scope, userId);
+      
+      // Respond immediately with the runId
       res.json({
         success: true,
-        runId: result.runId,
-        summary: {
-          total: result.results.length,
-          passed: result.results.filter(r => r.status === "passed").length,
-          failed: result.results.filter(r => r.status === "failed").length,
-        },
-        results: result.results,
+        runId,
+        message: "Test run started. Poll GET /api/e2e/runs/:id for progress.",
       });
+      
+      // Execute tests asynchronously (don't await)
+      setImmediate(async () => {
+        try {
+          await executeE2eTests(runId);
+        } catch (error) {
+          console.error("[E2E] Background test run failed:", error);
+        }
+      });
+      
     } catch (error) {
       console.error("[E2E] Test run failed:", error);
       res.status(500).json({ 
