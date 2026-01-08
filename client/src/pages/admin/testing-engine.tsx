@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Play, CheckCircle2, XCircle, Clock, ChevronDown, AlertTriangle, Accessibility, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
@@ -336,24 +335,27 @@ export default function TestingEngine() {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-10"></TableHead>
-                          <TableHead className="text-left">Module</TableHead>
-                          <TableHead className="text-left">Page</TableHead>
-                          <TableHead className="text-left">Route</TableHead>
-                          <TableHead className="text-left">Status</TableHead>
-                          <TableHead className="text-left">A11y</TableHead>
-                          <TableHead className="text-left">Duration</TableHead>
+                          <TableHead>Module</TableHead>
+                          <TableHead>Page</TableHead>
+                          <TableHead>Route</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>A11y</TableHead>
+                          <TableHead>Duration</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {runDetails.results.map((result, idx) => (
-                          <Collapsible key={idx} open={expandedResults.has(String(idx))} onOpenChange={() => toggleExpand(String(idx))}>
-                            <TableRow className="cursor-pointer" data-testid={`row-result-${idx}`}>
+                          <>
+                            <TableRow 
+                              key={`row-${idx}`} 
+                              className="cursor-pointer" 
+                              data-testid={`row-result-${idx}`}
+                              onClick={() => toggleExpand(String(idx))}
+                            >
                               <TableCell>
-                                <CollapsibleTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                                    <ChevronDown className={`h-4 w-4 transition-transform ${expandedResults.has(String(idx)) ? "rotate-180" : ""}`} />
-                                  </Button>
-                                </CollapsibleTrigger>
+                                <Button variant="ghost" size="icon" className="h-6 w-6">
+                                  <ChevronDown className={`h-4 w-4 transition-transform ${expandedResults.has(String(idx)) ? "rotate-180" : ""}`} />
+                                </Button>
                               </TableCell>
                               <TableCell className="font-medium">{result.moduleName}</TableCell>
                               <TableCell>{result.pageName}</TableCell>
@@ -369,8 +371,8 @@ export default function TestingEngine() {
                               </TableCell>
                               <TableCell>{formatDuration(result.duration)}</TableCell>
                             </TableRow>
-                            <CollapsibleContent asChild>
-                              <TableRow>
+                            {expandedResults.has(String(idx)) && (
+                              <TableRow key={`detail-${idx}`}>
                                 <TableCell colSpan={7} className="bg-muted/50 p-4">
                                   <div className="space-y-3">
                                     <div className="font-medium text-sm">Checks:</div>
@@ -411,8 +413,8 @@ export default function TestingEngine() {
                                   </div>
                                 </TableCell>
                               </TableRow>
-                            </CollapsibleContent>
-                          </Collapsible>
+                            )}
+                          </>
                         ))}
                       </TableBody>
                     </Table>
