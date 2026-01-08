@@ -275,10 +275,10 @@ export default function ChannelPlansPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(plan)} data-testid={`button-edit-plan-${plan.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(plan)} aria-label="Edit" data-testid={`button-edit-plan-${plan.id}`}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(plan.id)} data-testid={`button-delete-plan-${plan.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(plan.id)} aria-label="Delete" data-testid={`button-delete-plan-${plan.id}`}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

@@ -233,10 +233,10 @@ export default function CodecsPage() {
                     <TableCell>{codec.priority}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(codec)} data-testid={`button-edit-codec-${codec.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(codec)} aria-label="Edit" data-testid={`button-edit-codec-${codec.id}`}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(codec.id)} data-testid={`button-delete-codec-${codec.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(codec.id)} aria-label="Delete" data-testid={`button-delete-codec-${codec.id}`}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

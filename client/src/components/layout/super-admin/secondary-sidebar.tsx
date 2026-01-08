@@ -317,6 +317,7 @@ export function SecondarySidebar() {
           size="icon"
           onClick={toggleSecondarySidebar}
           className="shrink-0"
+          aria-label="Menu"
           data-testid="toggle-secondary-sidebar"
         >
           <Menu className="h-5 w-5" />

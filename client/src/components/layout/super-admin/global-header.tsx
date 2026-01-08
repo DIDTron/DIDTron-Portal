@@ -60,6 +60,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
               variant="ghost"
               size="icon"
               onClick={toggleBothSidebars}
+              aria-label="Menu"
               data-testid="header-toggle-sidebars"
             >
               <Menu className="h-5 w-5" />
@@ -92,6 +93,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
               variant="ghost" 
               size="icon" 
               className="relative" 
+              aria-label="ConnexCS status"
               data-testid="button-connexcs-status"
             >
               {statusLoading ? (
@@ -110,7 +112,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
           </TooltipContent>
         </Tooltip>
 
-        <Button variant="ghost" size="icon" className="relative" data-testid="button-notifications">
+        <Button variant="ghost" size="icon" className="relative" aria-label="Notifications" data-testid="button-notifications">
           <Bell className="h-4 w-4" />
           <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]" variant="destructive">
             3

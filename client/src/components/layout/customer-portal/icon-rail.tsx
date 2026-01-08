@@ -41,6 +41,7 @@ export function CustomerIconRail({ activeSection, onSectionChange }: IconRailPro
             variant="ghost"
             className={`w-10 h-10 ${isActive ? "bg-sidebar-accent" : ""}`}
             onClick={() => !section.external && onSectionChange(section.id)}
+            aria-label={section.label}
             data-testid={`icon-${section.id}`}
           >
             <section.icon className="h-5 w-5" />

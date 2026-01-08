@@ -239,10 +239,10 @@ export default function DIDCountriesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => handleEdit(country)} data-testid={`button-edit-country-${country.id}`}>
+                          <Button size="icon" variant="ghost" onClick={() => handleEdit(country)} aria-label="Edit" data-testid={`button-edit-country-${country.id}`}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(country.id)} data-testid={`button-delete-country-${country.id}`}>
+                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(country.id)} aria-label="Delete" data-testid={`button-delete-country-${country.id}`}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

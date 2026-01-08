@@ -178,6 +178,7 @@ export function PrimarySidebar() {
           size="icon"
           onClick={toggleBothSidebars}
           className="shrink-0"
+          aria-label="Menu"
           data-testid="toggle-both-sidebars"
         >
           <Menu className="h-5 w-5" />

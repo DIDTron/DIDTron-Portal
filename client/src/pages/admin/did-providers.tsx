@@ -237,10 +237,10 @@ export default function DIDProvidersPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => handleEdit(provider)} data-testid={`button-edit-provider-${provider.id}`}>
+                          <Button size="icon" variant="ghost" onClick={() => handleEdit(provider)} aria-label="Edit" data-testid={`button-edit-provider-${provider.id}`}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(provider.id)} data-testid={`button-delete-provider-${provider.id}`}>
+                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(provider.id)} aria-label="Delete" data-testid={`button-delete-provider-${provider.id}`}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

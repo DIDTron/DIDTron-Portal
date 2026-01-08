@@ -353,7 +353,7 @@ export default function TestingEngine() {
                               onClick={() => toggleExpand(String(idx))}
                             >
                               <TableCell>
-                                <Button variant="ghost" size="icon" className="h-6 w-6">
+                                <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Expand">
                                   <ChevronDown className={`h-4 w-4 transition-transform ${expandedResults.has(String(idx)) ? "rotate-180" : ""}`} />
                                 </Button>
                               </TableCell>

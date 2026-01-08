@@ -70,7 +70,7 @@ export default function Dashboard() {
               {user?.email}
             </span>
             <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={handleLogout} data-testid="button-logout">
+            <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Sign out" data-testid="button-logout">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

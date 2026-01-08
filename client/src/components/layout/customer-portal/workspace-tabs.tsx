@@ -76,6 +76,7 @@ export function CustomerWorkspaceTabs() {
                         isActive && "opacity-100"
                       )}
                       onClick={(e) => handleCloseTab(e, tab.id)}
+                      aria-label="Close tab"
                       data-testid={`tab-close-${tab.id}`}
                     >
                       <X className="h-3 w-3" />

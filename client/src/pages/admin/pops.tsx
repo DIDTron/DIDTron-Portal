@@ -271,10 +271,10 @@ export default function POPsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(pop)} data-testid={`button-edit-pop-${pop.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(pop)} aria-label="Edit" data-testid={`button-edit-pop-${pop.id}`}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(pop.id)} data-testid={`button-delete-pop-${pop.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(pop.id)} aria-label="Delete" data-testid={`button-delete-pop-${pop.id}`}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
