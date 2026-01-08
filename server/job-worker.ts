@@ -28,6 +28,8 @@ import {
   AZDestinationImportPayload,
 } from "./job-queue";
 import { azDestinationsRepository } from "./az-destinations-repository";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import {
   handleKBTrain,
   handleKBIndex,
@@ -180,6 +182,28 @@ interface ProcessorLike {
 let processorInstance: ProcessorLike | null = null;
 let isRunning = false;
 
+async function recoverStaleJobs(): Promise<number> {
+  if (isMockQueueMode()) {
+    return 0;
+  }
+  
+  try {
+    const result = await db.execute(sql`
+      UPDATE job_queue 
+      SET status = 'pending', locked_at = NULL, locked_by = NULL, started_at = NULL
+      WHERE status = 'processing' AND locked_at < NOW() - INTERVAL '5 minutes'
+    `);
+    const recoveredCount = (result as any).rowCount || 0;
+    if (recoveredCount > 0) {
+      console.log(`[JobWorker] Recovered ${recoveredCount} stale jobs back to pending`);
+    }
+    return recoveredCount;
+  } catch (error) {
+    console.error("[JobWorker] Failed to recover stale jobs:", error);
+    return 0;
+  }
+}
+
 export async function startJobWorker(): Promise<void> {
   if (isRunning) {
     console.log("[JobWorker] Worker already running");
@@ -187,6 +211,8 @@ export async function startJobWorker(): Promise<void> {
   }
   
   try {
+    await recoverStaleJobs();
+    
     const queue = getJobQueue();
     const isMock = isMockQueueMode();
     
