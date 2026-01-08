@@ -50,6 +50,46 @@ All modules in Super Admin portal must log these event types:
 ### Current Super Admin Modules (60+ modules)
 Dashboard, POPs, Voice Tiers, Codecs, Channel Plans, Carriers, Routes, Rate Cards (Customer/Carrier), DID Countries/Providers/Inventory, Customers, Categories, Groups, KYC, Invoices, Payments, Currencies, Referrals, Promo Codes, Bonuses, Social Accounts/Posts, Email Templates, Metrics, CDRs, Alerts, Monitoring Rules, SIP Tester, AI Voice (Dashboard/Agents/Knowledge Bases/Campaigns/Call Logs/Analytics/Billing/Settings/Assignments), Class 4 (Customers/Carriers/Rate Cards), CMS (Pages/Sections/Login Pages/Site Settings/Themes/Media/Documentation), Admin Users, Roles, Audit Logs, Tickets, Job Queue, Settings (General/API Keys/Webhooks/Integrations/ConnexCS Status), Global Settings (Platform/Currencies/Localization/A-Z Database), Trash
 
+## UI Component Standards
+
+### Data Table Footer (Pagination)
+**ALL data tables in the Super Admin portal MUST include the DataTableFooter component** for consistent pagination. This applies to any list view displaying records.
+
+**Usage Pattern:**
+```tsx
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
+
+// In your component:
+const {
+  currentPage,
+  pageSize,
+  totalPages,
+  totalItems,
+  paginatedItems,
+  onPageChange,
+  onPageSizeChange,
+} = useDataTablePagination(filteredData, 10);
+
+// In JSX - after the Table component:
+<DataTableFooter
+  currentPage={currentPage}
+  totalPages={totalPages}
+  pageSize={pageSize}
+  totalItems={totalItems}
+  onPageChange={onPageChange}
+  onPageSizeChange={onPageSizeChange}
+/>
+```
+
+**Features:**
+- Rows per page selector (10, 25, 50, 100)
+- "Showing X-Y of Z" text
+- Previous/Next navigation buttons
+- Direct page number input
+- Responsive layout with proper spacing
+
+**Auto-Apply Rule:** When creating ANY new page with a data table, automatically include the DataTableFooter component.
+
 ## External Dependencies
 
 -   **Stripe**: Payments and KYC identity verification.
