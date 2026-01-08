@@ -61,7 +61,7 @@ import AiVoiceAssignmentsPage from "./ai-voice-assignments";
 import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./class4-softswitch";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
-import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization } from "./global-settings";
+import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization, GlobalSettingsAZDatabase } from "./global-settings";
 import { CustomerRatesPage, CarrierRatesPage } from "./rate-cards";
 import CdrsPage from "./cdrs";
 import ConnexCSStatusPage from "./connexcs-status";
@@ -144,6 +144,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/global-settings/platform": { section: "global-settings", subItem: "global-platform" },
   "/admin/global-settings/currencies": { section: "global-settings", subItem: "global-currencies" },
   "/admin/global-settings/localization": { section: "global-settings", subItem: "global-localization" },
+  "/admin/global-settings/az-database": { section: "global-settings", subItem: "global-az-database" },
 };
 
 export default function AdminLayout() {
@@ -272,6 +273,7 @@ export default function AdminLayout() {
                 <Route path="/admin/global-settings/platform" component={GlobalSettingsPlatform} />
                 <Route path="/admin/global-settings/currencies" component={GlobalSettingsCurrencies} />
                 <Route path="/admin/global-settings/localization" component={GlobalSettingsLocalization} />
+                <Route path="/admin/global-settings/az-database" component={GlobalSettingsAZDatabase} />
                 <Route>
                   <PlaceholderPage title="Page Not Found" />
                 </Route>

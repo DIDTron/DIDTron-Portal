@@ -75,7 +75,8 @@ import {
   type DocArticle, type InsertDocArticle,
   type Webhook, type InsertWebhook,
   type WebhookDelivery, type InsertWebhookDelivery,
-  type CustomerApiKey, type InsertCustomerApiKey
+  type CustomerApiKey, type InsertCustomerApiKey,
+  type AzDestination, type InsertAzDestination
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -588,6 +589,18 @@ export interface IStorage {
   createDocArticle(article: InsertDocArticle): Promise<DocArticle>;
   updateDocArticle(id: string, data: Partial<InsertDocArticle>): Promise<DocArticle | undefined>;
   deleteDocArticle(id: string): Promise<boolean>;
+
+  // A-Z Destinations
+  getAzDestinations(options?: { search?: string; region?: string; limit?: number; offset?: number }): Promise<{ destinations: AzDestination[]; total: number }>;
+  getAzDestination(id: string): Promise<AzDestination | undefined>;
+  getAzDestinationByCode(code: string): Promise<AzDestination | undefined>;
+  createAzDestination(dest: InsertAzDestination): Promise<AzDestination>;
+  createAzDestinationsBulk(dests: InsertAzDestination[]): Promise<number>;
+  updateAzDestination(id: string, data: Partial<InsertAzDestination>): Promise<AzDestination | undefined>;
+  deleteAzDestination(id: string): Promise<boolean>;
+  deleteAllAzDestinations(): Promise<number>;
+  getAzRegions(): Promise<string[]>;
+  normalizeCode(dialCode: string): Promise<AzDestination | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -4072,6 +4085,57 @@ export class MemStorage implements IStorage {
 
   async deleteDocArticle(id: string): Promise<boolean> {
     return this.docArticles.delete(id);
+  }
+
+  // A-Z Destinations (delegated to database repository)
+  async getAzDestinations(options?: { search?: string; region?: string; limit?: number; offset?: number }): Promise<{ destinations: AzDestination[]; total: number }> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.getDestinations(options);
+  }
+
+  async getAzDestination(id: string): Promise<AzDestination | undefined> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.getDestination(id);
+  }
+
+  async getAzDestinationByCode(code: string): Promise<AzDestination | undefined> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.getDestinationByCode(code);
+  }
+
+  async createAzDestination(dest: InsertAzDestination): Promise<AzDestination> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.createDestination(dest);
+  }
+
+  async createAzDestinationsBulk(dests: InsertAzDestination[]): Promise<number> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.createDestinationsBulk(dests);
+  }
+
+  async updateAzDestination(id: string, data: Partial<InsertAzDestination>): Promise<AzDestination | undefined> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.updateDestination(id, data);
+  }
+
+  async deleteAzDestination(id: string): Promise<boolean> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.deleteDestination(id);
+  }
+
+  async deleteAllAzDestinations(): Promise<number> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.deleteAllDestinations();
+  }
+
+  async getAzRegions(): Promise<string[]> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.getRegions();
+  }
+
+  async normalizeCode(dialCode: string): Promise<AzDestination | undefined> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.normalizeCode(dialCode);
   }
 }
 

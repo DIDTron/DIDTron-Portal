@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Cog, Link2, DollarSign, Languages, Check, AlertCircle } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export function GlobalSettingsPlatform() {
   return (
@@ -288,6 +293,265 @@ export function GlobalSettingsLocalization() {
         <Button variant="outline" data-testid="button-cancel">Cancel</Button>
         <Button data-testid="button-save">Save Changes</Button>
       </div>
+    </div>
+  );
+}
+
+type AzDestination = {
+  id: string;
+  code: string;
+  destination: string;
+  region: string | null;
+  billingIncrement: string | null;
+  connectionFee: string | null;
+  gracePeriod: number | null;
+  isActive: boolean | null;
+};
+
+export function GlobalSettingsAZDatabase() {
+  const { toast } = useToast();
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
+  const [page, setPage] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Partial<AzDestination>>({});
+  const limit = 25;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearch, selectedRegion]);
+
+  const { data: regionsData } = useQuery<string[]>({
+    queryKey: ["/api/az-destinations/regions"],
+  });
+
+  const { data, isLoading } = useQuery<{ destinations: AzDestination[]; total: number }>({
+    queryKey: ["/api/az-destinations", { search: debouncedSearch, region: selectedRegion === "all" ? "" : selectedRegion, limit, offset: page * limit }],
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<AzDestination> }) => {
+      return apiRequest("PATCH", `/api/az-destinations/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/az-destinations"] });
+      setEditingId(null);
+      toast({ title: "Destination updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const destinations = data?.destinations || [];
+  const total = data?.total || 0;
+  const totalPages = Math.ceil(total / limit);
+
+  const handleEdit = (dest: AzDestination) => {
+    setEditingId(dest.id);
+    setEditData({
+      billingIncrement: dest.billingIncrement || "60/60",
+      connectionFee: dest.connectionFee || "0",
+    });
+  };
+
+  const handleSave = () => {
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: editData });
+    }
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setEditData({});
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">A-Z Destinations Database</h1>
+          <p className="text-muted-foreground">Master database of dial codes for rate normalization</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" data-testid="badge-total">
+            {total.toLocaleString()} destinations
+          </Badge>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              <CardTitle>Destination Codes</CardTitle>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search code or destination..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 w-64"
+                  data-testid="input-search"
+                />
+              </div>
+              <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                <SelectTrigger className="w-48" data-testid="select-region">
+                  <SelectValue placeholder="All Regions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Regions</SelectItem>
+                  {regionsData?.map((region) => (
+                    <SelectItem key={region} value={region}>{region}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-32">Code</TableHead>
+                      <TableHead>Destination</TableHead>
+                      <TableHead className="w-40">Region</TableHead>
+                      <TableHead className="w-32">Increment</TableHead>
+                      <TableHead className="w-32">Conn. Fee</TableHead>
+                      <TableHead className="w-24">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {destinations.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No destinations found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      destinations.map((dest) => (
+                        <TableRow key={dest.id} data-testid={`row-destination-${dest.id}`}>
+                          <TableCell className="font-mono font-medium">{dest.code}</TableCell>
+                          <TableCell>{dest.destination}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {dest.region || "N/A"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {editingId === dest.id ? (
+                              <Select
+                                value={editData.billingIncrement || "60/60"}
+                                onValueChange={(v) => setEditData({ ...editData, billingIncrement: v })}
+                              >
+                                <SelectTrigger className="h-8" data-testid="select-edit-increment">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="1/1">1/1</SelectItem>
+                                  <SelectItem value="6/6">6/6</SelectItem>
+                                  <SelectItem value="30/30">30/30</SelectItem>
+                                  <SelectItem value="60/60">60/60</SelectItem>
+                                  <SelectItem value="30/6">30/6</SelectItem>
+                                  <SelectItem value="60/6">60/6</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <span className="text-sm">{dest.billingIncrement || "60/60"}</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {editingId === dest.id ? (
+                              <Input
+                                type="number"
+                                step="0.0001"
+                                value={editData.connectionFee || "0"}
+                                onChange={(e) => setEditData({ ...editData, connectionFee: e.target.value })}
+                                className="h-8 w-24"
+                                data-testid="input-edit-connection-fee"
+                              />
+                            ) : (
+                              <span className="text-sm">${dest.connectionFee || "0"}</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {editingId === dest.id ? (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  onClick={handleSave}
+                                  disabled={updateMutation.isPending}
+                                  data-testid="button-save-edit"
+                                >
+                                  {updateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={handleCancel} data-testid="button-cancel-edit">
+                                  X
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button size="sm" variant="ghost" onClick={() => handleEdit(dest)} data-testid="button-edit">
+                                Edit
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing {page * limit + 1}-{Math.min((page + 1) * limit, total)} of {total.toLocaleString()}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(Math.max(0, page - 1))}
+                    disabled={page === 0}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {page + 1} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                    disabled={page >= totalPages - 1}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -162,6 +162,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "global-platform", label: "Platform", route: "/admin/global-settings/platform", icon: Cog },
       { id: "global-currencies", label: "Currencies", route: "/admin/global-settings/currencies", icon: DollarSign },
       { id: "global-localization", label: "Localization", route: "/admin/global-settings/localization", icon: Languages },
+      { id: "global-az-database", label: "A-Z Database", route: "/admin/global-settings/az-database", icon: Database },
     ],
   },
   settings: {

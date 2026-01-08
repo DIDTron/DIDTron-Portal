@@ -1113,6 +1113,34 @@ export const currencyReconciliations = pgTable("currency_reconciliations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ==================== A-Z DESTINATIONS DATABASE ====================
+
+export const billingIncrementEnum = pgEnum("billing_increment", [
+  "1/1", "6/6", "30/30", "60/60", "30/6", "60/6"
+]);
+
+export const azDestinations = pgTable("az_destinations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull(),
+  destination: text("destination").notNull(),
+  region: text("region"),
+  billingIncrement: billingIncrementEnum("billing_increment").default("60/60"),
+  connectionFee: decimal("connection_fee", { precision: 10, scale: 6 }).default("0"),
+  gracePeriod: integer("grace_period").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAzDestinationSchema = createInsertSchema(azDestinations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAzDestination = z.infer<typeof insertAzDestinationSchema>;
+export type AzDestination = typeof azDestinations.$inferSelect;
+
 // ==================== SIP TESTER ====================
 
 export const sipTestTypeEnum = pgEnum("sip_test_type", [

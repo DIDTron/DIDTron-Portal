@@ -7214,5 +7214,119 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== A-Z DESTINATIONS ====================
+
+  app.get("/api/az-destinations", async (req, res) => {
+    try {
+      const { search, region, limit, offset } = req.query;
+      const result = await storage.getAzDestinations({
+        search: search as string,
+        region: region as string,
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0,
+      });
+      res.json(result);
+    } catch (error: any) {
+      console.error("Failed to get A-Z destinations:", error);
+      res.status(500).json({ error: "Failed to get destinations", details: error.message });
+    }
+  });
+
+  app.get("/api/az-destinations/regions", async (req, res) => {
+    try {
+      const regions = await storage.getAzRegions();
+      res.json(regions);
+    } catch (error: any) {
+      console.error("Failed to get regions:", error);
+      res.status(500).json({ error: "Failed to get regions", details: error.message });
+    }
+  });
+
+  app.get("/api/az-destinations/normalize/:code", async (req, res) => {
+    try {
+      const destination = await storage.normalizeCode(req.params.code);
+      if (!destination) {
+        return res.status(404).json({ error: "No matching destination found" });
+      }
+      res.json(destination);
+    } catch (error: any) {
+      console.error("Failed to normalize code:", error);
+      res.status(500).json({ error: "Failed to normalize code", details: error.message });
+    }
+  });
+
+  app.get("/api/az-destinations/:id", async (req, res) => {
+    try {
+      const destination = await storage.getAzDestination(req.params.id);
+      if (!destination) {
+        return res.status(404).json({ error: "Destination not found" });
+      }
+      res.json(destination);
+    } catch (error: any) {
+      console.error("Failed to get destination:", error);
+      res.status(500).json({ error: "Failed to get destination", details: error.message });
+    }
+  });
+
+  app.post("/api/az-destinations", async (req, res) => {
+    try {
+      const destination = await storage.createAzDestination(req.body);
+      res.status(201).json(destination);
+    } catch (error: any) {
+      console.error("Failed to create destination:", error);
+      res.status(500).json({ error: "Failed to create destination", details: error.message });
+    }
+  });
+
+  app.post("/api/az-destinations/bulk", async (req, res) => {
+    try {
+      const { destinations } = req.body;
+      if (!Array.isArray(destinations)) {
+        return res.status(400).json({ error: "destinations must be an array" });
+      }
+      const count = await storage.createAzDestinationsBulk(destinations);
+      res.json({ success: true, count });
+    } catch (error: any) {
+      console.error("Failed to bulk create destinations:", error);
+      res.status(500).json({ error: "Failed to bulk create destinations", details: error.message });
+    }
+  });
+
+  app.patch("/api/az-destinations/:id", async (req, res) => {
+    try {
+      const destination = await storage.updateAzDestination(req.params.id, req.body);
+      if (!destination) {
+        return res.status(404).json({ error: "Destination not found" });
+      }
+      res.json(destination);
+    } catch (error: any) {
+      console.error("Failed to update destination:", error);
+      res.status(500).json({ error: "Failed to update destination", details: error.message });
+    }
+  });
+
+  app.delete("/api/az-destinations/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteAzDestination(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Destination not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Failed to delete destination:", error);
+      res.status(500).json({ error: "Failed to delete destination", details: error.message });
+    }
+  });
+
+  app.delete("/api/az-destinations", async (req, res) => {
+    try {
+      const count = await storage.deleteAllAzDestinations();
+      res.json({ success: true, count });
+    } catch (error: any) {
+      console.error("Failed to delete all destinations:", error);
+      res.status(500).json({ error: "Failed to delete all destinations", details: error.message });
+    }
+  });
+
   return httpServer;
 }

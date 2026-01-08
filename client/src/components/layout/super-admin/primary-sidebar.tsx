@@ -309,6 +309,7 @@ const sectionDefaultItems: Record<string, { id: string; label: string; route: st
     { id: "global-integrations", label: "Integrations", route: "/admin/global-settings/integrations" },
     { id: "global-currencies", label: "Currencies", route: "/admin/global-settings/currencies" },
     { id: "global-localization", label: "Localization", route: "/admin/global-settings/localization" },
+    { id: "global-az-database", label: "A-Z Database", route: "/admin/global-settings/az-database" },
   ],
   settings: [
     { id: "general", label: "General", route: "/admin/settings/general" },
