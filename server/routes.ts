@@ -8262,6 +8262,230 @@ export async function registerRoutes(
     }
   });
 
+  // Seed test data - supports per-module seeding with upsert by slug
+  app.post("/api/testing-engine/seed", async (req, res) => {
+    try {
+      const moduleSlug = req.body.module || "did";
+      const forceReseed = req.body.force === true;
+      
+      const existingModule = await testingEngineRepository.getModuleBySlug(moduleSlug);
+      if (existingModule && !forceReseed) {
+        return res.json({ message: `Module '${moduleSlug}' already exists. Use force=true to reseed.`, seeded: false });
+      }
+
+      // Helper to upsert or create module
+      const upsertModule = async (data: any) => {
+        const existing = await testingEngineRepository.getModuleBySlug(data.slug);
+        if (existing) {
+          return await testingEngineRepository.updateModule(existing.id, data) || existing;
+        }
+        return await testingEngineRepository.createModule(data);
+      };
+
+      if (moduleSlug === "did") {
+        const didModule = await upsertModule({
+          name: "DID Management",
+          slug: "did",
+          description: "Direct Inward Dial number management module",
+          isActive: true,
+          order: 1,
+        });
+
+        // Clear existing pages/features/test cases if force reseeding
+        if (forceReseed) {
+          const existingPages = await testingEngineRepository.getPages(didModule.id);
+          for (const page of existingPages) {
+            const features = await testingEngineRepository.getFeatures(page.id);
+            for (const feature of features) {
+              const testCases = await testingEngineRepository.getTestCases(feature.id);
+              for (const tc of testCases) {
+                await testingEngineRepository.deleteTestCase(tc.id);
+              }
+              await testingEngineRepository.deleteFeature(feature.id);
+            }
+            await testingEngineRepository.deletePage(page.id);
+          }
+        }
+
+        const countriesPage = await testingEngineRepository.createPage({
+          moduleId: didModule.id,
+          name: "DID Countries",
+          route: "/admin/did-countries",
+          description: "Manage DID countries and regions",
+          isActive: true,
+          order: 1,
+        });
+
+        const providersPage = await testingEngineRepository.createPage({
+          moduleId: didModule.id,
+          name: "DID Providers",
+          route: "/admin/did-providers",
+          description: "Manage DID providers",
+          isActive: true,
+          order: 2,
+        });
+
+        const inventoryPage = await testingEngineRepository.createPage({
+          moduleId: didModule.id,
+          name: "DID Inventory",
+          route: "/admin/did-inventory",
+          description: "Manage DID inventory",
+          isActive: true,
+          order: 3,
+        });
+
+        // Countries features and test cases
+        const countryCrudFeature = await testingEngineRepository.createFeature({
+          pageId: countriesPage.id,
+          name: "Country CRUD Operations",
+          description: "Create, read, update, delete DID countries",
+          testLevel: "crud",
+          isActive: true,
+          order: 1,
+        });
+
+        const countryApiFeature = await testingEngineRepository.createFeature({
+          pageId: countriesPage.id,
+          name: "Country API Endpoints",
+          description: "Test DID countries REST API",
+          testLevel: "api",
+          isActive: true,
+          order: 2,
+        });
+
+        // Providers features
+        const providerCrudFeature = await testingEngineRepository.createFeature({
+          pageId: providersPage.id,
+          name: "Provider CRUD Operations",
+          description: "Create, read, update, delete DID providers",
+          testLevel: "crud",
+          isActive: true,
+          order: 1,
+        });
+
+        // Inventory features
+        const inventoryCrudFeature = await testingEngineRepository.createFeature({
+          pageId: inventoryPage.id,
+          name: "Inventory CRUD Operations",
+          description: "Create, read, update, delete DID inventory items",
+          testLevel: "crud",
+          isActive: true,
+          order: 1,
+        });
+
+        // Country test cases
+        await testingEngineRepository.createTestCase({
+          featureId: countryCrudFeature.id,
+          name: "Create DID country",
+          description: "POST /api/did-countries creates a new country",
+          testType: "api",
+          testLevel: "crud",
+          endpoint: "/api/did-countries",
+          method: "POST",
+          expectedStatus: 200,
+          testData: { name: "Test Country", code: "TC", prefix: "+999", isActive: true },
+          order: 1,
+          isActive: true,
+        });
+
+        await testingEngineRepository.createTestCase({
+          featureId: countryCrudFeature.id,
+          name: "List DID countries",
+          description: "GET /api/did-countries returns list of countries",
+          testType: "api",
+          testLevel: "api",
+          endpoint: "/api/did-countries",
+          method: "GET",
+          expectedStatus: 200,
+          order: 2,
+          isActive: true,
+        });
+
+        await testingEngineRepository.createTestCase({
+          featureId: countryApiFeature.id,
+          name: "Get country by ID",
+          description: "GET /api/did-countries/:id returns country details",
+          testType: "api",
+          testLevel: "api",
+          endpoint: "/api/did-countries/{id}",
+          method: "GET",
+          expectedStatus: 200,
+          order: 1,
+          isActive: true,
+        });
+
+        // Provider test cases
+        await testingEngineRepository.createTestCase({
+          featureId: providerCrudFeature.id,
+          name: "Create DID provider",
+          description: "POST /api/did-providers creates a new provider",
+          testType: "api",
+          testLevel: "crud",
+          endpoint: "/api/did-providers",
+          method: "POST",
+          expectedStatus: 200,
+          testData: { name: "Test Provider", code: "TPROV", apiType: "rest", isActive: true },
+          order: 1,
+          isActive: true,
+        });
+
+        await testingEngineRepository.createTestCase({
+          featureId: providerCrudFeature.id,
+          name: "List DID providers",
+          description: "GET /api/did-providers returns list of providers",
+          testType: "api",
+          testLevel: "api",
+          endpoint: "/api/did-providers",
+          method: "GET",
+          expectedStatus: 200,
+          order: 2,
+          isActive: true,
+        });
+
+        // Inventory test cases
+        await testingEngineRepository.createTestCase({
+          featureId: inventoryCrudFeature.id,
+          name: "List DID inventory",
+          description: "GET /api/did-inventory returns list of DIDs",
+          testType: "api",
+          testLevel: "crud",
+          endpoint: "/api/did-inventory",
+          method: "GET",
+          expectedStatus: 200,
+          order: 1,
+          isActive: true,
+        });
+
+        await testingEngineRepository.createTestCase({
+          featureId: inventoryCrudFeature.id,
+          name: "Create DID in inventory",
+          description: "POST /api/did-inventory creates a new DID",
+          testType: "api",
+          testLevel: "crud",
+          endpoint: "/api/did-inventory",
+          method: "POST",
+          expectedStatus: 200,
+          testData: { number: "+19995551234", countryId: "1", providerId: "1", status: "available" },
+          order: 2,
+          isActive: true,
+        });
+
+        res.json({ 
+          message: "DID module test data seeded successfully", 
+          seeded: true,
+          module: didModule,
+          pages: [countriesPage, providersPage, inventoryPage],
+          testCasesCreated: 8,
+        });
+      } else {
+        res.status(400).json({ error: `Unknown module: ${moduleSlug}. Supported: did` });
+      }
+    } catch (error) {
+      console.error("Failed to seed test data:", error);
+      res.status(500).json({ error: "Failed to seed test data" });
+    }
+  });
+
   // Get stats
   app.get("/api/testing-engine/stats", async (req, res) => {
     try {

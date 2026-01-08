@@ -126,6 +126,28 @@ export default function TestingEnginePage() {
     queryKey: ["/api/testing-engine/runs"],
   });
 
+  const seedMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/testing-engine/seed");
+      return response.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/hierarchy"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/stats"] });
+      toast({
+        title: result.seeded ? "Test data seeded" : "Already seeded",
+        description: result.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to seed data",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const executeMutation = useMutation({
     mutationFn: async (config: { scope: string; scopeId: string; testLevels: string[] }) => {
       const response = await apiRequest("POST", "/api/testing-engine/execute", config);
@@ -220,18 +242,33 @@ export default function TestingEnginePage() {
           <h1 className="text-2xl font-bold" data-testid="text-page-title">Testing Engine</h1>
           <p className="text-muted-foreground">Automated testing for modules, pages, and features</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            refetchHierarchy();
-            refetchRuns();
-          }}
-          disabled={hierarchyFetching || runsFetching}
-          data-testid="button-refresh"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${(hierarchyFetching || runsFetching) ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => seedMutation.mutate()}
+            disabled={seedMutation.isPending || (stats?.totalModules ?? 0) > 0}
+            data-testid="button-seed-data"
+          >
+            {seedMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 mr-2" />
+            )}
+            Seed Test Data
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              refetchHierarchy();
+              refetchRuns();
+            }}
+            disabled={hierarchyFetching || runsFetching}
+            data-testid="button-refresh"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${(hierarchyFetching || runsFetching) ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
