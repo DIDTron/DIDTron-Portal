@@ -43,6 +43,8 @@ The backend is built with PostgreSQL and Drizzle ORM, featuring a robust job que
 - Super Admin Portal: `/admin/dev-tests`
 - Shows all development tests with filtering by status, module, and date
 - Allows viewing detailed test steps and results
+- **Database Persistence**: Dev Tests are stored in PostgreSQL via `dev-tests-repository.ts` to ensure tests survive server restarts
+- **Critical Rule**: NEVER use MemStorage for data that must persist across server restarts - always use database repositories with Drizzle ORM
 
 ## Audit & Compliance Rules
 

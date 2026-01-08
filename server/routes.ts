@@ -7970,11 +7970,12 @@ export async function registerRoutes(
     }
   });
 
-  // ==================== DEV TESTS ====================
+  // ==================== DEV TESTS (Database-backed for persistence) ====================
+  const { devTestsRepository } = await import("./dev-tests-repository");
 
   app.get("/api/dev-tests", async (req, res) => {
     try {
-      const tests = await storage.getDevTests();
+      const tests = await devTestsRepository.getAll();
       res.json(tests);
     } catch (error) {
       console.error("Failed to fetch dev tests:", error);
@@ -7984,7 +7985,7 @@ export async function registerRoutes(
 
   app.get("/api/dev-tests/:id", async (req, res) => {
     try {
-      const test = await storage.getDevTest(req.params.id);
+      const test = await devTestsRepository.getById(req.params.id);
       if (!test) return res.status(404).json({ error: "Dev test not found" });
       res.json(test);
     } catch (error) {
@@ -7996,7 +7997,7 @@ export async function registerRoutes(
   app.post("/api/dev-tests", async (req, res) => {
     try {
       const userId = (req as any).user?.id;
-      const test = await storage.createDevTest({
+      const test = await devTestsRepository.create({
         name: req.body.name,
         description: req.body.description,
         module: req.body.module,
@@ -8023,10 +8024,22 @@ export async function registerRoutes(
   app.patch("/api/dev-tests/:id", async (req, res) => {
     try {
       const userId = (req as any).user?.id;
-      const existing = await storage.getDevTest(req.params.id);
+      const existing = await devTestsRepository.getById(req.params.id);
       if (!existing) return res.status(404).json({ error: "Dev test not found" });
 
-      const test = await storage.updateDevTest(req.params.id, req.body);
+      const allowedFields: (keyof typeof req.body)[] = [
+        "name", "description", "module", "testSteps", "expectedResult",
+        "actualResult", "status", "duration", "errorMessage",
+        "createdTestData", "cleanedUp", "testedBy", "testedAt"
+      ];
+      const sanitizedUpdate: Record<string, any> = {};
+      for (const field of allowedFields) {
+        if (field in req.body) {
+          sanitizedUpdate[field] = req.body[field];
+        }
+      }
+
+      const test = await devTestsRepository.update(req.params.id, sanitizedUpdate);
       await auditService.logUpdate("dev_tests", req.params.id, existing.name, existing, test, userId);
       res.json(test);
     } catch (error) {
@@ -8038,10 +8051,10 @@ export async function registerRoutes(
   app.delete("/api/dev-tests/:id", async (req, res) => {
     try {
       const userId = (req as any).user?.id;
-      const existing = await storage.getDevTest(req.params.id);
+      const existing = await devTestsRepository.getById(req.params.id);
       if (!existing) return res.status(404).json({ error: "Dev test not found" });
 
-      await storage.deleteDevTest(req.params.id);
+      await devTestsRepository.delete(req.params.id);
       await auditService.logDelete("dev_tests", req.params.id, existing.name, existing, userId);
       res.status(204).send();
     } catch (error) {

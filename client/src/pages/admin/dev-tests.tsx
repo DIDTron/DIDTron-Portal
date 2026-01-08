@@ -37,7 +37,7 @@ export default function DevTestsPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: tests = [], isLoading, refetch } = useQuery<DevTest[]>({
+  const { data: tests = [], isLoading, isFetching, refetch } = useQuery<DevTest[]>({
     queryKey: ["/api/dev-tests"],
   });
 
@@ -112,9 +112,10 @@ export default function DevTestsPage() {
         <Button
           variant="outline"
           onClick={() => refetch()}
+          disabled={isFetching}
           data-testid="button-refresh"
         >
-          <RefreshCw className="w-4 h-4 mr-2" />
+          <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
@@ -196,98 +197,98 @@ export default function DevTestsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {paginatedTests.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <FlaskConical className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No tests found</p>
-              <p className="text-sm">Tests will appear here as features are developed and tested.</p>
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Test Name</TableHead>
-                    <TableHead>Module</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Tested At</TableHead>
-                    <TableHead>Cleaned Up</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Test Name</TableHead>
+                <TableHead>Module</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Tested At</TableHead>
+                <TableHead>Cleaned Up</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedTests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <FlaskConical className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No tests found</p>
+                    <p className="text-sm">Tests will appear here as features are developed and tested.</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedTests.map((test) => (
+                  <TableRow key={test.id} data-testid={`row-test-${test.id}`}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{test.name}</div>
+                        {test.description && (
+                          <div className="text-sm text-muted-foreground truncate max-w-[300px]">
+                            {test.description}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{test.module}</Badge>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(test.status)}</TableCell>
+                    <TableCell>
+                      {test.duration ? (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {test.duration}ms
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {test.testedAt ? format(new Date(test.testedAt), "MMM d, yyyy HH:mm") : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {test.cleanedUp ? (
+                        <Badge variant="outline" className="text-green-600">Yes</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-amber-600">No</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => viewDetails(test)}
+                          data-testid={`button-view-${test.id}`}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteMutation.mutate(test.id)}
+                          disabled={deleteMutation.isPending}
+                          data-testid={`button-delete-${test.id}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedTests.map((test) => (
-                    <TableRow key={test.id} data-testid={`row-test-${test.id}`}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{test.name}</div>
-                          {test.description && (
-                            <div className="text-sm text-muted-foreground truncate max-w-[300px]">
-                              {test.description}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{test.module}</Badge>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(test.status)}</TableCell>
-                      <TableCell>
-                        {test.duration ? (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {test.duration}ms
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {test.testedAt ? format(new Date(test.testedAt), "MMM d, yyyy HH:mm") : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {test.cleanedUp ? (
-                          <Badge variant="outline" className="text-green-600">Yes</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-amber-600">No</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => viewDetails(test)}
-                            data-testid={`button-view-${test.id}`}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteMutation.mutate(test.id)}
-                            disabled={deleteMutation.isPending}
-                            data-testid={`button-delete-${test.id}`}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <DataTableFooter
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={onPageChange}
-                onPageSizeChange={onPageSizeChange}
-              />
-            </>
-          )}
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <DataTableFooter
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </CardContent>
       </Card>
 
@@ -359,23 +360,23 @@ export default function DevTestsPage() {
                 </div>
               )}
 
-              {selectedTest.testSteps && (
+              {selectedTest.testSteps ? (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Test Steps</label>
                   <pre className="mt-1 p-2 bg-muted rounded-md text-sm overflow-x-auto">
-                    {JSON.stringify(selectedTest.testSteps as Record<string, unknown>, null, 2)}
+                    {JSON.stringify(selectedTest.testSteps, null, 2) as string}
                   </pre>
                 </div>
-              )}
+              ) : null}
 
-              {selectedTest.createdTestData && (
+              {selectedTest.createdTestData ? (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Created Test Data</label>
                   <pre className="mt-1 p-2 bg-muted rounded-md text-sm overflow-x-auto">
-                    {JSON.stringify(selectedTest.createdTestData as Record<string, unknown>, null, 2)}
+                    {JSON.stringify(selectedTest.createdTestData, null, 2) as string}
                   </pre>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
           <DialogFooter>
