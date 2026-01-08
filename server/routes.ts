@@ -7695,6 +7695,16 @@ export async function registerRoutes(
 
   // ==================== EXPERIENCE MANAGER API ====================
 
+  app.get("/api/em/content-items", async (req, res) => {
+    try {
+      const contentItems = await storage.getAllEmContentItems();
+      res.json(contentItems);
+    } catch (error: any) {
+      console.error("Failed to get EM content items:", error);
+      res.status(500).json({ error: "Failed to get content items", details: error.message });
+    }
+  });
+
   app.get("/api/em/content/:section/:entityType/:slug", async (req, res) => {
     try {
       const { section, entityType, slug } = req.params;
@@ -7761,7 +7771,7 @@ export async function registerRoutes(
       
       if (!contentItem) {
         contentItem = await storage.createEmContentItem({
-          section,
+          section: section as "marketing" | "portal_themes" | "white_label" | "design_system" | "documentation",
           entityType,
           slug,
           name: slug,

@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   FileText, 
   Palette, 
@@ -20,25 +22,52 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  LayoutDashboard
+  LayoutDashboard,
+  RefreshCw
 } from "lucide-react";
-
-interface DraftChange {
-  id: string;
-  section: string;
-  item: string;
-  status: "draft" | "pending" | "published";
-  lastModified: string;
-}
+import type { EmContentItem } from "@shared/schema";
 
 export default function ExperienceManagerPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const [isPublishing, setIsPublishing] = useState(false);
 
-  const mockDraftChanges: DraftChange[] = [
-    { id: "1", section: "Marketing Website", item: "Homepage Hero Section", status: "draft", lastModified: "2 hours ago" },
-    { id: "2", section: "Portal Themes", item: "Customer Portal Colors", status: "pending", lastModified: "1 day ago" },
-    { id: "3", section: "White-Label", item: "Acme Corp Branding", status: "published", lastModified: "3 days ago" },
-  ];
+  const { data: contentItems = [], isLoading } = useQuery<EmContentItem[]>({
+    queryKey: ["/api/em/content-items"],
+  });
+
+  const recentChanges = [...contentItems]
+    .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+    .slice(0, 5);
+
+  const getCountBySection = (section: string) => contentItems.filter(item => item.section === section).length;
+  const getDraftCountBySection = (section: string) => contentItems.filter(item => item.section === section && item.status === "draft").length;
+  const getPublishedCountBySection = (section: string) => contentItems.filter(item => item.section === section && item.status === "published").length;
+  const getPreviewCountBySection = (section: string) => contentItems.filter(item => item.section === section && item.status === "preview").length;
+
+  const getSectionIcon = (section: string) => {
+    switch (section) {
+      case "marketing": return Globe;
+      case "portal_themes": return Palette;
+      case "white_label": return Building2;
+      case "design_system": return Settings2;
+      case "documentation": return BookOpen;
+      default: return FileText;
+    }
+  };
+
+  const formatTimeAgo = (date: Date | string | null | undefined) => {
+    if (!date) return "Never";
+    const now = new Date();
+    const then = new Date(date);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -74,7 +103,11 @@ export default function ExperienceManagerPage() {
 
       <div className="flex-1 overflow-auto p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="hover-elevate cursor-pointer" data-testid="card-marketing-website">
+          <Card 
+            className="hover-elevate cursor-pointer" 
+            data-testid="card-marketing-website"
+            onClick={() => setLocation("/admin/experience-manager/marketing")}
+          >
             <CardHeader className="flex flex-row items-center gap-4 pb-2">
               <div className="p-2 rounded-md bg-primary/10">
                 <Globe className="h-5 w-5 text-primary" />
@@ -86,13 +119,21 @@ export default function ExperienceManagerPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">3 pages</span>
-                <Badge variant="secondary">2 drafts</Badge>
+                <span className="text-sm text-muted-foreground">{getCountBySection("marketing")} pages</span>
+                {getDraftCountBySection("marketing") > 0 ? (
+                  <Badge variant="secondary">{getDraftCountBySection("marketing")} drafts</Badge>
+                ) : (
+                  <Badge variant="default">All live</Badge>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="hover-elevate cursor-pointer" data-testid="card-portal-themes">
+          <Card 
+            className="hover-elevate cursor-pointer" 
+            data-testid="card-portal-themes"
+            onClick={() => setLocation("/admin/experience-manager/portal-themes")}
+          >
             <CardHeader className="flex flex-row items-center gap-4 pb-2">
               <div className="p-2 rounded-md bg-chart-4/10">
                 <Palette className="h-5 w-5 text-chart-4" />
@@ -104,13 +145,21 @@ export default function ExperienceManagerPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">4 themes</span>
-                <Badge variant="default">All live</Badge>
+                <span className="text-sm text-muted-foreground">{getCountBySection("portal_themes")} themes</span>
+                {getDraftCountBySection("portal_themes") > 0 ? (
+                  <Badge variant="secondary">{getDraftCountBySection("portal_themes")} drafts</Badge>
+                ) : (
+                  <Badge variant="default">{getPublishedCountBySection("portal_themes")} live</Badge>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="hover-elevate cursor-pointer" data-testid="card-white-label">
+          <Card 
+            className="hover-elevate cursor-pointer" 
+            data-testid="card-white-label"
+            onClick={() => setLocation("/admin/experience-manager/white-label")}
+          >
             <CardHeader className="flex flex-row items-center gap-4 pb-2">
               <div className="p-2 rounded-md bg-chart-2/10">
                 <Building2 className="h-5 w-5 text-chart-2" />
@@ -122,13 +171,21 @@ export default function ExperienceManagerPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">5 brands</span>
-                <Badge variant="secondary">1 pending</Badge>
+                <span className="text-sm text-muted-foreground">{getCountBySection("white_label")} brands</span>
+                {getPreviewCountBySection("white_label") > 0 ? (
+                  <Badge variant="secondary">{getPreviewCountBySection("white_label")} pending</Badge>
+                ) : (
+                  <Badge variant="default">All live</Badge>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="hover-elevate cursor-pointer" data-testid="card-design-system">
+          <Card 
+            className="hover-elevate cursor-pointer" 
+            data-testid="card-design-system"
+            onClick={() => setLocation("/admin/experience-manager/design-system")}
+          >
             <CardHeader className="flex flex-row items-center gap-4 pb-2">
               <div className="p-2 rounded-md bg-chart-3/10">
                 <Settings2 className="h-5 w-5 text-chart-3" />
@@ -140,8 +197,8 @@ export default function ExperienceManagerPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">47 components</span>
-                <Badge variant="default">94% healthy</Badge>
+                <span className="text-sm text-muted-foreground">{getCountBySection("design_system")} items</span>
+                <Badge variant="default">Healthy</Badge>
               </div>
             </CardContent>
           </Card>
@@ -155,27 +212,51 @@ export default function ExperienceManagerPage() {
                 <CardDescription>Track and manage your draft, pending, and published changes</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {mockDraftChanges.map((change) => (
-                    <div key={change.id} className="flex items-center justify-between p-3 rounded-md border" data-testid={`row-change-${change.id}`}>
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-md bg-muted">
-                          {change.section === "Marketing Website" && <Globe className="h-4 w-4" />}
-                          {change.section === "Portal Themes" && <Palette className="h-4 w-4" />}
-                          {change.section === "White-Label" && <Building2 className="h-4 w-4" />}
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-md border">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <div>
+                            <Skeleton className="h-4 w-32 mb-1" />
+                            <Skeleton className="h-3 w-24" />
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{change.item}</p>
-                          <p className="text-xs text-muted-foreground">{change.section}</p>
+                        <Skeleton className="h-5 w-16" />
+                      </div>
+                    ))}
+                  </div>
+                ) : recentChanges.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <FileText className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">No recent changes</p>
+                    <p className="text-xs text-muted-foreground">Start editing content to see changes here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentChanges.map((change) => {
+                      const Icon = getSectionIcon(change.section);
+                      return (
+                        <div key={change.id} className="flex items-center justify-between p-3 rounded-md border" data-testid={`row-change-${change.id}`}>
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-md bg-muted">
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{change.name}</p>
+                              <p className="text-xs text-muted-foreground">{change.section} / {change.entityType}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{formatTimeAgo(change.updatedAt)}</span>
+                            {getStatusBadge(change.status || "draft")}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground">{change.lastModified}</span>
-                        {getStatusBadge(change.status)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

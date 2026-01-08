@@ -608,6 +608,7 @@ export interface IStorage {
   normalizeCode(dialCode: string): Promise<AzDestination | undefined>;
 
   // Experience Manager
+  getAllEmContentItems(): Promise<EmContentItem[]>;
   getEmContentItem(section: string, entityType: string, slug: string): Promise<EmContentItem | undefined>;
   getEmContentItemById(id: string): Promise<EmContentItem | undefined>;
   createEmContentItem(item: InsertEmContentItem): Promise<EmContentItem>;
@@ -4169,6 +4170,10 @@ export class MemStorage implements IStorage {
   private emContentVersions: Map<string, EmContentVersion> = new Map();
   private emValidationResults: Map<string, EmValidationResult> = new Map();
   private emPublishHistory: Map<string, EmPublishHistory> = new Map();
+
+  async getAllEmContentItems(): Promise<EmContentItem[]> {
+    return Array.from(this.emContentItems.values());
+  }
 
   async getEmContentItem(section: string, entityType: string, slug: string): Promise<EmContentItem | undefined> {
     const items = Array.from(this.emContentItems.values());
