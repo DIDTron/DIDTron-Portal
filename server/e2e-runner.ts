@@ -362,3 +362,16 @@ export function getModuleList(): string[] {
 export function getPageCount(): number {
   return ALL_PAGES.length;
 }
+
+export function getModulesWithPages(): { name: string; pages: { name: string; route: string }[] }[] {
+  const moduleMap = new Map<string, { name: string; route: string }[]>();
+  
+  for (const page of ALL_PAGES) {
+    if (!moduleMap.has(page.moduleName)) {
+      moduleMap.set(page.moduleName, []);
+    }
+    moduleMap.get(page.moduleName)!.push({ name: page.pageName, route: page.route });
+  }
+  
+  return Array.from(moduleMap.entries()).map(([name, pages]) => ({ name, pages }));
+}

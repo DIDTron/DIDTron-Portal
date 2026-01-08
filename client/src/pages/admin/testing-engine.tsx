@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Play, CheckCircle2, XCircle, Clock, ChevronDown, AlertTriangle, Accessibility, RefreshCw } from "lucide-react";
+import { Play, CheckCircle2, XCircle, Clock, ChevronDown, AlertTriangle, Accessibility, RefreshCw, FileText } from "lucide-react";
 import { format } from "date-fns";
 
 interface TestCheck {
@@ -47,32 +47,70 @@ interface E2eRun {
   createdAt: string;
 }
 
+interface ModulePage {
+  name: string;
+  route: string;
+}
+
+interface ModuleWithPages {
+  name: string;
+  pages: ModulePage[];
+}
+
+interface ModulesResponse {
+  modules: string[];
+  modulesWithPages: ModuleWithPages[];
+  totalPages: number;
+}
+
 export default function TestingEngine() {
   const [scope, setScope] = useState("all");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState("results");
 
-  const { data: modulesData } = useQuery<{ modules: string[]; totalPages: number }>({
+  const { data: modulesData } = useQuery<ModulesResponse>({
     queryKey: ["/api/e2e/modules"],
   });
 
-  const { data: runs = [], isLoading: runsLoading } = useQuery<E2eRun[]>({
+  const { data: runs = [], isLoading: runsLoading, refetch: refetchRuns } = useQuery<E2eRun[]>({
     queryKey: ["/api/e2e/runs"],
   });
 
-  const { data: runDetails } = useQuery<{ run: E2eRun; results: PageResult[] }>({
+  const { data: runDetails, refetch: refetchRunDetails } = useQuery<{ run: E2eRun; results: PageResult[] }>({
     queryKey: ["/api/e2e/runs", selectedRunId],
+    queryFn: async () => {
+      if (!selectedRunId) return null;
+      const response = await fetch(`/api/e2e/runs/${selectedRunId}`, { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch run details");
+      return response.json();
+    },
     enabled: !!selectedRunId,
   });
 
   const runTestsMutation = useMutation({
     mutationFn: async (testScope: string) => {
-      return apiRequest("POST", "/api/e2e/run", { scope: testScope });
+      const response = await apiRequest("POST", "/api/e2e/run", { scope: testScope });
+      return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/e2e/runs"] });
+    onSuccess: async (data) => {
+      await refetchRuns();
+      if (data?.runId) {
+        setSelectedRunId(data.runId);
+        setActiveTab("results");
+      }
     },
   });
+
+  useEffect(() => {
+    if (selectedRunId) {
+      refetchRunDetails();
+    }
+  }, [selectedRunId, refetchRunDetails]);
+
+  const selectedModule = modulesData?.modulesWithPages.find(
+    m => m.name.toLowerCase() === scope.toLowerCase()
+  );
 
   const toggleExpand = (id: string) => {
     const newExpanded = new Set(expandedResults);
@@ -82,6 +120,11 @@ export default function TestingEngine() {
       newExpanded.add(id);
     }
     setExpandedResults(newExpanded);
+  };
+
+  const handleViewRun = (runId: string) => {
+    setSelectedRunId(runId);
+    setActiveTab("results");
   };
 
   const getStatusIcon = (status: string) => {
@@ -120,13 +163,15 @@ export default function TestingEngine() {
         </div>
         <div className="flex items-center gap-3">
           <Select value={scope} onValueChange={setScope}>
-            <SelectTrigger className="w-48" data-testid="select-scope">
+            <SelectTrigger className="w-56" data-testid="select-scope">
               <SelectValue placeholder="Select scope" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Modules ({modulesData?.totalPages || 0} pages)</SelectItem>
-              {modulesData?.modules.map((mod) => (
-                <SelectItem key={mod} value={mod.toLowerCase()}>{mod}</SelectItem>
+              {modulesData?.modulesWithPages.map((mod) => (
+                <SelectItem key={mod.name} value={mod.name.toLowerCase()}>
+                  {mod.name} ({mod.pages.length} pages)
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -150,6 +195,26 @@ export default function TestingEngine() {
         </div>
       </div>
 
+      {selectedModule && scope !== "all" && (
+        <Card>
+          <CardHeader className="py-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Pages in {selectedModule.name}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex flex-wrap gap-2">
+              {selectedModule.pages.map((page) => (
+                <Badge key={page.route} variant="secondary" className="font-normal">
+                  {page.name}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {runTestsMutation.isPending && (
         <Card>
           <CardContent className="pt-6">
@@ -164,7 +229,7 @@ export default function TestingEngine() {
         </Card>
       )}
 
-      <Tabs defaultValue="results" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="results" data-testid="tab-results">Latest Results</TabsTrigger>
           <TabsTrigger value="history" data-testid="tab-history">History</TabsTrigger>
@@ -265,7 +330,7 @@ export default function TestingEngine() {
                                         </div>
                                       ))}
                                     </div>
-                                    {result.accessibilityIssues.length > 0 && (
+                                    {result.accessibilityIssues && result.accessibilityIssues.length > 0 && (
                                       <div className="mt-3">
                                         <div className="font-medium text-sm flex items-center gap-1">
                                           <AlertTriangle className="h-4 w-4 text-yellow-500" />
@@ -326,7 +391,6 @@ export default function TestingEngine() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Run</TableHead>
                       <TableHead>Scope</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Passed</TableHead>
@@ -340,8 +404,7 @@ export default function TestingEngine() {
                   <TableBody>
                     {runs.map((run) => (
                       <TableRow key={run.id} data-testid={`row-run-${run.id}`}>
-                        <TableCell className="font-medium">{run.name}</TableCell>
-                        <TableCell>{run.scope}</TableCell>
+                        <TableCell className="font-medium">{run.scope}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {getStatusIcon(run.status)}
@@ -357,7 +420,7 @@ export default function TestingEngine() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setSelectedRunId(run.id)}
+                            onClick={() => handleViewRun(run.id)}
                             data-testid={`button-view-${run.id}`}
                           >
                             View

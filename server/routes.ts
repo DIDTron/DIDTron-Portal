@@ -8067,13 +8067,17 @@ export async function registerRoutes(
   });
 
   // ==================== E2E TESTING ENGINE ====================
-  const { runE2eTests, getModuleList, getPageCount } = await import("./e2e-runner");
+  const { runE2eTests, getModuleList, getPageCount, getModulesWithPages } = await import("./e2e-runner");
 
-  // Get available modules for testing
+  // Get available modules for testing with their pages
   app.get("/api/e2e/modules", async (req, res) => {
     try {
-      const modules = getModuleList();
-      res.json({ modules, totalPages: getPageCount() });
+      const modulesWithPages = getModulesWithPages();
+      res.json({ 
+        modules: getModuleList(), 
+        modulesWithPages,
+        totalPages: getPageCount() 
+      });
     } catch (error) {
       console.error("Failed to fetch E2E modules:", error);
       res.status(500).json({ error: "Failed to fetch modules" });
