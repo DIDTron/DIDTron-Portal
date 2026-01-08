@@ -67,6 +67,7 @@ import CdrsPage from "./cdrs";
 import ConnexCSStatusPage from "./connexcs-status";
 import JobQueuePage from "./job-queue";
 import DevTestsPage from "./dev-tests";
+import TestingEnginePage from "./testing-engine";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -137,6 +138,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/tickets": { section: "admin", subItem: "tickets" },
   "/admin/job-queue": { section: "admin", subItem: "job-queue" },
   "/admin/dev-tests": { section: "admin", subItem: "dev-tests" },
+  "/admin/testing-engine": { section: "admin", subItem: "testing-engine" },
   "/admin/settings/general": { section: "settings", subItem: "general" },
   "/admin/settings/api-keys": { section: "settings", subItem: "api-keys" },
   "/admin/settings/webhooks": { section: "settings", subItem: "webhooks" },
@@ -267,6 +269,7 @@ export default function AdminLayout() {
                 <Route path="/admin/tickets" component={TicketsPage} />
                 <Route path="/admin/job-queue" component={JobQueuePage} />
                 <Route path="/admin/dev-tests" component={DevTestsPage} />
+                <Route path="/admin/testing-engine" component={TestingEnginePage} />
                 <Route path="/admin/settings/general" component={SettingsPage} />
                 <Route path="/admin/settings/api-keys" component={SettingsPage} />
                 <Route path="/admin/settings/webhooks" component={SettingsPage} />
