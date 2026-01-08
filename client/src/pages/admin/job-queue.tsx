@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
@@ -82,21 +84,22 @@ export default function JobQueuePage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showJobDetails, setShowJobDetails] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const { toast } = useToast();
 
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery<JobStats>({
     queryKey: ["/api/admin/jobs/stats"],
-    refetchInterval: 5000,
+    refetchInterval: autoRefresh ? 30000 : false,
   });
 
   const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useQuery<JobsResponse>({
     queryKey: ["/api/admin/jobs", statusFilter, typeFilter],
-    refetchInterval: 5000,
+    refetchInterval: autoRefresh ? 30000 : false,
   });
 
   const { data: workerStatus, refetch: refetchWorker } = useQuery<{ running: boolean }>({
     queryKey: ["/api/admin/jobs/worker/status"],
-    refetchInterval: 3000,
+    refetchInterval: autoRefresh ? 30000 : false,
   });
 
   const startWorker = useMutation({
@@ -322,11 +325,22 @@ export default function JobQueuePage() {
                 }}
                 data-testid="button-refresh"
               >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-4 w-4 ${isRefreshing || autoRefresh ? "animate-spin" : ""}`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Refresh</TooltipContent>
           </Tooltip>
+          <div className="flex items-center gap-2 ml-2 pl-2 border-l">
+            <Switch
+              id="auto-refresh"
+              checked={autoRefresh}
+              onCheckedChange={setAutoRefresh}
+              data-testid="switch-auto-refresh"
+            />
+            <Label htmlFor="auto-refresh" className="text-sm text-muted-foreground cursor-pointer">
+              Auto-refresh (30s)
+            </Label>
+          </div>
         </div>
       </div>
 
