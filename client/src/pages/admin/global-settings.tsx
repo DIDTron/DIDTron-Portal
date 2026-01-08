@@ -304,7 +304,6 @@ type AzDestination = {
   destination: string;
   region: string | null;
   billingIncrement: string | null;
-  connectionFee: string | null;
   gracePeriod: number | null;
   isActive: boolean | null;
 };
@@ -321,7 +320,9 @@ export function GlobalSettingsAZDatabase() {
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const limit = 25;
+  const [pageSize, setPageSize] = useState(50);
+  const [pageInput, setPageInput] = useState("");
+  const limit = pageSize;
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -330,7 +331,7 @@ export function GlobalSettingsAZDatabase() {
 
   useEffect(() => {
     setPage(0);
-  }, [debouncedSearch, selectedRegion]);
+  }, [debouncedSearch, selectedRegion, pageSize]);
 
   const { data: regionsData } = useQuery<string[]>({
     queryKey: ["/api/az-destinations/regions"],
@@ -447,7 +448,6 @@ export function GlobalSettingsAZDatabase() {
       
       const regionIdx = headerParts.indexOf("region");
       const incrementIdx = headerParts.indexOf("billingincrement");
-      const feeIdx = headerParts.indexOf("connectionfee");
       
       const allDestinations = [];
       for (let i = 1; i < lines.length; i++) {
@@ -461,7 +461,6 @@ export function GlobalSettingsAZDatabase() {
             destination,
             region: regionIdx >= 0 ? parts[regionIdx] || null : null,
             billingIncrement: incrementIdx >= 0 ? parts[incrementIdx] || "60/60" : "60/60",
-            connectionFee: feeIdx >= 0 ? parts[feeIdx] || "0" : "0",
           });
         }
       }
@@ -510,7 +509,6 @@ export function GlobalSettingsAZDatabase() {
     setEditingId(dest.id);
     setEditData({
       billingIncrement: dest.billingIncrement || "60/60",
-      connectionFee: dest.connectionFee || "0",
     });
   };
 
@@ -666,14 +664,13 @@ export function GlobalSettingsAZDatabase() {
                       <TableHead>Destination</TableHead>
                       <TableHead className="w-40">Region</TableHead>
                       <TableHead className="w-32">Increment</TableHead>
-                      <TableHead className="w-32">Conn. Fee</TableHead>
                       <TableHead className="w-24">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {destinations.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           No destinations found
                         </TableCell>
                       </TableRow>
@@ -703,24 +700,11 @@ export function GlobalSettingsAZDatabase() {
                                   <SelectItem value="60/60">60/60</SelectItem>
                                   <SelectItem value="30/6">30/6</SelectItem>
                                   <SelectItem value="60/6">60/6</SelectItem>
+                                  <SelectItem value="60/1">60/1</SelectItem>
                                 </SelectContent>
                               </Select>
                             ) : (
                               <span className="text-sm">{dest.billingIncrement || "60/60"}</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {editingId === dest.id ? (
-                              <Input
-                                type="number"
-                                step="0.0001"
-                                value={editData.connectionFee || "0"}
-                                onChange={(e) => setEditData({ ...editData, connectionFee: e.target.value })}
-                                className="h-8 w-24"
-                                data-testid="input-edit-connection-fee"
-                              />
-                            ) : (
-                              <span className="text-sm">${dest.connectionFee || "0"}</span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -751,10 +735,23 @@ export function GlobalSettingsAZDatabase() {
                 </Table>
               </div>
 
-              <div className="flex items-center justify-between gap-4 mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing {page * limit + 1}-{Math.min((page + 1) * limit, total)} of {total.toLocaleString()}
-                </p>
+              <div className="flex items-center justify-between gap-4 mt-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Rows:</span>
+                  <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                    <SelectTrigger className="w-20" data-testid="select-page-size">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    Showing {page * limit + 1}-{Math.min((page + 1) * limit, total)} of {total.toLocaleString()}
+                  </span>
+                </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -766,9 +763,31 @@ export function GlobalSettingsAZDatabase() {
                     <ChevronLeft className="h-4 w-4" />
                     Previous
                   </Button>
-                  <span className="text-sm text-muted-foreground">
-                    Page {page + 1} of {totalPages}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-muted-foreground">Page</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={pageInput || String(page + 1)}
+                      onChange={(e) => setPageInput(e.target.value)}
+                      onBlur={() => {
+                        const p = parseInt(pageInput);
+                        if (p >= 1 && p <= totalPages) setPage(p - 1);
+                        setPageInput("");
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const p = parseInt(pageInput);
+                          if (p >= 1 && p <= totalPages) setPage(p - 1);
+                          setPageInput("");
+                        }
+                      }}
+                      className="w-16 text-center"
+                      data-testid="input-page-number"
+                    />
+                    <span className="text-sm text-muted-foreground">of {totalPages}</span>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"

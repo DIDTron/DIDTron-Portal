@@ -1116,7 +1116,7 @@ export const currencyReconciliations = pgTable("currency_reconciliations", {
 // ==================== A-Z DESTINATIONS DATABASE ====================
 
 export const billingIncrementEnum = pgEnum("billing_increment", [
-  "1/1", "6/6", "30/30", "60/60", "30/6", "60/6"
+  "1/1", "6/6", "30/30", "60/60", "30/6", "60/6", "60/1"
 ]);
 
 export const azDestinations = pgTable("az_destinations", {
@@ -1125,7 +1125,6 @@ export const azDestinations = pgTable("az_destinations", {
   destination: text("destination").notNull(),
   region: text("region"),
   billingIncrement: billingIncrementEnum("billing_increment").default("60/60"),
-  connectionFee: decimal("connection_fee", { precision: 10, scale: 6 }).default("0"),
   gracePeriod: integer("grace_period").default(0),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),

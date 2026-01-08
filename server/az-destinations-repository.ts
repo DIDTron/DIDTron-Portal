@@ -34,7 +34,7 @@ export const azDestinationsRepository = {
       db.select()
         .from(azDestinations)
         .where(whereClause)
-        .orderBy(azDestinations.code)
+        .orderBy(azDestinations.destination)
         .limit(limit)
         .offset(offset),
       db.select({ count: count() })
