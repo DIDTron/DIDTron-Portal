@@ -226,6 +226,57 @@ export async function setRetentionDays(days: number, updatedBy?: string | null):
   await setPlatformSetting("trash_retention_days", String(days), updatedBy);
 }
 
+export async function getRecentLogs(limit: number = 100): Promise<Array<typeof auditLogs.$inferSelect>> {
+  return db
+    .select()
+    .from(auditLogs)
+    .orderBy(sql`${auditLogs.createdAt} DESC`)
+    .limit(limit);
+}
+
+export async function getLogsByEntity(entityType: string, entityId?: string): Promise<Array<typeof auditLogs.$inferSelect>> {
+  if (entityId) {
+    return db
+      .select()
+      .from(auditLogs)
+      .where(and(eq(auditLogs.tableName, entityType), eq(auditLogs.recordId, entityId)))
+      .orderBy(sql`${auditLogs.createdAt} DESC`)
+      .limit(100);
+  }
+  return db
+    .select()
+    .from(auditLogs)
+    .where(eq(auditLogs.tableName, entityType))
+    .orderBy(sql`${auditLogs.createdAt} DESC`)
+    .limit(100);
+}
+
+export async function getLogsByUser(userId: string): Promise<Array<typeof auditLogs.$inferSelect>> {
+  return db
+    .select()
+    .from(auditLogs)
+    .where(eq(auditLogs.userId, userId))
+    .orderBy(sql`${auditLogs.createdAt} DESC`)
+    .limit(100);
+}
+
+export async function searchLogs(searchTerm: string): Promise<Array<typeof auditLogs.$inferSelect>> {
+  return db
+    .select()
+    .from(auditLogs)
+    .where(sql`
+      ${auditLogs.action} ILIKE ${'%' + searchTerm + '%'} OR
+      ${auditLogs.tableName} ILIKE ${'%' + searchTerm + '%'} OR
+      ${auditLogs.recordId} ILIKE ${'%' + searchTerm + '%'}
+    `)
+    .orderBy(sql`${auditLogs.createdAt} DESC`)
+    .limit(100);
+}
+
+export async function getAllPlatformSettings(): Promise<Array<{ key: string; value: string }>> {
+  return db.select({ key: platformSettings.key, value: platformSettings.value }).from(platformSettings);
+}
+
 export const auditService = {
   createAuditLog,
   logWithRequest,
@@ -240,6 +291,11 @@ export const auditService = {
   setPlatformSetting,
   getRetentionDays,
   setRetentionDays,
+  getRecentLogs,
+  getLogsByEntity,
+  getLogsByUser,
+  searchLogs,
+  getAllPlatformSettings,
 };
 
 export default auditService;
