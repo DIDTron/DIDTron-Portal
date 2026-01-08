@@ -326,6 +326,16 @@ export function GlobalSettingsAZDatabase() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importMode, setImportMode] = useState<"update" | "replace">("update");
   const [pageInput, setPageInput] = useState("");
+  const [importStep, setImportStep] = useState<1 | 2 | 3>(1);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvPreviewRows, setCsvPreviewRows] = useState<string[][]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({
+    code: "",
+    destination: "",
+    region: "",
+    billingIncrement: "",
+  });
+  const [allCsvRows, setAllCsvRows] = useState<string[][]>([]);
   const limit = pageSize;
 
   useEffect(() => {
@@ -434,46 +444,92 @@ export function GlobalSettingsAZDatabase() {
     return result;
   }, []);
 
-  const handleImport = async (file: File, mode: "update" | "replace") => {
-    setIsImporting(true);
-    setImportProgress("Reading file...");
-    
-    try {
-      const text = await file.text();
-      const lines = text.split(/\r?\n/).filter(l => l.trim());
-      const headerParts = parseCSVRow(lines[0]).map(h => h.toLowerCase());
-      
-      const codeIdx = headerParts.indexOf("code");
-      const destIdx = headerParts.indexOf("destination");
-      
-      if (codeIdx < 0 || destIdx < 0) {
-        throw new Error("CSV must have 'code' and 'destination' columns");
-      }
-      
-      const regionIdx = headerParts.indexOf("region");
-      const incrementIdx = headerParts.indexOf("billingincrement");
-      
-      const allDestinations = [];
-      for (let i = 1; i < lines.length; i++) {
-        const parts = parseCSVRow(lines[i]);
-        const code = parts[codeIdx];
-        const destination = parts[destIdx];
-        
-        if (code && destination) {
-          allDestinations.push({
-            code,
-            destination,
-            region: regionIdx >= 0 ? parts[regionIdx] || null : null,
-            billingIncrement: incrementIdx >= 0 ? parts[incrementIdx] || "60/60" : "60/60",
-          });
+  const downloadTemplate = () => {
+    const template = "code,destination,region,billingIncrement\n1,Example Country,Example Region,60/60\n1234,Example Country - Mobile,Example Region,60/1";
+    const blob = new Blob([template], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "az-destinations-template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const parseFileHeaders = async (file: File) => {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length === 0) {
+      throw new Error("File is empty");
+    }
+    const headers = parseCSVRow(lines[0]);
+    const previewRows: string[][] = [];
+    const allRows: string[][] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const row = parseCSVRow(lines[i]);
+      if (row.some(cell => cell.trim())) {
+        allRows.push(row);
+        if (previewRows.length < 5) {
+          previewRows.push(row);
         }
       }
+    }
+    setCsvHeaders(headers);
+    setCsvPreviewRows(previewRows);
+    setAllCsvRows(allRows);
+    
+    const autoMapping: Record<string, string> = { code: "", destination: "", region: "", billingIncrement: "" };
+    headers.forEach((h, idx) => {
+      const lower = h.toLowerCase().trim();
+      if (lower === "code" || lower === "prefix" || lower === "dial code" || lower === "dialcode") {
+        autoMapping.code = String(idx);
+      } else if (lower === "destination" || lower === "name" || lower === "description" || lower === "dest") {
+        autoMapping.destination = String(idx);
+      } else if (lower === "region" || lower === "area" || lower === "zone") {
+        autoMapping.region = String(idx);
+      } else if (lower === "billingincrement" || lower === "increment" || lower === "billing increment" || lower === "billing") {
+        autoMapping.billingIncrement = String(idx);
+      }
+    });
+    setColumnMapping(autoMapping);
+  };
+
+  const resetImportWizard = () => {
+    setImportStep(1);
+    setImportFile(null);
+    setImportMode("update");
+    setCsvHeaders([]);
+    setCsvPreviewRows([]);
+    setAllCsvRows([]);
+    setColumnMapping({ code: "", destination: "", region: "", billingIncrement: "" });
+  };
+
+  const runMappedImport = async () => {
+    if (!importFile || !columnMapping.code || !columnMapping.destination) return;
+    
+    setShowImportDialog(false);
+    setIsImporting(true);
+    setImportProgress("Processing data...");
+    
+    try {
+      const codeIdx = parseInt(columnMapping.code);
+      const destIdx = parseInt(columnMapping.destination);
+      const regionIdx = columnMapping.region ? parseInt(columnMapping.region) : -1;
+      const incrementIdx = columnMapping.billingIncrement ? parseInt(columnMapping.billingIncrement) : -1;
+      
+      const allDestinations = allCsvRows
+        .filter(row => row[codeIdx] && row[destIdx])
+        .map(row => ({
+          code: row[codeIdx],
+          destination: row[destIdx],
+          region: regionIdx >= 0 ? row[regionIdx] || null : null,
+          billingIncrement: incrementIdx >= 0 ? row[incrementIdx] || "60/60" : "60/60",
+        }));
       
       if (allDestinations.length === 0) {
-        throw new Error("No valid destinations found in CSV");
+        throw new Error("No valid destinations found after mapping");
       }
       
-      if (mode === "replace") {
+      if (importMode === "replace") {
         setImportProgress("Deleting existing destinations...");
         await apiRequest("DELETE", "/api/az-destinations");
       }
@@ -486,21 +542,17 @@ export function GlobalSettingsAZDatabase() {
       for (let i = 0; i < allDestinations.length; i += batchSize) {
         const batch = allDestinations.slice(i, i + batchSize);
         setImportProgress(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(allDestinations.length / batchSize)}...`);
-        try {
-          const response = await apiRequest("POST", "/api/az-destinations/bulk", { destinations: batch });
-          const result = await response.json();
-          totalInserted += result.inserted || 0;
-          totalUpdated += result.updated || 0;
-          totalSkipped += result.skipped || 0;
-        } catch (batchError) {
-          throw new Error(`Failed at batch ${Math.floor(i / batchSize) + 1}: ${(batchError as Error).message}. Processed ${totalInserted} new, ${totalUpdated} updated before failure.`);
-        }
+        const response = await apiRequest("POST", "/api/az-destinations/bulk", { destinations: batch });
+        const result = await response.json();
+        totalInserted += result.inserted || 0;
+        totalUpdated += result.updated || 0;
+        totalSkipped += result.skipped || 0;
       }
       
       queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
       toast({ 
         title: "Import complete", 
-        description: mode === "replace" 
+        description: importMode === "replace" 
           ? `Replaced with ${totalInserted.toLocaleString()} destinations`
           : `New: ${totalInserted.toLocaleString()}, Updated: ${totalUpdated.toLocaleString()}, Duplicates skipped: ${totalSkipped.toLocaleString()}`,
       });
@@ -509,15 +561,7 @@ export function GlobalSettingsAZDatabase() {
     } finally {
       setIsImporting(false);
       setImportProgress("");
-    }
-  };
-
-  const startImport = () => {
-    if (importFile) {
-      setShowImportDialog(false);
-      handleImport(importFile, importMode);
-      setImportFile(null);
-      setImportMode("update");
+      resetImportWizard();
     }
   };
 
@@ -564,16 +608,31 @@ export function GlobalSettingsAZDatabase() {
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
             Export CSV
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadTemplate}
+            data-testid="button-download-template"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Template
+          </Button>
           <label>
             <input
               type="file"
               accept=".csv"
               className="hidden"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  setImportFile(file);
-                  setShowImportDialog(true);
+                  try {
+                    setImportFile(file);
+                    await parseFileHeaders(file);
+                    setImportStep(1);
+                    setShowImportDialog(true);
+                  } catch (error) {
+                    toast({ title: "File error", description: (error as Error).message, variant: "destructive" });
+                  }
                 }
                 e.target.value = "";
               }}
@@ -594,64 +653,194 @@ export function GlobalSettingsAZDatabase() {
           </label>
 
           <Dialog open={showImportDialog} onOpenChange={(open) => { 
+            if (!open) resetImportWizard();
             setShowImportDialog(open); 
-            if (!open) { setImportFile(null); setImportMode("update"); }
           }}>
-            <DialogContent>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Import CSV File</DialogTitle>
+                <DialogTitle>Import CSV - Step {importStep} of 3</DialogTitle>
                 <DialogDescription>
-                  Choose how to import the destinations from "{importFile?.name}"
+                  {importStep === 1 && `Map columns from "${importFile?.name}" to database fields`}
+                  {importStep === 2 && "Preview how your data will be imported"}
+                  {importStep === 3 && "Choose import mode and confirm"}
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-3">
-                  <label className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover-elevate" onClick={() => setImportMode("update")}>
-                    <input
-                      type="radio"
-                      name="importMode"
-                      checked={importMode === "update"}
-                      onChange={() => setImportMode("update")}
-                      className="mt-1"
-                      data-testid="radio-import-update"
-                    />
-                    <div>
-                      <div className="font-medium">Update / Add</div>
-                      <div className="text-sm text-muted-foreground">
-                        Add new destinations and update existing ones. Existing destinations not in the CSV will remain unchanged.
+
+              {importStep === 1 && (
+                <div className="space-y-4 py-4">
+                  <div className="text-sm text-muted-foreground mb-2">
+                    Found {csvHeaders.length} columns and {allCsvRows.length.toLocaleString()} data rows
+                  </div>
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-2 gap-4 items-center">
+                      <div>
+                        <Label className="font-medium">Code <span className="text-destructive">*</span></Label>
+                        <p className="text-xs text-muted-foreground">Dial code / prefix (required)</p>
                       </div>
+                      <Select value={columnMapping.code} onValueChange={(v) => setColumnMapping(m => ({ ...m, code: v }))}>
+                        <SelectTrigger data-testid="select-map-code">
+                          <SelectValue placeholder="Select column..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {csvHeaders.map((h, i) => (
+                            <SelectItem key={i} value={String(i)}>{h}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </label>
-                  <label className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover-elevate" onClick={() => setImportMode("replace")}>
-                    <input
-                      type="radio"
-                      name="importMode"
-                      checked={importMode === "replace"}
-                      onChange={() => setImportMode("replace")}
-                      className="mt-1"
-                      data-testid="radio-import-replace"
-                    />
-                    <div>
-                      <div className="font-medium">Full Replacement</div>
-                      <div className="text-sm text-muted-foreground">
-                        Delete ALL existing destinations first, then import the CSV. Use this to completely replace your database.
+                    <div className="grid grid-cols-2 gap-4 items-center">
+                      <div>
+                        <Label className="font-medium">Destination <span className="text-destructive">*</span></Label>
+                        <p className="text-xs text-muted-foreground">Destination name (required)</p>
                       </div>
-                      {total > 0 && (
-                        <div className="text-sm text-amber-600 dark:text-amber-400 mt-1">
-                          Warning: This will delete {total.toLocaleString()} existing destinations
-                        </div>
-                      )}
+                      <Select value={columnMapping.destination} onValueChange={(v) => setColumnMapping(m => ({ ...m, destination: v }))}>
+                        <SelectTrigger data-testid="select-map-destination">
+                          <SelectValue placeholder="Select column..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {csvHeaders.map((h, i) => (
+                            <SelectItem key={i} value={String(i)}>{h}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </label>
+                    <div className="grid grid-cols-2 gap-4 items-center">
+                      <div>
+                        <Label className="font-medium">Region</Label>
+                        <p className="text-xs text-muted-foreground">Geographic region (optional)</p>
+                      </div>
+                      <Select value={columnMapping.region || "none"} onValueChange={(v) => setColumnMapping(m => ({ ...m, region: v === "none" ? "" : v }))}>
+                        <SelectTrigger data-testid="select-map-region">
+                          <SelectValue placeholder="Select column..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">-- Skip --</SelectItem>
+                          {csvHeaders.map((h, i) => (
+                            <SelectItem key={i} value={String(i)}>{h}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 items-center">
+                      <div>
+                        <Label className="font-medium">Billing Increment</Label>
+                        <p className="text-xs text-muted-foreground">e.g., 60/60, 60/1, 1/1 (optional)</p>
+                      </div>
+                      <Select value={columnMapping.billingIncrement || "none"} onValueChange={(v) => setColumnMapping(m => ({ ...m, billingIncrement: v === "none" ? "" : v }))}>
+                        <SelectTrigger data-testid="select-map-increment">
+                          <SelectValue placeholder="Select column..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">-- Skip (default: 60/60) --</SelectItem>
+                          {csvHeaders.map((h, i) => (
+                            <SelectItem key={i} value={String(i)}>{h}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowImportDialog(false)} data-testid="button-cancel-import">
+              )}
+
+              {importStep === 2 && (
+                <div className="space-y-4 py-4">
+                  <div className="text-sm text-muted-foreground">
+                    Preview of first {Math.min(5, csvPreviewRows.length)} rows with your mapping:
+                  </div>
+                  <div className="border rounded-md overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Destination</TableHead>
+                          <TableHead>Region</TableHead>
+                          <TableHead>Increment</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {csvPreviewRows.map((row, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="font-mono">{columnMapping.code ? row[parseInt(columnMapping.code)] : "-"}</TableCell>
+                            <TableCell>{columnMapping.destination ? row[parseInt(columnMapping.destination)] : "-"}</TableCell>
+                            <TableCell>{columnMapping.region ? row[parseInt(columnMapping.region)] || "-" : "-"}</TableCell>
+                            <TableCell>{columnMapping.billingIncrement ? row[parseInt(columnMapping.billingIncrement)] || "60/60" : "60/60"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">{allCsvRows.length.toLocaleString()}</span> total rows will be imported
+                  </div>
+                </div>
+              )}
+
+              {importStep === 3 && (
+                <div className="space-y-4 py-4">
+                  <div className="space-y-3">
+                    <label className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover-elevate" onClick={() => setImportMode("update")}>
+                      <input
+                        type="radio"
+                        name="importMode"
+                        checked={importMode === "update"}
+                        onChange={() => setImportMode("update")}
+                        className="mt-1"
+                        data-testid="radio-import-update"
+                      />
+                      <div>
+                        <div className="font-medium">Update / Add</div>
+                        <div className="text-sm text-muted-foreground">
+                          Add new destinations and update existing ones. Existing destinations not in the CSV will remain unchanged.
+                        </div>
+                      </div>
+                    </label>
+                    <label className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover-elevate" onClick={() => setImportMode("replace")}>
+                      <input
+                        type="radio"
+                        name="importMode"
+                        checked={importMode === "replace"}
+                        onChange={() => setImportMode("replace")}
+                        className="mt-1"
+                        data-testid="radio-import-replace"
+                      />
+                      <div>
+                        <div className="font-medium">Full Replacement</div>
+                        <div className="text-sm text-muted-foreground">
+                          Delete ALL existing destinations first, then import the CSV. Use this to completely replace your database.
+                        </div>
+                        {total > 0 && (
+                          <div className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                            Warning: This will delete {total.toLocaleString()} existing destinations
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => { setShowImportDialog(false); resetImportWizard(); }} data-testid="button-cancel-import">
                   Cancel
                 </Button>
-                <Button onClick={startImport} data-testid="button-confirm-import">
-                  {importMode === "replace" ? "Replace All & Import" : "Import"}
-                </Button>
+                {importStep > 1 && (
+                  <Button variant="outline" onClick={() => setImportStep((s) => (s - 1) as 1 | 2 | 3)} data-testid="button-back">
+                    Back
+                  </Button>
+                )}
+                {importStep < 3 ? (
+                  <Button 
+                    onClick={() => setImportStep((s) => (s + 1) as 1 | 2 | 3)} 
+                    disabled={importStep === 1 && (!columnMapping.code || !columnMapping.destination)}
+                    data-testid="button-next"
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <Button onClick={runMappedImport} data-testid="button-confirm-import">
+                    {importMode === "replace" ? "Replace All & Import" : "Import"}
+                  </Button>
+                )}
               </DialogFooter>
             </DialogContent>
           </Dialog>
