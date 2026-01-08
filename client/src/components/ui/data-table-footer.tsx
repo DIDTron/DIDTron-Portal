@@ -90,6 +90,7 @@ export function DataTableFooter({
             onChange={handlePageInputChange}
             onBlur={handlePageInputBlur}
             className="w-14 text-center"
+            aria-label="Page number"
             data-testid="input-page-number"
           />
           <span className="text-sm text-muted-foreground">of {totalPages || 0}</span>

@@ -53,7 +53,7 @@ export function ConfigWorkspace({
           )}
         </TabsList>
 
-        <Button variant="ghost" size="icon" data-testid="button-config-menu">
+        <Button variant="ghost" size="icon" aria-label="Config menu" data-testid="button-config-menu">
           <List className="h-4 w-4" />
         </Button>
       </div>

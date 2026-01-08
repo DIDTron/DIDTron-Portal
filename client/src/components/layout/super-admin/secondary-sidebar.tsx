@@ -215,18 +215,25 @@ function SortableSubItem({ item, isActive, onClick }: SortableSubItemProps) {
       )}
       data-testid={`nav-item-${item.id}`}
     >
-      <div
+      <button
+        type="button"
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity"
+        className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity bg-transparent border-none p-0"
+        aria-label={`Reorder ${item.label}`}
         data-testid={`drag-handle-item-${item.id}`}
       >
         <GripVertical className="h-3 w-3" />
-      </div>
-      <div className="flex items-center gap-2 flex-1" onClick={onClick}>
+      </button>
+      <button 
+        type="button"
+        className="flex items-center gap-2 flex-1 bg-transparent border-none p-0 text-inherit cursor-pointer text-left" 
+        onClick={onClick}
+        aria-label={item.label}
+      >
         <Icon className="h-4 w-4 shrink-0" />
         <span className="truncate">{item.label}</span>
-      </div>
+      </button>
     </div>
   );
 }

@@ -71,18 +71,25 @@ function SortableNavItem({ section, isActive, onClick }: SortableNavItemProps) {
       )}
       data-testid={`nav-section-${section.id}`}
     >
-      <div
+      <button
+        type="button"
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity"
+        className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity bg-transparent border-none p-0"
+        aria-label={`Reorder ${section.label}`}
         data-testid={`drag-handle-${section.id}`}
       >
         <GripVertical className="h-4 w-4" />
-      </div>
-      <div className="flex items-center gap-3 flex-1" onClick={onClick}>
+      </button>
+      <button 
+        type="button"
+        className="flex items-center gap-3 flex-1 bg-transparent border-none p-0 text-inherit cursor-pointer text-left" 
+        onClick={onClick}
+        aria-label={section.label}
+      >
         <Icon className="h-5 w-5 shrink-0" />
         <span className="truncate">{section.label}</span>
-      </div>
+      </button>
     </div>
   );
 }

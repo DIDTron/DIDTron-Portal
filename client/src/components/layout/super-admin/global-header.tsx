@@ -124,7 +124,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 gap-2 px-2" data-testid="button-user-menu">
+            <Button variant="ghost" className="relative h-8 gap-2 px-2" aria-label="User menu" data-testid="button-user-menu">
               <Avatar className="h-6 w-6">
                 <AvatarFallback className="text-xs bg-primary text-primary-foreground">
                   {initials}
