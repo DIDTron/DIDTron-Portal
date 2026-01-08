@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { AlertTriangle, Search, FileText, Loader2, RefreshCw, Download, Filter, Trash2, CalendarIcon, User, Activity, RotateCcw } from "lucide-react";
+import { AlertTriangle, Search, FileText, Loader2, RefreshCw, Download, Filter, Trash2, Calendar as CalendarIcon, User, Activity, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { AuditLog } from "@shared/schema";
