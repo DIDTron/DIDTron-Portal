@@ -23,6 +23,32 @@ The platform includes extensive features for billing, a referral system, bonus/p
 ### System Design
 The backend is built with PostgreSQL and Drizzle ORM, featuring a robust job queue system for background processing. This system supports 24 job types across categories like Rate Cards, ConnexCS Sync, DID Management, Billing, Communications, AI Voice, and System tasks. It operates in dual-mode (PostgreSQL-backed for production, in-memory for development) with a real-time dashboard and worker control. Frontend development uses Zustand for state management and organizes components for Super Admin portals.
 
+## Audit & Compliance Rules
+
+### Core Principles
+1. **ALL data modification operations MUST go through the job queue** - Imports, bulk deletes, syncs, and any operation affecting multiple records must be queued for audit trail and progress tracking
+2. **ALL user actions in Super Admin portal are logged** - From login to logout, every action is tracked with userId, action, table, recordId, oldValues, newValues, IP, userAgent, timestamp
+3. **Deleted records are retained in trash for 30 days** - Soft delete with restore capability before permanent purge
+4. **Rollback capability** - Audit log entries with oldValues can be rolled back; completed import jobs can be undone
+
+### Auto-Update Rule
+**IMPORTANT**: When ANY new module is added to the Super Admin sidebar (PrimarySidebar or SecondarySidebar), or existing modules are moved/renamed:
+- The audit logging MUST be implemented for that module
+- ALL CRUD operations and significant actions must be logged
+- This applies automatically - no need to ask, just implement
+
+### Audit Events by Module
+All modules in Super Admin portal must log these event types:
+- **Authentication**: Login success/failed, Logout, Session timeout, Password reset/changed
+- **All Data Modules**: Create, Update, Delete, Status changed, Import started/completed/failed
+- **Billing Modules**: Additionally log Balance adjusted, Payment received/refunded, Invoice sent/paid
+- **Settings**: Configuration changed, Integration enabled/disabled, API key rotated
+- **Job Queue**: Job created, completed, failed, retried, cancelled, undo initiated
+- **Trash**: Record moved to trash, restored, purged
+
+### Current Super Admin Modules (60+ modules)
+Dashboard, POPs, Voice Tiers, Codecs, Channel Plans, Carriers, Routes, Rate Cards (Customer/Carrier), DID Countries/Providers/Inventory, Customers, Categories, Groups, KYC, Invoices, Payments, Currencies, Referrals, Promo Codes, Bonuses, Social Accounts/Posts, Email Templates, Metrics, CDRs, Alerts, Monitoring Rules, SIP Tester, AI Voice (Dashboard/Agents/Knowledge Bases/Campaigns/Call Logs/Analytics/Billing/Settings/Assignments), Class 4 (Customers/Carriers/Rate Cards), CMS (Pages/Sections/Login Pages/Site Settings/Themes/Media/Documentation), Admin Users, Roles, Audit Logs, Tickets, Job Queue, Settings (General/API Keys/Webhooks/Integrations/ConnexCS Status), Global Settings (Platform/Currencies/Localization/A-Z Database), Trash
+
 ## External Dependencies
 
 -   **Stripe**: Payments and KYC identity verification.
