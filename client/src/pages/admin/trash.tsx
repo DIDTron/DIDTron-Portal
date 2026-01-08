@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { AlertTriangle, Search, Trash2, Loader2, RefreshCw, RotateCcw, Filter, Clock, Database, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -91,6 +92,16 @@ export default function TrashPage() {
     
     return matchesSearch && matchesTable;
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(filteredItems);
 
   const getDaysUntilExpiry = (restorableUntil: Date | string | null) => {
     if (!restorableUntil) return null;
@@ -285,7 +296,7 @@ export default function TrashPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredItems.map((item) => {
+                {paginatedItems.map((item) => {
                   const daysLeft = getDaysUntilExpiry(item.restorableUntil);
                   return (
                     <TableRow key={item.id} data-testid={`row-trash-${item.id}`}>
@@ -329,6 +340,14 @@ export default function TrashPage() {
                 })}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
           </CardContent>
         </Card>
       )}

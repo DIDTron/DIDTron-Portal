@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -143,6 +144,16 @@ export default function RoutesPage() {
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(routes || []);
   
   const getCarrierName = (carrierId: string | null) => {
     if (!carrierId || !carriers) return "-";
@@ -250,6 +261,7 @@ export default function RoutesPage() {
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
           ) : routes && routes.length > 0 ? (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -262,7 +274,7 @@ export default function RoutesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {routes.map((route) => (
+                {paginatedItems.map((route) => (
                   <TableRow key={route.id} data-testid={`row-route-${route.id}`}>
                     <TableCell className="font-medium">{route.name}</TableCell>
                     <TableCell><code className="text-xs">{route.prefix || "*"}</code></TableCell>
@@ -287,6 +299,15 @@ export default function RoutesPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           ) : (
             <div className="p-8 text-center">
               <RouteIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

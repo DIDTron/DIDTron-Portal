@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -116,6 +116,13 @@ export function useDataTablePagination<T>(items: T[], defaultPageSize = 10) {
 
   const totalItems = items.length;
   const totalPages = Math.ceil(totalItems / pageSize);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, totalPages);
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage);
+    }
+  }, [totalItems, pageSize, totalPages, currentPage]);
 
   const paginatedItems = items.slice(
     (currentPage - 1) * pageSize,

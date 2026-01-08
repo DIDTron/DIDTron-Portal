@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { AlertTriangle, Search, FileText, Loader2, RefreshCw, Download, Filter, Trash2, Calendar as CalendarIcon, User, Activity, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -163,6 +164,16 @@ export default function AuditLogsPage() {
     
     return matchesSearch && matchesTable && matchesAction && matchesUser && matchesDateRange;
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems: paginatedLogs,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(filteredLogs);
 
   const handleDeleteAll = () => {
     if (deleteConfirmation === "DELETE") {
@@ -450,7 +461,7 @@ export default function AuditLogsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLogs.slice(0, 100).map((log) => (
+                {paginatedLogs.map((log) => (
                   <TableRow key={log.id} data-testid={`row-log-${log.id}`}>
                     <TableCell className="text-sm whitespace-nowrap">
                       {log.createdAt ? new Date(log.createdAt).toLocaleString() : "-"}
@@ -471,14 +482,16 @@ export default function AuditLogsPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
           </CardContent>
         </Card>
-      )}
-      
-      {filteredLogs.length > 100 && (
-        <p className="text-sm text-muted-foreground text-center">
-          Showing 100 of {filteredLogs.length} logs. Use filters to narrow results.
-        </p>
       )}
     </div>
   );

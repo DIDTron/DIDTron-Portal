@@ -13,6 +13,7 @@ import {
   Shield, Plus, Edit, Trash2, Users, Lock, 
   Check, X
 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 
 interface Role {
   id: string;
@@ -101,6 +102,16 @@ export default function RolesPage() {
     });
     setShowEditDialog(true);
   };
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(roles);
 
   return (
     <div className="p-6 space-y-6">
@@ -260,7 +271,7 @@ export default function RolesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {roles.map((role) => (
+              {paginatedItems.map((role) => (
                 <TableRow key={role.id} data-testid={`row-role-${role.id}`}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
@@ -305,6 +316,14 @@ export default function RolesPage() {
               ))}
             </TableBody>
           </Table>
+          <DataTableFooter
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </CardContent>
       </Card>
     </div>

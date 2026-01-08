@@ -34,6 +34,7 @@ import {
 import { 
   Plus, Pencil, Trash2, Users, Building2, Tag, CheckCircle2, XCircle, Loader2, Shield
 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 
 type Assignment = {
   id: string;
@@ -111,6 +112,16 @@ export default function AiVoiceAssignmentsPage() {
   const { data: assignments = [], isLoading } = useQuery<Assignment[]>({
     queryKey: ["/api/admin/ai-voice/assignments"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(assignments);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/admin/categories"],
@@ -310,14 +321,14 @@ export default function AiVoiceAssignmentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assignments.length === 0 ? (
+              {paginatedItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     No assignments configured. Add one to control feature access.
                   </TableCell>
                 </TableRow>
               ) : (
-                assignments.map((assignment) => (
+                paginatedItems.map((assignment) => (
                   <TableRow key={assignment.id} data-testid={`row-assignment-${assignment.id}`}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
@@ -387,6 +398,14 @@ export default function AiVoiceAssignmentsPage() {
               )}
             </TableBody>
           </Table>
+          <DataTableFooter
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </CardContent>
       </Card>
 

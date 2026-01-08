@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Share2, Pencil, Trash2 } from "lucide-react";
 import { SiX, SiFacebook, SiLinkedin, SiInstagram } from "react-icons/si";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { SocialAccount } from "@shared/schema";
 
 type AccountFormData = {
@@ -66,6 +67,16 @@ export default function SocialAccountsPage() {
   const { data: accounts, isLoading } = useQuery<SocialAccount[]>({
     queryKey: ["/api/social-accounts"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(accounts ?? []);
 
   const createMutation = useMutation({
     mutationFn: async (data: AccountFormData) => {
@@ -263,6 +274,7 @@ export default function SocialAccountsPage() {
               No social accounts connected. Connect your first account to start posting.
             </div>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -273,7 +285,7 @@ export default function SocialAccountsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {accounts.map((account) => (
+                {paginatedItems.map((account) => (
                   <TableRow key={account.id} data-testid={`row-account-${account.id}`}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -311,6 +323,15 @@ export default function SocialAccountsPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           )}
         </CardContent>
       </Card>

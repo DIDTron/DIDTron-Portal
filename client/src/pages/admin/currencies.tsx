@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,6 +125,26 @@ export default function CurrenciesPage() {
     r.baseCurrency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.quoteCurrency?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const {
+    currentPage: currenciesCurrentPage,
+    pageSize: currenciesPageSize,
+    totalPages: currenciesTotalPages,
+    totalItems: currenciesTotalItems,
+    paginatedItems: paginatedCurrencies,
+    onPageChange: onCurrenciesPageChange,
+    onPageSizeChange: onCurrenciesPageSizeChange,
+  } = useDataTablePagination(currencies, 10);
+
+  const {
+    currentPage: ratesCurrentPage,
+    pageSize: ratesPageSize,
+    totalPages: ratesTotalPages,
+    totalItems: ratesTotalItems,
+    paginatedItems: paginatedRates,
+    onPageChange: onRatesPageChange,
+    onPageSizeChange: onRatesPageSizeChange,
+  } = useDataTablePagination(filteredRates, 10);
 
   return (
     <div className="space-y-6">
@@ -324,62 +345,72 @@ export default function CurrenciesPage() {
                   <p className="text-sm">Add your first currency to enable multi-currency pricing</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Currency</TableHead>
-                      <TableHead>Symbol</TableHead>
-                      <TableHead>Markup</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Enabled</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currencies.map((currency) => (
-                      <TableRow key={currency.id} data-testid={`row-currency-${currency.id}`}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium">{currency.code}</div>
-                            <span className="text-muted-foreground">{currency.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{currency.symbol}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            className="w-20"
-                            defaultValue={parseFloat(currency.markup || "0")}
-                            onBlur={(e) => {
-                              const val = parseFloat(e.target.value);
-                              if (!isNaN(val) && val !== parseFloat(currency.markup || "0")) {
-                                updateMarkup.mutate({ id: currency.id, markup: val });
-                              }
-                            }}
-                            data-testid={`input-markup-${currency.id}`}
-                          />
-                          <span className="text-xs text-muted-foreground ml-1">%</span>
-                        </TableCell>
-                        <TableCell>
-                          {currency.isActive ? (
-                            <Badge variant="default">Active</Badge>
-                          ) : (
-                            <Badge variant="secondary">Disabled</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Switch
-                            checked={currency.isActive || false}
-                            onCheckedChange={(checked) => toggleCurrency.mutate({ id: currency.id, isEnabled: checked })}
-                            data-testid={`switch-currency-${currency.id}`}
-                          />
-                        </TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Currency</TableHead>
+                        <TableHead>Symbol</TableHead>
+                        <TableHead>Markup</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Enabled</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedCurrencies.map((currency) => (
+                        <TableRow key={currency.id} data-testid={`row-currency-${currency.id}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium">{currency.code}</div>
+                              <span className="text-muted-foreground">{currency.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{currency.symbol}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              className="w-20"
+                              defaultValue={parseFloat(currency.markup || "0")}
+                              onBlur={(e) => {
+                                const val = parseFloat(e.target.value);
+                                if (!isNaN(val) && val !== parseFloat(currency.markup || "0")) {
+                                  updateMarkup.mutate({ id: currency.id, markup: val });
+                                }
+                              }}
+                              data-testid={`input-markup-${currency.id}`}
+                            />
+                            <span className="text-xs text-muted-foreground ml-1">%</span>
+                          </TableCell>
+                          <TableCell>
+                            {currency.isActive ? (
+                              <Badge variant="default">Active</Badge>
+                            ) : (
+                              <Badge variant="secondary">Disabled</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Switch
+                              checked={currency.isActive || false}
+                              onCheckedChange={(checked) => toggleCurrency.mutate({ id: currency.id, isEnabled: checked })}
+                              data-testid={`switch-currency-${currency.id}`}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <DataTableFooter
+                    currentPage={currenciesCurrentPage}
+                    totalPages={currenciesTotalPages}
+                    pageSize={currenciesPageSize}
+                    totalItems={currenciesTotalItems}
+                    onPageChange={onCurrenciesPageChange}
+                    onPageSizeChange={onCurrenciesPageSizeChange}
+                  />
+                </>
               )}
             </CardContent>
           </Card>
@@ -417,51 +448,61 @@ export default function CurrenciesPage() {
                   <p className="text-sm">Click Refresh Rates to fetch latest rates</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>From</TableHead>
-                      <TableHead>To</TableHead>
-                      <TableHead>Rate</TableHead>
-                      <TableHead>Change</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Updated</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRates.map((rate) => (
-                      <TableRow key={rate.id} data-testid={`row-rate-${rate.id}`}>
-                        <TableCell>
-                          <Badge variant="outline">{rate.baseCurrency}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{rate.quoteCurrency}</Badge>
-                        </TableCell>
-                        <TableCell className="font-mono">
-                          {parseFloat(rate.rate || "0").toFixed(6)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {Math.random() > 0.5 ? (
-                              <TrendingUp className="h-4 w-4 text-green-500" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4 text-red-500" />
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {(Math.random() * 2).toFixed(2)}%
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{rate.source || "OER"}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {rate.createdAt ? new Date(rate.createdAt).toLocaleString() : "-"}
-                        </TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>From</TableHead>
+                        <TableHead>To</TableHead>
+                        <TableHead>Rate</TableHead>
+                        <TableHead>Change</TableHead>
+                        <TableHead>Source</TableHead>
+                        <TableHead>Updated</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedRates.map((rate) => (
+                        <TableRow key={rate.id} data-testid={`row-rate-${rate.id}`}>
+                          <TableCell>
+                            <Badge variant="outline">{rate.baseCurrency}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{rate.quoteCurrency}</Badge>
+                          </TableCell>
+                          <TableCell className="font-mono">
+                            {parseFloat(rate.rate || "0").toFixed(6)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {Math.random() > 0.5 ? (
+                                <TrendingUp className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <TrendingDown className="h-4 w-4 text-red-500" />
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {(Math.random() * 2).toFixed(2)}%
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{rate.source || "OER"}</Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {rate.createdAt ? new Date(rate.createdAt).toLocaleString() : "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <DataTableFooter
+                    currentPage={ratesCurrentPage}
+                    totalPages={ratesTotalPages}
+                    pageSize={ratesPageSize}
+                    totalItems={ratesTotalItems}
+                    onPageChange={onRatesPageChange}
+                    onPageSizeChange={onRatesPageSizeChange}
+                  />
+                </>
               )}
             </CardContent>
           </Card>

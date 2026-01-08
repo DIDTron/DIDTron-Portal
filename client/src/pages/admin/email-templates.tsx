@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Mail, Pencil, Trash2, Eye, Send, Download, Loader2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { EmailTemplate } from "@shared/schema";
 
 type TemplateFormData = {
@@ -68,6 +69,16 @@ export default function EmailTemplatesPage() {
   const { data: templates, isLoading } = useQuery<EmailTemplate[]>({
     queryKey: ["/api/email-templates"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(templates ?? []);
 
   const createMutation = useMutation({
     mutationFn: async (data: TemplateFormData) => {
@@ -383,6 +394,7 @@ export default function EmailTemplatesPage() {
               <p className="text-sm mt-1">Click "Seed Default Templates" to load pre-built onboarding templates.</p>
             </div>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -394,7 +406,7 @@ export default function EmailTemplatesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(templates ?? []).map((template) => (
+                {paginatedItems.map((template) => (
                   <TableRow key={template.id} data-testid={`row-template-${template.id}`}>
                     <TableCell>
                       <div>
@@ -463,6 +475,15 @@ export default function EmailTemplatesPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           )}
         </CardContent>
       </Card>

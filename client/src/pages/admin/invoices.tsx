@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, FileText, Pencil, Trash2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { Invoice, Customer } from "@shared/schema";
 
 type InvoiceFormData = {
@@ -155,6 +156,16 @@ export default function InvoicesPage() {
     };
     return variants[status || "pending"] || variants.pending;
   };
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(invoices ?? []);
 
   return (
     <div className="space-y-4" data-testid="invoices-page">
@@ -297,54 +308,64 @@ export default function InvoicesPage() {
               No invoices found. Create your first invoice.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id} data-testid={`row-invoice-${invoice.id}`}>
-                    <TableCell className="font-mono">{invoice.invoiceNumber}</TableCell>
-                    <TableCell>{getCustomerName(invoice.customerId)}</TableCell>
-                    <TableCell>${invoice.amount}</TableCell>
-                    <TableCell>${invoice.total}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusBadge(invoice.status)}>
-                        {invoice.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleEdit(invoice)}
-                          data-testid={`button-edit-invoice-${invoice.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => deleteMutation.mutate(invoice.id)}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-delete-invoice-${invoice.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((invoice) => (
+                    <TableRow key={invoice.id} data-testid={`row-invoice-${invoice.id}`}>
+                      <TableCell className="font-mono">{invoice.invoiceNumber}</TableCell>
+                      <TableCell>{getCustomerName(invoice.customerId)}</TableCell>
+                      <TableCell>${invoice.amount}</TableCell>
+                      <TableCell>${invoice.total}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusBadge(invoice.status)}>
+                          {invoice.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleEdit(invoice)}
+                            data-testid={`button-edit-invoice-${invoice.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteMutation.mutate(invoice.id)}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`button-delete-invoice-${invoice.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           )}
         </CardContent>
       </Card>

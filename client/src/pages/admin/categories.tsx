@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import {
   Select,
   SelectContent,
@@ -65,6 +66,16 @@ export default function CategoriesPage() {
   const { data: categories, isLoading } = useQuery<CustomerCategory[]>({
     queryKey: ["/api/categories"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems: paginatedCategories,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(categories || []);
 
   const createMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
@@ -279,8 +290,9 @@ export default function CategoriesPage() {
               No categories found. Create your first category to organize customers.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
+            <>
+              <Table>
+                <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Code</TableHead>
@@ -292,7 +304,7 @@ export default function CategoriesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categories.map((category) => (
+                {paginatedCategories.map((category) => (
                   <TableRow key={category.id} data-testid={`row-category-${category.id}`}>
                     <TableCell className="font-medium">{category.name}</TableCell>
                     <TableCell>
@@ -341,8 +353,17 @@ export default function CategoriesPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           )}
         </CardContent>
       </Card>

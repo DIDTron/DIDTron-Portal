@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +120,16 @@ export default function CodecsPage() {
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(codecs || []);
+
   return (
     <div>
       <div className="flex items-center justify-between gap-4 mb-6">
@@ -202,6 +213,7 @@ export default function CodecsPage() {
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
           ) : codecs && codecs.length > 0 ? (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -213,7 +225,7 @@ export default function CodecsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {codecs.map((codec) => (
+                {paginatedItems.map((codec) => (
                   <TableRow key={codec.id} data-testid={`row-codec-${codec.id}`}>
                     <TableCell className="font-medium">{codec.name}</TableCell>
                     <TableCell><code className="text-xs">{codec.code}</code></TableCell>
@@ -233,6 +245,15 @@ export default function CodecsPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           ) : (
             <div className="p-8 text-center">
               <Radio className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

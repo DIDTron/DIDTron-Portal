@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Building, Pencil, Trash2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { didProviders } from "@shared/schema";
 
 type DidProvider = typeof didProviders.$inferSelect;
@@ -41,9 +42,19 @@ export default function DIDProvidersPage() {
     isActive: true,
   });
 
-  const { data: providers, isLoading } = useQuery<DidProvider[]>({
+  const { data: providers = [], isLoading } = useQuery<DidProvider[]>({
     queryKey: ["/api/did-providers"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(providers);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -201,42 +212,52 @@ export default function DIDProvidersPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
-          ) : providers && providers.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Code</TableHead>
-                  <TableHead>API Endpoint</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-24">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {providers.map((provider) => (
-                  <TableRow key={provider.id} data-testid={`row-provider-${provider.id}`}>
-                    <TableCell className="font-medium">{provider.name}</TableCell>
-                    <TableCell><code className="text-xs">{provider.code}</code></TableCell>
-                    <TableCell className="text-sm">{provider.apiEndpoint || "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant={provider.isActive ? "default" : "secondary"}>
-                        {provider.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(provider)} data-testid={`button-edit-provider-${provider.id}`}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(provider.id)} data-testid={`button-delete-provider-${provider.id}`}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          ) : providers.length > 0 ? (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead>API Endpoint</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-24">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((provider) => (
+                    <TableRow key={provider.id} data-testid={`row-provider-${provider.id}`}>
+                      <TableCell className="font-medium">{provider.name}</TableCell>
+                      <TableCell><code className="text-xs">{provider.code}</code></TableCell>
+                      <TableCell className="text-sm">{provider.apiEndpoint || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={provider.isActive ? "default" : "secondary"}>
+                          {provider.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => handleEdit(provider)} data-testid={`button-edit-provider-${provider.id}`}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(provider.id)} data-testid={`button-delete-provider-${provider.id}`}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           ) : (
             <div className="p-8 text-center">
               <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

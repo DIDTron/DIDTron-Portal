@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -171,6 +172,16 @@ function CustomerRatesPage() {
     const matchesStatus = statusFilter === "all" || card.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems: paginatedCards,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(filteredCards, 10);
 
   const handleCreateNew = () => {
     setEditingCard(null);
@@ -641,7 +652,7 @@ function CustomerRatesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCards.map((card) => (
+              {paginatedCards.map((card) => (
                 <TableRow key={card.id} data-testid={`row-customer-ratecard-${card.id}`}>
                   <TableCell className="font-medium">{card.name}</TableCell>
                   <TableCell className="font-mono text-sm">{card.code || '-'}</TableCell>
@@ -692,6 +703,14 @@ function CustomerRatesPage() {
               ))}
             </TableBody>
           </Table>
+          <DataTableFooter
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </CardContent>
       </Card>
     </div>

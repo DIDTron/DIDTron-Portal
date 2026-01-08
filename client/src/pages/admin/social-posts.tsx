@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, FileText, Pencil, Trash2, Sparkles, Send, Clock } from "lucide-react";
 import { SiX, SiFacebook, SiLinkedin, SiInstagram } from "react-icons/si";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { SocialPost } from "@shared/schema";
 
 type PostFormData = {
@@ -75,6 +76,16 @@ export default function SocialPostsPage() {
   const { data: posts, isLoading } = useQuery<SocialPost[]>({
     queryKey: ["/api/social-posts"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(posts ?? []);
 
   const createMutation = useMutation({
     mutationFn: async (data: PostFormData) => {
@@ -411,6 +422,7 @@ export default function SocialPostsPage() {
               No posts yet. Create your first post or use AI to generate content.
             </div>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -422,7 +434,7 @@ export default function SocialPostsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {posts.map((post) => (
+                {paginatedItems.map((post) => (
                   <TableRow key={post.id} data-testid={`row-post-${post.id}`}>
                     <TableCell className="font-medium">
                       <p className="line-clamp-2">{post.content}</p>
@@ -463,6 +475,15 @@ export default function SocialPostsPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           )}
         </CardContent>
       </Card>

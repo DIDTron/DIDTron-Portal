@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,18 +94,14 @@ export default function CdrsPage() {
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedCdr, setSelectedCdr] = useState<Cdr | null>(null);
-  const [page, setPage] = useState(0);
-  const limit = 25;
 
   const { data: cdrsResponse, isLoading, refetch } = useQuery<CdrResponse>({
-    queryKey: ['/api/cdrs', { startDate: format(startDate, 'yyyy-MM-dd'), endDate: format(endDate, 'yyyy-MM-dd'), direction: directionFilter !== 'all' ? directionFilter : undefined, limit, offset: page * limit }],
+    queryKey: ['/api/cdrs', { startDate: format(startDate, 'yyyy-MM-dd'), endDate: format(endDate, 'yyyy-MM-dd'), direction: directionFilter !== 'all' ? directionFilter : undefined }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('startDate', format(startDate, 'yyyy-MM-dd'));
       params.append('endDate', format(endDate, 'yyyy-MM-dd'));
       if (directionFilter !== 'all') params.append('direction', directionFilter);
-      params.append('limit', String(limit));
-      params.append('offset', String(page * limit));
       
       const res = await fetch(`/api/cdrs?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch CDRs');
@@ -146,7 +143,15 @@ export default function CdrsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalPages = Math.ceil((cdrsResponse?.total || 0) / limit);
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems: paginatedCdrs,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(filteredCdrs, 25);
 
   return (
     <div className="p-6 space-y-6">
@@ -320,14 +325,14 @@ export default function CdrsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCdrs.length === 0 ? (
+                  {paginatedCdrs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         No call records found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredCdrs.map((cdr) => (
+                    paginatedCdrs.map((cdr) => (
                       <TableRow key={cdr.id} data-testid={`row-cdr-${cdr.id}`}>
                         <TableCell>
                           {cdr.direction === 'inbound' ? (
@@ -359,35 +364,14 @@ export default function CdrsPage() {
                   )}
                 </TableBody>
               </Table>
-
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing {page * limit + 1} - {Math.min((page + 1) * limit, cdrsResponse?.total || 0)} of {cdrsResponse?.total || 0} records
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setPage(p => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                    data-testid="button-prev-page"
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    Page {page + 1} of {totalPages || 1}
-                  </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setPage(p => p + 1)}
-                    disabled={page >= totalPages - 1}
-                    data-testid="button-next-page"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
             </>
           )}
         </CardContent>

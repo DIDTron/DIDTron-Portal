@@ -35,6 +35,7 @@ import {
   Plus, Pencil, Phone, Globe, Building2, User, DollarSign,
   Search, Filter, Upload
 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { Did, DidCountry, DidProvider, Customer } from "@shared/schema";
 
 type DidFormData = {
@@ -200,6 +201,16 @@ export default function DIDInventoryPage() {
     const matchesStatus = statusFilter === "all" || did.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(filteredDids);
 
   const stats = {
     total: dids.length,
@@ -474,52 +485,62 @@ export default function DIDInventoryPage() {
               )}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Number</TableHead>
-                  <TableHead>Country</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Price/mo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-24">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDids.map(did => (
-                  <TableRow key={did.id} data-testid={`row-did-${did.id}`}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-mono">{did.number}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getCountryName(did.countryId)}</TableCell>
-                    <TableCell>{getProviderName(did.providerId)}</TableCell>
-                    <TableCell>
-                      {did.customerId ? (
-                        <Badge variant="outline">{getCustomerName(did.customerId)}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-mono">${did.monthlyPrice || "1.50"}</TableCell>
-                    <TableCell>{getStatusBadge(did.status)}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        data-testid={`button-edit-${did.id}`}
-                        onClick={() => handleEdit(did)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Number</TableHead>
+                    <TableHead>Country</TableHead>
+                    <TableHead>Provider</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Price/mo</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-24">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map(did => (
+                    <TableRow key={did.id} data-testid={`row-did-${did.id}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-mono">{did.number}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getCountryName(did.countryId)}</TableCell>
+                      <TableCell>{getProviderName(did.providerId)}</TableCell>
+                      <TableCell>
+                        {did.customerId ? (
+                          <Badge variant="outline">{getCustomerName(did.customerId)}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono">${did.monthlyPrice || "1.50"}</TableCell>
+                      <TableCell>{getStatusBadge(did.status)}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          data-testid={`button-edit-${did.id}`}
+                          onClick={() => handleEdit(did)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           )}
         </CardContent>
       </Card>

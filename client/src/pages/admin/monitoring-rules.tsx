@@ -13,6 +13,7 @@ import {
   Gauge, Plus, Edit, Trash2, Play, Pause,
   AlertTriangle, Bell, Zap
 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 
 interface MonitoringRule {
   id: string;
@@ -78,6 +79,16 @@ export default function MonitoringRulesPage() {
       lastTriggered: new Date(Date.now() - 7200000),
     },
   ];
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(rules);
 
   const formatTimeAgo = (date: Date | null) => {
     if (!date) return "Never";
@@ -270,7 +281,7 @@ export default function MonitoringRulesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rules.map((rule) => (
+              {paginatedItems.map((rule) => (
                 <TableRow key={rule.id} data-testid={`row-rule-${rule.id}`}>
                   <TableCell className="font-medium">{rule.name}</TableCell>
                   <TableCell>
@@ -304,6 +315,14 @@ export default function MonitoringRulesPage() {
               ))}
             </TableBody>
           </Table>
+          <DataTableFooter
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </CardContent>
       </Card>
     </div>

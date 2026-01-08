@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -128,6 +129,16 @@ export default function ChannelPlansPage() {
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(plans || []);
+
   return (
     <div>
       <div className="flex items-center justify-between gap-4 mb-6">
@@ -236,6 +247,7 @@ export default function ChannelPlansPage() {
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
           ) : plans && plans.length > 0 ? (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -249,7 +261,7 @@ export default function ChannelPlansPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {plans.map((plan) => (
+                {paginatedItems.map((plan) => (
                   <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
                     <TableCell className="font-medium">{plan.name}</TableCell>
                     <TableCell><code className="text-xs">{plan.code}</code></TableCell>
@@ -275,6 +287,15 @@ export default function ChannelPlansPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           ) : (
             <div className="p-8 text-center">
               <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

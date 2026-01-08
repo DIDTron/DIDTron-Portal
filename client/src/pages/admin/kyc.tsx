@@ -16,6 +16,7 @@ import {
   Search, CheckCircle2, XCircle, Clock, FileText, User, 
   AlertTriangle, Loader2, Eye, ThumbsUp, ThumbsDown, Shield
 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { CustomerKyc, Customer } from "@shared/schema";
 
 function getStatusBadge(status: string | null) {
@@ -98,6 +99,16 @@ export default function KycPage() {
   const pendingCount = kycRequests.filter(k => k.status === "pending").length;
   const approvedCount = kycRequests.filter(k => k.status === "approved").length;
   const rejectedCount = kycRequests.filter(k => k.status === "rejected").length;
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(filteredRequests);
 
   return (
     <div className="p-6 space-y-6">
@@ -219,7 +230,7 @@ export default function KycPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRequests.map((kyc) => (
+                    {paginatedItems.map((kyc) => (
                       <TableRow key={kyc.id} data-testid={`row-kyc-${kyc.id}`}>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -280,6 +291,14 @@ export default function KycPage() {
                     ))}
                   </TableBody>
                 </Table>
+                <DataTableFooter
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={onPageChange}
+                  onPageSizeChange={onPageSizeChange}
+                />
               </CardContent>
             </Card>
           )}

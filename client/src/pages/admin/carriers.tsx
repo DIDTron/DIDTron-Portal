@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import {
   Select,
   SelectContent,
@@ -106,6 +107,16 @@ export default function CarriersPage() {
   const { data: carriers, isLoading } = useQuery<Carrier[]>({
     queryKey: ["/api/carriers"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems: paginatedCarriers,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(carriers || []);
 
   const { data: platformStatus } = useQuery<PlatformStatus>({
     queryKey: ["/api/platform/status"],
@@ -828,8 +839,9 @@ export default function CarriersPage() {
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
           ) : carriers && carriers.length > 0 ? (
-            <Table>
-              <TableHeader>
+            <>
+              <Table>
+                <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Code</TableHead>
@@ -841,7 +853,7 @@ export default function CarriersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {carriers.map((carrier) => (
+                {paginatedCarriers.map((carrier) => (
                   <TableRow 
                     key={carrier.id} 
                     className="cursor-pointer hover-elevate"
@@ -922,8 +934,17 @@ export default function CarriersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           ) : (
             <div className="p-8 text-center">
               <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Layers, Pencil, Trash2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { CustomerGroup, CustomerCategory } from "@shared/schema";
 
 type GroupFormData = {
@@ -58,13 +59,23 @@ export default function GroupsPage() {
     isActive: true,
   });
 
-  const { data: groups, isLoading } = useQuery<CustomerGroup[]>({
+  const { data: groups = [], isLoading } = useQuery<CustomerGroup[]>({
     queryKey: ["/api/groups"],
   });
 
   const { data: categories } = useQuery<CustomerCategory[]>({
     queryKey: ["/api/categories"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(groups);
 
   const createMutation = useMutation({
     mutationFn: async (data: GroupFormData) => {
@@ -271,67 +282,77 @@ export default function GroupsPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">Loading groups...</div>
-          ) : !groups?.length ? (
+          ) : !groups.length ? (
             <div className="p-8 text-center text-muted-foreground">
               No groups found. Create your first group to organize customers within categories.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {groups.map((group) => (
-                  <TableRow key={group.id} data-testid={`row-group-${group.id}`}>
-                    <TableCell className="font-medium">{group.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{group.code}</Badge>
-                    </TableCell>
-                    <TableCell>{getCategoryName(group.categoryId)}</TableCell>
-                    <TableCell>{group.displayOrder}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline"
-                        className={group.isActive 
-                          ? "bg-green-500/10 text-green-500 border-green-500/20" 
-                          : "bg-muted text-muted-foreground"
-                        }
-                      >
-                        {group.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleEdit(group)}
-                          data-testid={`button-edit-group-${group.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => deleteMutation.mutate(group.id)}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-delete-group-${group.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Order</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((group) => (
+                    <TableRow key={group.id} data-testid={`row-group-${group.id}`}>
+                      <TableCell className="font-medium">{group.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{group.code}</Badge>
+                      </TableCell>
+                      <TableCell>{getCategoryName(group.categoryId)}</TableCell>
+                      <TableCell>{group.displayOrder}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline"
+                          className={group.isActive 
+                            ? "bg-green-500/10 text-green-500 border-green-500/20" 
+                            : "bg-muted text-muted-foreground"
+                          }
+                        >
+                          {group.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleEdit(group)}
+                            data-testid={`button-edit-group-${group.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteMutation.mutate(group.id)}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`button-delete-group-${group.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           )}
         </CardContent>
       </Card>

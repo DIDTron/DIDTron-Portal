@@ -31,6 +31,7 @@ import {
   Search, Phone, PhoneIncoming, PhoneOutgoing, Clock, DollarSign,
   MessageSquare, FileText, Download, PlayCircle, Loader2, X
 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { format } from "date-fns";
 import type { Customer, AiVoiceAgent } from "@shared/schema";
 
@@ -133,6 +134,16 @@ export default function AiVoiceCallLogsPage() {
     const matchesDirection = directionFilter === "all" || log.direction === directionFilter;
     return matchesSearch && matchesStatus && matchesDirection;
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(filteredLogs);
 
   const totalDuration = callLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
   const totalCost = callLogs.reduce((sum, log) => sum + parseFloat(log.cost || "0"), 0);
@@ -250,6 +261,7 @@ export default function AiVoiceCallLogsPage() {
               </p>
             </div>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -264,7 +276,7 @@ export default function AiVoiceCallLogsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLogs.map(log => (
+                {paginatedItems.map(log => (
                   <TableRow key={log.id} data-testid={`row-call-${log.id}`}>
                     <TableCell>
                       {log.direction === "inbound" ? (
@@ -304,6 +316,15 @@ export default function AiVoiceCallLogsPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           )}
         </CardContent>
       </Card>

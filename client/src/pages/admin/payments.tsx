@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, CreditCard, Pencil, Trash2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { Payment, Customer } from "@shared/schema";
 
 type PaymentFormData = {
@@ -155,6 +156,16 @@ export default function PaymentsPage() {
     };
     return variants[status || "pending"] || variants.pending;
   };
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(payments ?? []);
 
   return (
     <div className="space-y-4" data-testid="payments-page">
@@ -299,56 +310,66 @@ export default function PaymentsPage() {
               No payments found. Record your first payment.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.map((payment) => (
-                  <TableRow key={payment.id} data-testid={`row-payment-${payment.id}`}>
-                    <TableCell>{getCustomerName(payment.customerId)}</TableCell>
-                    <TableCell>${payment.amount} {payment.currency}</TableCell>
-                    <TableCell className="capitalize">{payment.paymentMethod || "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusBadge(payment.status)}>
-                        {payment.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleEdit(payment)}
-                          data-testid={`button-edit-payment-${payment.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => deleteMutation.mutate(payment.id)}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-delete-payment-${payment.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((payment) => (
+                    <TableRow key={payment.id} data-testid={`row-payment-${payment.id}`}>
+                      <TableCell>{getCustomerName(payment.customerId)}</TableCell>
+                      <TableCell>${payment.amount} {payment.currency}</TableCell>
+                      <TableCell className="capitalize">{payment.paymentMethod || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusBadge(payment.status)}>
+                          {payment.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleEdit(payment)}
+                            data-testid={`button-edit-payment-${payment.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteMutation.mutate(payment.id)}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`button-delete-payment-${payment.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           )}
         </CardContent>
       </Card>

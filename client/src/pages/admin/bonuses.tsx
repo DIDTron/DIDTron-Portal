@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Gift, Pencil, Trash2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { BonusType } from "@shared/schema";
 
 type BonusFormData = {
@@ -152,6 +153,16 @@ export default function BonusesPage() {
     if (bonus.amount) return `$${bonus.amount}`;
     return "-";
   };
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(bonuses ?? []);
 
   return (
     <div className="space-y-4" data-testid="bonuses-page">
@@ -280,62 +291,72 @@ export default function BonusesPage() {
               No bonuses found. Create your first bonus type.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(bonuses ?? []).map((bonus) => (
-                  <TableRow key={bonus.id} data-testid={`row-bonus-${bonus.id}`}>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">{bonus.code}</Badge>
-                    </TableCell>
-                    <TableCell>{bonus.name}</TableCell>
-                    <TableCell className="capitalize">{bonus.type}</TableCell>
-                    <TableCell>{getBonusValue(bonus)}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline"
-                        className={bonus.isActive 
-                          ? "bg-green-500/10 text-green-500 border-green-500/20" 
-                          : "bg-muted text-muted-foreground"
-                        }
-                      >
-                        {bonus.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleEdit(bonus)}
-                          data-testid={`button-edit-bonus-${bonus.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => deleteMutation.mutate(bonus.id)}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-delete-bonus-${bonus.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((bonus) => (
+                    <TableRow key={bonus.id} data-testid={`row-bonus-${bonus.id}`}>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono">{bonus.code}</Badge>
+                      </TableCell>
+                      <TableCell>{bonus.name}</TableCell>
+                      <TableCell className="capitalize">{bonus.type}</TableCell>
+                      <TableCell>{getBonusValue(bonus)}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline"
+                          className={bonus.isActive 
+                            ? "bg-green-500/10 text-green-500 border-green-500/20" 
+                            : "bg-muted text-muted-foreground"
+                          }
+                        >
+                          {bonus.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleEdit(bonus)}
+                            data-testid={`button-edit-bonus-${bonus.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteMutation.mutate(bonus.id)}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`button-delete-bonus-${bonus.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           )}
         </CardContent>
       </Card>

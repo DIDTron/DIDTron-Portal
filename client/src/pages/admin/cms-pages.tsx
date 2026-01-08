@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, FileText, Pencil, Trash2, Globe, EyeOff } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { CmsPage } from "@shared/schema";
 
 type PageFormData = {
@@ -55,9 +56,19 @@ export default function CmsPagesPage() {
   const [editingPage, setEditingPage] = useState<CmsPage | null>(null);
   const [formData, setFormData] = useState<PageFormData>(defaultFormData);
 
-  const { data: pages, isLoading } = useQuery<CmsPage[]>({
+  const { data: pages = [], isLoading } = useQuery<CmsPage[]>({
     queryKey: ["/api/cms/pages"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(pages);
 
   const createMutation = useMutation({
     mutationFn: async (data: PageFormData) => {
@@ -325,7 +336,7 @@ export default function CmsPagesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pages.map((page) => (
+              {paginatedItems.map((page) => (
                 <TableRow key={page.id} data-testid={`row-page-${page.id}`}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -400,6 +411,14 @@ export default function CmsPagesPage() {
               ))}
             </TableBody>
           </Table>
+          <DataTableFooter
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </Card>
       )}
     </div>

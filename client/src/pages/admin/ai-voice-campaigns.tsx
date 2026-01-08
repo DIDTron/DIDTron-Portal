@@ -37,6 +37,7 @@ import {
   Plus, Pencil, Trash2, Megaphone, Play, Pause, PhoneOutgoing,
   Users, CheckCircle2, Clock, AlertCircle, Loader2
 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { Customer, AiVoiceAgent } from "@shared/schema";
 
 type Campaign = {
@@ -102,6 +103,16 @@ export default function AiVoiceCampaignsPage() {
   const { data: campaigns = [], isLoading } = useQuery<Campaign[]>({
     queryKey: ["/api/admin/ai-voice/campaigns"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(campaigns);
 
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -359,6 +370,7 @@ export default function AiVoiceCampaignsPage() {
               </Button>
             </div>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -371,7 +383,7 @@ export default function AiVoiceCampaignsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {campaigns.map(campaign => (
+                {paginatedItems.map(campaign => (
                   <TableRow key={campaign.id} data-testid={`row-campaign-${campaign.id}`}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -441,6 +453,15 @@ export default function AiVoiceCampaignsPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           )}
         </CardContent>
       </Card>

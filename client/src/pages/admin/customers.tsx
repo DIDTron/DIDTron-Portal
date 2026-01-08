@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Users, Pencil, Trash2, Building2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { Customer, CustomerCategory, CustomerGroup } from "@shared/schema";
 
 type CustomerFormData = {
@@ -64,7 +65,7 @@ export default function CustomersPage() {
     country: "",
   });
 
-  const { data: customers, isLoading } = useQuery<Customer[]>({
+  const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
   });
 
@@ -75,6 +76,16 @@ export default function CustomersPage() {
   const { data: groups } = useQuery<CustomerGroup[]>({
     queryKey: ["/api/groups"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(customers);
 
   const createMutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
@@ -381,78 +392,88 @@ export default function CustomersPage() {
             <div className="flex items-center justify-center p-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
             </div>
-          ) : customers && customers.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Billing</TableHead>
-                  <TableHead>Balance</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.id} data-testid={`row-customer-${customer.id}`}>
-                    <TableCell className="font-mono text-sm">{customer.accountNumber}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{customer.companyName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getCategoryName(customer.categoryId)}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusBadge(customer.status)} variant="outline">
-                        {(customer.status || "pending").replace("_", " ")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant="secondary">
-                          {customer.billingType || "prepaid"}
-                        </Badge>
-                        {customer.billingType === "postpaid" && (
-                          <span className="text-xs text-muted-foreground">
-                            Limit: ${parseFloat(customer.creditLimit || "0").toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono">
-                      ${parseFloat(customer.balance || "0").toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(customer)}
-                          data-testid={`button-edit-${customer.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm("Are you sure you want to delete this customer?")) {
-                              deleteMutation.mutate(customer.id);
-                            }
-                          }}
-                          data-testid={`button-delete-${customer.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          ) : customers.length > 0 ? (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Account</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Billing</TableHead>
+                    <TableHead>Balance</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((customer) => (
+                    <TableRow key={customer.id} data-testid={`row-customer-${customer.id}`}>
+                      <TableCell className="font-mono text-sm">{customer.accountNumber}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{customer.companyName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getCategoryName(customer.categoryId)}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusBadge(customer.status)} variant="outline">
+                          {(customer.status || "pending").replace("_", " ")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant="secondary">
+                            {customer.billingType || "prepaid"}
+                          </Badge>
+                          {customer.billingType === "postpaid" && (
+                            <span className="text-xs text-muted-foreground">
+                              Limit: ${parseFloat(customer.creditLimit || "0").toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono">
+                        ${parseFloat(customer.balance || "0").toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(customer)}
+                            data-testid={`button-edit-${customer.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              if (confirm("Are you sure you want to delete this customer?")) {
+                                deleteMutation.mutate(customer.id);
+                              }
+                            }}
+                            data-testid={`button-delete-${customer.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />

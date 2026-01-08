@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Users2, Pencil, Trash2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { Referral, Customer } from "@shared/schema";
 
 type ReferralFormData = {
@@ -155,6 +156,16 @@ export default function ReferralsPage() {
     return variants[status || "pending"] || variants.pending;
   };
 
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(referrals ?? []);
+
   return (
     <div className="space-y-4" data-testid="referrals-page">
       <div className="flex items-center justify-between gap-2">
@@ -268,56 +279,66 @@ export default function ReferralsPage() {
               No referrals found. Create your first referral record.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Referral Code</TableHead>
-                  <TableHead>Referrer</TableHead>
-                  <TableHead>Referred</TableHead>
-                  <TableHead>Commission</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {referrals.map((referral) => (
-                  <TableRow key={referral.id} data-testid={`row-referral-${referral.id}`}>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">{referral.referralCode}</Badge>
-                    </TableCell>
-                    <TableCell>{getCustomerName(referral.referrerId)}</TableCell>
-                    <TableCell>{getCustomerName(referral.referredId)}</TableCell>
-                    <TableCell>${referral.commission}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusBadge(referral.status)}>
-                        {referral.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleEdit(referral)}
-                          data-testid={`button-edit-referral-${referral.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => deleteMutation.mutate(referral.id)}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-delete-referral-${referral.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Referral Code</TableHead>
+                    <TableHead>Referrer</TableHead>
+                    <TableHead>Referred</TableHead>
+                    <TableHead>Commission</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((referral) => (
+                    <TableRow key={referral.id} data-testid={`row-referral-${referral.id}`}>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono">{referral.referralCode}</Badge>
+                      </TableCell>
+                      <TableCell>{getCustomerName(referral.referrerId)}</TableCell>
+                      <TableCell>{getCustomerName(referral.referredId)}</TableCell>
+                      <TableCell>${referral.commission}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusBadge(referral.status)}>
+                          {referral.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleEdit(referral)}
+                            data-testid={`button-edit-referral-${referral.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteMutation.mutate(referral.id)}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`button-delete-referral-${referral.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           )}
         </CardContent>
       </Card>

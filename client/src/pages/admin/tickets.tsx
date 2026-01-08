@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Ticket, Pencil, Trash2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { Ticket as TicketType, Customer } from "@shared/schema";
 
 type TicketFormData = {
@@ -64,6 +65,16 @@ export default function TicketsPage() {
   const { data: customers } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(tickets ?? []);
 
   const createMutation = useMutation({
     mutationFn: async (data: TicketFormData) => {
@@ -317,6 +328,7 @@ export default function TicketsPage() {
               No tickets found. Create your first support ticket.
             </div>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -329,7 +341,7 @@ export default function TicketsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(tickets ?? []).map((ticket) => (
+                {paginatedItems.map((ticket) => (
                   <TableRow key={ticket.id} data-testid={`row-ticket-${ticket.id}`}>
                     <TableCell>
                       <Badge variant="outline" className="font-mono">{ticket.ticketNumber}</Badge>
@@ -371,6 +383,15 @@ export default function TicketsPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           )}
         </CardContent>
       </Card>

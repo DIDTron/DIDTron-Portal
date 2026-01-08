@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Tag, Pencil, Trash2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { PromoCode } from "@shared/schema";
 
 type PromoCodeFormData = {
@@ -144,6 +145,16 @@ export default function PromoCodesPage() {
       createMutation.mutate(formData);
     }
   };
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(promoCodes ?? []);
 
   return (
     <div className="space-y-4" data-testid="promo-codes-page">
@@ -270,66 +281,76 @@ export default function PromoCodesPage() {
               No promo codes found. Create your first promotional code.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {promoCodes.map((promo) => (
-                  <TableRow key={promo.id} data-testid={`row-promo-${promo.id}`}>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">{promo.code}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {promo.discountType === "percentage" 
-                        ? `${promo.discountValue}%` 
-                        : `$${promo.discountValue}`}
-                    </TableCell>
-                    <TableCell>
-                      {promo.usedCount || 0} / {promo.maxUses || "Unlimited"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline"
-                        className={promo.isActive 
-                          ? "bg-green-500/10 text-green-500 border-green-500/20" 
-                          : "bg-muted text-muted-foreground"
-                        }
-                      >
-                        {promo.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleEdit(promo)}
-                          data-testid={`button-edit-promo-${promo.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => deleteMutation.mutate(promo.id)}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-delete-promo-${promo.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Discount</TableHead>
+                    <TableHead>Usage</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((promo) => (
+                    <TableRow key={promo.id} data-testid={`row-promo-${promo.id}`}>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono">{promo.code}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {promo.discountType === "percentage" 
+                          ? `${promo.discountValue}%` 
+                          : `$${promo.discountValue}`}
+                      </TableCell>
+                      <TableCell>
+                        {promo.usedCount || 0} / {promo.maxUses || "Unlimited"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline"
+                          className={promo.isActive 
+                            ? "bg-green-500/10 text-green-500 border-green-500/20" 
+                            : "bg-muted text-muted-foreground"
+                          }
+                        >
+                          {promo.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleEdit(promo)}
+                            data-testid={`button-edit-promo-${promo.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteMutation.mutate(promo.id)}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`button-delete-promo-${promo.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           )}
         </CardContent>
       </Card>

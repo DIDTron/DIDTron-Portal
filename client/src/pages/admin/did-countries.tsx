@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Globe, Pencil, Trash2 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { DidCountry } from "@shared/schema";
 
 export default function DIDCountriesPage() {
@@ -39,9 +40,19 @@ export default function DIDCountriesPage() {
     kycRequired: false,
   });
 
-  const { data: countries, isLoading } = useQuery<DidCountry[]>({
+  const { data: countries = [], isLoading } = useQuery<DidCountry[]>({
     queryKey: ["/api/did-countries"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(countries);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -195,50 +206,60 @@ export default function DIDCountriesPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
-          ) : countries && countries.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Country</TableHead>
-                  <TableHead>ISO Code</TableHead>
-                  <TableHead>Dial Code</TableHead>
-                  <TableHead>KYC</TableHead>
-                  <TableHead>Active</TableHead>
-                  <TableHead className="w-24">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {countries.map((country) => (
-                  <TableRow key={country.id} data-testid={`row-country-${country.id}`}>
-                    <TableCell className="font-medium">{country.name}</TableCell>
-                    <TableCell><code className="text-xs">{country.isoCode}</code></TableCell>
-                    <TableCell>{country.dialCode}</TableCell>
-                    <TableCell>
-                      {country.kycRequired ? (
-                        <Badge variant="outline">Required</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={country.isActive ? "default" : "secondary"}>
-                        {country.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(country)} data-testid={`button-edit-country-${country.id}`}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(country.id)} data-testid={`button-delete-country-${country.id}`}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          ) : countries.length > 0 ? (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Country</TableHead>
+                    <TableHead>ISO Code</TableHead>
+                    <TableHead>Dial Code</TableHead>
+                    <TableHead>KYC</TableHead>
+                    <TableHead>Active</TableHead>
+                    <TableHead className="w-24">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((country) => (
+                    <TableRow key={country.id} data-testid={`row-country-${country.id}`}>
+                      <TableCell className="font-medium">{country.name}</TableCell>
+                      <TableCell><code className="text-xs">{country.isoCode}</code></TableCell>
+                      <TableCell>{country.dialCode}</TableCell>
+                      <TableCell>
+                        {country.kycRequired ? (
+                          <Badge variant="outline">Required</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={country.isActive ? "default" : "secondary"}>
+                          {country.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => handleEdit(country)} data-testid={`button-edit-country-${country.id}`}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(country.id)} data-testid={`button-delete-country-${country.id}`}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
           ) : (
             <div className="p-8 text-center">
               <Globe className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

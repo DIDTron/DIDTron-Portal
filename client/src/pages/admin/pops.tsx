@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -116,6 +117,16 @@ export default function POPsPage() {
       createMutation.mutate(formData);
     }
   };
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(pops || []);
 
   return (
     <div>
@@ -234,6 +245,7 @@ export default function POPsPage() {
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
           ) : pops && pops.length > 0 ? (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -246,7 +258,7 @@ export default function POPsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pops.map((pop) => (
+                {paginatedItems.map((pop) => (
                   <TableRow key={pop.id} data-testid={`row-pop-${pop.id}`}>
                     <TableCell className="font-medium">{pop.name}</TableCell>
                     <TableCell><code className="text-xs">{pop.code}</code></TableCell>
@@ -271,6 +283,15 @@ export default function POPsPage() {
                 ))}
               </TableBody>
             </Table>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+            </>
           ) : (
             <div className="p-8 text-center">
               <Server className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

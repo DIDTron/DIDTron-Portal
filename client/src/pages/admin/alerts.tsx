@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,16 @@ export default function AlertsPage() {
     const matchesSeverity = severityFilter === "all" || alert.severity === severityFilter;
     return matchesSearch && matchesSeverity;
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems: paginatedAlerts,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(filteredAlerts, 10);
 
   const formatTimeAgo = (date: Date) => {
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -237,7 +248,7 @@ export default function AlertsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAlerts.map((alert) => (
+              {paginatedAlerts.map((alert) => (
                 <TableRow key={alert.id} data-testid={`row-alert-${alert.id}`}>
                   <TableCell>
                     <Badge variant={getSeverityVariant(alert.severity)}>
@@ -276,6 +287,14 @@ export default function AlertsPage() {
               ))}
             </TableBody>
           </Table>
+          <DataTableFooter
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </CardContent>
       </Card>
     </div>

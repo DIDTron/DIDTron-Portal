@@ -37,6 +37,7 @@ import {
   Plus, Pencil, Trash2, BookOpen, Brain, FileText, Upload, Play, 
   RefreshCw, CheckCircle2, Clock, AlertCircle, Loader2
 } from "lucide-react";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import type { Customer } from "@shared/schema";
 
 type KnowledgeBase = {
@@ -92,6 +93,16 @@ export default function AiVoiceKnowledgeBasesPage() {
   const { data: knowledgeBases = [], isLoading } = useQuery<KnowledgeBase[]>({
     queryKey: ["/api/admin/ai-voice/knowledge-bases"],
   });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(knowledgeBases);
 
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -298,6 +309,7 @@ export default function AiVoiceKnowledgeBasesPage() {
                 </Button>
               </div>
             ) : (
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -309,7 +321,7 @@ export default function AiVoiceKnowledgeBasesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {knowledgeBases.map(kb => (
+                  {paginatedItems.map(kb => (
                     <TableRow 
                       key={kb.id} 
                       data-testid={`row-kb-${kb.id}`}
@@ -368,6 +380,15 @@ export default function AiVoiceKnowledgeBasesPage() {
                   ))}
                 </TableBody>
               </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+              </>
             )}
           </CardContent>
         </Card>
