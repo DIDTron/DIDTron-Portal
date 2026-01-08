@@ -27,7 +27,7 @@ import {
   CDRProcessPayload,
   AZDestinationImportPayload,
 } from "./job-queue";
-import { AzDestinationsRepository } from "./az-destinations-repository";
+import { azDestinationsRepository } from "./az-destinations-repository";
 import {
   handleKBTrain,
   handleKBIndex,
@@ -131,12 +131,11 @@ const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
   
   az_destination_import: async (payload: AZDestinationImportPayload, signal?: AbortSignal) => {
     console.log(`[AZImportJob] Starting import of ${payload.totalRecords} destinations (mode: ${payload.mode})`);
-    const repo = new AzDestinationsRepository();
     
     try {
       if (payload.mode === "replace") {
         console.log("[AZImportJob] Deleting all existing destinations...");
-        await repo.deleteAll();
+        await azDestinationsRepository.deleteAllDestinations();
       }
       
       const batchSize = 500;
@@ -152,7 +151,7 @@ const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
         const batch = payload.destinations.slice(i, i + batchSize);
         console.log(`[AZImportJob] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(payload.destinations.length / batchSize)}`);
         
-        const result = await repo.bulkUpsert(batch.map(d => ({
+        const result = await azDestinationsRepository.upsertDestinationsBulk(batch.map(d => ({
           code: d.code,
           destination: d.destination,
           region: d.region || null,
