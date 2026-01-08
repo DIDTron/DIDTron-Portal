@@ -7284,11 +7284,11 @@ export async function registerRoutes(
       if (!Array.isArray(destinations)) {
         return res.status(400).json({ error: "destinations must be an array" });
       }
-      const count = await storage.createAzDestinationsBulk(destinations);
-      res.json({ success: true, count });
+      const result = await storage.upsertAzDestinationsBulk(destinations);
+      res.json({ success: true, ...result });
     } catch (error: any) {
-      console.error("Failed to bulk create destinations:", error);
-      res.status(500).json({ error: "Failed to bulk create destinations", details: error.message });
+      console.error("Failed to bulk upsert destinations:", error);
+      res.status(500).json({ error: "Failed to bulk upsert destinations", details: error.message });
     }
   });
 

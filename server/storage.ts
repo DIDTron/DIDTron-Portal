@@ -596,6 +596,7 @@ export interface IStorage {
   getAzDestinationByCode(code: string): Promise<AzDestination | undefined>;
   createAzDestination(dest: InsertAzDestination): Promise<AzDestination>;
   createAzDestinationsBulk(dests: InsertAzDestination[]): Promise<number>;
+  upsertAzDestinationsBulk(dests: InsertAzDestination[]): Promise<{ inserted: number; updated: number; skipped: number }>;
   updateAzDestination(id: string, data: Partial<InsertAzDestination>): Promise<AzDestination | undefined>;
   deleteAzDestination(id: string): Promise<boolean>;
   deleteAllAzDestinations(): Promise<number>;
@@ -4111,6 +4112,11 @@ export class MemStorage implements IStorage {
   async createAzDestinationsBulk(dests: InsertAzDestination[]): Promise<number> {
     const { azDestinationsRepository } = await import("./az-destinations-repository");
     return azDestinationsRepository.createDestinationsBulk(dests);
+  }
+
+  async upsertAzDestinationsBulk(dests: InsertAzDestination[]): Promise<{ inserted: number; updated: number; skipped: number }> {
+    const { azDestinationsRepository } = await import("./az-destinations-repository");
+    return azDestinationsRepository.upsertDestinationsBulk(dests);
   }
 
   async updateAzDestination(id: string, data: Partial<InsertAzDestination>): Promise<AzDestination | undefined> {

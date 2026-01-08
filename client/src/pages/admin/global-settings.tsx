@@ -336,8 +336,15 @@ export function GlobalSettingsAZDatabase() {
     queryKey: ["/api/az-destinations/regions"],
   });
 
+  const queryParams = new URLSearchParams();
+  if (debouncedSearch) queryParams.set("search", debouncedSearch);
+  if (selectedRegion !== "all") queryParams.set("region", selectedRegion);
+  queryParams.set("limit", String(limit));
+  queryParams.set("offset", String(page * limit));
+  const queryString = queryParams.toString();
+  
   const { data, isLoading } = useQuery<{ destinations: AzDestination[]; total: number }>({
-    queryKey: ["/api/az-destinations", { search: debouncedSearch, region: selectedRegion === "all" ? "" : selectedRegion, limit, offset: page * limit }],
+    queryKey: [`/api/az-destinations?${queryString}`],
   });
 
   const updateMutation = useMutation({
@@ -345,7 +352,7 @@ export function GlobalSettingsAZDatabase() {
       return apiRequest("PATCH", `/api/az-destinations/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/az-destinations"] });
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
       setEditingId(null);
       toast({ title: "Destination updated" });
     },
@@ -359,7 +366,7 @@ export function GlobalSettingsAZDatabase() {
       return apiRequest("DELETE", "/api/az-destinations");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/az-destinations"] });
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
       toast({ title: "All destinations deleted" });
     },
     onError: (error: Error) => {
@@ -464,21 +471,29 @@ export function GlobalSettingsAZDatabase() {
       }
       
       const batchSize = 1000;
-      let imported = 0;
+      let totalInserted = 0;
+      let totalUpdated = 0;
+      let totalSkipped = 0;
       
       for (let i = 0; i < allDestinations.length; i += batchSize) {
         const batch = allDestinations.slice(i, i + batchSize);
-        setImportProgress(`Importing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(allDestinations.length / batchSize)} (${imported + batch.length}/${allDestinations.length})...`);
+        setImportProgress(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(allDestinations.length / batchSize)}...`);
         try {
-          await apiRequest("POST", "/api/az-destinations/bulk", { destinations: batch });
-          imported += batch.length;
+          const response = await apiRequest("POST", "/api/az-destinations/bulk", { destinations: batch });
+          const result = await response.json();
+          totalInserted += result.inserted || 0;
+          totalUpdated += result.updated || 0;
+          totalSkipped += result.skipped || 0;
         } catch (batchError) {
-          throw new Error(`Failed at batch ${Math.floor(i / batchSize) + 1}: ${(batchError as Error).message}. ${imported} records imported before failure.`);
+          throw new Error(`Failed at batch ${Math.floor(i / batchSize) + 1}: ${(batchError as Error).message}. Processed ${totalInserted} new, ${totalUpdated} updated before failure.`);
         }
       }
       
-      queryClient.invalidateQueries({ queryKey: ["/api/az-destinations"] });
-      toast({ title: "Import complete", description: `Imported ${allDestinations.length} destinations` });
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
+      toast({ 
+        title: "Import complete", 
+        description: `New: ${totalInserted.toLocaleString()}, Updated: ${totalUpdated.toLocaleString()}, Duplicates skipped: ${totalSkipped.toLocaleString()}`,
+      });
     } catch (error) {
       toast({ title: "Import failed", description: (error as Error).message, variant: "destructive" });
     } finally {

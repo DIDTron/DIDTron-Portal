@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { azDestinations, type AzDestination, type InsertAzDestination } from "@shared/schema";
-import { eq, ilike, or, sql, desc, count } from "drizzle-orm";
+import { eq, ilike, or, sql, desc, count, inArray } from "drizzle-orm";
 
 export const azDestinationsRepository = {
   async getDestinations(options?: {
@@ -76,6 +76,58 @@ export const azDestinationsRepository = {
     }
     
     return inserted;
+  },
+
+  async upsertDestinationsBulk(dests: InsertAzDestination[]): Promise<{ inserted: number; updated: number; skipped: number }> {
+    if (dests.length === 0) return { inserted: 0, updated: 0, skipped: 0 };
+    
+    const uniqueDests = new Map<string, InsertAzDestination>();
+    for (const d of dests) {
+      uniqueDests.set(d.code, d);
+    }
+    const dedupedDests = Array.from(uniqueDests.values());
+    const skippedDuplicates = dests.length - dedupedDests.length;
+    
+    const codes = dedupedDests.map(d => d.code);
+    const batchSize = 500;
+    const existingCodes = new Set<string>();
+    
+    for (let i = 0; i < codes.length; i += batchSize) {
+      const batch = codes.slice(i, i + batchSize);
+      const existing = await db.select({ code: azDestinations.code })
+        .from(azDestinations)
+        .where(inArray(azDestinations.code, batch));
+      existing.forEach(e => existingCodes.add(e.code));
+    }
+    
+    const toInsert = dedupedDests.filter(d => !existingCodes.has(d.code));
+    const toUpdate = dedupedDests.filter(d => existingCodes.has(d.code));
+    
+    let inserted = 0;
+    let updated = 0;
+    
+    for (let i = 0; i < toInsert.length; i += batchSize) {
+      const batch = toInsert.slice(i, i + batchSize);
+      await db.insert(azDestinations).values(batch);
+      inserted += batch.length;
+    }
+    
+    for (const dest of toUpdate) {
+      await db.update(azDestinations)
+        .set({ 
+          destination: dest.destination, 
+          region: dest.region,
+          billingIncrement: dest.billingIncrement,
+          connectionFee: dest.connectionFee,
+          gracePeriod: dest.gracePeriod,
+          isActive: dest.isActive,
+          updatedAt: new Date() 
+        })
+        .where(eq(azDestinations.code, dest.code));
+      updated++;
+    }
+    
+    return { inserted, updated, skipped: skippedDuplicates };
   },
 
   async updateDestination(id: string, data: Partial<InsertAzDestination>): Promise<AzDestination | undefined> {
