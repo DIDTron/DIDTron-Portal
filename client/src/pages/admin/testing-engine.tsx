@@ -137,6 +137,15 @@ export default function TestingEngine() {
     setSelectedPage(null);
   }, [scope]);
 
+  useEffect(() => {
+    if (activeTab === "issues" && !selectedRunId && runs.length > 0) {
+      const completedRun = runs.find(r => r.status === "completed" || r.status === "passed");
+      if (completedRun) {
+        setSelectedRunId(completedRun.id);
+      }
+    }
+  }, [activeTab, selectedRunId, runs]);
+
   const selectedModule = modulesData?.modulesWithPages.find(
     m => m.name.toLowerCase() === scope.toLowerCase()
   );
