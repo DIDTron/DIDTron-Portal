@@ -38,6 +38,12 @@ function getActionBadge(action: string | null) {
   return <Badge variant="outline">{action}</Badge>;
 }
 
+type AdminUser = {
+  id: string;
+  email: string;
+  name?: string;
+};
+
 export default function AuditLogsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [tableFilter, setTableFilter] = useState("all");
@@ -51,6 +57,10 @@ export default function AuditLogsPage() {
 
   const { data: logs = [], isLoading, refetch } = useQuery<AuditLog[]>({
     queryKey: ["/api/audit-logs"],
+  });
+
+  const { data: adminUsers = [] } = useQuery<AdminUser[]>({
+    queryKey: ["/api/admin-users"],
   });
 
   const deleteAllMutation = useMutation({
@@ -78,7 +88,13 @@ export default function AuditLogsPage() {
 
   const tables = Array.from(new Set(logs.map(l => l.tableName).filter(Boolean)));
   const actions = Array.from(new Set(logs.map(l => l.action).filter(Boolean)));
-  const users = Array.from(new Set(logs.map(l => l.userId).filter(Boolean)));
+  const uniqueUserIds = Array.from(new Set(logs.map(l => l.userId).filter(Boolean)));
+  
+  const getUserEmail = (userId: string | null) => {
+    if (!userId) return "System";
+    const user = adminUsers.find(u => u.id === userId);
+    return user?.email || userId.slice(0, 8) + "...";
+  };
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = !searchTerm ||
@@ -180,15 +196,18 @@ export default function AuditLogsPage() {
               </SelectContent>
             </Select>
             <Select value={userFilter} onValueChange={setUserFilter}>
-              <SelectTrigger className="w-48" data-testid="select-user-filter">
+              <SelectTrigger className="w-56" data-testid="select-user-filter">
                 <User className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="User" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Users</SelectItem>
-                {users.map(u => (
-                  <SelectItem key={u} value={u!}>{u!.slice(0, 8)}...</SelectItem>
-                ))}
+                {uniqueUserIds.map(userId => {
+                  const email = getUserEmail(userId!);
+                  return (
+                    <SelectItem key={userId} value={userId!}>{email}</SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -401,7 +420,7 @@ export default function AuditLogsPage() {
                     <TableCell className="font-mono text-xs">
                       {log.recordId ? log.recordId.slice(0, 8) + "..." : "-"}
                     </TableCell>
-                    <TableCell className="text-sm">{log.userId ? log.userId.slice(0, 8) + "..." : "System"}</TableCell>
+                    <TableCell className="text-sm">{getUserEmail(log.userId)}</TableCell>
                     <TableCell className="font-mono text-xs">{log.ipAddress || "-"}</TableCell>
                     <TableCell className="text-xs max-w-[200px] truncate" title={log.userAgent || ""}>
                       {log.userAgent ? log.userAgent.slice(0, 30) + "..." : "-"}

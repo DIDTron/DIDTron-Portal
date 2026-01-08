@@ -4851,6 +4851,23 @@ export async function registerRoutes(
     }
   });
 
+  // Admin Users - for audit log display
+  app.get("/api/admin-users", async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      const safeUsers = users.map(u => ({
+        id: u.id,
+        email: u.email,
+        name: [u.firstName, u.lastName].filter(Boolean).join(' ') || null,
+        role: u.role
+      }));
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Admin users fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch admin users" });
+    }
+  });
+
   // Audit Logs - read from database via auditService
   app.get("/api/audit-logs", async (req, res) => {
     try {
