@@ -309,9 +309,9 @@ export default function JobQueuePage() {
                 variant="outline" 
                 size="icon" 
                 onClick={() => {
-                  refetchStats();
-                  refetchJobs();
-                  refetchWorker();
+                  queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs/stats"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs/worker/status"] });
                 }}
                 data-testid="button-refresh"
               >
