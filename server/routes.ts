@@ -3573,6 +3573,13 @@ export async function registerRoutes(
         return res.status(400).json({ error: "accountNumber and companyName are required" });
       }
       const customer = await storage.createCustomer({ accountNumber, companyName, ...rest });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "customers",
+        recordId: customer.id,
+        newValues: customer,
+      });
       
       // Auto-sync to ConnexCS if integration is enabled
       try {
@@ -3600,8 +3607,17 @@ export async function registerRoutes(
 
   app.patch("/api/customers/:id", async (req, res) => {
     try {
+      const oldCustomer = await storage.getCustomer(req.params.id);
       const customer = await storage.updateCustomer(req.params.id, req.body);
       if (!customer) return res.status(404).json({ error: "Customer not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "customers",
+        recordId: req.params.id,
+        oldValues: oldCustomer,
+        newValues: customer,
+      });
       res.json(customer);
     } catch (error) {
       res.status(500).json({ error: "Failed to update customer" });
@@ -3610,8 +3626,16 @@ export async function registerRoutes(
 
   app.delete("/api/customers/:id", async (req, res) => {
     try {
+      const oldCustomer = await storage.getCustomer(req.params.id);
       const deleted = await storage.deleteCustomer(req.params.id);
       if (!deleted) return res.status(404).json({ error: "Customer not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "customers",
+        recordId: req.params.id,
+        oldValues: oldCustomer,
+      });
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete customer" });
@@ -3656,6 +3680,13 @@ export async function registerRoutes(
       const { customerId } = req.body;
       if (!customerId) return res.status(400).json({ error: "customerId is required" });
       const kyc = await storage.createCustomerKyc(req.body);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "customer_kyc",
+        recordId: kyc.id,
+        newValues: kyc,
+      });
       res.status(201).json(kyc);
     } catch (error) {
       res.status(500).json({ error: "Failed to create KYC request" });
@@ -3664,8 +3695,17 @@ export async function registerRoutes(
 
   app.patch("/api/kyc/:id", async (req, res) => {
     try {
+      const oldKyc = await storage.getCustomerKyc(req.params.id);
       const kyc = await storage.updateCustomerKyc(req.params.id, req.body);
       if (!kyc) return res.status(404).json({ error: "KYC request not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "customer_kyc",
+        recordId: req.params.id,
+        oldValues: oldKyc,
+        newValues: kyc,
+      });
       res.json(kyc);
     } catch (error) {
       res.status(500).json({ error: "Failed to update KYC request" });
@@ -4842,6 +4882,13 @@ export async function registerRoutes(
       const parsed = insertRouteSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const route = await storage.createRoute(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "routes",
+        recordId: route.id,
+        newValues: route,
+      });
       
       // Auto-sync to ConnexCS if integration is enabled
       try {
@@ -4871,8 +4918,17 @@ export async function registerRoutes(
 
   app.patch("/api/routes/:id", async (req, res) => {
     try {
+      const oldRoute = await storage.getRoute(req.params.id);
       const route = await storage.updateRoute(req.params.id, req.body);
       if (!route) return res.status(404).json({ error: "Route not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "routes",
+        recordId: req.params.id,
+        oldValues: oldRoute,
+        newValues: route,
+      });
       res.json(route);
     } catch (error) {
       res.status(500).json({ error: "Failed to update route" });
@@ -4881,8 +4937,16 @@ export async function registerRoutes(
 
   app.delete("/api/routes/:id", async (req, res) => {
     try {
+      const oldRoute = await storage.getRoute(req.params.id);
       const deleted = await storage.deleteRoute(req.params.id);
       if (!deleted) return res.status(404).json({ error: "Route not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "routes",
+        recordId: req.params.id,
+        oldValues: oldRoute,
+      });
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete route" });
@@ -6978,6 +7042,13 @@ export async function registerRoutes(
   app.post("/api/did-providers", async (req, res) => {
     try {
       const provider = await storage.createDidProvider(req.body);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "did_providers",
+        recordId: provider.id,
+        newValues: provider,
+      });
       res.status(201).json(provider);
     } catch (error) {
       res.status(500).json({ error: "Failed to create DID provider" });
@@ -6986,8 +7057,17 @@ export async function registerRoutes(
 
   app.patch("/api/did-providers/:id", async (req, res) => {
     try {
+      const oldProvider = await storage.getDidProvider(req.params.id);
       const provider = await storage.updateDidProvider(req.params.id, req.body);
       if (!provider) return res.status(404).json({ error: "DID provider not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "did_providers",
+        recordId: req.params.id,
+        oldValues: oldProvider,
+        newValues: provider,
+      });
       res.json(provider);
     } catch (error) {
       res.status(500).json({ error: "Failed to update DID provider" });
@@ -6996,7 +7076,15 @@ export async function registerRoutes(
 
   app.delete("/api/did-providers/:id", async (req, res) => {
     try {
+      const oldProvider = await storage.getDidProvider(req.params.id);
       await storage.deleteDidProvider(req.params.id);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "did_providers",
+        recordId: req.params.id,
+        oldValues: oldProvider,
+      });
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete DID provider" });
@@ -7032,6 +7120,13 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid DID data", details: parsed.error.issues });
       }
       const did = await storage.createDid(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "dids",
+        recordId: did.id,
+        newValues: did,
+      });
       res.status(201).json(did);
     } catch (error) {
       res.status(500).json({ error: "Failed to create DID" });
@@ -7040,8 +7135,17 @@ export async function registerRoutes(
 
   app.patch("/api/dids/:id", async (req, res) => {
     try {
+      const oldDid = await storage.getDid(req.params.id);
       const did = await storage.updateDid(req.params.id, req.body);
       if (!did) return res.status(404).json({ error: "DID not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "dids",
+        recordId: req.params.id,
+        oldValues: oldDid,
+        newValues: did,
+      });
       res.json(did);
     } catch (error) {
       res.status(500).json({ error: "Failed to update DID" });
