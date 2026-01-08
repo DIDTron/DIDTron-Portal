@@ -29,7 +29,7 @@ export const navSections: NavSection[] = [
   { id: "sip-tester", label: "SIP Tester", icon: Cpu, defaultRoute: "/admin/sip-tester/new" },
   { id: "ai-voice", label: "AI Voice", icon: Bot, defaultRoute: "/admin/ai-voice/dashboard" },
   { id: "softswitch", label: "Softswitch", icon: Network, defaultRoute: "/admin/class4-customers" },
-  { id: "cms", label: "CMS", icon: FileText, defaultRoute: "/admin/pages" },
+  { id: "experience-manager", label: "Experience", icon: FileText, defaultRoute: "/admin/experience-manager" },
   { id: "admin", label: "Admin", icon: Shield, defaultRoute: "/admin/admin-users" },
   { id: "global-settings", label: "Global Settings", icon: Cog, defaultRoute: "/admin/global-settings/platform" },
   { id: "settings", label: "Settings", icon: Settings, defaultRoute: "/admin/settings/general" },

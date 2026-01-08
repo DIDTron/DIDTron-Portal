@@ -48,7 +48,30 @@ All modules in Super Admin portal must log these event types:
 - **Trash**: Record moved to trash, restored, purged
 
 ### Current Super Admin Modules (60+ modules)
-Dashboard, POPs, Voice Tiers, Codecs, Channel Plans, Carriers, Routes, Rate Cards (Customer/Carrier), DID Countries/Providers/Inventory, Customers, Categories, Groups, KYC, Invoices, Payments, Currencies, Referrals, Promo Codes, Bonuses, Social Accounts/Posts, Email Templates, Metrics, CDRs, Alerts, Monitoring Rules, SIP Tester, AI Voice (Dashboard/Agents/Knowledge Bases/Campaigns/Call Logs/Analytics/Billing/Settings/Assignments), Class 4 (Customers/Carriers/Rate Cards), CMS (Pages/Sections/Login Pages/Site Settings/Themes/Media/Documentation), Admin Users, Roles, Audit Logs, Tickets, Job Queue, Settings (General/API Keys/Webhooks/Integrations/ConnexCS Status), Global Settings (Platform/Currencies/Localization/A-Z Database), Trash
+Dashboard, POPs, Voice Tiers, Codecs, Channel Plans, Carriers, Routes, Rate Cards (Customer/Carrier), DID Countries/Providers/Inventory, Customers, Categories, Groups, KYC, Invoices, Payments, Currencies, Referrals, Promo Codes, Bonuses, Social Accounts/Posts, Email Templates, Metrics, CDRs, Alerts, Monitoring Rules, SIP Tester, AI Voice (Dashboard/Agents/Knowledge Bases/Campaigns/Call Logs/Analytics/Billing/Settings/Assignments), Class 4 (Customers/Carriers/Rate Cards), Experience Manager (Dashboard/Marketing Website/Portal Themes/White-Label/Design System/Documentation), Admin Users, Roles, Audit Logs, Tickets, Job Queue, Settings (General/API Keys/Webhooks/Integrations/ConnexCS Status), Global Settings (Platform/Currencies/Localization/A-Z Database), Trash
+
+## Experience Manager (Replaced CMS - January 2026)
+
+The Experience Manager is a unified control center that replaces the old CMS modules. It provides complete control over:
+
+### Structure
+- **Dashboard** (`/admin/experience-manager`): Overview with recent changes, quick actions, UI health metrics
+- **Marketing Website** (`/admin/experience-manager/marketing`): Landing page builder with section templates (Hero, Features, Pricing, Testimonials, CTA, Stats, FAQ, Content, Partners, Contact), Blog posts, Documentation management, Media Library
+- **Portal Themes** (`/admin/experience-manager/portal-themes`): Theme editor for each portal type (Super Admin, Customer, Carrier, Class 4) with live preview, color pickers, logo upload, feature visibility toggles
+- **White-Label** (`/admin/experience-manager/white-label`): Customer brands registry, custom domain management, login page customization per customer
+- **Design System** (`/admin/experience-manager/design-system`): Component inventory with adoption status, design tokens viewer, UI Health Score dashboard, publish history log
+- **Documentation** (`/admin/documentation`): API and help documentation management
+
+### Design System Files
+- `DESIGN_SYSTEM.md`: Single source of truth for all design tokens, components, patterns, and usage rules
+- `UI_DEBT.md`: Tracks UI inconsistencies and migration priorities
+
+### Workflow
+All Experience Manager changes follow a Draft/Preview/Publish workflow:
+1. Changes saved as drafts automatically
+2. Preview in sandbox mode before publishing
+3. Publish to live with validation checks
+4. Full audit trail of all changes
 
 ## UI Component Standards
 

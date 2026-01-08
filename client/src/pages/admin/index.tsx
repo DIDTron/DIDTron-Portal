@@ -32,13 +32,12 @@ import EmailTemplatesPage from "./email-templates";
 import TicketsPage from "./tickets";
 import SocialAccountsPage from "./social-accounts";
 import SocialPostsPage from "./social-posts";
-import CmsThemesPage from "./cms-themes";
-import CmsPagesPage from "./cms-pages";
-import MediaLibraryPage from "./media-library";
 import DocumentationPage from "./documentation";
-import PortalLoginPagesPage from "./portal-login-pages";
-import SiteSettingsPage from "./site-settings";
-import WebsiteSectionsPage from "./website-sections";
+import ExperienceManagerPage from "./experience-manager";
+import EMMarketingPage from "./em-marketing";
+import EMPortalThemesPage from "./em-portal-themes";
+import EMWhiteLabelPage from "./em-white-label";
+import EMDesignSystemPage from "./em-design-system";
 import SipTesterPage from "./sip-tester";
 import KycPage from "./kyc";
 import AdminUsersPage from "./admin-users";
@@ -124,13 +123,12 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/class4-customers": { section: "softswitch", subItem: "class4-customers" },
   "/admin/class4-carriers": { section: "softswitch", subItem: "class4-carriers" },
   "/admin/class4-rate-cards": { section: "softswitch", subItem: "class4-rate-cards" },
-  "/admin/pages": { section: "cms", subItem: "pages" },
-  "/admin/website-sections": { section: "cms", subItem: "website-sections" },
-  "/admin/login-pages": { section: "cms", subItem: "login-pages" },
-  "/admin/site-settings": { section: "cms", subItem: "site-settings" },
-  "/admin/themes": { section: "cms", subItem: "themes" },
-  "/admin/media": { section: "cms", subItem: "media" },
-  "/admin/documentation": { section: "cms", subItem: "documentation" },
+  "/admin/experience-manager": { section: "experience-manager", subItem: "em-dashboard" },
+  "/admin/experience-manager/marketing": { section: "experience-manager", subItem: "em-marketing" },
+  "/admin/experience-manager/portal-themes": { section: "experience-manager", subItem: "em-portal-themes" },
+  "/admin/experience-manager/white-label": { section: "experience-manager", subItem: "em-white-label" },
+  "/admin/experience-manager/design-system": { section: "experience-manager", subItem: "em-design-system" },
+  "/admin/documentation": { section: "experience-manager", subItem: "em-documentation" },
   "/admin/admin-users": { section: "admin", subItem: "admin-users" },
   "/admin/roles": { section: "admin", subItem: "roles" },
   "/admin/audit-logs": { section: "admin", subItem: "audit-logs" },
@@ -254,12 +252,11 @@ export default function AdminLayout() {
                 <Route path="/admin/class4-customers" component={Class4CustomersPage} />
                 <Route path="/admin/class4-carriers" component={Class4CarriersPage} />
                 <Route path="/admin/class4-rate-cards" component={Class4RateCardsPage} />
-                <Route path="/admin/pages" component={CmsPagesPage} />
-                <Route path="/admin/website-sections" component={WebsiteSectionsPage} />
-                <Route path="/admin/login-pages" component={PortalLoginPagesPage} />
-                <Route path="/admin/site-settings" component={SiteSettingsPage} />
-                <Route path="/admin/themes" component={CmsThemesPage} />
-                <Route path="/admin/media" component={MediaLibraryPage} />
+                <Route path="/admin/experience-manager" component={ExperienceManagerPage} />
+                <Route path="/admin/experience-manager/marketing" component={EMMarketingPage} />
+                <Route path="/admin/experience-manager/portal-themes" component={EMPortalThemesPage} />
+                <Route path="/admin/experience-manager/white-label" component={EMWhiteLabelPage} />
+                <Route path="/admin/experience-manager/design-system" component={EMDesignSystemPage} />
                 <Route path="/admin/documentation" component={DocumentationPage} />
                 <Route path="/admin/admin-users" component={AdminUsersPage} />
                 <Route path="/admin/roles" component={RolesPage} />

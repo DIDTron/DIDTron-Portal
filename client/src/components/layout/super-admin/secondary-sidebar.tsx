@@ -134,16 +134,15 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "class4-rate-cards", label: "Rate Cards", route: "/admin/class4-rate-cards", icon: CreditCard },
     ],
   },
-  cms: {
-    title: "CMS & Website",
+  "experience-manager": {
+    title: "Experience Manager",
     items: [
-      { id: "pages", label: "CMS Pages", route: "/admin/pages", icon: FileText },
-      { id: "website-sections", label: "Website Sections", route: "/admin/website-sections", icon: Layers },
-      { id: "login-pages", label: "Portal Logins", route: "/admin/login-pages", icon: Key },
-      { id: "site-settings", label: "Site Settings", route: "/admin/site-settings", icon: Settings },
-      { id: "themes", label: "Themes", route: "/admin/themes", icon: Palette },
-      { id: "media", label: "Media Library", route: "/admin/media", icon: Image },
-      { id: "documentation", label: "Documentation", route: "/admin/documentation", icon: BookOpen },
+      { id: "em-dashboard", label: "Dashboard", route: "/admin/experience-manager", icon: LayoutDashboard },
+      { id: "em-marketing", label: "Marketing Website", route: "/admin/experience-manager/marketing", icon: Globe },
+      { id: "em-portal-themes", label: "Portal Themes", route: "/admin/experience-manager/portal-themes", icon: Palette },
+      { id: "em-white-label", label: "White-Label", route: "/admin/experience-manager/white-label", icon: Building2 },
+      { id: "em-design-system", label: "Design System", route: "/admin/experience-manager/design-system", icon: Settings },
+      { id: "em-documentation", label: "Documentation", route: "/admin/documentation", icon: BookOpen },
     ],
   },
   admin: {
