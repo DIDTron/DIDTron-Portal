@@ -508,7 +508,7 @@ export function GlobalSettingsAZDatabase() {
     
     setShowImportDialog(false);
     setIsImporting(true);
-    setImportProgress("Processing data...");
+    setImportProgress("Processing import...");
     
     try {
       const codeIdx = parseInt(columnMapping.code);
@@ -530,32 +530,32 @@ export function GlobalSettingsAZDatabase() {
       }
       
       if (importMode === "replace") {
-        setImportProgress("Deleting existing destinations...");
+        setImportProgress("Clearing existing data...");
         await apiRequest("DELETE", "/api/az-destinations");
       }
       
-      const batchSize = 250;
-      let totalInserted = 0;
-      let totalUpdated = 0;
-      let totalSkipped = 0;
+      const chunkSize = 5000;
+      let totalJobsQueued = 0;
       
-      for (let i = 0; i < allDestinations.length; i += batchSize) {
-        const batch = allDestinations.slice(i, i + batchSize);
-        setImportProgress(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(allDestinations.length / batchSize)}...`);
-        const response = await apiRequest("POST", "/api/az-destinations/bulk", { destinations: batch });
-        const result = await response.json();
-        totalInserted += result.inserted || 0;
-        totalUpdated += result.updated || 0;
-        totalSkipped += result.skipped || 0;
+      for (let i = 0; i < allDestinations.length; i += chunkSize) {
+        const chunk = allDestinations.slice(i, i + chunkSize);
+        setImportProgress(`Queuing chunk ${Math.floor(i / chunkSize) + 1} of ${Math.ceil(allDestinations.length / chunkSize)}...`);
+        
+        await apiRequest("POST", "/api/az-destinations/import-job", { 
+          destinations: chunk,
+          mode: "update",
+        });
+        totalJobsQueued++;
       }
       
-      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
       toast({ 
-        title: "Import complete", 
-        description: importMode === "replace" 
-          ? `Replaced with ${totalInserted.toLocaleString()} destinations`
-          : `New: ${totalInserted.toLocaleString()}, Updated: ${totalUpdated.toLocaleString()}, Duplicates skipped: ${totalSkipped.toLocaleString()}`,
+        title: "Import jobs queued", 
+        description: `${totalJobsQueued} background job(s) queued for ${allDestinations.length.toLocaleString()} destinations. Check Job Queue for progress.`,
       });
+      
+      setTimeout(() => {
+        queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
+      }, 3000);
     } catch (error) {
       toast({ title: "Import failed", description: (error as Error).message, variant: "destructive" });
     } finally {

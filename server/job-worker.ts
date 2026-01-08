@@ -25,7 +25,9 @@ import {
   BillingReconcilePayload,
   AuditCleanupPayload,
   CDRProcessPayload,
+  AZDestinationImportPayload,
 } from "./job-queue";
+import { AzDestinationsRepository } from "./az-destinations-repository";
 import {
   handleKBTrain,
   handleKBIndex,
@@ -125,6 +127,48 @@ const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
   
   cdr_process: async (payload: CDRProcessPayload, signal?: AbortSignal) => {
     console.log(`[CDRJob] Processing CDR batch ${payload.batchId} with ${payload.recordCount} records`);
+  },
+  
+  az_destination_import: async (payload: AZDestinationImportPayload, signal?: AbortSignal) => {
+    console.log(`[AZImportJob] Starting import of ${payload.totalRecords} destinations (mode: ${payload.mode})`);
+    const repo = new AzDestinationsRepository();
+    
+    try {
+      if (payload.mode === "replace") {
+        console.log("[AZImportJob] Deleting all existing destinations...");
+        await repo.deleteAll();
+      }
+      
+      const batchSize = 500;
+      let totalInserted = 0;
+      let totalUpdated = 0;
+      let totalSkipped = 0;
+      
+      for (let i = 0; i < payload.destinations.length; i += batchSize) {
+        if (signal?.aborted) {
+          throw new Error("Job was cancelled");
+        }
+        
+        const batch = payload.destinations.slice(i, i + batchSize);
+        console.log(`[AZImportJob] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(payload.destinations.length / batchSize)}`);
+        
+        const result = await repo.bulkUpsert(batch.map(d => ({
+          code: d.code,
+          destination: d.destination,
+          region: d.region || null,
+          billingIncrement: d.billingIncrement || "60/60",
+        })));
+        
+        totalInserted += result.inserted;
+        totalUpdated += result.updated;
+        totalSkipped += result.skipped;
+      }
+      
+      console.log(`[AZImportJob] Import complete: ${totalInserted} inserted, ${totalUpdated} updated, ${totalSkipped} skipped`);
+    } catch (error) {
+      console.error("[AZImportJob] Import failed:", error);
+      throw error;
+    }
   },
 };
 

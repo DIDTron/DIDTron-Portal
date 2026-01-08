@@ -7292,6 +7292,30 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/az-destinations/import-job", async (req, res) => {
+    try {
+      const { destinations, mode } = req.body;
+      if (!Array.isArray(destinations)) {
+        return res.status(400).json({ error: "destinations must be an array" });
+      }
+      if (!["update", "replace"].includes(mode)) {
+        return res.status(400).json({ error: "mode must be 'update' or 'replace'" });
+      }
+      
+      const { enqueueJob } = await import("./job-queue");
+      const jobId = await enqueueJob("az_destination_import", {
+        mode,
+        destinations,
+        totalRecords: destinations.length,
+      });
+      
+      res.json({ success: true, jobId, message: `Import job queued with ${destinations.length} destinations` });
+    } catch (error: any) {
+      console.error("Failed to queue import job:", error);
+      res.status(500).json({ error: "Failed to queue import job", details: error.message });
+    }
+  });
+
   app.patch("/api/az-destinations/:id", async (req, res) => {
     try {
       const destination = await storage.updateAzDestination(req.params.id, req.body);

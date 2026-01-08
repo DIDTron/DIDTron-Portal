@@ -31,7 +31,8 @@ export type DIDTronJobType =
   | "fx_rate_update"
   | "billing_reconcile"
   | "audit_cleanup"
-  | "cdr_process";
+  | "cdr_process"
+  | "az_destination_import";
 
 export interface BaseJobPayload {
   userId?: string;
@@ -147,6 +148,17 @@ export interface CDRProcessPayload extends BaseJobPayload {
   recordCount: number;
 }
 
+export interface AZDestinationImportPayload extends BaseJobPayload {
+  mode: "update" | "replace";
+  destinations: Array<{
+    code: string;
+    destination: string;
+    region?: string | null;
+    billingIncrement?: string | null;
+  }>;
+  totalRecords: number;
+}
+
 export interface DIDTronPayloadMap {
   rate_card_import: RateCardImportPayload;
   rate_card_export: RateCardExportPayload;
@@ -171,6 +183,7 @@ export interface DIDTronPayloadMap {
   billing_reconcile: BillingReconcilePayload;
   audit_cleanup: AuditCleanupPayload;
   cdr_process: CDRProcessPayload;
+  az_destination_import: AZDestinationImportPayload;
 }
 
 interface InMemoryJob {
@@ -617,6 +630,7 @@ export const JOB_TYPE_LABELS: Record<DIDTronJobType, string> = {
   billing_reconcile: "Billing Reconciliation",
   audit_cleanup: "Audit Log Cleanup",
   cdr_process: "CDR Processing",
+  az_destination_import: "A-Z Destinations Import",
 };
 
 export const JOB_TYPE_CATEGORIES: Record<string, DIDTronJobType[]> = {
@@ -626,7 +640,7 @@ export const JOB_TYPE_CATEGORIES: Record<string, DIDTronJobType[]> = {
   "Billing": ["invoice_generate", "invoice_bulk_generate", "billing_reconcile"],
   "Communications": ["email_send", "email_bulk_send", "webhook_deliver"],
   "AI Voice": ["ai_voice_kb_train", "ai_voice_kb_index", "ai_voice_campaign_start", "ai_voice_campaign_call", "ai_voice_agent_sync"],
-  "System": ["report_generate", "fx_rate_update", "audit_cleanup", "cdr_process"],
+  "System": ["report_generate", "fx_rate_update", "audit_cleanup", "cdr_process", "az_destination_import"],
 };
 
 export type { JobQueue, JobRecord, JobStatus, JobHandler, JobHandlers, Processor };
