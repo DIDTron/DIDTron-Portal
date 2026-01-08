@@ -233,13 +233,24 @@ export async function runE2eTests(
   triggeredBy?: string,
   onProgress?: (progress: E2eRunProgress) => void
 ): Promise<{ runId: string; results: PageResult[] }> {
-  const pagesToTest = scope === "all"
-    ? ALL_PAGES
-    : ALL_PAGES.filter(p => p.moduleName.toLowerCase() === scope.toLowerCase());
+  let pagesToTest: PageToTest[];
+  let scopeName = scope;
+  
+  if (scope === "all") {
+    pagesToTest = ALL_PAGES;
+    scopeName = "All Modules";
+  } else if (scope.startsWith("page:")) {
+    const route = scope.substring(5);
+    pagesToTest = ALL_PAGES.filter(p => p.route === route);
+    scopeName = pagesToTest.length > 0 ? `${pagesToTest[0].moduleName}/${pagesToTest[0].pageName}` : route;
+  } else {
+    pagesToTest = ALL_PAGES.filter(p => p.moduleName.toLowerCase() === scope.toLowerCase());
+    scopeName = scope;
+  }
 
   const [run] = await db.insert(e2eRuns).values({
-    name: `E2E Test: ${scope === "all" ? "All Modules" : scope}`,
-    scope,
+    name: `E2E Test: ${scopeName}`,
+    scope: scopeName,
     status: "running",
     totalTests: pagesToTest.length,
     passedTests: 0,

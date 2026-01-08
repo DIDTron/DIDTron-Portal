@@ -65,9 +65,10 @@ interface ModulesResponse {
 
 export default function TestingEngine() {
   const [scope, setScope] = useState("all");
+  const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState("results");
+  const [activeTab, setActiveTab] = useState("history");
 
   const { data: modulesData } = useQuery<ModulesResponse>({
     queryKey: ["/api/e2e/modules"],
@@ -108,9 +109,18 @@ export default function TestingEngine() {
     }
   }, [selectedRunId, refetchRunDetails]);
 
+  useEffect(() => {
+    setSelectedPage(null);
+  }, [scope]);
+
   const selectedModule = modulesData?.modulesWithPages.find(
     m => m.name.toLowerCase() === scope.toLowerCase()
   );
+
+  const getEffectiveScope = () => {
+    if (selectedPage) return `page:${selectedPage}`;
+    return scope;
+  };
 
   const toggleExpand = (id: string) => {
     const newExpanded = new Set(expandedResults);
@@ -176,7 +186,7 @@ export default function TestingEngine() {
             </SelectContent>
           </Select>
           <Button
-            onClick={() => runTestsMutation.mutate(scope)}
+            onClick={() => runTestsMutation.mutate(getEffectiveScope())}
             disabled={runTestsMutation.isPending}
             data-testid="button-run-tests"
           >
@@ -198,15 +208,36 @@ export default function TestingEngine() {
       {selectedModule && scope !== "all" && (
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Pages in {selectedModule.name}
-            </CardTitle>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Pages in {selectedModule.name}
+              </CardTitle>
+              {selectedPage && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSelectedPage(null)}
+                  data-testid="button-clear-page"
+                >
+                  Clear selection
+                </Button>
+              )}
+            </div>
+            <CardDescription>
+              {selectedPage ? `Testing: ${selectedModule.pages.find(p => p.route === selectedPage)?.name}` : "Click a page to test only that page, or run all pages in this module"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="flex flex-wrap gap-2">
               {selectedModule.pages.map((page) => (
-                <Badge key={page.route} variant="secondary" className="font-normal">
+                <Badge 
+                  key={page.route} 
+                  variant={selectedPage === page.route ? "default" : "secondary"} 
+                  className={`font-normal cursor-pointer ${selectedPage === page.route ? "ring-2 ring-primary ring-offset-2" : ""}`}
+                  onClick={() => setSelectedPage(selectedPage === page.route ? null : page.route)}
+                  data-testid={`badge-page-${page.name.toLowerCase().replace(/\s+/g, '-')}`}
+                >
                   {page.name}
                 </Badge>
               ))}
