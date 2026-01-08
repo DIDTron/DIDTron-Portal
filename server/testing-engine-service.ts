@@ -10,7 +10,7 @@ import {
 } from "@shared/schema";
 
 export type TestLevel = "button" | "form" | "crud" | "navigation" | "api" | "integration" | "e2e";
-export type TestScope = "module" | "page" | "feature" | "case";
+export type TestScope = "all" | "module" | "page" | "feature" | "case";
 
 export interface TestExecutionConfig {
   scope: TestScope;
@@ -156,6 +156,21 @@ export const testingEngineService = {
     let testCases: TestCase[] = [];
 
     switch (scope) {
+      case "all": {
+        // Get all test cases from all modules
+        const allModules = await testingEngineRepository.getModules();
+        for (const module of allModules) {
+          const pages = await testingEngineRepository.getPages(module.id);
+          for (const page of pages) {
+            const features = await testingEngineRepository.getFeatures(page.id);
+            for (const feature of features) {
+              const cases = await testingEngineRepository.getTestCases(feature.id);
+              testCases.push(...cases);
+            }
+          }
+        }
+        break;
+      }
       case "module": {
         const pages = await testingEngineRepository.getPages(scopeId);
         for (const page of pages) {
@@ -198,6 +213,10 @@ export const testingEngineService = {
     
     let scopeName = "";
     switch (config.scope) {
+      case "all": {
+        scopeName = "All Modules";
+        break;
+      }
       case "module": {
         const module = await testingEngineRepository.getModuleById(config.scopeId);
         scopeName = module?.name || "Unknown Module";

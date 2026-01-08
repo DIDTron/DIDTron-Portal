@@ -109,7 +109,7 @@ export default function TestingEnginePage() {
   const [selectedPage, setSelectedPage] = useState<string>("");
   const [selectedFeature, setSelectedFeature] = useState<string>("");
   const [selectedLevels, setSelectedLevels] = useState<TestLevel[]>(["api", "crud"]);
-  const [testScope, setTestScope] = useState<"module" | "page" | "feature">("module");
+  const [testScope, setTestScope] = useState<"all" | "module" | "page" | "feature">("module");
   const [isRunning, setIsRunning] = useState(false);
   const [lastResult, setLastResult] = useState<TestRunSummary | null>(null);
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
@@ -206,6 +206,7 @@ export default function TestingEnginePage() {
 
   const getScopeId = () => {
     switch (testScope) {
+      case "all": return "all";
       case "module": return selectedModule;
       case "page": return selectedPage;
       case "feature": return selectedFeature;
@@ -233,6 +234,9 @@ export default function TestingEnginePage() {
     };
     
     switch (testScope) {
+      case "all":
+        count = hierarchy.modules.reduce((sum, m) => sum + countModuleTests(m), 0);
+        break;
       case "module":
         const mod = hierarchy.modules.find(m => m.id === selectedModule);
         if (mod) count = countModuleTests(mod);
@@ -264,6 +268,7 @@ export default function TestingEnginePage() {
   const availableTestCount = countAvailableTests();
 
   const canRunTests = () => {
+    if (testScope === "all") return selectedLevels.length > 0;
     const scopeId = getScopeId();
     return scopeId && selectedLevels.length > 0;
   };
@@ -427,13 +432,15 @@ export default function TestingEnginePage() {
                       <SelectValue placeholder="Select scope" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="module">Entire Module</SelectItem>
+                      <SelectItem value="all">All Modules (Run All)</SelectItem>
+                      <SelectItem value="module">Specific Module</SelectItem>
                       <SelectItem value="page">Specific Page</SelectItem>
                       <SelectItem value="feature">Specific Feature</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
+                {testScope !== "all" && (
                 <div className="space-y-2">
                   <Label>Module</Label>
                   <Select value={selectedModule} onValueChange={(v) => {
@@ -451,6 +458,7 @@ export default function TestingEnginePage() {
                     </SelectContent>
                   </Select>
                 </div>
+                )}
 
                 {(testScope === "page" || testScope === "feature") && (
                   <div className="space-y-2">
