@@ -8512,5 +8512,66 @@ export async function registerRoutes(
     }
   });
 
+  // E2E Testing - Run real browser tests with Playwright
+  app.post("/api/testing-engine/e2e", async (req, res) => {
+    try {
+      const { scope = "all", moduleId } = req.body;
+      const { runE2ETests } = await import("./playwright-e2e-runner");
+      
+      console.log(`[E2E] Starting E2E test run - scope: ${scope}, moduleId: ${moduleId || "all"}`);
+      
+      const result = await runE2ETests({
+        scope: scope as "all" | "module",
+        moduleId,
+      });
+
+      // Store results in database
+      const testRun = await testingEngineRepository.createTestRun({
+        name: result.name,
+        scope: scope,
+        testLevels: ["e2e"],
+        status: result.status,
+        totalTests: result.totalPages,
+        passedTests: result.passedPages,
+        failedTests: result.failedPages,
+        duration: result.duration,
+        startedAt: result.startedAt,
+        completedAt: result.completedAt,
+      });
+
+      // Store individual results
+      for (const pageResult of result.results) {
+        await testingEngineRepository.createTestRunResult({
+          runId: testRun.id,
+          testCaseId: null,
+          testCaseName: `${pageResult.moduleName} - ${pageResult.pageName}`,
+          status: pageResult.status,
+          duration: pageResult.duration,
+          errorMessage: pageResult.errorMessage || null,
+          actualResult: JSON.stringify({ checks: pageResult.checks }),
+        });
+      }
+
+      res.json({
+        success: true,
+        runId: testRun.id,
+        loginSuccess: result.loginSuccess,
+        summary: {
+          totalPages: result.totalPages,
+          passedPages: result.passedPages,
+          failedPages: result.failedPages,
+          duration: result.duration,
+        },
+        results: result.results,
+      });
+    } catch (error) {
+      console.error("[E2E] Test run failed:", error);
+      res.status(500).json({ 
+        error: "E2E test run failed", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   return httpServer;
 }

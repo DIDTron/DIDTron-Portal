@@ -198,6 +198,63 @@ export default function TestingEnginePage() {
     },
   });
 
+  const e2eMutation = useMutation({
+    mutationFn: async (config: { scope: "all" | "module"; moduleId?: string }) => {
+      const response = await apiRequest("POST", "/api/testing-engine/e2e", config);
+      return response.json();
+    },
+    onSuccess: (result) => {
+      setIsRunning(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/runs"] });
+      toast({
+        title: result.loginSuccess 
+          ? (result.summary.failedPages > 0 ? "E2E tests completed with failures" : "E2E tests passed")
+          : "Login failed",
+        description: result.loginSuccess 
+          ? `${result.summary.passedPages} pages passed, ${result.summary.failedPages} failed`
+          : "Could not log in with super admin credentials",
+        variant: result.summary?.failedPages > 0 ? "destructive" : "default",
+      });
+      setLastResult({
+        runId: result.runId,
+        name: "E2E Test Run",
+        scope: "e2e",
+        scopeId: "all",
+        status: result.summary?.failedPages === 0 ? "completed" : "failed",
+        totalTests: result.summary?.totalPages || 0,
+        passedTests: result.summary?.passedPages || 0,
+        failedTests: result.summary?.failedPages || 0,
+        skippedTests: 0,
+        duration: result.summary?.duration || 0,
+        results: result.results?.map((r: any) => ({
+          testCaseId: `${r.moduleName}-${r.pageName}`,
+          testCaseName: `${r.moduleName} - ${r.pageName}`,
+          status: r.status,
+          duration: r.duration,
+          actualResult: r.checks,
+          errorMessage: r.errorMessage,
+        })) || [],
+      });
+      setResultDialogOpen(true);
+    },
+    onError: (error: Error) => {
+      setIsRunning(false);
+      toast({
+        title: "E2E test execution failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const runE2ETests = () => {
+    setIsRunning(true);
+    e2eMutation.mutate({
+      scope: testScope === "all" ? "all" : "module",
+      moduleId: testScope === "module" ? selectedModule : undefined,
+    });
+  };
+
   const modules = hierarchy?.modules || [];
   const selectedModuleData = modules.find(m => m.id === selectedModule);
   const pages = selectedModuleData?.pages || [];
@@ -523,7 +580,7 @@ export default function TestingEnginePage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center justify-between pt-4 border-t gap-4">
                 <div className="text-sm text-muted-foreground">
                   {!canRunTests() 
                     ? "Select a module and test levels to run"
@@ -532,23 +589,43 @@ export default function TestingEnginePage() {
                     : `Ready to run ${availableTestCount} test(s) on selected ${testScope}`
                   }
                 </div>
-                <Button 
-                  onClick={runTests} 
-                  disabled={!canRunTests() || isRunning}
-                  data-testid="button-run-tests"
-                >
-                  {isRunning ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Running...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4 mr-2" />
-                      Run Tests
-                    </>
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={runE2ETests} 
+                    disabled={isRunning || (testScope !== "all" && testScope !== "module")}
+                    variant="outline"
+                    data-testid="button-run-e2e"
+                  >
+                    {isRunning && e2eMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Running E2E...
+                      </>
+                    ) : (
+                      <>
+                        <Radar className="w-4 h-4 mr-2" />
+                        Run E2E Tests
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={runTests} 
+                    disabled={!canRunTests() || isRunning}
+                    data-testid="button-run-tests"
+                  >
+                    {isRunning && executeMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Running...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Run API Tests
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
