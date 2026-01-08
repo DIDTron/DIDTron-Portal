@@ -1,4 +1,26 @@
 import { aiService } from "./ai-service";
+import { 
+  createAuditLog as dbCreateAuditLog,
+  logWithRequest as dbLogWithRequest,
+  getRequestContext,
+  moveToTrash,
+  restoreFromTrash,
+  getTrashItems,
+  purgeExpiredTrash,
+  purgeAllTrash,
+  deleteAllAuditLogs,
+  getPlatformSetting,
+  setPlatformSetting,
+  getRetentionDays,
+  setRetentionDays,
+  getRecentLogs as dbGetRecentLogs,
+  getLogsByEntity as dbGetLogsByEntity,
+  getLogsByUser as dbGetLogsByUser,
+  searchLogs as dbSearchLogs,
+  getAllPlatformSettings,
+  type AuditAction,
+} from "./audit-service";
+import type { Request } from "express";
 
 export interface AuditEntry {
   id: string;
@@ -46,13 +68,25 @@ class AuditService {
     }
 
     this.logs.unshift(auditEntry);
-
     if (this.logs.length > 10000) {
       this.logs = this.logs.slice(0, 10000);
     }
 
-    console.log(`[Audit] ${entry.action.toUpperCase()} ${entry.entityType}:${entry.entityId} by ${entry.userEmail || "system"}`);
+    try {
+      await dbCreateAuditLog({
+        userId: entry.userId || null,
+        action: entry.action as AuditAction,
+        tableName: entry.entityType,
+        recordId: entry.entityId,
+        oldValues: entry.changes.reduce((acc, c) => ({ ...acc, [c.field]: c.oldValue }), {}),
+        newValues: { ...entry.changes.reduce((acc, c) => ({ ...acc, [c.field]: c.newValue }), {}), aiSummary: auditEntry.aiSummary },
+        ipAddress: entry.ipAddress,
+      });
+    } catch (error) {
+      console.error("[Audit] Failed to persist to database:", error);
+    }
 
+    console.log(`[Audit] ${entry.action.toUpperCase()} ${entry.entityType}:${entry.entityId} by ${entry.userEmail || "system"}`);
     return auditEntry;
   }
 
@@ -186,6 +220,43 @@ class AuditService {
         l.userEmail?.toLowerCase().includes(lowerQuery)
     );
   }
+
+  async createAuditLog(params: {
+    userId?: string | null;
+    action: string;
+    tableName?: string;
+    recordId?: string;
+    oldValues?: Record<string, unknown> | null;
+    newValues?: Record<string, unknown> | null;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<void> {
+    return dbCreateAuditLog(params);
+  }
+
+  async logWithRequest(
+    req: Request,
+    action: string,
+    tableName: string,
+    recordId?: string,
+    oldValues?: Record<string, unknown> | null,
+    newValues?: Record<string, unknown> | null
+  ): Promise<void> {
+    return dbLogWithRequest(req, action, tableName, recordId, oldValues, newValues);
+  }
+
+  getRequestContext = getRequestContext;
+  moveToTrash = moveToTrash;
+  restoreFromTrash = restoreFromTrash;
+  getTrashItems = getTrashItems;
+  purgeExpiredTrash = purgeExpiredTrash;
+  purgeAllTrash = purgeAllTrash;
+  deleteAllAuditLogs = deleteAllAuditLogs;
+  getPlatformSetting = getPlatformSetting;
+  setPlatformSetting = setPlatformSetting;
+  getRetentionDays = getRetentionDays;
+  setRetentionDays = setRetentionDays;
+  getAllPlatformSettings = getAllPlatformSettings;
 }
 
 export const auditService = new AuditService();
