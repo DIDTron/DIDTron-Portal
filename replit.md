@@ -23,6 +23,27 @@ The platform includes extensive features for billing, a referral system, bonus/p
 ### System Design
 The backend is built with PostgreSQL and Drizzle ORM, featuring a robust job queue system for background processing. This system supports 24 job types across categories like Rate Cards, ConnexCS Sync, DID Management, Billing, Communications, AI Voice, and System tasks. It operates in dual-mode (PostgreSQL-backed for production, in-memory for development) with a real-time dashboard and worker control. Frontend development uses Zustand for state management and organizes components for Super Admin portals.
 
+## Development Testing Rules
+
+### Auto-Test Requirement
+**IMPORTANT**: All new features MUST be tested with fake super admin actions before completion:
+1. **Credentials**: Super admin test credentials are stored in Replit secrets (`SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`)
+2. **Testing Process**: After building any feature, simulate realistic user actions to verify functionality
+3. **Test Logging**: All tests MUST be logged in the "Dev Tests" module (`/admin/dev-tests`) with:
+   - Test name and description
+   - Module/feature being tested
+   - Test steps performed
+   - Expected vs actual results
+   - Pass/fail status
+   - Timestamp and duration
+4. **Cleanup Rule**: If test creates non-real data (test records), delete them after verification
+5. **History**: All test history is preserved for review and debugging purposes
+
+### Dev Tests Module Location
+- Super Admin Portal: `/admin/dev-tests`
+- Shows all development tests with filtering by status, module, and date
+- Allows viewing detailed test steps and results
+
 ## Audit & Compliance Rules
 
 ### Core Principles
