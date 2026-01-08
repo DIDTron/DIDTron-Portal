@@ -838,8 +838,11 @@ async function seedIntegrations() {
     async () => {
       log(`serving on port ${port}`);
       
-      // Auto-start job worker in background
+      // Initialize job queue with database support, then start worker
       try {
+        const { ensureJobQueueInitialized } = await import("./job-queue");
+        await ensureJobQueueInitialized();
+        
         const { startJobWorker } = await import("./job-worker");
         await startJobWorker();
         log("Job worker started automatically", "job-queue");

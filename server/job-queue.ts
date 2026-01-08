@@ -423,6 +423,29 @@ class MockProcessor {
 type JobQueue = DataQueueJobQueue<DIDTronPayloadMap> | InMemoryJobQueue;
 let queueInstance: JobQueue | null = null;
 let isUsingMockQueue = true;
+let initPromise: Promise<JobQueue> | null = null;
+
+async function initializeJobQueue(): Promise<JobQueue> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl) {
+    try {
+      const queue = initJobQueue<DIDTronPayloadMap>({
+        databaseConfig: {
+          connectionString: databaseUrl,
+        },
+        tableName: "job_queue",
+      });
+      isUsingMockQueue = false;
+      console.log("[JobQueue] Running in database mode (PostgreSQL)");
+      return queue;
+    } catch (error) {
+      console.error("[JobQueue] Failed to initialize database queue, falling back to in-memory:", error);
+    }
+  }
+  isUsingMockQueue = true;
+  console.log("[JobQueue] Running in in-memory mode (development)");
+  return new InMemoryJobQueue();
+}
 
 export function getJobQueue(): JobQueue {
   if (!queueInstance) {
@@ -430,6 +453,17 @@ export function getJobQueue(): JobQueue {
     queueInstance = new InMemoryJobQueue();
   }
   return queueInstance;
+}
+
+export async function ensureJobQueueInitialized(): Promise<JobQueue> {
+  if (queueInstance) return queueInstance;
+  if (!initPromise) {
+    initPromise = initializeJobQueue().then(q => {
+      queueInstance = q;
+      return q;
+    });
+  }
+  return initPromise;
 }
 
 export function isMockQueueMode(): boolean {
