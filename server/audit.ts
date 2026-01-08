@@ -196,30 +196,11 @@ class AuditService {
     });
   }
 
-  getRecentLogs(limit = 100): AuditEntry[] {
-    return this.logs.slice(0, limit);
-  }
-
-  getLogsByEntity(entityType: string, entityId?: string): AuditEntry[] {
-    return this.logs.filter(
-      l => l.entityType === entityType && (entityId ? l.entityId === entityId : true)
-    );
-  }
-
-  getLogsByUser(userId: string): AuditEntry[] {
-    return this.logs.filter(l => l.userId === userId);
-  }
-
-  searchLogs(query: string): AuditEntry[] {
-    const lowerQuery = query.toLowerCase();
-    return this.logs.filter(
-      l =>
-        l.entityType.toLowerCase().includes(lowerQuery) ||
-        l.entityName?.toLowerCase().includes(lowerQuery) ||
-        l.aiSummary?.toLowerCase().includes(lowerQuery) ||
-        l.userEmail?.toLowerCase().includes(lowerQuery)
-    );
-  }
+  // Use database-backed functions instead of in-memory
+  getRecentLogs = dbGetRecentLogs;
+  getLogsByEntity = dbGetLogsByEntity;
+  getLogsByUser = dbGetLogsByUser;
+  searchLogs = dbSearchLogs;
 
   async createAuditLog(params: {
     userId?: string | null;

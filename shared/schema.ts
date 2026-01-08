@@ -946,7 +946,7 @@ export const contentAssets = pgTable("content_assets", {
 
 export const auditLogs = pgTable("audit_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
+  userId: varchar("user_id"), // No FK - users may be in MemStorage while audit logs go to DB
   action: text("action").notNull(),
   tableName: text("table_name"),
   recordId: text("record_id"),
@@ -989,12 +989,12 @@ export const trash = pgTable("trash", {
   tableName: text("table_name").notNull(),
   recordId: text("record_id").notNull(),
   recordData: jsonb("record_data").notNull(),
-  deletedBy: varchar("deleted_by").references(() => users.id),
+  deletedBy: varchar("deleted_by"), // No FK - users may be in MemStorage
   deletedAt: timestamp("deleted_at").defaultNow(),
   restorableUntil: timestamp("restorable_until"),
   isRestored: boolean("is_restored").default(false),
   restoredAt: timestamp("restored_at"),
-  restoredBy: varchar("restored_by").references(() => users.id),
+  restoredBy: varchar("restored_by"), // No FK - users may be in MemStorage
 });
 
 export const platformSettings = pgTable("platform_settings", {

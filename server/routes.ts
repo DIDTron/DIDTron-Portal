@@ -4851,17 +4851,17 @@ export async function registerRoutes(
     }
   });
 
-  // Audit Logs
+  // Audit Logs - read from database via auditService
   app.get("/api/audit-logs", async (req, res) => {
     try {
-      const { tableName, recordId, limit } = req.query;
-      const logs = await storage.getAuditLogs(
-        tableName as string | undefined,
-        recordId as string | undefined,
-        limit ? parseInt(limit as string) : 50
+      const { tableName, limit } = req.query;
+      const logs = await auditService.getRecentLogs(
+        limit ? parseInt(limit as string) : 100,
+        tableName as string | undefined
       );
       res.json(logs);
     } catch (error) {
+      console.error("Audit logs fetch error:", error);
       res.status(500).json({ error: "Failed to fetch audit logs" });
     }
   });
@@ -4882,13 +4882,7 @@ export async function registerRoutes(
       const parsed = insertRouteSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const route = await storage.createRoute(parsed.data);
-      await storage.createAuditLog({
-        userId: req.session?.userId,
-        action: "create",
-        tableName: "routes",
-        recordId: route.id,
-        newValues: route,
-      });
+      await auditService.logWithRequest(req, "create", "routes", route.id, null, route as Record<string, unknown>);
       
       // Auto-sync to ConnexCS if integration is enabled
       try {
@@ -4921,14 +4915,7 @@ export async function registerRoutes(
       const oldRoute = await storage.getRoute(req.params.id);
       const route = await storage.updateRoute(req.params.id, req.body);
       if (!route) return res.status(404).json({ error: "Route not found" });
-      await storage.createAuditLog({
-        userId: req.session?.userId,
-        action: "update",
-        tableName: "routes",
-        recordId: req.params.id,
-        oldValues: oldRoute,
-        newValues: route,
-      });
+      await auditService.logWithRequest(req, "update", "routes", req.params.id, oldRoute as Record<string, unknown>, route as Record<string, unknown>);
       res.json(route);
     } catch (error) {
       res.status(500).json({ error: "Failed to update route" });
@@ -4938,15 +4925,15 @@ export async function registerRoutes(
   app.delete("/api/routes/:id", async (req, res) => {
     try {
       const oldRoute = await storage.getRoute(req.params.id);
+      if (!oldRoute) return res.status(404).json({ error: "Route not found" });
+      
+      // Move to trash before deleting
+      await auditService.moveToTrash("routes", req.params.id, oldRoute as Record<string, unknown>, req.session?.userId);
+      
       const deleted = await storage.deleteRoute(req.params.id);
       if (!deleted) return res.status(404).json({ error: "Route not found" });
-      await storage.createAuditLog({
-        userId: req.session?.userId,
-        action: "delete",
-        tableName: "routes",
-        recordId: req.params.id,
-        oldValues: oldRoute,
-      });
+      
+      await auditService.logWithRequest(req, "delete", "routes", req.params.id, oldRoute as Record<string, unknown>, null);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete route" });

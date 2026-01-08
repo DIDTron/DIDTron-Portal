@@ -226,7 +226,15 @@ export async function setRetentionDays(days: number, updatedBy?: string | null):
   await setPlatformSetting("trash_retention_days", String(days), updatedBy);
 }
 
-export async function getRecentLogs(limit: number = 100): Promise<Array<typeof auditLogs.$inferSelect>> {
+export async function getRecentLogs(limit: number = 100, tableName?: string): Promise<Array<typeof auditLogs.$inferSelect>> {
+  if (tableName) {
+    return db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.tableName, tableName))
+      .orderBy(sql`${auditLogs.createdAt} DESC`)
+      .limit(limit);
+  }
   return db
     .select()
     .from(auditLogs)
