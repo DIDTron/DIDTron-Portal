@@ -1036,6 +1036,107 @@ export const devTests = pgTable("dev_tests", {
 
 export const insertDevTestSchema = createInsertSchema(devTests).omit({ id: true, createdAt: true });
 
+// ==================== TESTING ENGINE ====================
+
+export const testLevelEnum = pgEnum("test_level", ["button", "form", "crud", "navigation", "api", "integration", "e2e"]);
+export const testRunStatusEnum = pgEnum("test_run_status", ["pending", "running", "completed", "failed", "cancelled"]);
+
+// Test modules (e.g., DID, Carriers, Voice Tiers)
+export const testModules = pgTable("test_modules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  route: text("route"), // Base route like /admin/did
+  icon: text("icon"),
+  enabled: boolean("enabled").default(true),
+  order: integer("order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Test pages within modules (e.g., DID Countries, DID Providers, DID Inventory)
+export const testPages = pgTable("test_pages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  moduleId: varchar("module_id").references(() => testModules.id).notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  route: text("route"), // Full route like /admin/did/countries
+  enabled: boolean("enabled").default(true),
+  order: integer("order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Test features within pages (e.g., Add Country, Edit Country, Delete Country)
+export const testFeatures = pgTable("test_features", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pageId: varchar("page_id").references(() => testPages.id).notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  testLevel: testLevelEnum("test_level").notNull(),
+  enabled: boolean("enabled").default(true),
+  order: integer("order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Individual test cases
+export const testCases = pgTable("test_cases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  featureId: varchar("feature_id").references(() => testFeatures.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  testLevel: testLevelEnum("test_level").notNull(),
+  selector: text("selector"), // CSS selector for UI tests
+  apiEndpoint: text("api_endpoint"), // API endpoint for API tests
+  apiMethod: text("api_method"), // GET, POST, PATCH, DELETE
+  testData: jsonb("test_data"), // Input data for the test
+  expectedResult: jsonb("expected_result"), // Expected outcome
+  timeout: integer("timeout").default(30000), // Timeout in ms
+  enabled: boolean("enabled").default(true),
+  order: integer("order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Test runs (execution history)
+export const testRuns = pgTable("test_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  scope: text("scope").notNull(), // "module", "page", "feature", "case"
+  scopeId: varchar("scope_id"), // ID of the module/page/feature/case
+  testLevels: text("test_levels").array(), // Which levels to test
+  status: testRunStatusEnum("status").default("pending"),
+  totalTests: integer("total_tests").default(0),
+  passedTests: integer("passed_tests").default(0),
+  failedTests: integer("failed_tests").default(0),
+  skippedTests: integer("skipped_tests").default(0),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  duration: integer("duration"), // in ms
+  triggeredBy: varchar("triggered_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Individual test results within a run
+export const testRunResults = pgTable("test_run_results", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  runId: varchar("run_id").references(() => testRuns.id).notNull(),
+  testCaseId: varchar("test_case_id").references(() => testCases.id).notNull(),
+  status: devTestStatusEnum("status").notNull(),
+  actualResult: jsonb("actual_result"),
+  errorMessage: text("error_message"),
+  screenshot: text("screenshot"), // Base64 or URL
+  duration: integer("duration"), // in ms
+  executedAt: timestamp("executed_at").defaultNow(),
+});
+
+export const insertTestModuleSchema = createInsertSchema(testModules).omit({ id: true, createdAt: true });
+export const insertTestPageSchema = createInsertSchema(testPages).omit({ id: true, createdAt: true });
+export const insertTestFeatureSchema = createInsertSchema(testFeatures).omit({ id: true, createdAt: true });
+export const insertTestCaseSchema = createInsertSchema(testCases).omit({ id: true, createdAt: true });
+export const insertTestRunSchema = createInsertSchema(testRuns).omit({ id: true, createdAt: true });
+export const insertTestRunResultSchema = createInsertSchema(testRunResults).omit({ id: true });
+
 // ==================== EXPERIENCE MANAGER ====================
 
 export const emContentItems = pgTable("em_content_items", {
@@ -2568,6 +2669,20 @@ export type CustomerApiKey = typeof customerApiKeys.$inferSelect;
 // Dev Tests types
 export type InsertDevTest = z.infer<typeof insertDevTestSchema>;
 export type DevTest = typeof devTests.$inferSelect;
+
+// Testing Engine types
+export type InsertTestModule = z.infer<typeof insertTestModuleSchema>;
+export type TestModule = typeof testModules.$inferSelect;
+export type InsertTestPage = z.infer<typeof insertTestPageSchema>;
+export type TestPage = typeof testPages.$inferSelect;
+export type InsertTestFeature = z.infer<typeof insertTestFeatureSchema>;
+export type TestFeature = typeof testFeatures.$inferSelect;
+export type InsertTestCase = z.infer<typeof insertTestCaseSchema>;
+export type TestCase = typeof testCases.$inferSelect;
+export type InsertTestRun = z.infer<typeof insertTestRunSchema>;
+export type TestRun = typeof testRuns.$inferSelect;
+export type InsertTestRunResult = z.infer<typeof insertTestRunResultSchema>;
+export type TestRunResult = typeof testRunResults.$inferSelect;
 
 // Auth models (for Replit Auth sessions)
 export * from "./models/auth";
