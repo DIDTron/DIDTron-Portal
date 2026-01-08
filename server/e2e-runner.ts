@@ -294,6 +294,11 @@ export async function runE2eTests(
     for (let i = 0; i < pagesToTest.length; i++) {
       const pageToTest = pagesToTest[i];
 
+      await db.update(e2eRuns).set({
+        currentIndex: i + 1,
+        currentPage: pageToTest.route,
+      }).where(eq(e2eRuns.id, run.id));
+
       if (onProgress) {
         onProgress({
           runId: run.id,
@@ -309,6 +314,9 @@ export async function runE2eTests(
       const result = await testPage(page, pageToTest);
       results.push(result);
 
+      const passedSoFar = results.filter(r => r.status === "passed").length;
+      const failedSoFar = results.filter(r => r.status === "failed").length;
+
       await db.insert(e2eResults).values({
         runId: run.id,
         moduleName: result.moduleName,
@@ -322,6 +330,11 @@ export async function runE2eTests(
         checks: result.checks,
         errorMessage: result.errorMessage,
       });
+
+      await db.update(e2eRuns).set({
+        passedTests: passedSoFar,
+        failedTests: failedSoFar,
+      }).where(eq(e2eRuns.id, run.id));
     }
 
     await context.close();

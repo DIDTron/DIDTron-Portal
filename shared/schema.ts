@@ -1050,6 +1050,8 @@ export const e2eRuns = pgTable("e2e_runs", {
   totalTests: integer("total_tests").default(0),
   passedTests: integer("passed_tests").default(0),
   failedTests: integer("failed_tests").default(0),
+  currentIndex: integer("current_index").default(0), // Current test index
+  currentPage: text("current_page"), // Route being tested
   accessibilityScore: integer("accessibility_score"), // 0-100
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),

@@ -63,10 +63,16 @@ interface ModulesResponse {
   totalPages: number;
 }
 
+interface E2eRunWithProgress extends E2eRun {
+  currentIndex?: number | null;
+  currentPage?: string | null;
+}
+
 export default function TestingEngine() {
   const [scope, setScope] = useState("all");
   const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [runningRunId, setRunningRunId] = useState<string | null>(null);
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("history");
 
@@ -78,7 +84,7 @@ export default function TestingEngine() {
     queryKey: ["/api/e2e/runs"],
   });
 
-  const { data: runDetails, refetch: refetchRunDetails } = useQuery<{ run: E2eRun; results: PageResult[] }>({
+  const { data: runDetails, refetch: refetchRunDetails } = useQuery<{ run: E2eRunWithProgress; results: PageResult[] }>({
     queryKey: ["/api/e2e/runs", selectedRunId],
     queryFn: async () => {
       if (!selectedRunId) return null;
@@ -87,6 +93,7 @@ export default function TestingEngine() {
       return response.json();
     },
     enabled: !!selectedRunId,
+    refetchInterval: runningRunId === selectedRunId ? 2000 : false,
   });
 
   const runTestsMutation = useMutation({
@@ -94,14 +101,27 @@ export default function TestingEngine() {
       const response = await apiRequest("POST", "/api/e2e/run", { scope: testScope });
       return response.json();
     },
+    onMutate: () => {
+      setActiveTab("results");
+    },
     onSuccess: async (data) => {
+      setRunningRunId(null);
       await refetchRuns();
       if (data?.runId) {
         setSelectedRunId(data.runId);
-        setActiveTab("results");
       }
     },
+    onError: () => {
+      setRunningRunId(null);
+    },
   });
+
+  useEffect(() => {
+    if (runDetails?.run?.status === "completed" || runDetails?.run?.status === "failed") {
+      setRunningRunId(null);
+      refetchRuns();
+    }
+  }, [runDetails?.run?.status, refetchRuns]);
 
   useEffect(() => {
     if (selectedRunId) {
@@ -201,7 +221,9 @@ export default function TestingEngine() {
             </Select>
           )}
           <Button
-            onClick={() => runTestsMutation.mutate(getEffectiveScope())}
+            onClick={() => {
+              runTestsMutation.mutate(getEffectiveScope());
+            }}
             disabled={runTestsMutation.isPending}
             data-testid="button-run-tests"
           >
@@ -220,15 +242,47 @@ export default function TestingEngine() {
         </div>
       </div>
 
-      {runTestsMutation.isPending && (
+      {(runTestsMutation.isPending || (runDetails?.run?.status === "running")) && (
         <Card>
           <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Running E2E tests...</span>
-                <span className="text-muted-foreground">This may take a few minutes</span>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />
+                  <span className="font-medium">
+                    Running Tests... {runDetails?.run?.currentIndex || 0}/{runDetails?.run?.totalTests || 0} pages complete
+                  </span>
+                </div>
+                <span className="text-muted-foreground text-sm">
+                  {runDetails?.run?.totalTests 
+                    ? `${Math.round(((runDetails.run.currentIndex || 0) / runDetails.run.totalTests) * 100)}%`
+                    : "Starting..."}
+                </span>
               </div>
-              <Progress value={undefined} className="h-2" />
+              <Progress 
+                value={runDetails?.run?.totalTests ? ((runDetails.run.currentIndex || 0) / runDetails.run.totalTests) * 100 : 0} 
+                className="h-2" 
+              />
+              {runDetails?.run?.currentPage && (
+                <div className="text-sm text-muted-foreground">
+                  Current: Testing <span className="font-mono">{runDetails.run.currentPage}</span>
+                </div>
+              )}
+              {runDetails?.results && runDetails.results.length > 0 && (
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {runDetails.results.map((result, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm">
+                      {result.status === "passed" ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-red-500" />
+                      )}
+                      <span>{result.pageName}</span>
+                      <span className="text-muted-foreground">({formatDuration(result.duration)})</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
