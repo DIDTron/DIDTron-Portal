@@ -20,9 +20,10 @@ export default function TrashPage() {
   const [selectedItem, setSelectedItem] = useState<Trash | null>(null);
   const { toast } = useToast();
 
-  const { data: trashItems = [], isLoading, refetch } = useQuery<Trash[]>({
+  const { data: trashData, isLoading, refetch } = useQuery<{ items: Trash[]; total: number }>({
     queryKey: ["/api/trash"],
   });
+  const trashItems = trashData?.items || [];
 
   const { data: settings } = useQuery<{ retentionDays: number }>({
     queryKey: ["/api/platform-settings", "retention_days"],
@@ -58,7 +59,7 @@ export default function TrashPage() {
 
   const purgeAllMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("DELETE", "/api/trash/purge-all");
+      const response = await apiRequest("DELETE", "/api/trash/all");
       return response.json();
     },
     onSuccess: () => {

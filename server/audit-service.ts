@@ -273,7 +273,7 @@ export async function searchLogs(searchTerm: string): Promise<Array<typeof audit
     .limit(100);
 }
 
-export async function getAllPlatformSettings(): Promise<Array<{ key: string; value: string }>> {
+export async function getAllPlatformSettings(): Promise<Array<{ key: string; value: string | null }>> {
   return db.select({ key: platformSettings.key, value: platformSettings.value }).from(platformSettings);
 }
 
