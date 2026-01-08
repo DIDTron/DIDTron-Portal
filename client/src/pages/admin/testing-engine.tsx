@@ -528,7 +528,7 @@ export default function TestingEnginePage() {
                   {!canRunTests() 
                     ? "Select a module and test levels to run"
                     : availableTestCount === 0
-                    ? <span className="text-amber-600 dark:text-amber-400">No test cases defined for the selected scope and test levels. Currently only the DID module has seeded test cases.</span>
+                    ? <span className="text-amber-600 dark:text-amber-400">No test cases defined for the selected scope and test levels.</span>
                     : `Ready to run ${availableTestCount} test(s) on selected ${testScope}`
                   }
                 </div>
@@ -731,7 +731,7 @@ export default function TestingEnginePage() {
                   <p className="text-sm font-medium text-amber-800 dark:text-amber-200">No test cases found</p>
                   <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                     This module doesn't have test cases defined for the selected test levels.<br />
-                    Currently only the DID Management module has seeded test cases with API and CRUD levels.
+                    Define test cases in the Test Registry tab or contact the development team.
                   </p>
                 </div>
               ) : lastResult.results.length > 0 && (
