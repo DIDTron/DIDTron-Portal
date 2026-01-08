@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Play, CheckCircle2, XCircle, Clock, ChevronDown, AlertTriangle, Accessibility, RefreshCw, FileText } from "lucide-react";
+import { Play, CheckCircle2, XCircle, Clock, ChevronDown, AlertTriangle, Accessibility, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 interface TestCheck {
@@ -173,8 +173,8 @@ export default function TestingEngine() {
         </div>
         <div className="flex items-center gap-3">
           <Select value={scope} onValueChange={setScope}>
-            <SelectTrigger className="w-56" data-testid="select-scope">
-              <SelectValue placeholder="Select scope" />
+            <SelectTrigger className="w-48" data-testid="select-scope">
+              <SelectValue placeholder="Select module" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Modules ({modulesData?.totalPages || 0} pages)</SelectItem>
@@ -185,6 +185,21 @@ export default function TestingEngine() {
               ))}
             </SelectContent>
           </Select>
+          {selectedModule && scope !== "all" && (
+            <Select value={selectedPage || "all-pages"} onValueChange={(val) => setSelectedPage(val === "all-pages" ? null : val)}>
+              <SelectTrigger className="w-48" data-testid="select-page">
+                <SelectValue placeholder="Select page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-pages">All {selectedModule.name} pages</SelectItem>
+                {selectedModule.pages.map((page) => (
+                  <SelectItem key={page.route} value={page.route}>
+                    {page.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button
             onClick={() => runTestsMutation.mutate(getEffectiveScope())}
             disabled={runTestsMutation.isPending}
@@ -204,47 +219,6 @@ export default function TestingEngine() {
           </Button>
         </div>
       </div>
-
-      {selectedModule && scope !== "all" && (
-        <Card>
-          <CardHeader className="py-3">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Pages in {selectedModule.name}
-              </CardTitle>
-              {selectedPage && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setSelectedPage(null)}
-                  data-testid="button-clear-page"
-                >
-                  Clear selection
-                </Button>
-              )}
-            </div>
-            <CardDescription>
-              {selectedPage ? `Testing: ${selectedModule.pages.find(p => p.route === selectedPage)?.name}` : "Click a page to test only that page, or run all pages in this module"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex flex-wrap gap-2">
-              {selectedModule.pages.map((page) => (
-                <Badge 
-                  key={page.route} 
-                  variant={selectedPage === page.route ? "default" : "secondary"} 
-                  className={`font-normal cursor-pointer ${selectedPage === page.route ? "ring-2 ring-primary ring-offset-2" : ""}`}
-                  onClick={() => setSelectedPage(selectedPage === page.route ? null : page.route)}
-                  data-testid={`badge-page-${page.name.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  {page.name}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {runTestsMutation.isPending && (
         <Card>
