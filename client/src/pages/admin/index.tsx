@@ -43,6 +43,7 @@ import SipTesterPage from "./sip-tester";
 import KycPage from "./kyc";
 import AdminUsersPage from "./admin-users";
 import AuditLogsPage from "./audit-logs";
+import TrashPage from "./trash";
 import SettingsPage from "./settings";
 import LiveActivityPage from "./live-activity";
 import MetricsPage from "./metrics";
@@ -133,6 +134,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/admin-users": { section: "admin", subItem: "admin-users" },
   "/admin/roles": { section: "admin", subItem: "roles" },
   "/admin/audit-logs": { section: "admin", subItem: "audit-logs" },
+  "/admin/trash": { section: "admin", subItem: "trash" },
   "/admin/tickets": { section: "admin", subItem: "tickets" },
   "/admin/job-queue": { section: "admin", subItem: "job-queue" },
   "/admin/settings/general": { section: "settings", subItem: "general" },
@@ -262,6 +264,7 @@ export default function AdminLayout() {
                 <Route path="/admin/admin-users" component={AdminUsersPage} />
                 <Route path="/admin/roles" component={RolesPage} />
                 <Route path="/admin/audit-logs" component={AuditLogsPage} />
+                <Route path="/admin/trash" component={TrashPage} />
                 <Route path="/admin/tickets" component={TicketsPage} />
                 <Route path="/admin/job-queue" component={JobQueuePage} />
                 <Route path="/admin/settings/general" component={SettingsPage} />
