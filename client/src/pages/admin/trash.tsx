@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertTriangle, Search, Trash2, Loader2, RefreshCw, RotateCcw, Filter, Clock, Database } from "lucide-react";
+import { AlertTriangle, Search, Trash2, Loader2, RefreshCw, RotateCcw, Filter, Clock, Database, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Trash } from "@shared/schema";
@@ -17,7 +17,6 @@ export default function TrashPage() {
   const [tableFilter, setTableFilter] = useState("all");
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [purgeConfirmation, setPurgeConfirmation] = useState("");
-  const [selectedItem, setSelectedItem] = useState<Trash | null>(null);
   const { toast } = useToast();
 
   const { data: trashData, isLoading, refetch } = useQuery<{ items: Trash[]; total: number }>({
@@ -42,11 +41,11 @@ export default function TrashPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/audit-logs"] });
       toast({
         title: "Item restored",
-        description: "The item has been restored successfully.",
+        description: "The item has been restored and logged in audit trail.",
       });
-      setSelectedItem(null);
     },
     onError: (error: Error) => {
       toast({
@@ -62,11 +61,12 @@ export default function TrashPage() {
       const response = await apiRequest("DELETE", "/api/trash/all");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/audit-logs"] });
       toast({
         title: "Trash purged",
-        description: "All items have been permanently deleted.",
+        description: `${data.purgedCount || trashItems.length} items have been permanently deleted.`,
       });
       setPurgeDialogOpen(false);
       setPurgeConfirmation("");
@@ -106,13 +106,18 @@ export default function TrashPage() {
     }
   };
 
+  const expiringCount = trashItems.filter(i => {
+    const days = getDaysUntilExpiry(i.restorableUntil);
+    return days !== null && days <= 3;
+  }).length;
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Trash</h1>
           <p className="text-muted-foreground">
-            Deleted items are retained for {settings?.retentionDays || 30} days before permanent deletion
+            Deleted items are retained for {settings?.retentionDays || 30} days before automatic permanent deletion
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -153,22 +158,40 @@ export default function TrashPage() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
-                  Purge All Trash
+                  Permanently Delete All Trash
                 </DialogTitle>
-                <DialogDescription>
-                  This action cannot be undone. This will permanently delete all {trashItems.length} items in trash.
-                </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <p className="text-sm text-muted-foreground">
-                  To confirm, type <span className="font-bold text-destructive">DELETE</span> in the box below:
-                </p>
-                <Input
-                  value={purgeConfirmation}
-                  onChange={(e) => setPurgeConfirmation(e.target.value)}
-                  placeholder="Type DELETE to confirm"
-                  data-testid="input-purge-confirmation"
-                />
+              <div className="space-y-4 py-2">
+                <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4 space-y-2">
+                  <p className="font-medium text-destructive">What does "Purge All" do?</p>
+                  <ul className="text-sm space-y-1 text-muted-foreground">
+                    <li>Immediately and permanently deletes <strong>all {trashItems.length} items</strong> in trash</li>
+                    <li>Bypasses the {settings?.retentionDays || 30}-day retention period</li>
+                    <li>Deleted data <strong>cannot be recovered</strong> after purging</li>
+                    <li>This action is logged in the audit trail</li>
+                  </ul>
+                </div>
+                <div className="bg-muted rounded-md p-4 space-y-2">
+                  <p className="font-medium flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Normal behavior (without purging)
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Items in trash are automatically deleted after {settings?.retentionDays || 30} days. 
+                    You can restore items anytime before they expire.
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    To confirm permanent deletion, type <span className="font-bold text-destructive">DELETE</span> below:
+                  </p>
+                  <Input
+                    value={purgeConfirmation}
+                    onChange={(e) => setPurgeConfirmation(e.target.value)}
+                    placeholder="Type DELETE to confirm"
+                    data-testid="input-purge-confirmation"
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => {
@@ -188,7 +211,7 @@ export default function TrashPage() {
                   ) : (
                     <Trash2 className="h-4 w-4 mr-2" />
                   )}
-                  Purge All
+                  Permanently Delete All
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -228,12 +251,7 @@ export default function TrashPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
-              <p className="text-2xl font-bold">
-                {trashItems.filter(i => {
-                  const days = getDaysUntilExpiry(i.restorableUntil);
-                  return days !== null && days <= 3;
-                }).length}
-              </p>
+              <p className="text-2xl font-bold">{expiringCount}</p>
             </div>
             <p className="text-sm text-muted-foreground">Expiring Soon</p>
           </CardContent>
@@ -249,7 +267,7 @@ export default function TrashPage() {
           <CardContent className="py-12 text-center text-muted-foreground">
             <Trash2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Trash is empty</p>
-            <p className="text-sm">Deleted items will appear here</p>
+            <p className="text-sm">Deleted items will appear here and can be restored</p>
           </CardContent>
         </Card>
       ) : (
@@ -281,7 +299,7 @@ export default function TrashPage() {
                         {item.deletedAt ? new Date(item.deletedAt).toLocaleString() : "-"}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {item.deletedBy || "System"}
+                        {item.deletedBy ? item.deletedBy.slice(0, 8) + "..." : "System"}
                       </TableCell>
                       <TableCell>
                         {daysLeft !== null ? (
