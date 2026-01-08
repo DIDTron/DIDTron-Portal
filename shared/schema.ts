@@ -1036,80 +1036,21 @@ export const devTests = pgTable("dev_tests", {
 
 export const insertDevTestSchema = createInsertSchema(devTests).omit({ id: true, createdAt: true });
 
-// ==================== TESTING ENGINE ====================
+// ==================== E2E TESTING ENGINE (Playwright + axe-core) ====================
 
-export const testLevelEnum = pgEnum("test_level", ["button", "form", "crud", "navigation", "api", "integration", "e2e"]);
-export const testRunStatusEnum = pgEnum("test_run_status", ["pending", "running", "completed", "failed", "cancelled"]);
+export const e2eRunStatusEnum = pgEnum("e2e_run_status", ["pending", "running", "completed", "failed"]);
+export const e2eResultStatusEnum = pgEnum("e2e_result_status", ["passed", "failed", "skipped"]);
 
-// Test modules (e.g., DID, Carriers, Voice Tiers)
-export const testModules = pgTable("test_modules", {
+// E2E test runs
+export const e2eRuns = pgTable("e2e_runs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  description: text("description"),
-  route: text("route"), // Base route like /admin/did
-  icon: text("icon"),
-  enabled: boolean("enabled").default(true),
-  order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Test pages within modules (e.g., DID Countries, DID Providers, DID Inventory)
-export const testPages = pgTable("test_pages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  moduleId: varchar("module_id").references(() => testModules.id).notNull(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull(),
-  description: text("description"),
-  route: text("route"), // Full route like /admin/did/countries
-  enabled: boolean("enabled").default(true),
-  order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Test features within pages (e.g., Add Country, Edit Country, Delete Country)
-export const testFeatures = pgTable("test_features", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  pageId: varchar("page_id").references(() => testPages.id).notNull(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull(),
-  description: text("description"),
-  testLevel: testLevelEnum("test_level").notNull(),
-  enabled: boolean("enabled").default(true),
-  order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Individual test cases
-export const testCases = pgTable("test_cases", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  featureId: varchar("feature_id").references(() => testFeatures.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  testLevel: testLevelEnum("test_level").notNull(),
-  selector: text("selector"), // CSS selector for UI tests
-  apiEndpoint: text("api_endpoint"), // API endpoint for API tests
-  apiMethod: text("api_method"), // GET, POST, PATCH, DELETE
-  testData: jsonb("test_data"), // Input data for the test
-  expectedResult: jsonb("expected_result"), // Expected outcome
-  timeout: integer("timeout").default(30000), // Timeout in ms
-  enabled: boolean("enabled").default(true),
-  order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Test runs (execution history)
-export const testRuns = pgTable("test_runs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  scope: text("scope").notNull(), // "module", "page", "feature", "case"
-  scopeId: varchar("scope_id"), // ID of the module/page/feature/case
-  testLevels: text("test_levels").array(), // Which levels to test
-  status: testRunStatusEnum("status").default("pending"),
+  scope: text("scope").notNull(), // "all" or module name like "carriers"
+  status: e2eRunStatusEnum("status").default("pending"),
   totalTests: integer("total_tests").default(0),
   passedTests: integer("passed_tests").default(0),
   failedTests: integer("failed_tests").default(0),
-  skippedTests: integer("skipped_tests").default(0),
+  accessibilityScore: integer("accessibility_score"), // 0-100
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
   duration: integer("duration"), // in ms
@@ -1117,25 +1058,25 @@ export const testRuns = pgTable("test_runs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Individual test results within a run
-export const testRunResults = pgTable("test_run_results", {
+// Individual page results within a run
+export const e2eResults = pgTable("e2e_results", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  runId: varchar("run_id").references(() => testRuns.id).notNull(),
-  testCaseId: varchar("test_case_id").references(() => testCases.id).notNull(),
-  status: devTestStatusEnum("status").notNull(),
-  actualResult: jsonb("actual_result"),
-  errorMessage: text("error_message"),
-  screenshot: text("screenshot"), // Base64 or URL
+  runId: varchar("run_id").references(() => e2eRuns.id).notNull(),
+  moduleName: text("module_name").notNull(),
+  pageName: text("page_name").notNull(),
+  route: text("route").notNull(),
+  status: e2eResultStatusEnum("status").notNull(),
   duration: integer("duration"), // in ms
+  screenshotPath: text("screenshot_path"), // Path to screenshot on failure
+  accessibilityScore: integer("accessibility_score"), // 0-100
+  accessibilityIssues: jsonb("accessibility_issues"), // Array of issues
+  checks: jsonb("checks"), // Detailed checks: { pageLoads, hasContent, noErrors, buttons, forms, accessibility }
+  errorMessage: text("error_message"),
   executedAt: timestamp("executed_at").defaultNow(),
 });
 
-export const insertTestModuleSchema = createInsertSchema(testModules).omit({ id: true, createdAt: true });
-export const insertTestPageSchema = createInsertSchema(testPages).omit({ id: true, createdAt: true });
-export const insertTestFeatureSchema = createInsertSchema(testFeatures).omit({ id: true, createdAt: true });
-export const insertTestCaseSchema = createInsertSchema(testCases).omit({ id: true, createdAt: true });
-export const insertTestRunSchema = createInsertSchema(testRuns).omit({ id: true, createdAt: true });
-export const insertTestRunResultSchema = createInsertSchema(testRunResults).omit({ id: true });
+export const insertE2eRunSchema = createInsertSchema(e2eRuns).omit({ id: true, createdAt: true });
+export const insertE2eResultSchema = createInsertSchema(e2eResults).omit({ id: true, executedAt: true });
 
 // ==================== EXPERIENCE MANAGER ====================
 
@@ -2670,19 +2611,11 @@ export type CustomerApiKey = typeof customerApiKeys.$inferSelect;
 export type InsertDevTest = z.infer<typeof insertDevTestSchema>;
 export type DevTest = typeof devTests.$inferSelect;
 
-// Testing Engine types
-export type InsertTestModule = z.infer<typeof insertTestModuleSchema>;
-export type TestModule = typeof testModules.$inferSelect;
-export type InsertTestPage = z.infer<typeof insertTestPageSchema>;
-export type TestPage = typeof testPages.$inferSelect;
-export type InsertTestFeature = z.infer<typeof insertTestFeatureSchema>;
-export type TestFeature = typeof testFeatures.$inferSelect;
-export type InsertTestCase = z.infer<typeof insertTestCaseSchema>;
-export type TestCase = typeof testCases.$inferSelect;
-export type InsertTestRun = z.infer<typeof insertTestRunSchema>;
-export type TestRun = typeof testRuns.$inferSelect;
-export type InsertTestRunResult = z.infer<typeof insertTestRunResultSchema>;
-export type TestRunResult = typeof testRunResults.$inferSelect;
+// E2E Testing Engine types
+export type InsertE2eRun = z.infer<typeof insertE2eRunSchema>;
+export type E2eRun = typeof e2eRuns.$inferSelect;
+export type InsertE2eResult = z.infer<typeof insertE2eResultSchema>;
+export type E2eResult = typeof e2eResults.$inferSelect;
 
 // Auth models (for Replit Auth sessions)
 export * from "./models/auth";

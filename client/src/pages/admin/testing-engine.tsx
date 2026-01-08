@@ -1,843 +1,377 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { 
-  Play, 
-  Loader2, 
-  RefreshCw, 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
-  Layers, 
-  FileText, 
-  Zap, 
-  TestTube2,
-  Clock,
-  ChevronRight,
-  Settings,
-  Plus,
-  Radar
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { TestModule, TestPage, TestFeature, TestCase, TestRun } from "@shared/schema";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Play, CheckCircle2, XCircle, Clock, ChevronDown, AlertTriangle, Accessibility, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
-type TestLevel = "button" | "form" | "crud" | "navigation" | "api" | "integration" | "e2e";
-
-const TEST_LEVELS: { value: TestLevel; label: string; description: string }[] = [
-  { value: "button", label: "Buttons", description: "Test all clickable buttons" },
-  { value: "form", label: "Forms", description: "Test form submissions" },
-  { value: "crud", label: "CRUD", description: "Create, Read, Update, Delete" },
-  { value: "navigation", label: "Navigation", description: "Test page navigation" },
-  { value: "api", label: "API", description: "Test API endpoints" },
-  { value: "integration", label: "Integration", description: "Integration tests" },
-  { value: "e2e", label: "E2E", description: "End-to-end tests" },
-];
-
-interface TestHierarchy {
-  modules: Array<TestModule & { 
-    pages: Array<TestPage & { 
-      features: Array<TestFeature & { 
-        testCases: TestCase[] 
-      }> 
-    }> 
-  }>;
+interface TestCheck {
+  name: string;
+  passed: boolean;
+  details: string;
 }
 
-interface TestStats {
-  totalModules: number;
-  totalPages: number;
-  totalFeatures: number;
-  totalTestCases: number;
-  recentRuns: TestRun[];
+interface PageResult {
+  moduleName: string;
+  pageName: string;
+  route: string;
+  status: "passed" | "failed" | "skipped";
+  duration: number;
+  screenshotPath?: string;
+  accessibilityScore: number;
+  accessibilityIssues: any[];
+  checks: TestCheck[];
+  errorMessage?: string;
 }
 
-interface TestRunSummary {
-  runId: string;
+interface E2eRun {
+  id: string;
   name: string;
   scope: string;
-  scopeId: string;
   status: string;
   totalTests: number;
   passedTests: number;
   failedTests: number;
-  skippedTests: number;
-  duration: number;
-  results: Array<{
-    testCaseId: string;
-    testCaseName: string;
-    status: "passed" | "failed" | "skipped";
-    duration: number;
-    actualResult?: any;
-    errorMessage?: string;
-  }>;
+  accessibilityScore: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  duration: number | null;
+  createdAt: string;
 }
 
-function getStatusBadge(status: string | null) {
-  switch (status) {
-    case "passed":
-    case "completed":
-      return <Badge className="bg-green-600 text-white"><CheckCircle className="w-3 h-3 mr-1" />Passed</Badge>;
-    case "failed":
-      return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>;
-    case "skipped":
-      return <Badge variant="secondary"><AlertTriangle className="w-3 h-3 mr-1" />Skipped</Badge>;
-    case "running":
-      return <Badge className="bg-blue-600 text-white"><Loader2 className="w-3 h-3 mr-1 animate-spin" />Running</Badge>;
-    case "pending":
-      return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
-    default:
-      return <Badge variant="outline">{status}</Badge>;
-  }
-}
+export default function TestingEngine() {
+  const [scope, setScope] = useState("all");
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
 
-export default function TestingEnginePage() {
-  const [activeTab, setActiveTab] = useState("run");
-  const [selectedModule, setSelectedModule] = useState<string>("");
-  const [selectedPage, setSelectedPage] = useState<string>("");
-  const [selectedFeature, setSelectedFeature] = useState<string>("");
-  const [selectedLevels, setSelectedLevels] = useState<TestLevel[]>(["api", "crud"]);
-  const [testScope, setTestScope] = useState<"all" | "module" | "page" | "feature">("module");
-  const [isRunning, setIsRunning] = useState(false);
-  const [lastResult, setLastResult] = useState<TestRunSummary | null>(null);
-  const [resultDialogOpen, setResultDialogOpen] = useState(false);
-  const { toast } = useToast();
-
-  const { data: hierarchy, isLoading: hierarchyLoading, refetch: refetchHierarchy, isFetching: hierarchyFetching } = useQuery<TestHierarchy>({
-    queryKey: ["/api/testing-engine/hierarchy"],
+  const { data: modulesData } = useQuery<{ modules: string[]; totalPages: number }>({
+    queryKey: ["/api/e2e/modules"],
   });
 
-  const { data: stats, isLoading: statsLoading } = useQuery<TestStats>({
-    queryKey: ["/api/testing-engine/stats"],
+  const { data: runs = [], isLoading: runsLoading } = useQuery<E2eRun[]>({
+    queryKey: ["/api/e2e/runs"],
   });
 
-  const { data: runs = [], refetch: refetchRuns, isFetching: runsFetching } = useQuery<TestRun[]>({
-    queryKey: ["/api/testing-engine/runs"],
+  const { data: runDetails } = useQuery<{ run: E2eRun; results: PageResult[] }>({
+    queryKey: ["/api/e2e/runs", selectedRunId],
+    enabled: !!selectedRunId,
   });
 
-  const seedMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/testing-engine/seed");
-      return response.json();
+  const runTestsMutation = useMutation({
+    mutationFn: async (testScope: string) => {
+      return apiRequest("POST", "/api/e2e/run", { scope: testScope });
     },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/hierarchy"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/stats"] });
-      toast({
-        title: result.seeded ? "Test data seeded" : "Already seeded",
-        description: result.message,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to seed data",
-        description: error.message,
-        variant: "destructive",
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/e2e/runs"] });
     },
   });
 
-  const autoDiscoverMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/testing-engine/autodiscover");
-      return response.json();
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/hierarchy"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/stats"] });
-      toast({
-        title: "Auto-Discovery Complete",
-        description: `${result.modulesCreated} modules and ${result.pagesCreated} pages discovered`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to auto-discover",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const executeMutation = useMutation({
-    mutationFn: async (config: { scope: string; scopeId: string; testLevels: string[] }) => {
-      const response = await apiRequest("POST", "/api/testing-engine/execute", config);
-      return response.json();
-    },
-    onSuccess: (result: TestRunSummary) => {
-      setLastResult(result);
-      setResultDialogOpen(true);
-      setIsRunning(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/runs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dev-tests"] });
-      toast({
-        title: result.failedTests > 0 ? "Tests completed with failures" : "Tests passed",
-        description: `${result.passedTests} passed, ${result.failedTests} failed, ${result.skippedTests} skipped`,
-        variant: result.failedTests > 0 ? "destructive" : "default",
-      });
-    },
-    onError: (error: Error) => {
-      setIsRunning(false);
-      toast({
-        title: "Test execution failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const e2eMutation = useMutation({
-    mutationFn: async (config: { scope: "all" | "module"; moduleId?: string }) => {
-      const response = await apiRequest("POST", "/api/testing-engine/e2e", config);
-      return response.json();
-    },
-    onSuccess: (result) => {
-      setIsRunning(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/runs"] });
-      toast({
-        title: result.loginSuccess 
-          ? (result.summary.failedPages > 0 ? "E2E tests completed with failures" : "E2E tests passed")
-          : "Login failed",
-        description: result.loginSuccess 
-          ? `${result.summary.passedPages} pages passed, ${result.summary.failedPages} failed`
-          : "Could not log in with super admin credentials",
-        variant: result.summary?.failedPages > 0 ? "destructive" : "default",
-      });
-      setLastResult({
-        runId: result.runId,
-        name: "E2E Test Run",
-        scope: "e2e",
-        scopeId: "all",
-        status: result.summary?.failedPages === 0 ? "completed" : "failed",
-        totalTests: result.summary?.totalPages || 0,
-        passedTests: result.summary?.passedPages || 0,
-        failedTests: result.summary?.failedPages || 0,
-        skippedTests: 0,
-        duration: result.summary?.duration || 0,
-        results: result.results?.map((r: any) => ({
-          testCaseId: `${r.moduleName}-${r.pageName}`,
-          testCaseName: `${r.moduleName} - ${r.pageName}`,
-          status: r.status,
-          duration: r.duration,
-          actualResult: r.checks,
-          errorMessage: r.errorMessage,
-        })) || [],
-      });
-      setResultDialogOpen(true);
-    },
-    onError: (error: Error) => {
-      setIsRunning(false);
-      toast({
-        title: "E2E test execution failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const runE2ETests = () => {
-    setIsRunning(true);
-    e2eMutation.mutate({
-      scope: testScope === "all" ? "all" : "module",
-      moduleId: testScope === "module" ? selectedModule : undefined,
-    });
+  const toggleExpand = (id: string) => {
+    const newExpanded = new Set(expandedResults);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedResults(newExpanded);
   };
 
-  const modules = hierarchy?.modules || [];
-  const selectedModuleData = modules.find(m => m.id === selectedModule);
-  const pages = selectedModuleData?.pages || [];
-  const selectedPageData = pages.find(p => p.id === selectedPage);
-  const features = selectedPageData?.features || [];
-
-  const getScopeId = () => {
-    switch (testScope) {
-      case "all": return "all";
-      case "module": return selectedModule;
-      case "page": return selectedPage;
-      case "feature": return selectedFeature;
-      default: return selectedModule;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "passed":
+      case "completed":
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case "failed":
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case "running":
+        return <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />;
+      default:
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
-  // Count available test cases for the selected scope and levels
-  const countAvailableTests = (): number => {
-    if (!hierarchy) return 0;
-    let count = 0;
-    
-    const countFeatureTests = (feature: TestFeature & { testCases: TestCase[] }) => {
-      return feature.testCases.filter(tc => 
-        tc.enabled && selectedLevels.includes(tc.testLevel as TestLevel)
-      ).length;
-    };
-    
-    const countPageTests = (page: TestPage & { features: Array<TestFeature & { testCases: TestCase[] }> }) => {
-      return page.features.reduce((sum, f) => sum + countFeatureTests(f), 0);
-    };
-    
-    const countModuleTests = (mod: TestModule & { pages: Array<TestPage & { features: Array<TestFeature & { testCases: TestCase[] }> }> }) => {
-      return mod.pages.reduce((sum, p) => sum + countPageTests(p), 0);
-    };
-    
-    switch (testScope) {
-      case "all":
-        count = hierarchy.modules.reduce((sum, m) => sum + countModuleTests(m), 0);
-        break;
-      case "module":
-        const mod = hierarchy.modules.find(m => m.id === selectedModule);
-        if (mod) count = countModuleTests(mod);
-        break;
-      case "page":
-        for (const m of hierarchy.modules) {
-          const page = m.pages.find(p => p.id === selectedPage);
-          if (page) {
-            count = countPageTests(page);
-            break;
-          }
-        }
-        break;
-      case "feature":
-        for (const m of hierarchy.modules) {
-          for (const p of m.pages) {
-            const feature = p.features.find(f => f.id === selectedFeature);
-            if (feature) {
-              count = countFeatureTests(feature);
-              break;
-            }
-          }
-        }
-        break;
-    }
-    return count;
+  const getStatusBadge = (status: string) => {
+    const variant = status === "passed" || status === "completed" ? "default" : status === "failed" ? "destructive" : "secondary";
+    return <Badge variant={variant}>{status}</Badge>;
   };
 
-  const availableTestCount = countAvailableTests();
-
-  const canRunTests = () => {
-    if (testScope === "all") return selectedLevels.length > 0;
-    const scopeId = getScopeId();
-    return scopeId && selectedLevels.length > 0;
+  const formatDuration = (ms: number | null) => {
+    if (!ms) return "-";
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
   };
-
-  const runTests = () => {
-    const scopeId = getScopeId();
-    if (!scopeId) {
-      toast({ title: "Please select a scope", variant: "destructive" });
-      return;
-    }
-    setIsRunning(true);
-    executeMutation.mutate({
-      scope: testScope,
-      scopeId,
-      testLevels: selectedLevels,
-    });
-  };
-
-  const toggleLevel = (level: TestLevel) => {
-    setSelectedLevels(prev => 
-      prev.includes(level) 
-        ? prev.filter(l => l !== level) 
-        : [...prev, level]
-    );
-  };
-
-  const {
-    currentPage,
-    pageSize,
-    totalPages,
-    totalItems,
-    paginatedItems: paginatedRuns,
-    onPageChange,
-    onPageSizeChange,
-  } = useDataTablePagination(runs, 10);
-
-  if (hierarchyLoading || statsLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Testing Engine</h1>
-          <p className="text-muted-foreground">Automated testing for modules, pages, and features</p>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">E2E Testing Engine</h1>
+          <p className="text-muted-foreground">
+            Playwright-based browser testing with accessibility scanning
+          </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Select value={scope} onValueChange={setScope}>
+            <SelectTrigger className="w-48" data-testid="select-scope">
+              <SelectValue placeholder="Select scope" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Modules ({modulesData?.totalPages || 0} pages)</SelectItem>
+              {modulesData?.modules.map((mod) => (
+                <SelectItem key={mod} value={mod.toLowerCase()}>{mod}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
-            variant="default"
-            onClick={() => autoDiscoverMutation.mutate()}
-            disabled={autoDiscoverMutation.isPending}
-            data-testid="button-autodiscover"
+            onClick={() => runTestsMutation.mutate(scope)}
+            disabled={runTestsMutation.isPending}
+            data-testid="button-run-tests"
           >
-            {autoDiscoverMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            {runTestsMutation.isPending ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Running...
+              </>
             ) : (
-              <Radar className="w-4 h-4 mr-2" />
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Run Tests
+              </>
             )}
-            Auto Discover
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => seedMutation.mutate()}
-            disabled={seedMutation.isPending}
-            data-testid="button-seed-data"
-          >
-            {seedMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Plus className="w-4 h-4 mr-2" />
-            )}
-            Seed Test Cases
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              refetchHierarchy();
-              refetchRuns();
-            }}
-            disabled={hierarchyFetching || runsFetching}
-            data-testid="button-refresh"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${(hierarchyFetching || runsFetching) ? "animate-spin" : ""}`} />
-            Refresh
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {runTestsMutation.isPending && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Modules</CardTitle>
-            <Layers className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-modules-count">{stats?.totalModules || 0}</div>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>Running E2E tests...</span>
+                <span className="text-muted-foreground">This may take a few minutes</span>
+              </div>
+              <Progress value={undefined} className="h-2" />
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pages</CardTitle>
-            <FileText className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-pages-count">{stats?.totalPages || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Features</CardTitle>
-            <Zap className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-features-count">{stats?.totalFeatures || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Test Cases</CardTitle>
-            <TestTube2 className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-testcases-count">{stats?.totalTestCases || 0}</div>
-          </CardContent>
-        </Card>
-      </div>
+      )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="results" className="w-full">
         <TabsList>
-          <TabsTrigger value="run" data-testid="tab-run-tests">
-            <Play className="w-4 h-4 mr-2" />
-            Run Tests
-          </TabsTrigger>
-          <TabsTrigger value="history" data-testid="tab-history">
-            <Clock className="w-4 h-4 mr-2" />
-            Test History
-          </TabsTrigger>
-          <TabsTrigger value="registry" data-testid="tab-registry">
-            <Settings className="w-4 h-4 mr-2" />
-            Test Registry
-          </TabsTrigger>
+          <TabsTrigger value="results" data-testid="tab-results">Latest Results</TabsTrigger>
+          <TabsTrigger value="history" data-testid="tab-history">History</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="run" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Test Configuration</CardTitle>
-              <CardDescription>Select what to test and which test levels to run</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Test Scope</Label>
-                  <Select value={testScope} onValueChange={(v) => setTestScope(v as any)}>
-                    <SelectTrigger data-testid="select-scope">
-                      <SelectValue placeholder="Select scope" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Modules (Run All)</SelectItem>
-                      <SelectItem value="module">Specific Module</SelectItem>
-                      <SelectItem value="page">Specific Page</SelectItem>
-                      <SelectItem value="feature">Specific Feature</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {testScope !== "all" && (
-                <div className="space-y-2">
-                  <Label>Module</Label>
-                  <Select value={selectedModule} onValueChange={(v) => {
-                    setSelectedModule(v);
-                    setSelectedPage("");
-                    setSelectedFeature("");
-                  }}>
-                    <SelectTrigger data-testid="select-module">
-                      <SelectValue placeholder="Select module" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {modules.map(m => (
-                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                )}
-
-                {(testScope === "page" || testScope === "feature") && (
-                  <div className="space-y-2">
-                    <Label>Page</Label>
-                    <Select value={selectedPage} onValueChange={(v) => {
-                      setSelectedPage(v);
-                      setSelectedFeature("");
-                    }} disabled={!selectedModule}>
-                      <SelectTrigger data-testid="select-page">
-                        <SelectValue placeholder="Select page" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pages.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {testScope === "feature" && (
-                  <div className="space-y-2">
-                    <Label>Feature</Label>
-                    <Select value={selectedFeature} onValueChange={setSelectedFeature} disabled={!selectedPage}>
-                      <SelectTrigger data-testid="select-feature">
-                        <SelectValue placeholder="Select feature" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {features.map(f => (
-                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Test Levels</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {TEST_LEVELS.map(level => (
-                    <div
-                      key={level.value}
-                      className={`flex items-start gap-2 p-3 rounded-md border cursor-pointer transition-colors ${
-                        selectedLevels.includes(level.value) 
-                          ? "bg-primary/10 border-primary" 
-                          : "hover-elevate"
-                      }`}
-                      onClick={() => toggleLevel(level.value)}
-                    >
-                      <Checkbox 
-                        checked={selectedLevels.includes(level.value)}
-                        onCheckedChange={() => toggleLevel(level.value)}
-                        data-testid={`checkbox-level-${level.value}`}
-                      />
-                      <div>
-                        <div className="font-medium text-sm">{level.label}</div>
-                        <div className="text-xs text-muted-foreground">{level.description}</div>
+        <TabsContent value="results" className="space-y-4">
+          {runDetails ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        {getStatusIcon(runDetails.run.status)}
+                        {runDetails.run.name}
+                      </CardTitle>
+                      <CardDescription>
+                        {runDetails.run.completedAt ? format(new Date(runDetails.run.completedAt), "PPpp") : "In progress"}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">{runDetails.run.passedTests}</div>
+                        <div className="text-xs text-muted-foreground">Passed</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-red-600">{runDetails.run.failedTests}</div>
+                        <div className="text-xs text-muted-foreground">Failed</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{runDetails.run.accessibilityScore || "-"}</div>
+                        <div className="text-xs text-muted-foreground">A11y Score</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{formatDuration(runDetails.run.duration)}</div>
+                        <div className="text-xs text-muted-foreground">Duration</div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                </CardHeader>
+              </Card>
 
-              <div className="flex items-center justify-between pt-4 border-t gap-4">
-                <div className="text-sm text-muted-foreground">
-                  {!canRunTests() 
-                    ? "Select a module and test levels to run"
-                    : availableTestCount === 0
-                    ? <span className="text-amber-600 dark:text-amber-400">No test cases defined for the selected scope and test levels.</span>
-                    : `Ready to run ${availableTestCount} test(s) on selected ${testScope}`
-                  }
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    onClick={runE2ETests} 
-                    disabled={isRunning || (testScope !== "all" && testScope !== "module")}
-                    variant="outline"
-                    data-testid="button-run-e2e"
-                  >
-                    {isRunning && e2eMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Running E2E...
-                      </>
-                    ) : (
-                      <>
-                        <Radar className="w-4 h-4 mr-2" />
-                        Run E2E Tests
-                      </>
-                    )}
-                  </Button>
-                  <Button 
-                    onClick={runTests} 
-                    disabled={!canRunTests() || isRunning}
-                    data-testid="button-run-tests"
-                  >
-                    {isRunning && executeMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Running...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4 mr-2" />
-                        Run API Tests
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="history" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Test Run History</CardTitle>
-              <CardDescription>Previous test executions and their results</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Scope</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Results</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedRuns.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No test runs yet. Run your first test to see results here.
-                      </TableCell>
-                    </TableRow>
+              <Card>
+                <CardContent className="pt-6">
+                  <ScrollArea className="h-[500px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-8"></TableHead>
+                          <TableHead>Module</TableHead>
+                          <TableHead>Page</TableHead>
+                          <TableHead>Route</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>A11y</TableHead>
+                          <TableHead>Duration</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {runDetails.results.map((result, idx) => (
+                          <Collapsible key={idx} open={expandedResults.has(String(idx))} onOpenChange={() => toggleExpand(String(idx))}>
+                            <TableRow className="cursor-pointer" data-testid={`row-result-${idx}`}>
+                              <TableCell>
+                                <CollapsibleTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                                    <ChevronDown className={`h-4 w-4 transition-transform ${expandedResults.has(String(idx)) ? "rotate-180" : ""}`} />
+                                  </Button>
+                                </CollapsibleTrigger>
+                              </TableCell>
+                              <TableCell className="font-medium">{result.moduleName}</TableCell>
+                              <TableCell>{result.pageName}</TableCell>
+                              <TableCell className="font-mono text-xs">{result.route}</TableCell>
+                              <TableCell>{getStatusBadge(result.status)}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Accessibility className="h-3 w-3" />
+                                  <span className={result.accessibilityScore >= 90 ? "text-green-600" : result.accessibilityScore >= 70 ? "text-yellow-600" : "text-red-600"}>
+                                    {result.accessibilityScore}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>{formatDuration(result.duration)}</TableCell>
+                            </TableRow>
+                            <CollapsibleContent asChild>
+                              <TableRow>
+                                <TableCell colSpan={7} className="bg-muted/50 p-4">
+                                  <div className="space-y-3">
+                                    <div className="font-medium text-sm">Checks:</div>
+                                    <div className="grid gap-2">
+                                      {result.checks.map((check, cIdx) => (
+                                        <div key={cIdx} className="flex items-center gap-2 text-sm">
+                                          {check.passed ? (
+                                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                          ) : (
+                                            <XCircle className="h-4 w-4 text-red-500" />
+                                          )}
+                                          <span className="font-medium">{check.name}:</span>
+                                          <span className="text-muted-foreground">{check.details}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {result.accessibilityIssues.length > 0 && (
+                                      <div className="mt-3">
+                                        <div className="font-medium text-sm flex items-center gap-1">
+                                          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                                          Accessibility Issues:
+                                        </div>
+                                        <div className="mt-2 space-y-1">
+                                          {result.accessibilityIssues.map((issue: any, iIdx: number) => (
+                                            <div key={iIdx} className="text-sm pl-5">
+                                              <Badge variant="outline" className="mr-2">{issue.impact}</Badge>
+                                              {issue.description} ({issue.nodes} elements)
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {result.errorMessage && (
+                                      <div className="mt-3 p-2 bg-red-50 dark:bg-red-950 rounded text-sm text-red-700 dark:text-red-300">
+                                        {result.errorMessage}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center text-muted-foreground py-12">
+                  {runs.length > 0 ? (
+                    <p>Select a test run from history to view results</p>
                   ) : (
-                    paginatedRuns.map(run => (
-                      <TableRow key={run.id} data-testid={`row-run-${run.id}`}>
-                        <TableCell className="font-medium">{run.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{run.scope}</Badge>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(run.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="text-green-600">{run.passedTests} passed</span>
-                            <span className="text-destructive">{run.failedTests} failed</span>
-                            <span className="text-muted-foreground">{run.skippedTests} skipped</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{run.duration ? `${run.duration}ms` : "-"}</TableCell>
-                        <TableCell>
-                          {run.createdAt ? format(new Date(run.createdAt), "MMM d, yyyy HH:mm") : "-"}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    <p>No test runs yet. Click "Run Tests" to start.</p>
                   )}
-                </TableBody>
-              </Table>
-              <DataTableFooter
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={onPageChange}
-                onPageSizeChange={onPageSizeChange}
-              />
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        <TabsContent value="registry" className="space-y-4">
+        <TabsContent value="history">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2">
-              <div>
-                <CardTitle>Test Registry</CardTitle>
-                <CardDescription>Modules, pages, features, and test cases</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" data-testid="button-add-module">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Module
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {modules.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <TestTube2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No test modules registered yet.</p>
-                  <p className="text-sm">Add a module to start building your test suite.</p>
+            <CardContent className="pt-6">
+              {runsLoading ? (
+                <div className="text-center py-8">Loading...</div>
+              ) : runs.length === 0 ? (
+                <div className="text-center text-muted-foreground py-12">
+                  No test runs yet. Click "Run Tests" to start.
                 </div>
               ) : (
-                <Accordion type="multiple" className="w-full">
-                  {modules.map(module => (
-                    <AccordionItem key={module.id} value={module.id}>
-                      <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <Layers className="w-4 h-4" />
-                          <span className="font-medium">{module.name}</span>
-                          <Badge variant="secondary" className="ml-2">{module.pages.length} pages</Badge>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="pl-6 space-y-2">
-                          {module.pages.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-2">No pages defined</p>
-                          ) : (
-                            module.pages.map(page => (
-                              <Accordion key={page.id} type="multiple" className="w-full">
-                                <AccordionItem value={page.id} className="border-0">
-                                  <AccordionTrigger className="hover:no-underline py-2">
-                                    <div className="flex items-center gap-2">
-                                      <FileText className="w-4 h-4" />
-                                      <span>{page.name}</span>
-                                      <Badge variant="outline" className="ml-2">{page.features.length} features</Badge>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    <div className="pl-6 space-y-1">
-                                      {page.features.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground py-2">No features defined</p>
-                                      ) : (
-                                        page.features.map(feature => (
-                                          <div key={feature.id} className="flex items-center gap-2 py-1">
-                                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                                            <span className="text-sm">{feature.name}</span>
-                                            <Badge variant="secondary" className="text-xs">{feature.testLevel}</Badge>
-                                            <Badge variant="outline" className="text-xs">{feature.testCases.length} tests</Badge>
-                                          </div>
-                                        ))
-                                      )}
-                                    </div>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              </Accordion>
-                            ))
-                          )}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Run</TableHead>
+                      <TableHead>Scope</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Passed</TableHead>
+                      <TableHead>Failed</TableHead>
+                      <TableHead>A11y Score</TableHead>
+                      <TableHead>Duration</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {runs.map((run) => (
+                      <TableRow key={run.id} data-testid={`row-run-${run.id}`}>
+                        <TableCell className="font-medium">{run.name}</TableCell>
+                        <TableCell>{run.scope}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(run.status)}
+                            {getStatusBadge(run.status)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-green-600 font-medium">{run.passedTests}</TableCell>
+                        <TableCell className="text-red-600 font-medium">{run.failedTests}</TableCell>
+                        <TableCell>{run.accessibilityScore || "-"}</TableCell>
+                        <TableCell>{formatDuration(run.duration)}</TableCell>
+                        <TableCell>{format(new Date(run.createdAt), "PPp")}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedRunId(run.id)}
+                            data-testid={`button-view-${run.id}`}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      <Dialog open={resultDialogOpen} onOpenChange={setResultDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Test Results</DialogTitle>
-            <DialogDescription>
-              {lastResult?.name}
-            </DialogDescription>
-          </DialogHeader>
-          {lastResult && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-muted rounded-md">
-                  <div className="text-2xl font-bold">{lastResult.totalTests}</div>
-                  <div className="text-xs text-muted-foreground">Total</div>
-                </div>
-                <div className="text-center p-3 bg-green-100 dark:bg-green-900/30 rounded-md">
-                  <div className="text-2xl font-bold text-green-600">{lastResult.passedTests}</div>
-                  <div className="text-xs text-green-600">Passed</div>
-                </div>
-                <div className="text-center p-3 bg-red-100 dark:bg-red-900/30 rounded-md">
-                  <div className="text-2xl font-bold text-destructive">{lastResult.failedTests}</div>
-                  <div className="text-xs text-destructive">Failed</div>
-                </div>
-                <div className="text-center p-3 bg-muted rounded-md">
-                  <div className="text-2xl font-bold text-muted-foreground">{lastResult.skippedTests}</div>
-                  <div className="text-xs text-muted-foreground">Skipped</div>
-                </div>
-              </div>
-
-              <Progress 
-                value={(lastResult.passedTests / Math.max(lastResult.totalTests, 1)) * 100} 
-                className="h-2"
-              />
-
-              {lastResult.totalTests === 0 ? (
-                <div className="p-4 bg-amber-100 dark:bg-amber-900/30 rounded-md text-center">
-                  <AlertTriangle className="w-8 h-8 text-amber-600 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">No test cases found</p>
-                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                    This module doesn't have test cases defined for the selected test levels.<br />
-                    Define test cases in the Test Registry tab or contact the development team.
-                  </p>
-                </div>
-              ) : lastResult.results.length > 0 && (
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                  {lastResult.results.map((result, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                      <div className="flex items-center gap-2">
-                        {result.status === "passed" && <CheckCircle className="w-4 h-4 text-green-600" />}
-                        {result.status === "failed" && <XCircle className="w-4 h-4 text-destructive" />}
-                        {result.status === "skipped" && <AlertTriangle className="w-4 h-4 text-muted-foreground" />}
-                        <span className="text-sm">{result.testCaseName}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{result.duration}ms</span>
-                        {getStatusBadge(result.status)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setResultDialogOpen(false)} data-testid="button-close-results">
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

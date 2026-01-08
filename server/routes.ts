@@ -9,6 +9,9 @@ import { connexcsTools } from "./connexcs-tools-service";
 import { auditService } from "./audit";
 import { sendWelcomeEmail, sendPaymentReceived, sendReferralReward, sendLowBalanceAlert } from "./brevo";
 import { z } from "zod";
+import { db } from "./db";
+import { e2eRuns, e2eResults } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { registerAiVoiceRoutes } from "./ai-voice-routes";
 import { 
@@ -8063,499 +8066,61 @@ export async function registerRoutes(
     }
   });
 
-  // ==================== TESTING ENGINE ====================
-  const { testingEngineRepository } = await import("./testing-engine-repository");
-  const { testingEngineService } = await import("./testing-engine-service");
+  // ==================== E2E TESTING ENGINE ====================
+  const { runE2eTests, getModuleList, getPageCount } = await import("./e2e-runner");
 
-  // Get all modules
-  app.get("/api/testing-engine/modules", async (req, res) => {
+  // Get available modules for testing
+  app.get("/api/e2e/modules", async (req, res) => {
     try {
-      const modules = await testingEngineRepository.getModules();
-      res.json(modules);
+      const modules = getModuleList();
+      res.json({ modules, totalPages: getPageCount() });
     } catch (error) {
-      console.error("Failed to fetch test modules:", error);
-      res.status(500).json({ error: "Failed to fetch test modules" });
+      console.error("Failed to fetch E2E modules:", error);
+      res.status(500).json({ error: "Failed to fetch modules" });
     }
   });
 
-  // Get module by ID
-  app.get("/api/testing-engine/modules/:id", async (req, res) => {
-    try {
-      const module = await testingEngineRepository.getModuleById(req.params.id);
-      if (!module) return res.status(404).json({ error: "Module not found" });
-      res.json(module);
-    } catch (error) {
-      console.error("Failed to fetch test module:", error);
-      res.status(500).json({ error: "Failed to fetch test module" });
-    }
-  });
-
-  // Create module
-  app.post("/api/testing-engine/modules", async (req, res) => {
-    try {
-      const module = await testingEngineRepository.createModule({
-        name: req.body.name,
-        slug: req.body.slug,
-        description: req.body.description,
-        route: req.body.route,
-        icon: req.body.icon,
-        enabled: req.body.enabled ?? true,
-        order: req.body.order ?? 0,
-      });
-      res.status(201).json(module);
-    } catch (error) {
-      console.error("Failed to create test module:", error);
-      res.status(500).json({ error: "Failed to create test module" });
-    }
-  });
-
-  // Get pages (optionally filtered by module)
-  app.get("/api/testing-engine/pages", async (req, res) => {
-    try {
-      const moduleId = req.query.moduleId as string | undefined;
-      const pages = await testingEngineRepository.getPages(moduleId);
-      res.json(pages);
-    } catch (error) {
-      console.error("Failed to fetch test pages:", error);
-      res.status(500).json({ error: "Failed to fetch test pages" });
-    }
-  });
-
-  // Create page
-  app.post("/api/testing-engine/pages", async (req, res) => {
-    try {
-      const page = await testingEngineRepository.createPage({
-        moduleId: req.body.moduleId,
-        name: req.body.name,
-        slug: req.body.slug,
-        description: req.body.description,
-        route: req.body.route,
-        enabled: req.body.enabled ?? true,
-        order: req.body.order ?? 0,
-      });
-      res.status(201).json(page);
-    } catch (error) {
-      console.error("Failed to create test page:", error);
-      res.status(500).json({ error: "Failed to create test page" });
-    }
-  });
-
-  // Get features (optionally filtered by page)
-  app.get("/api/testing-engine/features", async (req, res) => {
-    try {
-      const pageId = req.query.pageId as string | undefined;
-      const features = await testingEngineRepository.getFeatures(pageId);
-      res.json(features);
-    } catch (error) {
-      console.error("Failed to fetch test features:", error);
-      res.status(500).json({ error: "Failed to fetch test features" });
-    }
-  });
-
-  // Create feature
-  app.post("/api/testing-engine/features", async (req, res) => {
-    try {
-      const feature = await testingEngineRepository.createFeature({
-        pageId: req.body.pageId,
-        name: req.body.name,
-        slug: req.body.slug,
-        description: req.body.description,
-        testLevel: req.body.testLevel,
-        enabled: req.body.enabled ?? true,
-        order: req.body.order ?? 0,
-      });
-      res.status(201).json(feature);
-    } catch (error) {
-      console.error("Failed to create test feature:", error);
-      res.status(500).json({ error: "Failed to create test feature" });
-    }
-  });
-
-  // Get test cases (optionally filtered by feature)
-  app.get("/api/testing-engine/test-cases", async (req, res) => {
-    try {
-      const featureId = req.query.featureId as string | undefined;
-      const testCases = await testingEngineRepository.getTestCases(featureId);
-      res.json(testCases);
-    } catch (error) {
-      console.error("Failed to fetch test cases:", error);
-      res.status(500).json({ error: "Failed to fetch test cases" });
-    }
-  });
-
-  // Create test case
-  app.post("/api/testing-engine/test-cases", async (req, res) => {
-    try {
-      const testCase = await testingEngineRepository.createTestCase({
-        featureId: req.body.featureId,
-        name: req.body.name,
-        description: req.body.description,
-        testLevel: req.body.testLevel,
-        selector: req.body.selector,
-        apiEndpoint: req.body.apiEndpoint,
-        apiMethod: req.body.apiMethod,
-        testData: req.body.testData,
-        expectedResult: req.body.expectedResult,
-        timeout: req.body.timeout ?? 30000,
-        enabled: req.body.enabled ?? true,
-        order: req.body.order ?? 0,
-      });
-      res.status(201).json(testCase);
-    } catch (error) {
-      console.error("Failed to create test case:", error);
-      res.status(500).json({ error: "Failed to create test case" });
-    }
-  });
-
-  // Get full hierarchy
-  app.get("/api/testing-engine/hierarchy", async (req, res) => {
-    try {
-      const hierarchy = await testingEngineRepository.getFullHierarchy();
-      res.json(hierarchy);
-    } catch (error) {
-      console.error("Failed to fetch hierarchy:", error);
-      res.status(500).json({ error: "Failed to fetch hierarchy" });
-    }
-  });
-
-  // Get test runs
-  app.get("/api/testing-engine/runs", async (req, res) => {
+  // Get all E2E test runs
+  app.get("/api/e2e/runs", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
-      const runs = await testingEngineRepository.getTestRuns(limit);
+      const runs = await db.select().from(e2eRuns).orderBy(desc(e2eRuns.createdAt)).limit(limit);
       res.json(runs);
     } catch (error) {
-      console.error("Failed to fetch test runs:", error);
+      console.error("Failed to fetch E2E runs:", error);
       res.status(500).json({ error: "Failed to fetch test runs" });
     }
   });
 
-  // Get run results
-  app.get("/api/testing-engine/runs/:id/results", async (req, res) => {
+  // Get E2E run with results
+  app.get("/api/e2e/runs/:id", async (req, res) => {
     try {
-      const run = await testingEngineRepository.getTestRunById(req.params.id);
+      const [run] = await db.select().from(e2eRuns).where(eq(e2eRuns.id, req.params.id));
       if (!run) return res.status(404).json({ error: "Test run not found" });
-      const results = await testingEngineRepository.getTestRunResults(req.params.id);
+      const results = await db.select().from(e2eResults).where(eq(e2eResults.runId, req.params.id));
       res.json({ run, results });
     } catch (error) {
-      console.error("Failed to fetch run results:", error);
-      res.status(500).json({ error: "Failed to fetch run results" });
+      console.error("Failed to fetch E2E run:", error);
+      res.status(500).json({ error: "Failed to fetch test run" });
     }
   });
 
-  // Execute tests
-  app.post("/api/testing-engine/execute", async (req, res) => {
+  // Run E2E tests
+  app.post("/api/e2e/run", async (req, res) => {
     try {
       const userId = (req as any).user?.id;
-      const config = {
-        scope: req.body.scope,
-        scopeId: req.body.scopeId,
-        testLevels: req.body.testLevels,
-        dryRun: req.body.dryRun ?? false,
-        triggeredBy: userId || "system",
-      };
-      const result = await testingEngineService.executeTests(config);
-      res.json(result);
-    } catch (error) {
-      console.error("Failed to execute tests:", error);
-      res.status(500).json({ error: "Failed to execute tests" });
-    }
-  });
-
-  // Seed test data - supports per-module seeding with upsert by slug
-  app.post("/api/testing-engine/seed", async (req, res) => {
-    try {
-      const moduleSlug = req.body.module || "did";
-      const forceReseed = req.body.force === true;
+      const scope = req.body.scope || "all";
       
-      const existingModule = await testingEngineRepository.getModuleBySlug(moduleSlug);
-      if (existingModule && !forceReseed) {
-        return res.json({ message: `Module '${moduleSlug}' already exists. Use force=true to reseed.`, seeded: false });
-      }
-
-      // Helper to upsert or create module
-      const upsertModule = async (data: any) => {
-        const existing = await testingEngineRepository.getModuleBySlug(data.slug);
-        if (existing) {
-          return await testingEngineRepository.updateModule(existing.id, data) || existing;
-        }
-        return await testingEngineRepository.createModule(data);
-      };
-
-      if (moduleSlug === "did") {
-        const didModule = await upsertModule({
-          name: "DID Management",
-          slug: "did",
-          description: "Direct Inward Dial number management module",
-          isActive: true,
-          order: 1,
-        });
-
-        // Clear existing pages/features/test cases if force reseeding
-        if (forceReseed) {
-          const existingPages = await testingEngineRepository.getPages(didModule.id);
-          for (const page of existingPages) {
-            const features = await testingEngineRepository.getFeatures(page.id);
-            for (const feature of features) {
-              const testCases = await testingEngineRepository.getTestCases(feature.id);
-              for (const tc of testCases) {
-                await testingEngineRepository.deleteTestCase(tc.id);
-              }
-              await testingEngineRepository.deleteFeature(feature.id);
-            }
-            await testingEngineRepository.deletePage(page.id);
-          }
-        }
-
-        const countriesPage = await testingEngineRepository.createPage({
-          moduleId: didModule.id,
-          name: "DID Countries",
-          slug: "did-countries",
-          route: "/admin/did-countries",
-          description: "Manage DID countries and regions",
-          enabled: true,
-          order: 1,
-        });
-
-        const providersPage = await testingEngineRepository.createPage({
-          moduleId: didModule.id,
-          name: "DID Providers",
-          slug: "did-providers",
-          route: "/admin/did-providers",
-          description: "Manage DID providers",
-          enabled: true,
-          order: 2,
-        });
-
-        const inventoryPage = await testingEngineRepository.createPage({
-          moduleId: didModule.id,
-          name: "DID Inventory",
-          slug: "did-inventory",
-          route: "/admin/did-inventory",
-          description: "Manage DID inventory",
-          enabled: true,
-          order: 3,
-        });
-
-        // Countries features and test cases
-        const countryCrudFeature = await testingEngineRepository.createFeature({
-          pageId: countriesPage.id,
-          name: "Country CRUD Operations",
-          slug: "country-crud",
-          description: "Create, read, update, delete DID countries",
-          testLevel: "crud",
-          enabled: true,
-          order: 1,
-        });
-
-        const countryApiFeature = await testingEngineRepository.createFeature({
-          pageId: countriesPage.id,
-          name: "Country API Endpoints",
-          slug: "country-api",
-          description: "Test DID countries REST API",
-          testLevel: "api",
-          enabled: true,
-          order: 2,
-        });
-
-        // Providers features
-        const providerCrudFeature = await testingEngineRepository.createFeature({
-          pageId: providersPage.id,
-          name: "Provider CRUD Operations",
-          slug: "provider-crud",
-          description: "Create, read, update, delete DID providers",
-          testLevel: "crud",
-          enabled: true,
-          order: 1,
-        });
-
-        // Inventory features
-        const inventoryCrudFeature = await testingEngineRepository.createFeature({
-          pageId: inventoryPage.id,
-          name: "Inventory CRUD Operations",
-          slug: "inventory-crud",
-          description: "Create, read, update, delete DID inventory items",
-          testLevel: "crud",
-          enabled: true,
-          order: 1,
-        });
-
-        // Country test cases
-        await testingEngineRepository.createTestCase({
-          featureId: countryCrudFeature.id,
-          name: "Create DID country",
-          description: "POST /api/did-countries creates a new country",
-          testLevel: "crud",
-          apiEndpoint: "/api/did-countries",
-          apiMethod: "POST",
-          expectedResult: { statusCode: 201 },
-          testData: { name: "Test Country", isoCode: "TC", dialCode: "+999", isActive: true },
-          order: 1,
-          enabled: true,
-        });
-
-        await testingEngineRepository.createTestCase({
-          featureId: countryCrudFeature.id,
-          name: "List DID countries",
-          description: "GET /api/did-countries returns list of countries",
-          testLevel: "api",
-          apiEndpoint: "/api/did-countries",
-          apiMethod: "GET",
-          expectedResult: { statusCode: 200 },
-          order: 2,
-          enabled: true,
-        });
-
-        await testingEngineRepository.createTestCase({
-          featureId: countryApiFeature.id,
-          name: "Get country by ID",
-          description: "GET /api/did-countries/:id returns country details",
-          testLevel: "api",
-          apiEndpoint: "/api/did-countries/{id}",
-          apiMethod: "GET",
-          expectedResult: { statusCode: 200 },
-          order: 1,
-          enabled: true,
-        });
-
-        // Provider test cases
-        await testingEngineRepository.createTestCase({
-          featureId: providerCrudFeature.id,
-          name: "Create DID provider",
-          description: "POST /api/did-providers creates a new provider",
-          testLevel: "crud",
-          apiEndpoint: "/api/did-providers",
-          apiMethod: "POST",
-          expectedResult: { statusCode: 201 },
-          testData: { name: "Test Provider", code: "TPROV", isActive: true },
-          order: 1,
-          enabled: true,
-        });
-
-        await testingEngineRepository.createTestCase({
-          featureId: providerCrudFeature.id,
-          name: "List DID providers",
-          description: "GET /api/did-providers returns list of providers",
-          testLevel: "api",
-          apiEndpoint: "/api/did-providers",
-          apiMethod: "GET",
-          expectedResult: { statusCode: 200 },
-          order: 2,
-          enabled: true,
-        });
-
-        // Inventory test cases
-        await testingEngineRepository.createTestCase({
-          featureId: inventoryCrudFeature.id,
-          name: "List DID inventory",
-          description: "GET /api/did-inventory returns list of DIDs",
-          testLevel: "crud",
-          apiEndpoint: "/api/did-inventory",
-          apiMethod: "GET",
-          expectedResult: { statusCode: 200 },
-          order: 1,
-          enabled: true,
-        });
-
-        await testingEngineRepository.createTestCase({
-          featureId: inventoryCrudFeature.id,
-          name: "Create DID in inventory",
-          description: "POST /api/did-inventory creates a new DID",
-          testLevel: "crud",
-          apiEndpoint: "/api/did-inventory",
-          apiMethod: "POST",
-          expectedResult: { statusCode: 200 },
-          testData: { number: "+19995551234", countryId: "1", providerId: "1", status: "available" },
-          order: 2,
-          enabled: true,
-        });
-
-        res.json({ 
-          message: "DID module test data seeded successfully", 
-          seeded: true,
-          module: didModule,
-          pages: [countriesPage, providersPage, inventoryPage],
-          testCasesCreated: 7,
-        });
-      } else {
-        res.status(400).json({ error: `Unknown module: ${moduleSlug}. Supported: did` });
-      }
-    } catch (error) {
-      console.error("Failed to seed test data:", error);
-      res.status(500).json({ error: "Failed to seed test data" });
-    }
-  });
-
-  // Get stats
-  app.get("/api/testing-engine/stats", async (req, res) => {
-    try {
-      const stats = await testingEngineService.getTestStats();
-      res.json(stats);
-    } catch (error) {
-      console.error("Failed to fetch stats:", error);
-      res.status(500).json({ error: "Failed to fetch stats" });
-    }
-  });
-
-  // Auto-discover modules and pages from sidebar configuration
-  app.post("/api/testing-engine/autodiscover", async (req, res) => {
-    try {
-      const { autoDiscoverAndRegister } = await import("./testing-engine-autodiscover");
-      const result = await autoDiscoverAndRegister();
-      res.json({
-        message: `Auto-discovery complete: ${result.modulesCreated} modules created, ${result.pagesCreated} pages created`,
-        ...result,
-      });
-    } catch (error) {
-      console.error("Failed to auto-discover:", error);
-      res.status(500).json({ error: "Failed to auto-discover modules and pages" });
-    }
-  });
-
-  // E2E Testing - Run real browser tests with Playwright
-  app.post("/api/testing-engine/e2e", async (req, res) => {
-    try {
-      const { scope = "all", moduleId } = req.body;
-      const { runE2ETests } = await import("./playwright-e2e-runner");
+      console.log(`[E2E] Starting test run - scope: ${scope}`);
+      const result = await runE2eTests(scope, userId);
       
-      console.log(`[E2E] Starting E2E test run - scope: ${scope}, moduleId: ${moduleId || "all"}`);
-      
-      const result = await runE2ETests({
-        scope: scope as "all" | "module",
-        moduleId,
-      });
-
-      // Store results in database
-      const testRun = await testingEngineRepository.createTestRun({
-        name: result.name,
-        scope: scope,
-        testLevels: ["e2e"],
-        status: result.status,
-        totalTests: result.totalPages,
-        passedTests: result.passedPages,
-        failedTests: result.failedPages,
-        duration: result.duration,
-        startedAt: result.startedAt,
-        completedAt: result.completedAt,
-      });
-
-      // Log E2E results (not storing in test_run_results since those require testCaseId foreign key)
-      console.log(`[E2E] Test run ${testRun.id} completed:`, {
-        totalPages: result.totalPages,
-        passedPages: result.passedPages,
-        failedPages: result.failedPages,
-        results: result.results.map(r => ({ page: r.pageName, status: r.status }))
-      });
-
       res.json({
         success: true,
-        runId: testRun.id,
-        loginSuccess: result.loginSuccess,
+        runId: result.runId,
         summary: {
-          totalPages: result.totalPages,
-          passedPages: result.passedPages,
-          failedPages: result.failedPages,
-          duration: result.duration,
+          total: result.results.length,
+          passed: result.results.filter(r => r.status === "passed").length,
+          failed: result.results.filter(r => r.status === "failed").length,
         },
         results: result.results,
       });

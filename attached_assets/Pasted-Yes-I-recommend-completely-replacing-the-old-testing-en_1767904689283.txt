@@ -1,0 +1,120 @@
+Yes, I recommend completely replacing the old testing engine. Here's the final detailed plan:
+
+Final Testing Engine Redesign
+What Gets Deleted
+Old testModules, testPages, testFeatures, testCases tables (confusing metadata-driven approach)
+Old testRuns, testRunResults tables
+Old testing-engine-service.ts, testing-engine-repository.ts
+Old testing-engine-autodiscover.ts
+The confusing UI with checkboxes
+New System Architecture
+Database (2 simple tables):
+
+e2e_runs:
+  - id, name, scope, status, totalTests, passed, failed
+  - startedAt, completedAt, duration
+  - triggeredBy (super admin who ran it)
+e2e_results:
+  - id, runId, moduleName, pageName, route
+  - status (passed/failed), duration
+  - screenshotPath (on failure)
+  - accessibilityScore, accessibilityIssues
+  - checks (JSON: page loads, content, buttons, forms, accessibility)
+UI Design (Super Admin Panel)
+Location: /admin/testing-engine
+Header Section:
+
+Testing Engine
+Comprehensive E2E testing powered by Playwright + axe-core
+[Run All Tests]  [Run Selected Module ▼]
+Stats Cards (4 cards):
+
+Total Pages	Last Run	Pass Rate	Accessibility Score
+70	2 min ago	98%	94/100
+Tabs:
+
+Run Tests - Execute new test runs
+History - Past runs with drill-down
+Live Results - Real-time progress during run
+Run Tests Tab
+Simple Controls:
+
+Test Scope:  [All Modules ▼]  or  [Select Module: Carriers ▼]
+Test Types (all enabled by default):
+☑ Page Navigation - Pages load without errors
+☑ UI Interactions - Buttons clickable, forms fillable  
+☑ API Endpoints - REST calls return expected data
+☑ Accessibility - WCAG 2.1 AA compliance
+[▶ Run Tests]
+During Run (Live Progress):
+
+Running Tests... 45/70 pages complete
+[████████████░░░░░░░░] 64%
+Current: Testing /admin/carriers
+✓ Dashboard (1.2s)
+✓ POPs (1.8s)  
+✓ Voice Tiers (2.1s)
+● Carriers (running...)
+○ Routes (pending)
+History Tab
+Run History Table:
+
+Run	Scope	Status	Passed	Failed	Duration	Date
+#15	All	✓ Pass	70/70	0	2m 34s	Today 3:45pm
+#14	DID	✗ Fail	4/5	1	12s	Today 2:30pm
+Click any row → Drill-down view:
+
+Run #15 - All Modules
+Started: Today 3:45pm | Duration: 2m 34s | 70/70 passed
+Filter: [All ▼] [Passed ▼] [Failed ▼]
+| Module | Page | Status | Duration | Accessibility |
+|--------|------|--------|----------|---------------|
+| Dashboard | Overview | ✓ | 1.2s | 98/100 |
+| Carriers | List | ✓ | 1.8s | 95/100 |
+| Carriers | Create | ✓ | 2.1s | 92/100 |
+[Click row → See details + screenshot]
+What Each Test Does
+1. Page Navigation Test:
+
+Navigate to page
+Wait for content to load
+Check no JavaScript errors in console
+Verify page title exists
+2. UI Interaction Test:
+
+Find all buttons → verify clickable
+Find all form inputs → verify fillable
+Find dropdowns → verify openable
+Check for error states
+3. API Test:
+
+Call GET endpoint for the page's data
+Verify 200 response
+Verify response structure matches schema
+4. Accessibility Test (axe-core):
+
+Scan page for WCAG violations
+Report color contrast issues
+Report missing labels
+Calculate accessibility score
+Auto-Sync with Platform
+YES - automatically synced! The system will:
+
+Auto-discover all pages from the sidebar configuration (same 70 pages we already have)
+
+Auto-generate tests for each page based on its type:
+
+List pages → test table renders, pagination works
+Form pages → test form fills, validation, submit
+Dashboard pages → test cards render, data loads
+No manual test case creation needed - it just works out of the box
+
+Summary
+Feature	Old System	New System
+Test discovery	Manual database entries	Auto from sidebar
+Test execution	Fake API mocks	Real Playwright browser
+Accessibility	None	Full axe-core WCAG
+Screenshots	None	On every failure
+Results storage	Complex 6 tables	Simple 2 tables
+UI	Confusing checkboxes	Clean single button
+Ready to use	Only DID module	All 70 pages immediately
