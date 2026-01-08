@@ -8063,5 +8063,215 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== TESTING ENGINE ====================
+  const { testingEngineRepository } = await import("./testing-engine-repository");
+  const { testingEngineService } = await import("./testing-engine-service");
+
+  // Get all modules
+  app.get("/api/testing-engine/modules", async (req, res) => {
+    try {
+      const modules = await testingEngineRepository.getModules();
+      res.json(modules);
+    } catch (error) {
+      console.error("Failed to fetch test modules:", error);
+      res.status(500).json({ error: "Failed to fetch test modules" });
+    }
+  });
+
+  // Get module by ID
+  app.get("/api/testing-engine/modules/:id", async (req, res) => {
+    try {
+      const module = await testingEngineRepository.getModuleById(req.params.id);
+      if (!module) return res.status(404).json({ error: "Module not found" });
+      res.json(module);
+    } catch (error) {
+      console.error("Failed to fetch test module:", error);
+      res.status(500).json({ error: "Failed to fetch test module" });
+    }
+  });
+
+  // Create module
+  app.post("/api/testing-engine/modules", async (req, res) => {
+    try {
+      const module = await testingEngineRepository.createModule({
+        name: req.body.name,
+        slug: req.body.slug,
+        description: req.body.description,
+        route: req.body.route,
+        icon: req.body.icon,
+        enabled: req.body.enabled ?? true,
+        order: req.body.order ?? 0,
+      });
+      res.status(201).json(module);
+    } catch (error) {
+      console.error("Failed to create test module:", error);
+      res.status(500).json({ error: "Failed to create test module" });
+    }
+  });
+
+  // Get pages (optionally filtered by module)
+  app.get("/api/testing-engine/pages", async (req, res) => {
+    try {
+      const moduleId = req.query.moduleId as string | undefined;
+      const pages = await testingEngineRepository.getPages(moduleId);
+      res.json(pages);
+    } catch (error) {
+      console.error("Failed to fetch test pages:", error);
+      res.status(500).json({ error: "Failed to fetch test pages" });
+    }
+  });
+
+  // Create page
+  app.post("/api/testing-engine/pages", async (req, res) => {
+    try {
+      const page = await testingEngineRepository.createPage({
+        moduleId: req.body.moduleId,
+        name: req.body.name,
+        slug: req.body.slug,
+        description: req.body.description,
+        route: req.body.route,
+        enabled: req.body.enabled ?? true,
+        order: req.body.order ?? 0,
+      });
+      res.status(201).json(page);
+    } catch (error) {
+      console.error("Failed to create test page:", error);
+      res.status(500).json({ error: "Failed to create test page" });
+    }
+  });
+
+  // Get features (optionally filtered by page)
+  app.get("/api/testing-engine/features", async (req, res) => {
+    try {
+      const pageId = req.query.pageId as string | undefined;
+      const features = await testingEngineRepository.getFeatures(pageId);
+      res.json(features);
+    } catch (error) {
+      console.error("Failed to fetch test features:", error);
+      res.status(500).json({ error: "Failed to fetch test features" });
+    }
+  });
+
+  // Create feature
+  app.post("/api/testing-engine/features", async (req, res) => {
+    try {
+      const feature = await testingEngineRepository.createFeature({
+        pageId: req.body.pageId,
+        name: req.body.name,
+        slug: req.body.slug,
+        description: req.body.description,
+        testLevel: req.body.testLevel,
+        enabled: req.body.enabled ?? true,
+        order: req.body.order ?? 0,
+      });
+      res.status(201).json(feature);
+    } catch (error) {
+      console.error("Failed to create test feature:", error);
+      res.status(500).json({ error: "Failed to create test feature" });
+    }
+  });
+
+  // Get test cases (optionally filtered by feature)
+  app.get("/api/testing-engine/test-cases", async (req, res) => {
+    try {
+      const featureId = req.query.featureId as string | undefined;
+      const testCases = await testingEngineRepository.getTestCases(featureId);
+      res.json(testCases);
+    } catch (error) {
+      console.error("Failed to fetch test cases:", error);
+      res.status(500).json({ error: "Failed to fetch test cases" });
+    }
+  });
+
+  // Create test case
+  app.post("/api/testing-engine/test-cases", async (req, res) => {
+    try {
+      const testCase = await testingEngineRepository.createTestCase({
+        featureId: req.body.featureId,
+        name: req.body.name,
+        description: req.body.description,
+        testLevel: req.body.testLevel,
+        selector: req.body.selector,
+        apiEndpoint: req.body.apiEndpoint,
+        apiMethod: req.body.apiMethod,
+        testData: req.body.testData,
+        expectedResult: req.body.expectedResult,
+        timeout: req.body.timeout ?? 30000,
+        enabled: req.body.enabled ?? true,
+        order: req.body.order ?? 0,
+      });
+      res.status(201).json(testCase);
+    } catch (error) {
+      console.error("Failed to create test case:", error);
+      res.status(500).json({ error: "Failed to create test case" });
+    }
+  });
+
+  // Get full hierarchy
+  app.get("/api/testing-engine/hierarchy", async (req, res) => {
+    try {
+      const hierarchy = await testingEngineRepository.getFullHierarchy();
+      res.json(hierarchy);
+    } catch (error) {
+      console.error("Failed to fetch hierarchy:", error);
+      res.status(500).json({ error: "Failed to fetch hierarchy" });
+    }
+  });
+
+  // Get test runs
+  app.get("/api/testing-engine/runs", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const runs = await testingEngineRepository.getTestRuns(limit);
+      res.json(runs);
+    } catch (error) {
+      console.error("Failed to fetch test runs:", error);
+      res.status(500).json({ error: "Failed to fetch test runs" });
+    }
+  });
+
+  // Get run results
+  app.get("/api/testing-engine/runs/:id/results", async (req, res) => {
+    try {
+      const run = await testingEngineRepository.getTestRunById(req.params.id);
+      if (!run) return res.status(404).json({ error: "Test run not found" });
+      const results = await testingEngineRepository.getTestRunResults(req.params.id);
+      res.json({ run, results });
+    } catch (error) {
+      console.error("Failed to fetch run results:", error);
+      res.status(500).json({ error: "Failed to fetch run results" });
+    }
+  });
+
+  // Execute tests
+  app.post("/api/testing-engine/execute", async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+      const config = {
+        scope: req.body.scope,
+        scopeId: req.body.scopeId,
+        testLevels: req.body.testLevels,
+        dryRun: req.body.dryRun ?? false,
+        triggeredBy: userId || "system",
+      };
+      const result = await testingEngineService.executeTests(config);
+      res.json(result);
+    } catch (error) {
+      console.error("Failed to execute tests:", error);
+      res.status(500).json({ error: "Failed to execute tests" });
+    }
+  });
+
+  // Get stats
+  app.get("/api/testing-engine/stats", async (req, res) => {
+    try {
+      const stats = await testingEngineService.getTestStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
   return httpServer;
 }
