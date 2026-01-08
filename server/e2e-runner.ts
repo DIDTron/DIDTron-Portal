@@ -228,13 +228,15 @@ async function testPage(page: Page, pageData: PageToTest): Promise<PageResult> {
   }
 }
 
-function getScopeDetails(scope: string): { pagesToTest: PageToTest[]; scopeName: string } {
+function getScopeDetails(scope: string): { pagesToTest: PageToTest[]; scopeName: string; originalScope: string } {
   let pagesToTest: PageToTest[];
   let scopeName = scope;
+  let originalScope = scope;
   
-  if (scope === "all") {
+  if (scope === "all" || scope === "All Modules") {
     pagesToTest = ALL_PAGES;
     scopeName = "All Modules";
+    originalScope = "all";
   } else if (scope.startsWith("page:")) {
     const route = scope.substring(5);
     pagesToTest = ALL_PAGES.filter(p => p.route === route);
@@ -244,7 +246,7 @@ function getScopeDetails(scope: string): { pagesToTest: PageToTest[]; scopeName:
     scopeName = scope;
   }
   
-  return { pagesToTest, scopeName };
+  return { pagesToTest, scopeName, originalScope };
 }
 
 export async function createE2eRun(scope: string, triggeredBy?: string): Promise<string> {
