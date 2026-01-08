@@ -118,7 +118,6 @@ export const azDestinationsRepository = {
           destination: dest.destination, 
           region: dest.region,
           billingIncrement: dest.billingIncrement,
-          connectionFee: dest.connectionFee,
           gracePeriod: dest.gracePeriod,
           isActive: dest.isActive,
           updatedAt: new Date() 
