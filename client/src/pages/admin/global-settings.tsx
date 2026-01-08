@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -320,7 +321,10 @@ export function GlobalSettingsAZDatabase() {
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(10);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importMode, setImportMode] = useState<"update" | "replace">("update");
   const [pageInput, setPageInput] = useState("");
   const limit = pageSize;
 
@@ -430,7 +434,7 @@ export function GlobalSettingsAZDatabase() {
     return result;
   }, []);
 
-  const handleImport = async (file: File) => {
+  const handleImport = async (file: File, mode: "update" | "replace") => {
     setIsImporting(true);
     setImportProgress("Reading file...");
     
@@ -469,6 +473,11 @@ export function GlobalSettingsAZDatabase() {
         throw new Error("No valid destinations found in CSV");
       }
       
+      if (mode === "replace") {
+        setImportProgress("Deleting existing destinations...");
+        await apiRequest("DELETE", "/api/az-destinations");
+      }
+      
       const batchSize = 1000;
       let totalInserted = 0;
       let totalUpdated = 0;
@@ -491,13 +500,24 @@ export function GlobalSettingsAZDatabase() {
       queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
       toast({ 
         title: "Import complete", 
-        description: `New: ${totalInserted.toLocaleString()}, Updated: ${totalUpdated.toLocaleString()}, Duplicates skipped: ${totalSkipped.toLocaleString()}`,
+        description: mode === "replace" 
+          ? `Replaced with ${totalInserted.toLocaleString()} destinations`
+          : `New: ${totalInserted.toLocaleString()}, Updated: ${totalUpdated.toLocaleString()}, Duplicates skipped: ${totalSkipped.toLocaleString()}`,
       });
     } catch (error) {
       toast({ title: "Import failed", description: (error as Error).message, variant: "destructive" });
     } finally {
       setIsImporting(false);
       setImportProgress("");
+    }
+  };
+
+  const startImport = () => {
+    if (importFile) {
+      setShowImportDialog(false);
+      handleImport(importFile, importMode);
+      setImportFile(null);
+      setImportMode("update");
     }
   };
 
@@ -551,7 +571,10 @@ export function GlobalSettingsAZDatabase() {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleImport(file);
+                if (file) {
+                  setImportFile(file);
+                  setShowImportDialog(true);
+                }
                 e.target.value = "";
               }}
               disabled={isImporting}
@@ -569,6 +592,69 @@ export function GlobalSettingsAZDatabase() {
               </span>
             </Button>
           </label>
+
+          <Dialog open={showImportDialog} onOpenChange={(open) => { 
+            setShowImportDialog(open); 
+            if (!open) { setImportFile(null); setImportMode("update"); }
+          }}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Import CSV File</DialogTitle>
+                <DialogDescription>
+                  Choose how to import the destinations from "{importFile?.name}"
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover-elevate" onClick={() => setImportMode("update")}>
+                    <input
+                      type="radio"
+                      name="importMode"
+                      checked={importMode === "update"}
+                      onChange={() => setImportMode("update")}
+                      className="mt-1"
+                      data-testid="radio-import-update"
+                    />
+                    <div>
+                      <div className="font-medium">Update / Add</div>
+                      <div className="text-sm text-muted-foreground">
+                        Add new destinations and update existing ones. Existing destinations not in the CSV will remain unchanged.
+                      </div>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover-elevate" onClick={() => setImportMode("replace")}>
+                    <input
+                      type="radio"
+                      name="importMode"
+                      checked={importMode === "replace"}
+                      onChange={() => setImportMode("replace")}
+                      className="mt-1"
+                      data-testid="radio-import-replace"
+                    />
+                    <div>
+                      <div className="font-medium">Full Replacement</div>
+                      <div className="text-sm text-muted-foreground">
+                        Delete ALL existing destinations first, then import the CSV. Use this to completely replace your database.
+                      </div>
+                      {total > 0 && (
+                        <div className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                          Warning: This will delete {total.toLocaleString()} existing destinations
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowImportDialog(false)} data-testid="button-cancel-import">
+                  Cancel
+                </Button>
+                <Button onClick={startImport} data-testid="button-confirm-import">
+                  {importMode === "replace" ? "Replace All & Import" : "Import"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <AlertDialog onOpenChange={(open) => { if (!open) setDeleteConfirmText(""); }}>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={total === 0 || deleteAllMutation.isPending} data-testid="button-delete-all">
@@ -578,15 +664,18 @@ export function GlobalSettingsAZDatabase() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete all destinations?</AlertDialogTitle>
+                <AlertDialogTitle className="text-destructive">Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription className="space-y-3">
+                  <span className="block font-medium text-foreground">
+                    You are about to delete ALL {total.toLocaleString()} destinations from the A-Z Database.
+                  </span>
                   <span className="block">
-                    This will permanently delete all {total.toLocaleString()} destinations from the A-Z database. This action cannot be undone.
+                    This will permanently remove every dial code, destination name, region, and billing increment from your database. This action cannot be undone.
                   </span>
-                  <span className="block text-amber-600 dark:text-amber-400">
-                    Consider exporting a backup first using the Export CSV button.
+                  <span className="block text-amber-600 dark:text-amber-400 font-medium">
+                    We strongly recommend exporting a backup first using the Export CSV button before proceeding.
                   </span>
-                  <span className="block font-medium">
+                  <span className="block font-medium mt-2">
                     Type DELETE to confirm:
                   </span>
                   <Input
@@ -609,7 +698,7 @@ export function GlobalSettingsAZDatabase() {
                   className="bg-destructive text-destructive-foreground"
                   data-testid="button-confirm-delete"
                 >
-                  Delete All
+                  Yes, Delete Everything
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
