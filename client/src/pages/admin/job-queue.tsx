@@ -313,11 +313,11 @@ export default function JobQueuePage() {
                 onClick={async () => {
                   setIsRefreshing(true);
                   await Promise.all([
-                    queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs/stats"] }),
-                    queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] }),
-                    queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs/worker/status"] }),
+                    refetchStats(),
+                    refetchJobs(),
+                    refetchWorker(),
                   ]);
-                  setTimeout(() => setIsRefreshing(false), 500);
+                  setIsRefreshing(false);
                   toast({ title: "Refreshed", description: "Job queue data updated" });
                 }}
                 data-testid="button-refresh"
