@@ -28,8 +28,9 @@ The backend is built with PostgreSQL and Drizzle ORM, featuring a robust job que
 ### Core Principles
 1. **ALL data modification operations MUST go through the job queue** - Imports, bulk deletes, syncs, and any operation affecting multiple records must be queued for audit trail and progress tracking
 2. **ALL user actions in Super Admin portal are logged** - From login to logout, every action is tracked with userId, action, table, recordId, oldValues, newValues, IP, userAgent, timestamp
-3. **Deleted records are retained in trash for 30 days** - Soft delete with restore capability before permanent purge
+3. **Deleted records are retained in trash with configurable retention** - Soft delete with restore capability; retention period configurable (7, 10, 14, 30, 60, 90 days) via Global Settings
 4. **Rollback capability** - Audit log entries with oldValues can be rolled back; completed import jobs can be undone
+5. **Audit logs can be manually purged** - Super Admin can delete all audit logs with confirmation popup (type DELETE to confirm)
 
 ### Auto-Update Rule
 **IMPORTANT**: When ANY new module is added to the Super Admin sidebar (PrimarySidebar or SecondarySidebar), or existing modules are moved/renamed:
