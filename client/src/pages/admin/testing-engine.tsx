@@ -213,6 +213,56 @@ export default function TestingEnginePage() {
     }
   };
 
+  // Count available test cases for the selected scope and levels
+  const countAvailableTests = (): number => {
+    if (!hierarchy) return 0;
+    let count = 0;
+    
+    const countFeatureTests = (feature: TestFeature & { testCases: TestCase[] }) => {
+      return feature.testCases.filter(tc => 
+        tc.enabled && selectedLevels.includes(tc.testLevel as TestLevel)
+      ).length;
+    };
+    
+    const countPageTests = (page: TestPage & { features: Array<TestFeature & { testCases: TestCase[] }> }) => {
+      return page.features.reduce((sum, f) => sum + countFeatureTests(f), 0);
+    };
+    
+    const countModuleTests = (mod: TestModule & { pages: Array<TestPage & { features: Array<TestFeature & { testCases: TestCase[] }> }> }) => {
+      return mod.pages.reduce((sum, p) => sum + countPageTests(p), 0);
+    };
+    
+    switch (testScope) {
+      case "module":
+        const mod = hierarchy.modules.find(m => m.id === selectedModule);
+        if (mod) count = countModuleTests(mod);
+        break;
+      case "page":
+        for (const m of hierarchy.modules) {
+          const page = m.pages.find(p => p.id === selectedPage);
+          if (page) {
+            count = countPageTests(page);
+            break;
+          }
+        }
+        break;
+      case "feature":
+        for (const m of hierarchy.modules) {
+          for (const p of m.pages) {
+            const feature = p.features.find(f => f.id === selectedFeature);
+            if (feature) {
+              count = countFeatureTests(feature);
+              break;
+            }
+          }
+        }
+        break;
+    }
+    return count;
+  };
+
+  const availableTestCount = countAvailableTests();
+
   const canRunTests = () => {
     const scopeId = getScopeId();
     return scopeId && selectedLevels.length > 0;
@@ -467,9 +517,11 @@ export default function TestingEnginePage() {
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
-                  {canRunTests() 
-                    ? `Ready to run ${selectedLevels.length} test type(s) on selected ${testScope}`
-                    : "Select a module and test levels to run"
+                  {!canRunTests() 
+                    ? "Select a module and test levels to run"
+                    : availableTestCount === 0
+                    ? <span className="text-amber-600 dark:text-amber-400">No test cases defined for the selected scope and test levels. Use "Seed Test Cases" to add tests for the DID module.</span>
+                    : `Ready to run ${availableTestCount} test(s) on selected ${testScope}`
                   }
                 </div>
                 <Button 
@@ -665,7 +717,16 @@ export default function TestingEnginePage() {
                 className="h-2"
               />
 
-              {lastResult.results.length > 0 && (
+              {lastResult.totalTests === 0 ? (
+                <div className="p-4 bg-amber-100 dark:bg-amber-900/30 rounded-md text-center">
+                  <AlertTriangle className="w-8 h-8 text-amber-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">No test cases found</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    This module doesn't have test cases defined for the selected test levels.<br />
+                    Use "Seed Test Cases" button to add test cases for the DID module, or define custom test cases in the Registry.
+                  </p>
+                </div>
+              ) : lastResult.results.length > 0 && (
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {lastResult.results.map((result, i) => (
                     <div key={i} className="flex items-center justify-between p-2 bg-muted rounded-md">
