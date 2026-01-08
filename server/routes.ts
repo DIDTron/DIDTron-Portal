@@ -8539,18 +8539,13 @@ export async function registerRoutes(
         completedAt: result.completedAt,
       });
 
-      // Store individual results
-      for (const pageResult of result.results) {
-        await testingEngineRepository.createTestRunResult({
-          runId: testRun.id,
-          testCaseId: null,
-          testCaseName: `${pageResult.moduleName} - ${pageResult.pageName}`,
-          status: pageResult.status,
-          duration: pageResult.duration,
-          errorMessage: pageResult.errorMessage || null,
-          actualResult: JSON.stringify({ checks: pageResult.checks }),
-        });
-      }
+      // Log E2E results (not storing in test_run_results since those require testCaseId foreign key)
+      console.log(`[E2E] Test run ${testRun.id} completed:`, {
+        totalPages: result.totalPages,
+        passedPages: result.passedPages,
+        failedPages: result.failedPages,
+        results: result.results.map(r => ({ page: r.pageName, status: r.status }))
+      });
 
       res.json({
         success: true,
