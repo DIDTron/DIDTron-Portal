@@ -26,7 +26,8 @@ import {
   Clock,
   ChevronRight,
   Settings,
-  Plus
+  Plus,
+  Radar
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -148,6 +149,28 @@ export default function TestingEnginePage() {
     },
   });
 
+  const autoDiscoverMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/testing-engine/autodiscover");
+      return response.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/hierarchy"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testing-engine/stats"] });
+      toast({
+        title: "Auto-Discovery Complete",
+        description: `${result.modulesCreated} modules and ${result.pagesCreated} pages discovered`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to auto-discover",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const executeMutation = useMutation({
     mutationFn: async (config: { scope: string; scopeId: string; testLevels: string[] }) => {
       const response = await apiRequest("POST", "/api/testing-engine/execute", config);
@@ -244,9 +267,22 @@ export default function TestingEnginePage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button
+            variant="default"
+            onClick={() => autoDiscoverMutation.mutate()}
+            disabled={autoDiscoverMutation.isPending}
+            data-testid="button-autodiscover"
+          >
+            {autoDiscoverMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Radar className="w-4 h-4 mr-2" />
+            )}
+            Auto Discover
+          </Button>
+          <Button
             variant="outline"
             onClick={() => seedMutation.mutate()}
-            disabled={seedMutation.isPending || (stats?.totalModules ?? 0) > 0}
+            disabled={seedMutation.isPending}
             data-testid="button-seed-data"
           >
             {seedMutation.isPending ? (
@@ -254,7 +290,7 @@ export default function TestingEnginePage() {
             ) : (
               <Plus className="w-4 h-4 mr-2" />
             )}
-            Seed Test Data
+            Seed Test Cases
           </Button>
           <Button
             variant="outline"

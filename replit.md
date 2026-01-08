@@ -46,6 +46,55 @@ The backend is built with PostgreSQL and Drizzle ORM, featuring a robust job que
 - **Database Persistence**: Dev Tests are stored in PostgreSQL via `dev-tests-repository.ts` to ensure tests survive server restarts
 - **Critical Rule**: NEVER use MemStorage for data that must persist across server restarts - always use database repositories with Drizzle ORM
 
+## Testing Engine (January 2026)
+
+The Testing Engine is a metadata-driven automated testing system that enables testing of any module, page, or feature in the platform.
+
+### Architecture
+- **Test Registry**: Hierarchical structure: Modules → Pages → Features → Test Cases
+- **Auto-Discovery**: Automatically extracts modules and pages from sidebar configuration (`testing-engine-autodiscover.ts`)
+- **Test Orchestration**: Executes tests with configurable scope and test levels (`testing-engine-service.ts`)
+- **Database Persistence**: All test metadata and results stored in PostgreSQL via `testing-engine-repository.ts`
+
+### Database Schema (6 tables)
+- `testModules`: Platform modules (auto-discovered from sidebar)
+- `testPages`: Pages within modules (auto-discovered from sidebar)
+- `testFeatures`: Testable features per page (manually defined)
+- `testCases`: Individual test cases with API endpoints, expected results
+- `testRuns`: Test execution runs with aggregate results
+- `testResults`: Individual test case results linked to runs
+
+### Test Levels (testLevelEnum)
+- `button`: Button click tests
+- `form`: Form submission tests
+- `crud`: Create/Read/Update/Delete operations
+- `navigation`: Page navigation tests
+- `api`: REST API endpoint tests
+- `integration`: Integration tests
+- `e2e`: End-to-end tests
+
+### API Endpoints
+- `POST /api/testing-engine/autodiscover`: Auto-discover modules/pages from sidebar
+- `POST /api/testing-engine/seed`: Seed test data for specific module (e.g., DID)
+- `POST /api/testing-engine/execute`: Execute tests with scope and levels
+- `GET /api/testing-engine/stats`: Get testing statistics
+- `GET /api/testing-engine/runs`: Get test run history
+- `GET /api/testing-engine/runs/:id/results`: Get results for specific run
+
+### UI Location
+- Super Admin Portal: `/admin/testing-engine`
+- Three tabs: Run Tests, History, Registry
+- Auto-Discover button to populate modules/pages
+- Test execution with selectable test levels
+
+### Schema Field Names (Important)
+When creating test features/cases, use these field names:
+- `enabled` (not `isActive`)
+- `testLevel` (not `testType`)
+- `apiEndpoint` (not `endpoint`)
+- `apiMethod` (not `method`)
+- `expectedResult` object (not `expectedStatus`)
+
 ## Audit & Compliance Rules
 
 ### Core Principles

@@ -8310,27 +8310,30 @@ export async function registerRoutes(
         const countriesPage = await testingEngineRepository.createPage({
           moduleId: didModule.id,
           name: "DID Countries",
+          slug: "did-countries",
           route: "/admin/did-countries",
           description: "Manage DID countries and regions",
-          isActive: true,
+          enabled: true,
           order: 1,
         });
 
         const providersPage = await testingEngineRepository.createPage({
           moduleId: didModule.id,
           name: "DID Providers",
+          slug: "did-providers",
           route: "/admin/did-providers",
           description: "Manage DID providers",
-          isActive: true,
+          enabled: true,
           order: 2,
         });
 
         const inventoryPage = await testingEngineRepository.createPage({
           moduleId: didModule.id,
           name: "DID Inventory",
+          slug: "did-inventory",
           route: "/admin/did-inventory",
           description: "Manage DID inventory",
-          isActive: true,
+          enabled: true,
           order: 3,
         });
 
@@ -8338,18 +8341,20 @@ export async function registerRoutes(
         const countryCrudFeature = await testingEngineRepository.createFeature({
           pageId: countriesPage.id,
           name: "Country CRUD Operations",
+          slug: "country-crud",
           description: "Create, read, update, delete DID countries",
           testLevel: "crud",
-          isActive: true,
+          enabled: true,
           order: 1,
         });
 
         const countryApiFeature = await testingEngineRepository.createFeature({
           pageId: countriesPage.id,
           name: "Country API Endpoints",
+          slug: "country-api",
           description: "Test DID countries REST API",
           testLevel: "api",
-          isActive: true,
+          enabled: true,
           order: 2,
         });
 
@@ -8357,9 +8362,10 @@ export async function registerRoutes(
         const providerCrudFeature = await testingEngineRepository.createFeature({
           pageId: providersPage.id,
           name: "Provider CRUD Operations",
+          slug: "provider-crud",
           description: "Create, read, update, delete DID providers",
           testLevel: "crud",
-          isActive: true,
+          enabled: true,
           order: 1,
         });
 
@@ -8367,9 +8373,10 @@ export async function registerRoutes(
         const inventoryCrudFeature = await testingEngineRepository.createFeature({
           pageId: inventoryPage.id,
           name: "Inventory CRUD Operations",
+          slug: "inventory-crud",
           description: "Create, read, update, delete DID inventory items",
           testLevel: "crud",
-          isActive: true,
+          enabled: true,
           order: 1,
         });
 
@@ -8378,40 +8385,37 @@ export async function registerRoutes(
           featureId: countryCrudFeature.id,
           name: "Create DID country",
           description: "POST /api/did-countries creates a new country",
-          testType: "api",
           testLevel: "crud",
-          endpoint: "/api/did-countries",
-          method: "POST",
-          expectedStatus: 200,
-          testData: { name: "Test Country", code: "TC", prefix: "+999", isActive: true },
+          apiEndpoint: "/api/did-countries",
+          apiMethod: "POST",
+          expectedResult: { statusCode: 201 },
+          testData: { name: "Test Country", isoCode: "TC", dialCode: "+999", isActive: true },
           order: 1,
-          isActive: true,
+          enabled: true,
         });
 
         await testingEngineRepository.createTestCase({
           featureId: countryCrudFeature.id,
           name: "List DID countries",
           description: "GET /api/did-countries returns list of countries",
-          testType: "api",
           testLevel: "api",
-          endpoint: "/api/did-countries",
-          method: "GET",
-          expectedStatus: 200,
+          apiEndpoint: "/api/did-countries",
+          apiMethod: "GET",
+          expectedResult: { statusCode: 200 },
           order: 2,
-          isActive: true,
+          enabled: true,
         });
 
         await testingEngineRepository.createTestCase({
           featureId: countryApiFeature.id,
           name: "Get country by ID",
           description: "GET /api/did-countries/:id returns country details",
-          testType: "api",
           testLevel: "api",
-          endpoint: "/api/did-countries/{id}",
-          method: "GET",
-          expectedStatus: 200,
+          apiEndpoint: "/api/did-countries/{id}",
+          apiMethod: "GET",
+          expectedResult: { statusCode: 200 },
           order: 1,
-          isActive: true,
+          enabled: true,
         });
 
         // Provider test cases
@@ -8419,27 +8423,25 @@ export async function registerRoutes(
           featureId: providerCrudFeature.id,
           name: "Create DID provider",
           description: "POST /api/did-providers creates a new provider",
-          testType: "api",
           testLevel: "crud",
-          endpoint: "/api/did-providers",
-          method: "POST",
-          expectedStatus: 200,
-          testData: { name: "Test Provider", code: "TPROV", apiType: "rest", isActive: true },
+          apiEndpoint: "/api/did-providers",
+          apiMethod: "POST",
+          expectedResult: { statusCode: 201 },
+          testData: { name: "Test Provider", code: "TPROV", isActive: true },
           order: 1,
-          isActive: true,
+          enabled: true,
         });
 
         await testingEngineRepository.createTestCase({
           featureId: providerCrudFeature.id,
           name: "List DID providers",
           description: "GET /api/did-providers returns list of providers",
-          testType: "api",
           testLevel: "api",
-          endpoint: "/api/did-providers",
-          method: "GET",
-          expectedStatus: 200,
+          apiEndpoint: "/api/did-providers",
+          apiMethod: "GET",
+          expectedResult: { statusCode: 200 },
           order: 2,
-          isActive: true,
+          enabled: true,
         });
 
         // Inventory test cases
@@ -8447,27 +8449,25 @@ export async function registerRoutes(
           featureId: inventoryCrudFeature.id,
           name: "List DID inventory",
           description: "GET /api/did-inventory returns list of DIDs",
-          testType: "api",
           testLevel: "crud",
-          endpoint: "/api/did-inventory",
-          method: "GET",
-          expectedStatus: 200,
+          apiEndpoint: "/api/did-inventory",
+          apiMethod: "GET",
+          expectedResult: { statusCode: 200 },
           order: 1,
-          isActive: true,
+          enabled: true,
         });
 
         await testingEngineRepository.createTestCase({
           featureId: inventoryCrudFeature.id,
           name: "Create DID in inventory",
           description: "POST /api/did-inventory creates a new DID",
-          testType: "api",
           testLevel: "crud",
-          endpoint: "/api/did-inventory",
-          method: "POST",
-          expectedStatus: 200,
+          apiEndpoint: "/api/did-inventory",
+          apiMethod: "POST",
+          expectedResult: { statusCode: 200 },
           testData: { number: "+19995551234", countryId: "1", providerId: "1", status: "available" },
           order: 2,
-          isActive: true,
+          enabled: true,
         });
 
         res.json({ 
@@ -8475,7 +8475,7 @@ export async function registerRoutes(
           seeded: true,
           module: didModule,
           pages: [countriesPage, providersPage, inventoryPage],
-          testCasesCreated: 8,
+          testCasesCreated: 7,
         });
       } else {
         res.status(400).json({ error: `Unknown module: ${moduleSlug}. Supported: did` });
@@ -8494,6 +8494,21 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to fetch stats:", error);
       res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  // Auto-discover modules and pages from sidebar configuration
+  app.post("/api/testing-engine/autodiscover", async (req, res) => {
+    try {
+      const { autoDiscoverAndRegister } = await import("./testing-engine-autodiscover");
+      const result = await autoDiscoverAndRegister();
+      res.json({
+        message: `Auto-discovery complete: ${result.modulesCreated} modules created, ${result.pagesCreated} pages created`,
+        ...result,
+      });
+    } catch (error) {
+      console.error("Failed to auto-discover:", error);
+      res.status(500).json({ error: "Failed to auto-discover modules and pages" });
     }
   });
 

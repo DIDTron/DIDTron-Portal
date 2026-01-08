@@ -64,6 +64,11 @@ export const testingEngineRepository = {
     return page;
   },
 
+  async getPageBySlug(slug: string): Promise<TestPage | undefined> {
+    const [page] = await db.select().from(testPages).where(eq(testPages.slug, slug));
+    return page;
+  },
+
   async createPage(data: InsertTestPage): Promise<TestPage> {
     const [page] = await db.insert(testPages).values(data).returning();
     return page;
@@ -129,6 +134,9 @@ export const testingEngineRepository = {
   },
 
   async deleteTestCase(id: string): Promise<void> {
+    // First delete any test run results referencing this test case
+    await db.delete(testRunResults).where(eq(testRunResults.testCaseId, id));
+    // Then delete the test case
     await db.delete(testCases).where(eq(testCases.id, id));
   },
 
