@@ -512,12 +512,16 @@ function SidebarMenuButton({
   const Comp = asChild ? Slot : "button"
   const { isMobile, state } = useSidebar()
 
+  // Derive aria-label from tooltip if not provided
+  const ariaLabel = props["aria-label"] || (typeof tooltip === "string" ? tooltip : undefined);
+
   const button = (
     <Comp
       data-slot="sidebar-menu-button"
       data-sidebar="menu-button"
       data-size={size}
       data-active={isActive}
+      aria-label={ariaLabel}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
       {...props}
     />

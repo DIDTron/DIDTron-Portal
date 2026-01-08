@@ -74,6 +74,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
           <Input
             type="search"
             placeholder="Search carriers, routes, customers..."
+            aria-label="Search carriers, routes, customers"
             className="pl-9 h-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

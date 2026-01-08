@@ -720,7 +720,7 @@ export default function PortalSipTesterPage() {
               <Label className="text-sm font-medium">Selected destinations:</Label>
               <div className="relative mt-2">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search..." className="pl-8" />
+                <Input placeholder="Search..." aria-label="Search selected destinations" className="pl-8" />
               </div>
               <ScrollArea className="h-64 border rounded-md mt-2">
                 <div className="p-2">
@@ -753,6 +753,7 @@ export default function PortalSipTesterPage() {
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search..." 
+                  aria-label="Search countries"
                   className="pl-8"
                   value={countrySearch}
                   onChange={(e) => setCountrySearch(e.target.value)}
@@ -827,7 +828,7 @@ export default function PortalSipTesterPage() {
               <Label className="text-sm font-medium">Selected destinations:</Label>
               <div className="relative mt-2">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search..." className="pl-8" />
+                <Input placeholder="Search..." aria-label="Search selected ANI destinations" className="pl-8" />
               </div>
               <ScrollArea className="h-64 border rounded-md mt-2">
                 <div className="p-2">
@@ -860,6 +861,7 @@ export default function PortalSipTesterPage() {
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search..." 
+                  aria-label="Search ANI countries"
                   className="pl-8"
                   value={aniCountrySearch}
                   onChange={(e) => setAniCountrySearch(e.target.value)}
