@@ -791,6 +791,57 @@ Failed deliveries are retried:
   log(`Documentation complete: ${totalCategories} categories, ${totalArticles} articles`, "seed");
 }
 
+async function seedExperienceManager() {
+  const existingItems = await storage.getAllEmContentItems();
+  if (existingItems.length > 0) {
+    log(`Experience Manager already has ${existingItems.length} content items`, "seed");
+    return;
+  }
+
+  const contentItems = [
+    // Marketing Website
+    { section: "marketing" as const, entityType: "page", slug: "homepage", name: "Homepage", status: "published" as const },
+    { section: "marketing" as const, entityType: "page", slug: "pricing", name: "Pricing Page", status: "published" as const },
+    { section: "marketing" as const, entityType: "page", slug: "features", name: "Features Page", status: "draft" as const },
+    { section: "marketing" as const, entityType: "page", slug: "about", name: "About Us", status: "published" as const },
+    { section: "marketing" as const, entityType: "page", slug: "contact", name: "Contact Page", status: "draft" as const },
+    { section: "marketing" as const, entityType: "blog", slug: "getting-started-voip", name: "Getting Started with VoIP", status: "published" as const },
+    { section: "marketing" as const, entityType: "blog", slug: "5g-voice", name: "5G and the Future of Voice", status: "preview" as const },
+    
+    // Portal Themes
+    { section: "portal_themes" as const, entityType: "theme", slug: "super-admin", name: "Super Admin Theme", status: "published" as const },
+    { section: "portal_themes" as const, entityType: "theme", slug: "customer", name: "Customer Portal Theme", status: "published" as const },
+    { section: "portal_themes" as const, entityType: "theme", slug: "carrier", name: "Carrier Portal Theme", status: "draft" as const },
+    { section: "portal_themes" as const, entityType: "theme", slug: "class4", name: "Class 4 Portal Theme", status: "published" as const },
+    
+    // White-Label
+    { section: "white_label" as const, entityType: "brand", slug: "default", name: "Default Brand", status: "published" as const },
+    { section: "white_label" as const, entityType: "brand", slug: "acme-telecom", name: "Acme Telecom", status: "published" as const },
+    { section: "white_label" as const, entityType: "brand", slug: "global-voice", name: "Global Voice Inc", status: "preview" as const },
+    { section: "white_label" as const, entityType: "brand", slug: "techcom", name: "TechCom Solutions", status: "draft" as const },
+    
+    // Design System
+    { section: "design_system" as const, entityType: "component", slug: "button", name: "Button Component", status: "published" as const },
+    { section: "design_system" as const, entityType: "component", slug: "card", name: "Card Component", status: "published" as const },
+    { section: "design_system" as const, entityType: "component", slug: "data-table", name: "Data Table Component", status: "published" as const },
+    { section: "design_system" as const, entityType: "tokens", slug: "colors", name: "Color Tokens", status: "published" as const },
+    { section: "design_system" as const, entityType: "tokens", slug: "typography", name: "Typography Tokens", status: "published" as const },
+    { section: "design_system" as const, entityType: "tokens", slug: "spacing", name: "Spacing Tokens", status: "draft" as const },
+  ];
+
+  let created = 0;
+  for (const item of contentItems) {
+    try {
+      await storage.createEmContentItem(item);
+      created++;
+    } catch (error) {
+      log(`Failed to create EM content item ${item.slug}: ${error}`, "seed");
+    }
+  }
+
+  log(`Experience Manager seeding complete: ${created} content items created`, "seed");
+}
+
 async function seedIntegrations() {
   try {
     await integrationsRepository.seedIntegrationsIfMissing();
@@ -803,6 +854,7 @@ async function seedIntegrations() {
 (async () => {
   await seedSuperAdmin();
   await seedDocumentation();
+  await seedExperienceManager();
   await seedIntegrations();
   await registerRoutes(httpServer, app);
 

@@ -73,13 +73,67 @@ export default function ExperienceManagerPage() {
     switch (status) {
       case "draft":
         return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Draft</Badge>;
-      case "pending":
-        return <Badge variant="outline"><AlertCircle className="h-3 w-3 mr-1" />Pending Review</Badge>;
+      case "preview":
+        return <Badge variant="outline"><Eye className="h-3 w-3 mr-1" />Preview</Badge>;
       case "published":
         return <Badge variant="default"><CheckCircle className="h-3 w-3 mr-1" />Published</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
+  };
+
+  const draftItems = contentItems.filter(item => item.status === "draft");
+  const hasUnpublishedChanges = draftItems.length > 0 || contentItems.filter(item => item.status === "preview").length > 0;
+
+  const handlePreviewAll = () => {
+    if (draftItems.length === 0) {
+      toast({
+        title: "No drafts to preview",
+        description: "All content is already published or in preview mode.",
+      });
+      return;
+    }
+    toast({
+      title: "Preview Mode",
+      description: `${draftItems.length} draft item(s) are ready for preview. Navigate to each section to preview individual items.`,
+    });
+  };
+
+  const publishAllMutation = useMutation({
+    mutationFn: async () => {
+      const unpublished = contentItems.filter(item => item.status !== "published");
+      const results = await Promise.all(
+        unpublished.map(item => 
+          apiRequest("POST", `/api/em/content/${item.section}/${item.entityType}/${item.slug}/publish`, { changeDescription: "Bulk publish from Experience Manager" })
+        )
+      );
+      return results;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/em/content-items"] });
+      toast({
+        title: "Published successfully",
+        description: "All content has been published.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Publish failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePublishAll = () => {
+    if (!hasUnpublishedChanges) {
+      toast({
+        title: "Nothing to publish",
+        description: "All content is already published.",
+      });
+      return;
+    }
+    publishAllMutation.mutate();
   };
 
   return (
@@ -90,12 +144,26 @@ export default function ExperienceManagerPage() {
           <p className="text-sm text-muted-foreground">Control your marketing website, portal themes, and design system</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" data-testid="button-preview-all">
+          <Button 
+            variant="outline" 
+            data-testid="button-preview-all"
+            onClick={handlePreviewAll}
+            disabled={draftItems.length === 0}
+          >
             <Eye className="h-4 w-4 mr-2" />
             Preview Changes
+            {draftItems.length > 0 && <Badge variant="secondary" className="ml-2">{draftItems.length}</Badge>}
           </Button>
-          <Button data-testid="button-publish-all">
-            <Upload className="h-4 w-4 mr-2" />
+          <Button 
+            data-testid="button-publish-all"
+            onClick={handlePublishAll}
+            disabled={!hasUnpublishedChanges || publishAllMutation.isPending}
+          >
+            {publishAllMutation.isPending ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-2" />
+            )}
             Publish All
           </Button>
         </div>
