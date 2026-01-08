@@ -534,7 +534,7 @@ export function GlobalSettingsAZDatabase() {
         await apiRequest("DELETE", "/api/az-destinations");
       }
       
-      const batchSize = 1000;
+      const batchSize = 250;
       let totalInserted = 0;
       let totalUpdated = 0;
       let totalSkipped = 0;
