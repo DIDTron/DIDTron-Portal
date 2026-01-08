@@ -71,6 +71,18 @@ interface E2eRunWithProgress extends E2eRun {
   currentPage?: string | null;
 }
 
+interface IssueRow {
+  id: string;
+  module: string;
+  page: string;
+  route: string;
+  score: number;
+  severity: string;
+  description: string;
+  elements: number;
+  detectedAt: string;
+}
+
 export default function TestingEngine() {
   const { toast } = useToast();
   const [scope, setScope] = useState("all");
@@ -138,13 +150,39 @@ export default function TestingEngine() {
   }, [scope]);
 
   useEffect(() => {
-    if (activeTab === "issues" && !selectedRunId && runs.length > 0) {
-      const completedRun = runs.find(r => r.status === "completed" || r.status === "passed");
-      if (completedRun) {
-        setSelectedRunId(completedRun.id);
+    if ((activeTab === "issues" || activeTab === "results") && !selectedRunId && runs.length > 0) {
+      const completedRuns = runs
+        .filter(r => r.status === "completed" || r.status === "passed")
+        .sort((a, b) => {
+          const dateA = a.completedAt || a.createdAt;
+          const dateB = b.completedAt || b.createdAt;
+          return new Date(dateB).getTime() - new Date(dateA).getTime();
+        });
+      if (completedRuns.length > 0) {
+        setSelectedRunId(completedRuns[0].id);
       }
     }
   }, [activeTab, selectedRunId, runs]);
+
+  const getCompletedRuns = () => {
+    return runs
+      .filter(r => r.status === "completed" || r.status === "passed")
+      .sort((a, b) => {
+        const dateA = a.completedAt || a.createdAt;
+        const dateB = b.completedAt || b.createdAt;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      });
+  };
+
+  const copyIssueToClipboard = (issue: IssueRow) => {
+    const text = `[${issue.severity.toUpperCase()}] ${issue.module} - ${issue.page}
+Route: ${issue.route}
+Issue: ${issue.description}
+Affected Elements: ${issue.elements}
+Score: ${issue.score}/100`;
+    navigator.clipboard.writeText(text);
+    toast({ title: "Issue copied to clipboard" });
+  };
 
   const selectedModule = modulesData?.modulesWithPages.find(
     m => m.name.toLowerCase() === scope.toLowerCase()
@@ -194,18 +232,6 @@ export default function TestingEngine() {
     if (ms < 1000) return `${ms}ms`;
     return `${(ms / 1000).toFixed(1)}s`;
   };
-
-  interface IssueRow {
-    id: string;
-    module: string;
-    page: string;
-    route: string;
-    score: number;
-    severity: string;
-    description: string;
-    elements: number;
-    detectedAt: string;
-  }
 
   const getIssuesData = (): IssueRow[] => {
     if (!runDetails?.results) return [];
@@ -696,13 +722,45 @@ export default function TestingEngine() {
         </TabsContent>
 
         <TabsContent value="issues" className="space-y-4">
+          <Card>
+            <CardContent className="pt-4 pb-2">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Test Run:</span>
+                  <Select 
+                    value={selectedRunId || ""} 
+                    onValueChange={(val) => setSelectedRunId(val)}
+                  >
+                    <SelectTrigger className="w-72" data-testid="select-issues-run">
+                      <SelectValue placeholder="Select a test run" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getCompletedRuns().map((run) => (
+                        <SelectItem key={run.id} value={run.id}>
+                          {run.scope} - {format(new Date(run.completedAt || run.createdAt), "MMM d, yyyy HH:mm")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {runDetails?.run && (
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span>Passed: <span className="text-green-600 font-medium">{runDetails.run.passedTests}</span></span>
+                    <span>Failed: <span className="text-red-600 font-medium">{runDetails.run.failedTests}</span></span>
+                    <span>Score: <span className="font-medium">{runDetails.run.accessibilityScore || "-"}</span></span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {!runDetails?.results ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center text-muted-foreground py-12">
                   <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium">No Test Data Available</p>
-                  <p>Run tests first to see accessibility issues</p>
+                  <p>{getCompletedRuns().length === 0 ? "Run tests first to see accessibility issues" : "Select a test run above to view issues"}</p>
                 </div>
               </CardContent>
             </Card>
@@ -867,12 +925,13 @@ export default function TestingEngine() {
                         <TableHead className="w-[80px] text-center">Elements</TableHead>
                         <TableHead className="w-[70px] text-center">Score</TableHead>
                         <TableHead className="w-[150px]">Detected</TableHead>
+                        <TableHead className="w-[60px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {getFilteredIssues().length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                             No issues match the current filters
                           </TableCell>
                         </TableRow>
@@ -904,6 +963,17 @@ export default function TestingEngine() {
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {format(new Date(issue.detectedAt), "MMM d, HH:mm")}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyIssueToClipboard(issue)}
+                                data-testid={`button-copy-issue-${issue.id}`}
+                                aria-label="Copy this issue"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))
