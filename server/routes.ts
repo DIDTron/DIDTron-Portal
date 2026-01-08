@@ -7328,5 +7328,34 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/az-destinations/export/csv", async (req, res) => {
+    try {
+      const result = await storage.getAzDestinations({ limit: 100000, offset: 0 });
+      const destinations = result.destinations;
+      
+      const escapeCSV = (val: string | null | undefined): string => {
+        const str = val == null ? "" : String(val);
+        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+      
+      const header = "code,destination,region,billingIncrement,connectionFee,gracePeriod\n";
+      const rows = destinations.map(d => 
+        [d.code, d.destination, d.region, d.billingIncrement, d.connectionFee, d.gracePeriod]
+          .map(escapeCSV)
+          .join(",")
+      ).join("\n");
+      
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="az-destinations-${new Date().toISOString().split("T")[0]}.csv"`);
+      res.send(header + rows);
+    } catch (error: any) {
+      console.error("Failed to export destinations:", error);
+      res.status(500).json({ error: "Failed to export destinations", details: error.message });
+    }
+  });
+
   return httpServer;
 }

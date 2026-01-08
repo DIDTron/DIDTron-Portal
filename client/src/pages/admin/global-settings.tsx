@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -316,6 +317,10 @@ export function GlobalSettingsAZDatabase() {
   const [page, setPage] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<AzDestination>>({});
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const limit = 25;
 
   useEffect(() => {
@@ -349,6 +354,139 @@ export function GlobalSettingsAZDatabase() {
     },
   });
 
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("DELETE", "/api/az-destinations");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/az-destinations"] });
+      toast({ title: "All destinations deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch("/api/az-destinations/export/csv");
+      if (!response.ok) throw new Error("Export failed");
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `az-destinations-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast({ title: "Export complete", description: `Exported ${total.toLocaleString()} destinations` });
+    } catch (error) {
+      toast({ title: "Export failed", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const parseCSVRow = useCallback((row: string): string[] => {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    
+    for (let i = 0; i < row.length; i++) {
+      const char = row[i];
+      const nextChar = row[i + 1];
+      
+      if (inQuotes) {
+        if (char === '"' && nextChar === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          current += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ",") {
+          result.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }, []);
+
+  const handleImport = async (file: File) => {
+    setIsImporting(true);
+    setImportProgress("Reading file...");
+    
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const headerParts = parseCSVRow(lines[0]).map(h => h.toLowerCase());
+      
+      const codeIdx = headerParts.indexOf("code");
+      const destIdx = headerParts.indexOf("destination");
+      
+      if (codeIdx < 0 || destIdx < 0) {
+        throw new Error("CSV must have 'code' and 'destination' columns");
+      }
+      
+      const regionIdx = headerParts.indexOf("region");
+      const incrementIdx = headerParts.indexOf("billingincrement");
+      const feeIdx = headerParts.indexOf("connectionfee");
+      
+      const allDestinations = [];
+      for (let i = 1; i < lines.length; i++) {
+        const parts = parseCSVRow(lines[i]);
+        const code = parts[codeIdx];
+        const destination = parts[destIdx];
+        
+        if (code && destination) {
+          allDestinations.push({
+            code,
+            destination,
+            region: regionIdx >= 0 ? parts[regionIdx] || null : null,
+            billingIncrement: incrementIdx >= 0 ? parts[incrementIdx] || "60/60" : "60/60",
+            connectionFee: feeIdx >= 0 ? parts[feeIdx] || "0" : "0",
+          });
+        }
+      }
+      
+      if (allDestinations.length === 0) {
+        throw new Error("No valid destinations found in CSV");
+      }
+      
+      const batchSize = 1000;
+      let imported = 0;
+      
+      for (let i = 0; i < allDestinations.length; i += batchSize) {
+        const batch = allDestinations.slice(i, i + batchSize);
+        setImportProgress(`Importing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(allDestinations.length / batchSize)} (${imported + batch.length}/${allDestinations.length})...`);
+        try {
+          await apiRequest("POST", "/api/az-destinations/bulk", { destinations: batch });
+          imported += batch.length;
+        } catch (batchError) {
+          throw new Error(`Failed at batch ${Math.floor(i / batchSize) + 1}: ${(batchError as Error).message}. ${imported} records imported before failure.`);
+        }
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/az-destinations"] });
+      toast({ title: "Import complete", description: `Imported ${allDestinations.length} destinations` });
+    } catch (error) {
+      toast({ title: "Import failed", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+      setImportProgress("");
+    }
+  };
+
   const destinations = data?.destinations || [];
   const total = data?.total || 0;
   const totalPages = Math.ceil(total / limit);
@@ -379,10 +517,90 @@ export function GlobalSettingsAZDatabase() {
           <h1 className="text-2xl font-bold" data-testid="text-page-title">A-Z Destinations Database</h1>
           <p className="text-muted-foreground">Master database of dial codes for rate normalization</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="secondary" data-testid="badge-total">
             {total.toLocaleString()} destinations
           </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting || total === 0}
+            data-testid="button-export"
+          >
+            {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+            Export CSV
+          </Button>
+          <label>
+            <input
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImport(file);
+                e.target.value = "";
+              }}
+              disabled={isImporting}
+              data-testid="input-import-file"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isImporting}
+              asChild
+            >
+              <span data-testid="button-import">
+                {isImporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                {isImporting ? importProgress : "Import CSV"}
+              </span>
+            </Button>
+          </label>
+          <AlertDialog onOpenChange={(open) => { if (!open) setDeleteConfirmText(""); }}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={total === 0 || deleteAllMutation.isPending} data-testid="button-delete-all">
+                {deleteAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                Delete All
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete all destinations?</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-3">
+                  <span className="block">
+                    This will permanently delete all {total.toLocaleString()} destinations from the A-Z database. This action cannot be undone.
+                  </span>
+                  <span className="block text-amber-600 dark:text-amber-400">
+                    Consider exporting a backup first using the Export CSV button.
+                  </span>
+                  <span className="block font-medium">
+                    Type DELETE to confirm:
+                  </span>
+                  <Input
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="Type DELETE"
+                    className="mt-2"
+                    data-testid="input-delete-confirm"
+                  />
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    deleteAllMutation.mutate();
+                    setDeleteConfirmText("");
+                  }}
+                  disabled={deleteConfirmText !== "DELETE"}
+                  className="bg-destructive text-destructive-foreground"
+                  data-testid="button-confirm-delete"
+                >
+                  Delete All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
