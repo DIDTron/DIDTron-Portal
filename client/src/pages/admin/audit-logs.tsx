@@ -96,6 +96,48 @@ export default function AuditLogsPage() {
     return user?.email || userId.slice(0, 8) + "...";
   };
 
+  const exportToCSV = () => {
+    if (filteredLogs.length === 0) {
+      toast({
+        title: "No data to export",
+        description: "There are no audit logs matching your filters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = ["Timestamp", "User", "Action", "Table", "Record ID", "IP Address", "Details"];
+    const rows = filteredLogs.map(log => [
+      log.createdAt ? format(new Date(log.createdAt), "yyyy-MM-dd HH:mm:ss") : "",
+      getUserEmail(log.userId),
+      log.action || "",
+      log.tableName || "",
+      log.recordId || "",
+      log.ipAddress || "",
+      log.newValues ? JSON.stringify(log.newValues).replace(/"/g, '""') : ""
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `audit-logs-${format(new Date(), "yyyy-MM-dd-HHmmss")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export successful",
+      description: `Exported ${filteredLogs.length} audit log entries to CSV.`,
+    });
+  };
+
   const filteredLogs = logs.filter(log => {
     const matchesSearch = !searchTerm ||
       log.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -258,7 +300,7 @@ export default function AuditLogsPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
-            <Button variant="outline" data-testid="button-export">
+            <Button variant="outline" onClick={exportToCSV} data-testid="button-export">
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
