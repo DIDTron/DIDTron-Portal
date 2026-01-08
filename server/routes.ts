@@ -7693,5 +7693,272 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== EXPERIENCE MANAGER API ====================
+
+  app.get("/api/em/content/:section/:entityType/:slug", async (req, res) => {
+    try {
+      const { section, entityType, slug } = req.params;
+      const contentItem = await storage.getEmContentItem(section, entityType, slug);
+      res.json(contentItem || null);
+    } catch (error: any) {
+      console.error("Failed to get EM content item:", error);
+      res.status(500).json({ error: "Failed to get content item", details: error.message });
+    }
+  });
+
+  app.get("/api/em/content/:section/:entityType/:slug/draft", async (req, res) => {
+    try {
+      const { section, entityType, slug } = req.params;
+      const contentItem = await storage.getEmContentItem(section, entityType, slug);
+      if (!contentItem?.draftVersionId) {
+        return res.json(null);
+      }
+      const version = await storage.getEmContentVersion(contentItem.draftVersionId);
+      res.json(version);
+    } catch (error: any) {
+      console.error("Failed to get EM draft version:", error);
+      res.status(500).json({ error: "Failed to get draft version", details: error.message });
+    }
+  });
+
+  app.get("/api/em/content/:section/:entityType/:slug/published", async (req, res) => {
+    try {
+      const { section, entityType, slug } = req.params;
+      const contentItem = await storage.getEmContentItem(section, entityType, slug);
+      if (!contentItem?.publishedVersionId) {
+        return res.json(null);
+      }
+      const version = await storage.getEmContentVersion(contentItem.publishedVersionId);
+      res.json(version);
+    } catch (error: any) {
+      console.error("Failed to get EM published version:", error);
+      res.status(500).json({ error: "Failed to get published version", details: error.message });
+    }
+  });
+
+  app.get("/api/em/content/:section/:entityType/:slug/history", async (req, res) => {
+    try {
+      const { section, entityType, slug } = req.params;
+      const contentItem = await storage.getEmContentItem(section, entityType, slug);
+      if (!contentItem) {
+        return res.json([]);
+      }
+      const history = await storage.getEmPublishHistory(contentItem.id);
+      res.json(history);
+    } catch (error: any) {
+      console.error("Failed to get EM publish history:", error);
+      res.status(500).json({ error: "Failed to get publish history", details: error.message });
+    }
+  });
+
+  app.post("/api/em/content/:section/:entityType/:slug/save-draft", async (req, res) => {
+    try {
+      const { section, entityType, slug } = req.params;
+      const { data, changeDescription } = req.body;
+      const userId = (req as any).user?.id;
+
+      let contentItem = await storage.getEmContentItem(section, entityType, slug);
+      
+      if (!contentItem) {
+        contentItem = await storage.createEmContentItem({
+          section,
+          entityType,
+          slug,
+          name: slug,
+          status: "draft",
+          createdBy: userId,
+        });
+      }
+
+      const latestVersion = await storage.getLatestEmContentVersion(contentItem.id);
+      const newVersion = (latestVersion?.version || 0) + 1;
+
+      const version = await storage.createEmContentVersion({
+        contentItemId: contentItem.id,
+        version: newVersion,
+        data,
+        changeDescription,
+        createdBy: userId,
+      });
+
+      await storage.updateEmContentItem(contentItem.id, {
+        draftVersionId: version.id,
+        status: "draft",
+      });
+
+      await auditService.logCreate(
+        "em_content_items",
+        contentItem.id,
+        `${section}/${entityType}/${slug}`,
+        { section, entityType, slug, version: newVersion, action: "draft_saved" },
+        userId
+      );
+
+      res.json({ success: true, version });
+    } catch (error: any) {
+      console.error("Failed to save EM draft:", error);
+      res.status(500).json({ error: "Failed to save draft", details: error.message });
+    }
+  });
+
+  app.post("/api/em/content/:section/:entityType/:slug/generate-preview", async (req, res) => {
+    try {
+      const { section, entityType, slug } = req.params;
+      const userId = (req as any).user?.id;
+
+      const contentItem = await storage.getEmContentItem(section, entityType, slug);
+      if (!contentItem) {
+        return res.status(404).json({ error: "Content item not found" });
+      }
+
+      const previewToken = randomBytes(32).toString("hex");
+      const previewExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+      await storage.updateEmContentItem(contentItem.id, {
+        previewVersionId: contentItem.draftVersionId,
+        previewToken,
+        previewExpiresAt,
+        status: "preview",
+      });
+
+      const previewUrl = `/preview/${previewToken}`;
+
+      await auditService.logUpdate(
+        "em_content_items",
+        contentItem.id,
+        `${section}/${entityType}/${slug}`,
+        { status: contentItem.status },
+        { status: "preview", previewToken, action: "preview_generated" },
+        userId
+      );
+
+      res.json({ success: true, previewUrl, token: previewToken });
+    } catch (error: any) {
+      console.error("Failed to generate EM preview:", error);
+      res.status(500).json({ error: "Failed to generate preview", details: error.message });
+    }
+  });
+
+  app.post("/api/em/content/:section/:entityType/:slug/publish", async (req, res) => {
+    try {
+      const { section, entityType, slug } = req.params;
+      const { note } = req.body;
+      const userId = (req as any).user?.id;
+
+      const contentItem = await storage.getEmContentItem(section, entityType, slug);
+      if (!contentItem) {
+        return res.status(404).json({ error: "Content item not found" });
+      }
+
+      if (!contentItem.draftVersionId) {
+        return res.status(400).json({ error: "No draft to publish" });
+      }
+
+      const draftVersion = await storage.getEmContentVersion(contentItem.draftVersionId);
+      if (!draftVersion) {
+        return res.status(400).json({ error: "Draft version not found" });
+      }
+
+      const validationErrors: { field: string; message: string; severity: string }[] = [];
+      
+      if (!draftVersion.data || typeof draftVersion.data !== "object") {
+        validationErrors.push({ field: "data", message: "Content data is required", severity: "error" });
+      }
+
+      await storage.createEmValidationResult({
+        contentItemId: contentItem.id,
+        versionId: draftVersion.id,
+        validationType: "publish",
+        passed: validationErrors.length === 0,
+        errors: validationErrors.filter(e => e.severity === "error"),
+        warnings: validationErrors.filter(e => e.severity === "warning"),
+      });
+
+      if (validationErrors.some(e => e.severity === "error")) {
+        return res.json({ success: false, validationErrors });
+      }
+
+      const previousPublishedVersionId = contentItem.publishedVersionId;
+
+      await storage.updateEmContentItem(contentItem.id, {
+        publishedVersionId: contentItem.draftVersionId,
+        lastPublishedAt: new Date(),
+        lastPublishedBy: userId,
+        status: "published",
+      });
+
+      await storage.createEmPublishHistory({
+        contentItemId: contentItem.id,
+        fromVersionId: previousPublishedVersionId,
+        toVersionId: contentItem.draftVersionId,
+        action: "publish",
+        publishedBy: userId,
+        note,
+      });
+
+      await auditService.logUpdate(
+        "em_content_items",
+        contentItem.id,
+        `${section}/${entityType}/${slug}`,
+        { publishedVersionId: previousPublishedVersionId },
+        { publishedVersionId: contentItem.draftVersionId, action: "content_published" },
+        userId
+      );
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Failed to publish EM content:", error);
+      res.status(500).json({ error: "Failed to publish content", details: error.message });
+    }
+  });
+
+  app.post("/api/em/content/:section/:entityType/:slug/revert", async (req, res) => {
+    try {
+      const { section, entityType, slug } = req.params;
+      const { versionId } = req.body;
+      const userId = (req as any).user?.id;
+
+      const contentItem = await storage.getEmContentItem(section, entityType, slug);
+      if (!contentItem) {
+        return res.status(404).json({ error: "Content item not found" });
+      }
+
+      const targetVersion = await storage.getEmContentVersion(versionId);
+      if (!targetVersion || targetVersion.contentItemId !== contentItem.id) {
+        return res.status(400).json({ error: "Invalid version" });
+      }
+
+      const latestVersion = await storage.getLatestEmContentVersion(contentItem.id);
+      const newVersion = (latestVersion?.version || 0) + 1;
+
+      const revertedVersion = await storage.createEmContentVersion({
+        contentItemId: contentItem.id,
+        version: newVersion,
+        data: targetVersion.data,
+        changeDescription: `Reverted to version ${targetVersion.version}`,
+        createdBy: userId,
+      });
+
+      await storage.updateEmContentItem(contentItem.id, {
+        draftVersionId: revertedVersion.id,
+        status: "draft",
+      });
+
+      await auditService.logUpdate(
+        "em_content_items",
+        contentItem.id,
+        `${section}/${entityType}/${slug}`,
+        { version: latestVersion?.version },
+        { version: newVersion, revertedFrom: targetVersion.version, action: "content_reverted" },
+        userId
+      );
+
+      res.json({ success: true, version: revertedVersion });
+    } catch (error: any) {
+      console.error("Failed to revert EM content:", error);
+      res.status(500).json({ error: "Failed to revert content", details: error.message });
+    }
+  });
+
   return httpServer;
 }

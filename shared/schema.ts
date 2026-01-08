@@ -45,6 +45,10 @@ export const rateCardStatusEnum = pgEnum("rate_card_status", ["active", "inactiv
 
 export const rateCardDirectionEnum = pgEnum("rate_card_direction", ["termination", "origination"]);
 
+export const emSectionEnum = pgEnum("em_section", ["marketing", "portal_themes", "white_label", "design_system", "documentation"]);
+
+export const emContentStatusEnum = pgEnum("em_content_status", ["draft", "preview", "published", "archived"]);
+
 // ==================== CUSTOMER CATEGORIES & GROUPS ====================
 
 export const customerCategories = pgTable("customer_categories", {
@@ -1006,6 +1010,59 @@ export const platformSettings = pgTable("platform_settings", {
   description: text("description"),
   updatedBy: varchar("updated_by").references(() => users.id),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ==================== EXPERIENCE MANAGER ====================
+
+export const emContentItems = pgTable("em_content_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  section: emSectionEnum("section").notNull(),
+  entityType: text("entity_type").notNull(),
+  slug: text("slug").notNull(),
+  name: text("name").notNull(),
+  status: emContentStatusEnum("status").default("draft"),
+  draftVersionId: varchar("draft_version_id"),
+  previewVersionId: varchar("preview_version_id"),
+  publishedVersionId: varchar("published_version_id"),
+  previewToken: text("preview_token"),
+  previewExpiresAt: timestamp("preview_expires_at"),
+  lastPublishedAt: timestamp("last_published_at"),
+  lastPublishedBy: varchar("last_published_by"),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const emContentVersions = pgTable("em_content_versions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contentItemId: varchar("content_item_id").references(() => emContentItems.id).notNull(),
+  version: integer("version").notNull(),
+  data: jsonb("data").notNull(),
+  changeDescription: text("change_description"),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const emValidationResults = pgTable("em_validation_results", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contentItemId: varchar("content_item_id").references(() => emContentItems.id).notNull(),
+  versionId: varchar("version_id").references(() => emContentVersions.id).notNull(),
+  validationType: text("validation_type").notNull(),
+  passed: boolean("passed").notNull(),
+  errors: jsonb("errors"),
+  warnings: jsonb("warnings"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const emPublishHistory = pgTable("em_publish_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contentItemId: varchar("content_item_id").references(() => emContentItems.id).notNull(),
+  fromVersionId: varchar("from_version_id").references(() => emContentVersions.id),
+  toVersionId: varchar("to_version_id").references(() => emContentVersions.id).notNull(),
+  action: text("action").notNull(),
+  publishedBy: varchar("published_by"),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // ==================== CDRs ====================
@@ -2193,6 +2250,11 @@ export const insertSiteSettingSchema = createInsertSchema(siteSettings).omit({ i
 export const insertWebsiteSectionSchema = createInsertSchema(websiteSections).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertIntegrationSchema = createInsertSchema(integrations).omit({ id: true, createdAt: true, updatedAt: true });
 
+export const insertEmContentItemSchema = createInsertSchema(emContentItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEmContentVersionSchema = createInsertSchema(emContentVersions).omit({ id: true, createdAt: true });
+export const insertEmValidationResultSchema = createInsertSchema(emValidationResults).omit({ id: true, createdAt: true });
+export const insertEmPublishHistorySchema = createInsertSchema(emPublishHistory).omit({ id: true, createdAt: true });
+
 export const insertCustomerCategorySchema = createInsertSchema(customerCategories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerGroupSchema = createInsertSchema(customerGroups).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
@@ -2454,6 +2516,16 @@ export type WebsiteSection = typeof websiteSections.$inferSelect;
 // Integration types
 export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
 export type Integration = typeof integrations.$inferSelect;
+
+// Experience Manager types
+export type InsertEmContentItem = z.infer<typeof insertEmContentItemSchema>;
+export type EmContentItem = typeof emContentItems.$inferSelect;
+export type InsertEmContentVersion = z.infer<typeof insertEmContentVersionSchema>;
+export type EmContentVersion = typeof emContentVersions.$inferSelect;
+export type InsertEmValidationResult = z.infer<typeof insertEmValidationResultSchema>;
+export type EmValidationResult = typeof emValidationResults.$inferSelect;
+export type InsertEmPublishHistory = z.infer<typeof insertEmPublishHistorySchema>;
+export type EmPublishHistory = typeof emPublishHistory.$inferSelect;
 
 // Documentation types
 export type InsertDocCategory = z.infer<typeof insertDocCategorySchema>;

@@ -76,7 +76,11 @@ import {
   type Webhook, type InsertWebhook,
   type WebhookDelivery, type InsertWebhookDelivery,
   type CustomerApiKey, type InsertCustomerApiKey,
-  type AzDestination, type InsertAzDestination
+  type AzDestination, type InsertAzDestination,
+  type EmContentItem, type InsertEmContentItem,
+  type EmContentVersion, type InsertEmContentVersion,
+  type EmValidationResult, type InsertEmValidationResult,
+  type EmPublishHistory, type InsertEmPublishHistory
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -602,6 +606,18 @@ export interface IStorage {
   deleteAllAzDestinations(): Promise<number>;
   getAzRegions(): Promise<string[]>;
   normalizeCode(dialCode: string): Promise<AzDestination | undefined>;
+
+  // Experience Manager
+  getEmContentItem(section: string, entityType: string, slug: string): Promise<EmContentItem | undefined>;
+  getEmContentItemById(id: string): Promise<EmContentItem | undefined>;
+  createEmContentItem(item: InsertEmContentItem): Promise<EmContentItem>;
+  updateEmContentItem(id: string, data: Partial<InsertEmContentItem>): Promise<EmContentItem | undefined>;
+  getEmContentVersion(id: string): Promise<EmContentVersion | undefined>;
+  getLatestEmContentVersion(contentItemId: string): Promise<EmContentVersion | undefined>;
+  createEmContentVersion(version: InsertEmContentVersion): Promise<EmContentVersion>;
+  createEmValidationResult(result: InsertEmValidationResult): Promise<EmValidationResult>;
+  getEmPublishHistory(contentItemId: string): Promise<EmPublishHistory[]>;
+  createEmPublishHistory(entry: InsertEmPublishHistory): Promise<EmPublishHistory>;
 }
 
 export class MemStorage implements IStorage {
@@ -4146,6 +4162,137 @@ export class MemStorage implements IStorage {
   async normalizeCode(dialCode: string): Promise<AzDestination | undefined> {
     const { azDestinationsRepository } = await import("./az-destinations-repository");
     return azDestinationsRepository.normalizeCode(dialCode);
+  }
+
+  // Experience Manager (delegated to database repository)
+  private emContentItems: Map<string, EmContentItem> = new Map();
+  private emContentVersions: Map<string, EmContentVersion> = new Map();
+  private emValidationResults: Map<string, EmValidationResult> = new Map();
+  private emPublishHistory: Map<string, EmPublishHistory> = new Map();
+
+  async getEmContentItem(section: string, entityType: string, slug: string): Promise<EmContentItem | undefined> {
+    const items = Array.from(this.emContentItems.values());
+    for (const item of items) {
+      if (item.section === section && item.entityType === entityType && item.slug === slug) {
+        return item;
+      }
+    }
+    return undefined;
+  }
+
+  async getEmContentItemById(id: string): Promise<EmContentItem | undefined> {
+    return this.emContentItems.get(id);
+  }
+
+  async createEmContentItem(item: InsertEmContentItem): Promise<EmContentItem> {
+    const id = randomUUID();
+    const now = new Date();
+    const contentItem: EmContentItem = {
+      id,
+      section: item.section,
+      entityType: item.entityType,
+      slug: item.slug,
+      name: item.name,
+      status: item.status ?? "draft",
+      draftVersionId: item.draftVersionId ?? null,
+      previewVersionId: item.previewVersionId ?? null,
+      publishedVersionId: item.publishedVersionId ?? null,
+      previewToken: item.previewToken ?? null,
+      previewExpiresAt: item.previewExpiresAt ?? null,
+      lastPublishedAt: item.lastPublishedAt ?? null,
+      lastPublishedBy: item.lastPublishedBy ?? null,
+      createdBy: item.createdBy ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.emContentItems.set(id, contentItem);
+    return contentItem;
+  }
+
+  async updateEmContentItem(id: string, data: Partial<InsertEmContentItem>): Promise<EmContentItem | undefined> {
+    const item = this.emContentItems.get(id);
+    if (!item) return undefined;
+    const updated = { ...item, ...data, updatedAt: new Date() };
+    this.emContentItems.set(id, updated as EmContentItem);
+    return updated as EmContentItem;
+  }
+
+  async getEmContentVersion(id: string): Promise<EmContentVersion | undefined> {
+    return this.emContentVersions.get(id);
+  }
+
+  async getLatestEmContentVersion(contentItemId: string): Promise<EmContentVersion | undefined> {
+    let latest: EmContentVersion | undefined;
+    const versions = Array.from(this.emContentVersions.values());
+    for (const version of versions) {
+      if (version.contentItemId === contentItemId) {
+        if (!latest || version.version > latest.version) {
+          latest = version;
+        }
+      }
+    }
+    return latest;
+  }
+
+  async createEmContentVersion(version: InsertEmContentVersion): Promise<EmContentVersion> {
+    const id = randomUUID();
+    const now = new Date();
+    const contentVersion: EmContentVersion = {
+      id,
+      contentItemId: version.contentItemId,
+      version: version.version,
+      data: version.data,
+      changeDescription: version.changeDescription ?? null,
+      createdBy: version.createdBy ?? null,
+      createdAt: now,
+    };
+    this.emContentVersions.set(id, contentVersion);
+    return contentVersion;
+  }
+
+  async createEmValidationResult(result: InsertEmValidationResult): Promise<EmValidationResult> {
+    const id = randomUUID();
+    const now = new Date();
+    const validationResult: EmValidationResult = {
+      id,
+      contentItemId: result.contentItemId,
+      versionId: result.versionId,
+      validationType: result.validationType,
+      passed: result.passed,
+      errors: result.errors ?? null,
+      warnings: result.warnings ?? null,
+      createdAt: now,
+    };
+    this.emValidationResults.set(id, validationResult);
+    return validationResult;
+  }
+
+  async getEmPublishHistory(contentItemId: string): Promise<EmPublishHistory[]> {
+    const history: EmPublishHistory[] = [];
+    const entries = Array.from(this.emPublishHistory.values());
+    for (const entry of entries) {
+      if (entry.contentItemId === contentItemId) {
+        history.push(entry);
+      }
+    }
+    return history.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async createEmPublishHistory(entry: InsertEmPublishHistory): Promise<EmPublishHistory> {
+    const id = randomUUID();
+    const now = new Date();
+    const publishHistory: EmPublishHistory = {
+      id,
+      contentItemId: entry.contentItemId,
+      fromVersionId: entry.fromVersionId ?? null,
+      toVersionId: entry.toVersionId,
+      action: entry.action,
+      publishedBy: entry.publishedBy ?? null,
+      note: entry.note ?? null,
+      createdAt: now,
+    };
+    this.emPublishHistory.set(id, publishHistory);
+    return publishHistory;
   }
 }
 
