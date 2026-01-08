@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2, Trash2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2, Trash2, XCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { validateAndNormalizeAZData, type ValidationError, VALID_BILLING_INCREMENTS } from "@shared/billing-increment-utils";
 
 export function GlobalSettingsPlatform() {
   return (
@@ -336,6 +338,8 @@ export function GlobalSettingsAZDatabase() {
     billingIncrement: "",
   });
   const [allCsvRows, setAllCsvRows] = useState<string[][]>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
   const limit = pageSize;
 
   useEffect(() => {
@@ -506,9 +510,7 @@ export function GlobalSettingsAZDatabase() {
   const runMappedImport = async () => {
     if (!importFile || !columnMapping.code || !columnMapping.destination) return;
     
-    setShowImportDialog(false);
-    setIsImporting(true);
-    setImportProgress("Processing import...");
+    setImportProgress("Validating data...");
     
     try {
       const codeIdx = parseInt(columnMapping.code);
@@ -516,18 +518,37 @@ export function GlobalSettingsAZDatabase() {
       const regionIdx = columnMapping.region ? parseInt(columnMapping.region) : -1;
       const incrementIdx = columnMapping.billingIncrement ? parseInt(columnMapping.billingIncrement) : -1;
       
-      const allDestinations = allCsvRows
-        .filter(row => row[codeIdx] && row[destIdx])
+      const rawDestinations = allCsvRows
+        .filter(row => row[codeIdx] || row[destIdx])
         .map(row => ({
-          code: row[codeIdx],
-          destination: row[destIdx],
-          region: regionIdx >= 0 ? row[regionIdx] || null : null,
-          billingIncrement: incrementIdx >= 0 ? row[incrementIdx] || "60/60" : "60/60",
+          code: row[codeIdx]?.trim() || "",
+          destination: row[destIdx]?.trim() || "",
+          region: regionIdx >= 0 ? row[regionIdx]?.trim() || null : null,
+          billingIncrement: incrementIdx >= 0 ? row[incrementIdx]?.trim() || "60/60" : "60/60",
         }));
       
-      if (allDestinations.length === 0) {
+      if (rawDestinations.length === 0) {
         throw new Error("No valid destinations found after mapping");
       }
+      
+      const validationResult = validateAndNormalizeAZData(rawDestinations);
+      
+      if (!validationResult.isValid) {
+        setValidationErrors(validationResult.errors);
+        setShowValidationErrors(true);
+        return;
+      }
+      
+      const allDestinations = validationResult.normalizedData as Array<{
+        code: string;
+        destination: string;
+        region: string | null;
+        billingIncrement: string;
+      }>;
+      
+      setShowImportDialog(false);
+      setIsImporting(true);
+      setImportProgress("Processing import...");
       
       if (importMode === "replace") {
         setImportProgress("Clearing existing data...");
@@ -565,6 +586,21 @@ export function GlobalSettingsAZDatabase() {
       setImportProgress("");
       resetImportWizard();
     }
+  };
+  
+  const downloadErrorReport = () => {
+    const header = "Row,Column,Value,Error\n";
+    const rows = validationErrors.map(e => 
+      `${e.row},"${e.column}","${e.value.replace(/"/g, '""')}","${e.message.replace(/"/g, '""')}"`
+    ).join("\n");
+    const csv = header + rows;
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "import-errors.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const destinations = data?.destinations || [];
@@ -843,6 +879,64 @@ export function GlobalSettingsAZDatabase() {
                     {importMode === "replace" ? "Replace All & Import" : "Import"}
                   </Button>
                 )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={showValidationErrors} onOpenChange={setShowValidationErrors}>
+            <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-destructive">
+                  <XCircle className="h-5 w-5" />
+                  Validation Errors Found
+                </DialogTitle>
+                <DialogDescription>
+                  {validationErrors.length} error(s) found in your CSV file. Please fix these issues and try again.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 min-h-0">
+                <ScrollArea className="h-[300px] border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-20">Row</TableHead>
+                        <TableHead className="w-32">Column</TableHead>
+                        <TableHead className="w-32">Value</TableHead>
+                        <TableHead>Error</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {validationErrors.slice(0, 100).map((error, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-mono">{error.row}</TableCell>
+                          <TableCell className="text-muted-foreground">{error.column}</TableCell>
+                          <TableCell className="font-mono text-destructive truncate max-w-32" title={error.value}>
+                            {error.value || "(empty)"}
+                          </TableCell>
+                          <TableCell className="text-sm">{error.message}</TableCell>
+                        </TableRow>
+                      ))}
+                      {validationErrors.length > 100 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            ...and {validationErrors.length - 100} more errors
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
+              <div className="pt-2 text-sm text-muted-foreground">
+                <p>Valid billing increments: {VALID_BILLING_INCREMENTS.join(", ")}</p>
+              </div>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={downloadErrorReport} data-testid="button-download-errors">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Error Report
+                </Button>
+                <Button onClick={() => setShowValidationErrors(false)} data-testid="button-close-errors">
+                  Close
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
