@@ -534,12 +534,14 @@ export function GlobalSettingsAZDatabase() {
         await apiRequest("DELETE", "/api/az-destinations");
       }
       
-      const chunkSize = 5000;
+      const chunkSize = 1000;
       let totalJobsQueued = 0;
+      const totalChunks = Math.ceil(allDestinations.length / chunkSize);
       
       for (let i = 0; i < allDestinations.length; i += chunkSize) {
         const chunk = allDestinations.slice(i, i + chunkSize);
-        setImportProgress(`Queuing chunk ${Math.floor(i / chunkSize) + 1} of ${Math.ceil(allDestinations.length / chunkSize)}...`);
+        const chunkNum = Math.floor(i / chunkSize) + 1;
+        setImportProgress(`Queuing chunk ${chunkNum} of ${totalChunks}...`);
         
         await apiRequest("POST", "/api/az-destinations/import-job", { 
           destinations: chunk,
