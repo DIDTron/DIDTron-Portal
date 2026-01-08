@@ -1012,6 +1012,30 @@ export const platformSettings = pgTable("platform_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ==================== DEV TESTS ====================
+
+export const devTestStatusEnum = pgEnum("dev_test_status", ["passed", "failed", "skipped"]);
+
+export const devTests = pgTable("dev_tests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  module: text("module").notNull(),
+  testSteps: jsonb("test_steps"),
+  expectedResult: text("expected_result"),
+  actualResult: text("actual_result"),
+  status: devTestStatusEnum("status").notNull(),
+  duration: integer("duration"),
+  errorMessage: text("error_message"),
+  createdTestData: jsonb("created_test_data"),
+  cleanedUp: boolean("cleaned_up").default(false),
+  testedBy: varchar("tested_by"),
+  testedAt: timestamp("tested_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertDevTestSchema = createInsertSchema(devTests).omit({ id: true, createdAt: true });
+
 // ==================== EXPERIENCE MANAGER ====================
 
 export const emContentItems = pgTable("em_content_items", {
@@ -2540,6 +2564,10 @@ export type InsertWebhookDelivery = z.infer<typeof insertWebhookDeliverySchema>;
 export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
 export type InsertCustomerApiKey = z.infer<typeof insertCustomerApiKeySchema>;
 export type CustomerApiKey = typeof customerApiKeys.$inferSelect;
+
+// Dev Tests types
+export type InsertDevTest = z.infer<typeof insertDevTestSchema>;
+export type DevTest = typeof devTests.$inferSelect;
 
 // Auth models (for Replit Auth sessions)
 export * from "./models/auth";

@@ -80,7 +80,8 @@ import {
   type EmContentItem, type InsertEmContentItem,
   type EmContentVersion, type InsertEmContentVersion,
   type EmValidationResult, type InsertEmValidationResult,
-  type EmPublishHistory, type InsertEmPublishHistory
+  type EmPublishHistory, type InsertEmPublishHistory,
+  type DevTest, type InsertDevTest
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -619,6 +620,13 @@ export interface IStorage {
   createEmValidationResult(result: InsertEmValidationResult): Promise<EmValidationResult>;
   getEmPublishHistory(contentItemId: string): Promise<EmPublishHistory[]>;
   createEmPublishHistory(entry: InsertEmPublishHistory): Promise<EmPublishHistory>;
+
+  // Dev Tests
+  getDevTests(): Promise<DevTest[]>;
+  getDevTest(id: string): Promise<DevTest | undefined>;
+  createDevTest(test: InsertDevTest): Promise<DevTest>;
+  updateDevTest(id: string, data: Partial<InsertDevTest>): Promise<DevTest | undefined>;
+  deleteDevTest(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -4298,6 +4306,55 @@ export class MemStorage implements IStorage {
     };
     this.emPublishHistory.set(id, publishHistory);
     return publishHistory;
+  }
+
+  // Dev Tests
+  private devTests: Map<string, DevTest> = new Map();
+
+  async getDevTests(): Promise<DevTest[]> {
+    return Array.from(this.devTests.values()).sort((a, b) => 
+      new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+    );
+  }
+
+  async getDevTest(id: string): Promise<DevTest | undefined> {
+    return this.devTests.get(id);
+  }
+
+  async createDevTest(test: InsertDevTest): Promise<DevTest> {
+    const id = randomUUID();
+    const now = new Date();
+    const devTest: DevTest = {
+      id,
+      name: test.name,
+      description: test.description ?? null,
+      module: test.module,
+      testSteps: test.testSteps ?? null,
+      expectedResult: test.expectedResult ?? null,
+      actualResult: test.actualResult ?? null,
+      status: test.status,
+      duration: test.duration ?? null,
+      errorMessage: test.errorMessage ?? null,
+      createdTestData: test.createdTestData ?? null,
+      cleanedUp: test.cleanedUp ?? false,
+      testedBy: test.testedBy ?? null,
+      testedAt: test.testedAt ?? now,
+      createdAt: now,
+    };
+    this.devTests.set(id, devTest);
+    return devTest;
+  }
+
+  async updateDevTest(id: string, data: Partial<InsertDevTest>): Promise<DevTest | undefined> {
+    const test = this.devTests.get(id);
+    if (!test) return undefined;
+    const updated = { ...test, ...data };
+    this.devTests.set(id, updated as DevTest);
+    return updated as DevTest;
+  }
+
+  async deleteDevTest(id: string): Promise<boolean> {
+    return this.devTests.delete(id);
   }
 }
 

@@ -7970,5 +7970,85 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== DEV TESTS ====================
+
+  app.get("/api/dev-tests", async (req, res) => {
+    try {
+      const tests = await storage.getDevTests();
+      res.json(tests);
+    } catch (error) {
+      console.error("Failed to fetch dev tests:", error);
+      res.status(500).json({ error: "Failed to fetch dev tests" });
+    }
+  });
+
+  app.get("/api/dev-tests/:id", async (req, res) => {
+    try {
+      const test = await storage.getDevTest(req.params.id);
+      if (!test) return res.status(404).json({ error: "Dev test not found" });
+      res.json(test);
+    } catch (error) {
+      console.error("Failed to fetch dev test:", error);
+      res.status(500).json({ error: "Failed to fetch dev test" });
+    }
+  });
+
+  app.post("/api/dev-tests", async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+      const test = await storage.createDevTest({
+        name: req.body.name,
+        description: req.body.description,
+        module: req.body.module,
+        testSteps: req.body.testSteps,
+        expectedResult: req.body.expectedResult,
+        actualResult: req.body.actualResult,
+        status: req.body.status,
+        duration: req.body.duration,
+        errorMessage: req.body.errorMessage,
+        createdTestData: req.body.createdTestData,
+        cleanedUp: req.body.cleanedUp ?? false,
+        testedBy: userId || req.body.testedBy,
+        testedAt: req.body.testedAt ? new Date(req.body.testedAt) : new Date(),
+      });
+
+      await auditService.logCreate("dev_tests", test.id, test.name, test, userId);
+      res.status(201).json(test);
+    } catch (error) {
+      console.error("Failed to create dev test:", error);
+      res.status(500).json({ error: "Failed to create dev test" });
+    }
+  });
+
+  app.patch("/api/dev-tests/:id", async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+      const existing = await storage.getDevTest(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Dev test not found" });
+
+      const test = await storage.updateDevTest(req.params.id, req.body);
+      await auditService.logUpdate("dev_tests", req.params.id, existing.name, existing, test, userId);
+      res.json(test);
+    } catch (error) {
+      console.error("Failed to update dev test:", error);
+      res.status(500).json({ error: "Failed to update dev test" });
+    }
+  });
+
+  app.delete("/api/dev-tests/:id", async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+      const existing = await storage.getDevTest(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Dev test not found" });
+
+      await storage.deleteDevTest(req.params.id);
+      await auditService.logDelete("dev_tests", req.params.id, existing.name, existing, userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to delete dev test:", error);
+      res.status(500).json({ error: "Failed to delete dev test" });
+    }
+  });
+
   return httpServer;
 }

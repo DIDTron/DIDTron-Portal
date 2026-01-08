@@ -10,7 +10,7 @@ import {
   FileText, Palette, Image, Mail, BarChart3, Activity, Bell,
   Shield, Key, Database, History, Settings, Webhook, Cpu, BookOpen,
   Bot, Phone, PhoneOutgoing, Network, Cog, Link2, Languages, DollarSign, ListTodo,
-  LayoutDashboard, Megaphone, Trash2
+  LayoutDashboard, Megaphone, Trash2, FlaskConical
 } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -154,6 +154,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "trash", label: "Trash", route: "/admin/trash", icon: Trash2 },
       { id: "tickets", label: "Support Tickets", route: "/admin/tickets", icon: Ticket },
       { id: "job-queue", label: "Job Queue", route: "/admin/job-queue", icon: ListTodo },
+      { id: "dev-tests", label: "Dev Tests", route: "/admin/dev-tests", icon: FlaskConical },
     ],
   },
   "global-settings": {
