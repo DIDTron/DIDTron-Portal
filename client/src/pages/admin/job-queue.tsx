@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Play, 
@@ -302,17 +303,23 @@ export default function JobQueuePage() {
               Start
             </Button>
           )}
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => {
-              refetchStats();
-              refetchJobs();
-            }}
-            data-testid="button-refresh"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => {
+                  refetchStats();
+                  refetchJobs();
+                  refetchWorker();
+                }}
+                data-testid="button-refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
