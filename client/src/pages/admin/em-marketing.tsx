@@ -137,7 +137,14 @@ export default function EMMarketingPage() {
           <p className="text-sm text-muted-foreground">Manage landing pages, blog posts, and documentation</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" data-testid="button-preview">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              window.open("/", "_blank");
+              toast({ title: "Opening preview", description: "Marketing site opened in new tab" });
+            }}
+            data-testid="button-preview"
+          >
             <Eye className="h-4 w-4 mr-2" />
             Preview Site
           </Button>
