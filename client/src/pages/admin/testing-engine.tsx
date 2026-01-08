@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Play, CheckCircle2, XCircle, Clock, ChevronDown, AlertTriangle, Accessibility, RefreshCw } from "lucide-react";
+import { Play, CheckCircle2, XCircle, Clock, ChevronDown, AlertTriangle, Accessibility, RefreshCw, Copy, Download, FileSpreadsheet } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 interface TestCheck {
@@ -68,6 +69,7 @@ interface E2eRunWithProgress extends E2eRun {
 }
 
 export default function TestingEngine() {
+  const { toast } = useToast();
   const [scope, setScope] = useState("all");
   const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -177,6 +179,77 @@ export default function TestingEngine() {
     if (!ms) return "-";
     if (ms < 1000) return `${ms}ms`;
     return `${(ms / 1000).toFixed(1)}s`;
+  };
+
+  const getIssuesData = () => {
+    if (!runDetails?.results) return [];
+    return runDetails.results
+      .filter(r => r.accessibilityIssues && r.accessibilityIssues.length > 0)
+      .map(r => ({
+        module: r.moduleName,
+        page: r.pageName,
+        route: r.route,
+        score: r.accessibilityScore,
+        issues: r.accessibilityIssues.map((i: any) => `[${i.impact}] ${i.description} (${i.nodes} elements)`).join("\n"),
+      }));
+  };
+
+  const copyIssuesToClipboard = () => {
+    const issues = getIssuesData();
+    if (issues.length === 0) {
+      toast({ title: "No issues to copy", variant: "destructive" });
+      return;
+    }
+    const text = issues.map(i => 
+      `Module: ${i.module}\nPage: ${i.page}\nRoute: ${i.route}\nAccessibility Issues:\n${i.issues}\n`
+    ).join("\n---\n\n");
+    navigator.clipboard.writeText(text);
+    toast({ title: "Issues copied to clipboard" });
+  };
+
+  const downloadIssuesAsCSV = () => {
+    const issues = getIssuesData();
+    if (issues.length === 0) {
+      toast({ title: "No issues to download", variant: "destructive" });
+      return;
+    }
+    const headers = ["Module", "Page", "Route", "Score", "Issues"];
+    const rows = issues.map(i => [
+      i.module,
+      i.page,
+      i.route,
+      String(i.score),
+      i.issues.replace(/\n/g, " | "),
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `accessibility-issues-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "CSV downloaded" });
+  };
+
+  const downloadIssuesAsPDF = () => {
+    const issues = getIssuesData();
+    if (issues.length === 0) {
+      toast({ title: "No issues to download", variant: "destructive" });
+      return;
+    }
+    const content = issues.map(i => 
+      `Module: ${i.module}\nPage: ${i.page}\nRoute: ${i.route}\nScore: ${i.score}\nAccessibility Issues:\n${i.issues}`
+    ).join("\n\n---\n\n");
+    const header = `Accessibility Issues Report\nGenerated: ${format(new Date(), "PPpp")}\nTotal Pages with Issues: ${issues.length}\n\n${"=".repeat(50)}\n\n`;
+    const blob = new Blob([header + content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `accessibility-issues-${format(new Date(), "yyyy-MM-dd")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Report downloaded" });
   };
 
   return (
@@ -289,6 +362,7 @@ export default function TestingEngine() {
         <TabsList>
           <TabsTrigger value="results" data-testid="tab-results">Latest Results</TabsTrigger>
           <TabsTrigger value="history" data-testid="tab-history">History</TabsTrigger>
+          <TabsTrigger value="issues" data-testid="tab-issues">Issues</TabsTrigger>
         </TabsList>
 
         <TabsContent value="results" className="space-y-4">
@@ -344,8 +418,8 @@ export default function TestingEngine() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {runDetails.results.map((result, idx) => (
-                          <>
+                        {runDetails.results.flatMap((result, idx) => {
+                          const rows = [
                             <TableRow 
                               key={`row-${idx}`} 
                               className="cursor-pointer" 
@@ -371,7 +445,9 @@ export default function TestingEngine() {
                               </TableCell>
                               <TableCell>{formatDuration(result.duration)}</TableCell>
                             </TableRow>
-                            {expandedResults.has(String(idx)) && (
+                          ];
+                          if (expandedResults.has(String(idx))) {
+                            rows.push(
                               <TableRow key={`detail-${idx}`}>
                                 <TableCell colSpan={7} className="bg-muted/50 p-4">
                                   <div className="space-y-3">
@@ -413,9 +489,10 @@ export default function TestingEngine() {
                                   </div>
                                 </TableCell>
                               </TableRow>
-                            )}
-                          </>
-                        ))}
+                            );
+                          }
+                          return rows;
+                        })}
                       </TableBody>
                     </Table>
                   </ScrollArea>
@@ -489,6 +566,95 @@ export default function TestingEngine() {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="issues" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                    Accessibility Issues
+                  </CardTitle>
+                  <CardDescription>
+                    Pages with WCAG 2 AA accessibility violations
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={copyIssuesToClipboard}
+                    disabled={!runDetails?.results || getIssuesData().length === 0}
+                    data-testid="button-copy-issues"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadIssuesAsCSV}
+                    disabled={!runDetails?.results || getIssuesData().length === 0}
+                    data-testid="button-download-csv"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Excel/CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadIssuesAsPDF}
+                    disabled={!runDetails?.results || getIssuesData().length === 0}
+                    data-testid="button-download-pdf"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Report
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!runDetails?.results ? (
+                <div className="text-center text-muted-foreground py-12">
+                  Run tests first to see accessibility issues
+                </div>
+              ) : getIssuesData().length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle2 className="h-12 w-12 mx-auto text-green-500 mb-4" />
+                  <p className="text-lg font-medium">No accessibility issues found</p>
+                  <p className="text-muted-foreground">All pages pass WCAG 2 AA requirements</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-4">
+                    {getIssuesData().map((issue, idx) => (
+                      <div key={idx} className="border rounded-lg p-4 space-y-2" data-testid={`issue-card-${idx}`}>
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                          <div>
+                            <div className="font-semibold">{issue.module} - {issue.page}</div>
+                            <div className="text-sm text-muted-foreground font-mono">{issue.route}</div>
+                          </div>
+                          <Badge variant={issue.score >= 90 ? "default" : issue.score >= 70 ? "secondary" : "destructive"}>
+                            Score: {issue.score}
+                          </Badge>
+                        </div>
+                        <div className="mt-3 space-y-1">
+                          {issue.issues.split("\n").map((line, lIdx) => (
+                            <div key={lIdx} className="text-sm flex items-start gap-2">
+                              <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
+                              <span>{line}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               )}
             </CardContent>
           </Card>
