@@ -81,6 +81,7 @@ export default function JobQueuePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showJobDetails, setShowJobDetails] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery<JobStats>({
@@ -308,14 +309,20 @@ export default function JobQueuePage() {
               <Button 
                 variant="outline" 
                 size="icon" 
-                onClick={() => {
-                  queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs/stats"] });
-                  queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
-                  queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs/worker/status"] });
+                disabled={isRefreshing}
+                onClick={async () => {
+                  setIsRefreshing(true);
+                  await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs/stats"] }),
+                    queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] }),
+                    queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs/worker/status"] }),
+                  ]);
+                  setTimeout(() => setIsRefreshing(false), 500);
+                  toast({ title: "Refreshed", description: "Job queue data updated" });
                 }}
                 data-testid="button-refresh"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Refresh</TooltipContent>
