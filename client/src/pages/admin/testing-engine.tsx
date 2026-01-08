@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
+import { Input } from "@/components/ui/input";
+import { Search, FileText } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Play, CheckCircle2, XCircle, Clock, ChevronDown, AlertTriangle, Accessibility, RefreshCw, Copy, Download, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -76,6 +79,8 @@ export default function TestingEngine() {
   const [runningRunId, setRunningRunId] = useState<string | null>(null);
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("history");
+  const [issuesSeverityFilter, setIssuesSeverityFilter] = useState("all");
+  const [issuesModuleFilter, setIssuesModuleFilter] = useState("all");
 
   const { data: modulesData } = useQuery<ModulesResponse>({
     queryKey: ["/api/e2e/modules"],
@@ -181,45 +186,111 @@ export default function TestingEngine() {
     return `${(ms / 1000).toFixed(1)}s`;
   };
 
-  const getIssuesData = () => {
+  interface IssueRow {
+    id: string;
+    module: string;
+    page: string;
+    route: string;
+    score: number;
+    severity: string;
+    description: string;
+    elements: number;
+    detectedAt: string;
+  }
+
+  const getIssuesData = (): IssueRow[] => {
     if (!runDetails?.results) return [];
-    return runDetails.results
-      .filter(r => r.accessibilityIssues && r.accessibilityIssues.length > 0)
-      .map(r => ({
-        module: r.moduleName,
-        page: r.pageName,
-        route: r.route,
-        score: r.accessibilityScore,
-        issues: r.accessibilityIssues.map((i: any) => `[${i.impact}] ${i.description} (${i.nodes} elements)`).join("\n"),
-      }));
+    const issues: IssueRow[] = [];
+    const detectedAt = runDetails.run?.completedAt || runDetails.run?.createdAt || new Date().toISOString();
+    
+    runDetails.results.forEach((r, rIdx) => {
+      if (r.accessibilityIssues && r.accessibilityIssues.length > 0) {
+        r.accessibilityIssues.forEach((issue: any, iIdx: number) => {
+          issues.push({
+            id: `${rIdx}-${iIdx}`,
+            module: r.moduleName,
+            page: r.pageName,
+            route: r.route,
+            score: r.accessibilityScore,
+            severity: issue.impact || "unknown",
+            description: issue.description,
+            elements: issue.nodes || 0,
+            detectedAt,
+          });
+        });
+      }
+    });
+    return issues;
+  };
+
+  const getIssuesSummary = () => {
+    const issues = getIssuesData();
+    const uniqueRoutes: string[] = [];
+    issues.forEach(i => {
+      if (!uniqueRoutes.includes(i.route)) {
+        uniqueRoutes.push(i.route);
+      }
+    });
+    return {
+      total: issues.length,
+      critical: issues.filter(i => i.severity === "critical").length,
+      serious: issues.filter(i => i.severity === "serious").length,
+      moderate: issues.filter(i => i.severity === "moderate" || i.severity === "minor").length,
+      pagesAffected: uniqueRoutes.length,
+    };
+  };
+
+  const getFilteredIssues = () => {
+    let issues = getIssuesData();
+    if (issuesSeverityFilter !== "all") {
+      issues = issues.filter(i => i.severity === issuesSeverityFilter);
+    }
+    if (issuesModuleFilter !== "all") {
+      issues = issues.filter(i => i.module === issuesModuleFilter);
+    }
+    return issues;
+  };
+
+  const getUniqueModulesWithIssues = () => {
+    const issues = getIssuesData();
+    const uniqueModules: string[] = [];
+    issues.forEach(i => {
+      if (!uniqueModules.includes(i.module)) {
+        uniqueModules.push(i.module);
+      }
+    });
+    return uniqueModules;
   };
 
   const copyIssuesToClipboard = () => {
-    const issues = getIssuesData();
+    const issues = getFilteredIssues();
     if (issues.length === 0) {
       toast({ title: "No issues to copy", variant: "destructive" });
       return;
     }
     const text = issues.map(i => 
-      `Module: ${i.module}\nPage: ${i.page}\nRoute: ${i.route}\nAccessibility Issues:\n${i.issues}\n`
-    ).join("\n---\n\n");
+      `[${i.severity.toUpperCase()}] ${i.module} - ${i.page}\nRoute: ${i.route}\nIssue: ${i.description} (${i.elements} elements)\nScore: ${i.score}`
+    ).join("\n\n---\n\n");
     navigator.clipboard.writeText(text);
     toast({ title: "Issues copied to clipboard" });
   };
 
   const downloadIssuesAsCSV = () => {
-    const issues = getIssuesData();
+    const issues = getFilteredIssues();
     if (issues.length === 0) {
       toast({ title: "No issues to download", variant: "destructive" });
       return;
     }
-    const headers = ["Module", "Page", "Route", "Score", "Issues"];
+    const headers = ["Module", "Page", "Route", "Severity", "Description", "Elements", "Score", "Detected At"];
     const rows = issues.map(i => [
       i.module,
       i.page,
       i.route,
+      i.severity,
+      i.description,
+      String(i.elements),
       String(i.score),
-      i.issues.replace(/\n/g, " | "),
+      format(new Date(i.detectedAt), "yyyy-MM-dd HH:mm:ss"),
     ]);
     const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -233,23 +304,67 @@ export default function TestingEngine() {
   };
 
   const downloadIssuesAsPDF = () => {
-    const issues = getIssuesData();
+    const issues = getFilteredIssues();
+    const summary = getIssuesSummary();
     if (issues.length === 0) {
       toast({ title: "No issues to download", variant: "destructive" });
       return;
     }
-    const content = issues.map(i => 
-      `Module: ${i.module}\nPage: ${i.page}\nRoute: ${i.route}\nScore: ${i.score}\nAccessibility Issues:\n${i.issues}`
-    ).join("\n\n---\n\n");
-    const header = `Accessibility Issues Report\nGenerated: ${format(new Date(), "PPpp")}\nTotal Pages with Issues: ${issues.length}\n\n${"=".repeat(50)}\n\n`;
+    const header = [
+      "=" .repeat(70),
+      "         ACCESSIBILITY ISSUES REPORT - WCAG 2.1 AA COMPLIANCE",
+      "=" .repeat(70),
+      "",
+      `Generated: ${format(new Date(), "PPpp")}`,
+      `Test Run: ${runDetails?.run?.name || "N/A"}`,
+      `Completed: ${runDetails?.run?.completedAt ? format(new Date(runDetails.run.completedAt), "PPpp") : "N/A"}`,
+      "",
+      "-".repeat(70),
+      "SUMMARY",
+      "-".repeat(70),
+      `Total Issues: ${summary.total}`,
+      `  - Critical: ${summary.critical}`,
+      `  - Serious: ${summary.serious}`,
+      `  - Moderate/Minor: ${summary.moderate}`,
+      `Pages Affected: ${summary.pagesAffected}`,
+      "",
+      "-".repeat(70),
+      "DETAILED ISSUES",
+      "-".repeat(70),
+      "",
+    ].join("\n");
+    
+    const content = issues.map((i, idx) => 
+      [
+        `Issue #${idx + 1}`,
+        `  Severity: ${i.severity.toUpperCase()}`,
+        `  Module: ${i.module}`,
+        `  Page: ${i.page}`,
+        `  Route: ${i.route}`,
+        `  Score: ${i.score}/100`,
+        `  Description: ${i.description}`,
+        `  Affected Elements: ${i.elements}`,
+        `  Detected: ${format(new Date(i.detectedAt), "PPpp")}`,
+        "",
+      ].join("\n")
+    ).join("\n");
+    
     const blob = new Blob([header + content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `accessibility-issues-${format(new Date(), "yyyy-MM-dd")}.txt`;
+    a.download = `accessibility-report-${format(new Date(), "yyyy-MM-dd-HHmm")}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: "Report downloaded" });
+  };
+
+  const getSeverityBadgeVariant = (severity: string) => {
+    switch (severity) {
+      case "critical": return "destructive";
+      case "serious": return "secondary";
+      default: return "outline";
+    }
   };
 
   return (
@@ -572,92 +687,224 @@ export default function TestingEngine() {
         </TabsContent>
 
         <TabsContent value="issues" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                    Accessibility Issues
-                  </CardTitle>
-                  <CardDescription>
-                    Pages with WCAG 2 AA accessibility violations
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyIssuesToClipboard}
-                    disabled={!runDetails?.results || getIssuesData().length === 0}
-                    data-testid="button-copy-issues"
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={downloadIssuesAsCSV}
-                    disabled={!runDetails?.results || getIssuesData().length === 0}
-                    data-testid="button-download-csv"
-                  >
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
-                    Excel/CSV
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={downloadIssuesAsPDF}
-                    disabled={!runDetails?.results || getIssuesData().length === 0}
-                    data-testid="button-download-pdf"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Report
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!runDetails?.results ? (
+          {!runDetails?.results ? (
+            <Card>
+              <CardContent className="pt-6">
                 <div className="text-center text-muted-foreground py-12">
-                  Run tests first to see accessibility issues
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No Test Data Available</p>
+                  <p>Run tests first to see accessibility issues</p>
                 </div>
-              ) : getIssuesData().length === 0 ? (
+              </CardContent>
+            </Card>
+          ) : getIssuesData().length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <CheckCircle2 className="h-12 w-12 mx-auto text-green-500 mb-4" />
-                  <p className="text-lg font-medium">No accessibility issues found</p>
-                  <p className="text-muted-foreground">All pages pass WCAG 2 AA requirements</p>
+                  <p className="text-lg font-medium">No Accessibility Issues Found</p>
+                  <p className="text-muted-foreground">All pages pass WCAG 2.1 AA requirements</p>
                 </div>
-              ) : (
-                <ScrollArea className="h-[500px]">
-                  <div className="space-y-4">
-                    {getIssuesData().map((issue, idx) => (
-                      <div key={idx} className="border rounded-lg p-4 space-y-2" data-testid={`issue-card-${idx}`}>
-                        <div className="flex items-center justify-between gap-4 flex-wrap">
-                          <div>
-                            <div className="font-semibold">{issue.module} - {issue.page}</div>
-                            <div className="text-sm text-muted-foreground font-mono">{issue.route}</div>
-                          </div>
-                          <Badge variant={issue.score >= 90 ? "default" : issue.score >= 70 ? "secondary" : "destructive"}>
-                            Score: {issue.score}
-                          </Badge>
-                        </div>
-                        <div className="mt-3 space-y-1">
-                          {issue.issues.split("\n").map((line, lIdx) => (
-                            <div key={lIdx} className="text-sm flex items-start gap-2">
-                              <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
-                              <span>{line}</span>
-                            </div>
-                          ))}
-                        </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-lg bg-yellow-500/10">
+                        <AlertTriangle className="h-5 w-5 text-yellow-600" />
                       </div>
-                    ))}
+                      <div>
+                        <p className="text-2xl font-bold">{getIssuesSummary().total}</p>
+                        <p className="text-sm text-muted-foreground">Total Issues</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-lg bg-red-500/10">
+                        <XCircle className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{getIssuesSummary().critical}</p>
+                        <p className="text-sm text-muted-foreground">Critical</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-lg bg-orange-500/10">
+                        <AlertTriangle className="h-5 w-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{getIssuesSummary().serious}</p>
+                        <p className="text-sm text-muted-foreground">Serious</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-lg bg-primary/10">
+                        <Accessibility className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{getIssuesSummary().pagesAffected}</p>
+                        <p className="text-sm text-muted-foreground">Pages Affected</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Accessibility Issues Log
+                      </CardTitle>
+                      <CardDescription>
+                        {runDetails?.run?.completedAt 
+                          ? `Last scanned: ${format(new Date(runDetails.run.completedAt), "PPpp")}`
+                          : "WCAG 2.1 AA violations detected during test run"}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyIssuesToClipboard}
+                        data-testid="button-copy-issues"
+                        aria-label="Copy issues to clipboard"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={downloadIssuesAsCSV}
+                        data-testid="button-download-csv"
+                        aria-label="Download as CSV"
+                      >
+                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                        CSV
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={downloadIssuesAsPDF}
+                        data-testid="button-download-pdf"
+                        aria-label="Download full report"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Full Report
+                      </Button>
+                    </div>
                   </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="px-4 py-3 border-b flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Severity:</span>
+                      <Select value={issuesSeverityFilter} onValueChange={setIssuesSeverityFilter}>
+                        <SelectTrigger className="w-32" data-testid="select-issues-severity">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="critical">Critical</SelectItem>
+                          <SelectItem value="serious">Serious</SelectItem>
+                          <SelectItem value="moderate">Moderate</SelectItem>
+                          <SelectItem value="minor">Minor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Module:</span>
+                      <Select value={issuesModuleFilter} onValueChange={setIssuesModuleFilter}>
+                        <SelectTrigger className="w-40" data-testid="select-issues-module">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Modules</SelectItem>
+                          {getUniqueModulesWithIssues().map((mod) => (
+                            <SelectItem key={mod} value={mod}>{mod}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1" />
+                    <span className="text-sm text-muted-foreground">
+                      Showing {getFilteredIssues().length} of {getIssuesData().length} issues
+                    </span>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[100px]">Severity</TableHead>
+                        <TableHead>Module</TableHead>
+                        <TableHead>Page</TableHead>
+                        <TableHead>Issue Description</TableHead>
+                        <TableHead className="w-[80px] text-center">Elements</TableHead>
+                        <TableHead className="w-[70px] text-center">Score</TableHead>
+                        <TableHead className="w-[150px]">Detected</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {getFilteredIssues().length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            No issues match the current filters
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        getFilteredIssues().map((issue) => (
+                          <TableRow key={issue.id} data-testid={`row-issue-${issue.id}`}>
+                            <TableCell>
+                              <Badge variant={getSeverityBadgeVariant(issue.severity)}>
+                                {issue.severity}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">{issue.module}</TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{issue.page}</div>
+                                <div className="text-xs text-muted-foreground font-mono">{issue.route}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="max-w-[300px]">
+                              <div className="text-sm truncate" title={issue.description}>
+                                {issue.description}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center font-mono">{issue.elements}</TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant={issue.score >= 90 ? "default" : issue.score >= 70 ? "secondary" : "destructive"}>
+                                {issue.score}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {format(new Date(issue.detectedAt), "MMM d, HH:mm")}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>
