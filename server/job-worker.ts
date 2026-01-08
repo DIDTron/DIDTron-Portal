@@ -26,10 +26,14 @@ import {
   AuditCleanupPayload,
   CDRProcessPayload,
   AZDestinationImportPayload,
+  AZDestinationDeleteAllPayload,
+  TrashRestorePayload,
+  TrashPurgePayload,
 } from "./job-queue";
 import { azDestinationsRepository } from "./az-destinations-repository";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { auditService } from "./audit-service";
 import {
   handleKBTrain,
   handleKBIndex,
@@ -166,8 +170,89 @@ const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
       }
       
       console.log(`[AZImportJob] Import complete: ${totalInserted} inserted, ${totalUpdated} updated, ${totalSkipped} skipped`);
+      
+      await auditService.createAuditLog({
+        userId: payload.userId,
+        action: "import_completed",
+        tableName: "az_destinations",
+        newValues: { inserted: totalInserted, updated: totalUpdated, skipped: totalSkipped },
+      });
     } catch (error) {
       console.error("[AZImportJob] Import failed:", error);
+      await auditService.createAuditLog({
+        userId: payload.userId,
+        action: "import_failed",
+        tableName: "az_destinations",
+        newValues: { error: (error as Error).message },
+      });
+      throw error;
+    }
+  },
+
+  az_destination_delete_all: async (payload: AZDestinationDeleteAllPayload, signal?: AbortSignal) => {
+    console.log(`[AZDeleteJob] Starting delete all (${payload.totalRecords || 'unknown'} records)`);
+    
+    try {
+      const count = await azDestinationsRepository.deleteAllDestinations();
+      console.log(`[AZDeleteJob] Deleted ${count} destinations`);
+      
+      await auditService.createAuditLog({
+        userId: payload.userId,
+        action: "bulk_delete_completed",
+        tableName: "az_destinations",
+        newValues: { deletedCount: count },
+      });
+    } catch (error) {
+      console.error("[AZDeleteJob] Delete all failed:", error);
+      throw error;
+    }
+  },
+
+  trash_restore: async (payload: TrashRestorePayload, signal?: AbortSignal) => {
+    console.log(`[TrashJob] Restoring record ${payload.recordId} from ${payload.tableName}`);
+    
+    try {
+      const restored = await auditService.restoreFromTrash(payload.trashId, payload.userId);
+      
+      if (restored) {
+        await auditService.createAuditLog({
+          userId: payload.userId,
+          action: "trash_restored",
+          tableName: restored.tableName,
+          recordId: restored.recordId,
+          newValues: restored.recordData,
+        });
+        console.log(`[TrashJob] Restored record ${restored.recordId} to ${restored.tableName}`);
+      } else {
+        console.log(`[TrashJob] Record not found in trash: ${payload.trashId}`);
+      }
+    } catch (error) {
+      console.error("[TrashJob] Restore failed:", error);
+      throw error;
+    }
+  },
+
+  trash_purge: async (payload: TrashPurgePayload, signal?: AbortSignal) => {
+    console.log(`[TrashJob] Purging trash (type: ${payload.purgeType})`);
+    
+    try {
+      let count = 0;
+      if (payload.purgeType === "expired") {
+        count = await auditService.purgeExpiredTrash();
+      } else {
+        count = await auditService.purgeAllTrash();
+      }
+      
+      await auditService.createAuditLog({
+        userId: payload.userId,
+        action: "trash_purged",
+        tableName: "trash",
+        newValues: { purgeType: payload.purgeType, purgedCount: count },
+      });
+      
+      console.log(`[TrashJob] Purged ${count} records from trash`);
+    } catch (error) {
+      console.error("[TrashJob] Purge failed:", error);
       throw error;
     }
   },

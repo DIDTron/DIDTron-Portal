@@ -984,6 +984,30 @@ export const connexcsSyncLog = pgTable("connexcs_sync_log", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const trash = pgTable("trash", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tableName: text("table_name").notNull(),
+  recordId: text("record_id").notNull(),
+  recordData: jsonb("record_data").notNull(),
+  deletedBy: varchar("deleted_by").references(() => users.id),
+  deletedAt: timestamp("deleted_at").defaultNow(),
+  restorableUntil: timestamp("restorable_until"),
+  isRestored: boolean("is_restored").default(false),
+  restoredAt: timestamp("restored_at"),
+  restoredBy: varchar("restored_by").references(() => users.id),
+});
+
+export const platformSettings = pgTable("platform_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: text("key").notNull().unique(),
+  value: text("value"),
+  type: text("type").default("string"),
+  category: text("category").default("general"),
+  description: text("description"),
+  updatedBy: varchar("updated_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== CDRs ====================
 
 export const cdrs = pgTable("cdrs", {
@@ -2296,6 +2320,8 @@ export type Invoice = typeof invoices.$inferSelect;
 export type Referral = typeof referrals.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type ConfigVersion = typeof configVersions.$inferSelect;
+export type Trash = typeof trash.$inferSelect;
+export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type Cdr = typeof cdrs.$inferSelect;
 export type Voicemail = typeof voicemails.$inferSelect;
 export type CallRecording = typeof callRecordings.$inferSelect;

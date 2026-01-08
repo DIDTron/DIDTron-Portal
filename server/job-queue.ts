@@ -32,7 +32,10 @@ export type DIDTronJobType =
   | "billing_reconcile"
   | "audit_cleanup"
   | "cdr_process"
-  | "az_destination_import";
+  | "az_destination_import"
+  | "az_destination_delete_all"
+  | "trash_restore"
+  | "trash_purge";
 
 export interface BaseJobPayload {
   userId?: string;
@@ -159,6 +162,20 @@ export interface AZDestinationImportPayload extends BaseJobPayload {
   totalRecords: number;
 }
 
+export interface AZDestinationDeleteAllPayload extends BaseJobPayload {
+  totalRecords?: number;
+}
+
+export interface TrashRestorePayload extends BaseJobPayload {
+  trashId: string;
+  tableName: string;
+  recordId: string;
+}
+
+export interface TrashPurgePayload extends BaseJobPayload {
+  purgeType: "expired" | "all";
+}
+
 export interface DIDTronPayloadMap {
   rate_card_import: RateCardImportPayload;
   rate_card_export: RateCardExportPayload;
@@ -184,6 +201,9 @@ export interface DIDTronPayloadMap {
   audit_cleanup: AuditCleanupPayload;
   cdr_process: CDRProcessPayload;
   az_destination_import: AZDestinationImportPayload;
+  az_destination_delete_all: AZDestinationDeleteAllPayload;
+  trash_restore: TrashRestorePayload;
+  trash_purge: TrashPurgePayload;
 }
 
 interface InMemoryJob {
@@ -665,6 +685,9 @@ export const JOB_TYPE_LABELS: Record<DIDTronJobType, string> = {
   audit_cleanup: "Audit Log Cleanup",
   cdr_process: "CDR Processing",
   az_destination_import: "A-Z Destinations Import",
+  az_destination_delete_all: "A-Z Destinations Delete All",
+  trash_restore: "Trash Restore",
+  trash_purge: "Trash Purge",
 };
 
 export const JOB_TYPE_CATEGORIES: Record<string, DIDTronJobType[]> = {
@@ -674,7 +697,9 @@ export const JOB_TYPE_CATEGORIES: Record<string, DIDTronJobType[]> = {
   "Billing": ["invoice_generate", "invoice_bulk_generate", "billing_reconcile"],
   "Communications": ["email_send", "email_bulk_send", "webhook_deliver"],
   "AI Voice": ["ai_voice_kb_train", "ai_voice_kb_index", "ai_voice_campaign_start", "ai_voice_campaign_call", "ai_voice_agent_sync"],
-  "System": ["report_generate", "fx_rate_update", "audit_cleanup", "cdr_process", "az_destination_import"],
+  "A-Z Database": ["az_destination_import", "az_destination_delete_all"],
+  "Audit & Trash": ["audit_cleanup", "trash_restore", "trash_purge"],
+  "System": ["report_generate", "fx_rate_update", "cdr_process"],
 };
 
 export type { JobQueue, JobRecord, JobStatus, JobHandler, JobHandlers, Processor };
