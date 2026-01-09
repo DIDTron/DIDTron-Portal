@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -83,6 +84,7 @@ const mockPublishHistory: PublishEntry[] = [
 ];
 
 export default function EMDesignSystemPage() {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("inventory");
@@ -171,7 +173,7 @@ export default function EMDesignSystemPage() {
           <p className="text-sm text-muted-foreground">Component inventory, design tokens, and UI health metrics</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" data-testid="button-view-docs">
+          <Button variant="outline" data-testid="button-view-docs" onClick={() => navigate("/admin/documentation")}>
             <FileText className="h-4 w-4 mr-2" />
             View Documentation
           </Button>
