@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 
+interface Ring {
+  baseRadius: number;
+  wavePhase: number;
+  waveSpeed: number;
+}
+
 interface Dot {
-  type: "spike" | "core" | "halo";
-  spikeIndex?: number;
-  distanceRatio: number;
-  angleOffset: number;
+  ringIndex: number;
+  anglePosition: number;
   size: number;
   colorIndex: number;
   brightness: number;
-  phase: number;
 }
 
 export function FloatingParticles() {
@@ -16,6 +19,7 @@ export function FloatingParticles() {
   const mouseRef = useRef({ x: -1000, y: -1000 });
   const smoothMouseRef = useRef({ x: -1000, y: -1000 });
   const dotsRef = useRef<Dot[]>([]);
+  const ringsRef = useRef<Ring[]>([]);
   const animationRef = useRef<number>();
   const timeRef = useRef(0);
   const lastMoveRef = useRef(0);
@@ -52,58 +56,29 @@ export function FloatingParticles() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
+    // 10 concentric rings around cursor
+    const ringCount = 10;
+    ringsRef.current = Array.from({ length: ringCount }, (_, i) => ({
+      baseRadius: 30 + i * 22,
+      wavePhase: i * 0.6,
+      waveSpeed: 0.15 + Math.random() * 0.1,
+    }));
+
+    // 12 dots per ring
+    const dotsPerRing = 12;
     dotsRef.current = [];
-
-    // 6 diffraction spikes
-    const spikeCount = 6;
-    const dotsPerSpike = 18;
     
-    for (let s = 0; s < spikeCount; s++) {
-      for (let d = 0; d < dotsPerSpike; d++) {
-        const distanceRatio = (d + 1) / dotsPerSpike;
+    for (let ringIdx = 0; ringIdx < ringCount; ringIdx++) {
+      for (let d = 0; d < dotsPerRing; d++) {
         dotsRef.current.push({
-          type: "spike",
-          spikeIndex: s,
-          distanceRatio,
-          angleOffset: (Math.random() - 0.5) * 0.08,
-          size: 0.8 + (1 - distanceRatio) * 1.2,
-          colorIndex: (s + d) % 2,
-          brightness: 0.12,
-          phase: Math.random() * Math.PI * 2,
+          ringIndex: ringIdx,
+          anglePosition: d / dotsPerRing,
+          size: 1.5 + Math.random() * 1,
+          colorIndex: (ringIdx + d) % 2,
+          brightness: 0.15,
         });
       }
     }
-
-    // Central core glow - 20 dots
-    for (let c = 0; c < 20; c++) {
-      const angle = (c / 20) * Math.PI * 2;
-      dotsRef.current.push({
-        type: "core",
-        distanceRatio: 0.3 + Math.random() * 0.7,
-        angleOffset: angle,
-        size: 1.8 + Math.random() * 0.8,
-        colorIndex: c % 2,
-        brightness: 0.15,
-        phase: Math.random() * Math.PI * 2,
-      });
-    }
-
-    // Two halo rings
-    const haloRadii = [0.4, 0.7];
-    haloRadii.forEach((haloRatio, haloIdx) => {
-      const dotsInHalo = 16;
-      for (let h = 0; h < dotsInHalo; h++) {
-        dotsRef.current.push({
-          type: "halo",
-          distanceRatio: haloRatio,
-          angleOffset: (h / dotsInHalo) * Math.PI * 2,
-          size: 1.2 + Math.random() * 0.6,
-          colorIndex: (haloIdx + h) % 2,
-          brightness: 0.1,
-          phase: Math.random() * Math.PI * 2,
-        });
-      }
-    });
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -114,12 +89,9 @@ export function FloatingParticles() {
 
     window.addEventListener("mousemove", handleMouseMove);
 
+    // Colors
     const colorsLight = ["37, 99, 235", "30, 41, 59"];
     const colorsDark = ["46, 75, 255", "248, 250, 252"];
-
-    const maxSpikeLength = 140;
-    const coreRadius = 15;
-    const maxHaloRadius = 100;
 
     const animate = () => {
       const rect = canvas.getBoundingClientRect();
@@ -135,6 +107,7 @@ export function FloatingParticles() {
         opacityRef.current = Math.max(0, opacityRef.current - 0.012);
       }
 
+      // Smooth cursor following
       smoothMouseRef.current.x += (mouseRef.current.x - smoothMouseRef.current.x) * 0.08;
       smoothMouseRef.current.y += (mouseRef.current.y - smoothMouseRef.current.y) * 0.08;
 
@@ -144,59 +117,42 @@ export function FloatingParticles() {
         const centerX = smoothMouseRef.current.x;
         const centerY = smoothMouseRef.current.y;
 
-        // Slow rotation oscillation
-        const rotationOffset = Math.sin(timeRef.current * 0.2) * 0.1;
-        
-        // Wave-driven spike length modulation
-        const lengthWave = 1 + Math.sin(timeRef.current * 0.25) * 0.15;
-
         dotsRef.current.forEach((dot) => {
-          let x = centerX;
-          let y = centerY;
+          const ring = ringsRef.current[dot.ringIndex];
           
-          // Twinkle phase
-          const twinklePhase = timeRef.current * 0.3 + dot.phase;
-          const twinkleValue = Math.sin(twinklePhase);
-          const isAtPeak = twinkleValue > 0.8;
+          // Sea wave motion - ripple outward
+          const waveTime = timeRef.current * ring.waveSpeed;
+          const dotAngle = dot.anglePosition * Math.PI * 2;
           
+          // Ripple effect: wave travels through the rings
+          const ripplePhase = waveTime * 2 + ring.wavePhase + dotAngle * 0.3;
+          const waveHeight = Math.sin(ripplePhase) * 8;
+          
+          // Radius undulation
+          const radiusWave = Math.sin(waveTime * 1.5 + ring.wavePhase) * 6;
+          const currentRadius = ring.baseRadius + radiusWave;
+          
+          // Position on concentric circle
+          const x = centerX + Math.cos(dotAngle) * currentRadius;
+          const y = centerY + Math.sin(dotAngle) * currentRadius + waveHeight;
+          
+          // Brightness: dim most of the time, bright only at wave peak
+          const peakValue = Math.sin(ripplePhase);
+          const isAtPeak = peakValue > 0.85;
+          
+          // Target brightness
+          const targetBrightness = isAtPeak ? 0.75 : 0.15;
+          
+          // Smooth transition - fast rise, slow fade
           if (isAtPeak) {
-            dot.brightness = Math.min(0.7, dot.brightness + 0.12);
+            dot.brightness = Math.min(0.75, dot.brightness + 0.15);
           } else {
-            dot.brightness = Math.max(dot.type === "core" ? 0.18 : 0.1, dot.brightness - 0.006);
+            dot.brightness = Math.max(0.15, dot.brightness - 0.008);
           }
 
-          if (dot.type === "spike" && dot.spikeIndex !== undefined) {
-            const baseAngle = (dot.spikeIndex / 6) * Math.PI * 2 + rotationOffset;
-            const angle = baseAngle + dot.angleOffset;
-            const distance = dot.distanceRatio * maxSpikeLength * lengthWave;
-            
-            // Wave motion along spike
-            const waveOffset = Math.sin(timeRef.current * 0.4 + dot.distanceRatio * 3) * 4;
-            
-            x = centerX + Math.cos(angle) * distance;
-            y = centerY + Math.sin(angle) * distance + waveOffset;
-            
-          } else if (dot.type === "core") {
-            const pulseRadius = coreRadius * (1 + Math.sin(timeRef.current * 0.3) * 0.2);
-            const angle = dot.angleOffset + rotationOffset;
-            const distance = dot.distanceRatio * pulseRadius;
-            
-            x = centerX + Math.cos(angle) * distance;
-            y = centerY + Math.sin(angle) * distance;
-            
-          } else if (dot.type === "halo") {
-            const haloWave = 1 + Math.sin(timeRef.current * 0.2 + dot.phase) * 0.1;
-            const angle = dot.angleOffset + rotationOffset * 0.5;
-            const distance = dot.distanceRatio * maxHaloRadius * haloWave;
-            
-            const waveY = Math.sin(timeRef.current * 0.35 + dot.angleOffset) * 6;
-            
-            x = centerX + Math.cos(angle) * distance;
-            y = centerY + Math.sin(angle) * distance + waveY;
-          }
-
+          // Render dot
           ctx.save();
-          ctx.globalAlpha = opacityRef.current * dot.brightness * (isDark ? 1 : 0.85);
+          ctx.globalAlpha = opacityRef.current * dot.brightness * (isDark ? 1 : 0.9);
           ctx.fillStyle = `rgba(${colors[dot.colorIndex]}, 1)`;
           ctx.beginPath();
           ctx.arc(x, y, dot.size, 0, Math.PI * 2);
