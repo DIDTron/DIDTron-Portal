@@ -113,6 +113,73 @@ const isAnyFetching = fetching1 || fetching2;
 3. ALWAYS use `isFetching` (not `isLoading`) - `isLoading` is only true on first load
 4. For multiple queries, combine all `isFetching` states with OR
 
+## CRITICAL: Page & Tab Layout Patterns (MANDATORY FOR ALL NEW PAGES)
+
+**All new pages and tabs must follow these patterns to prevent common UI issues:**
+
+### Focus-Safe Page Initialization
+Pages containing Command, CommandInput, or other autofocus elements MUST scroll to top on mount to prevent browser from scrolling to focused element.
+
+```tsx
+import { useEffect, useRef } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+export default function MyPage() {
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (viewport) {
+          viewport.scrollTop = 0;
+        }
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <ScrollArea ref={scrollAreaRef} className="h-full">
+      {/* Page content */}
+    </ScrollArea>
+  );
+}
+```
+
+### Overflow-Safe Cards
+Cards containing code blocks, pre-formatted content, or long text MUST use proper overflow handling to prevent content from extending beyond card boundaries.
+
+```tsx
+<Card className="overflow-hidden">
+  <CardHeader className="flex flex-row items-start justify-between gap-4">
+    <div className="space-y-1 min-w-0 flex-1">
+      <CardTitle>Title</CardTitle>
+    </div>
+    <Button size="icon" variant="ghost" className="shrink-0">
+      <Copy className="h-4 w-4" />
+    </Button>
+  </CardHeader>
+  <CardContent className="overflow-hidden">
+    <div className="overflow-x-auto">
+      <pre className="p-4 bg-muted rounded-md text-sm max-h-64 overflow-y-auto">
+        <code className="whitespace-pre">{code}</code>
+      </pre>
+    </div>
+    <Alert className="overflow-hidden">
+      <AlertDescription className="break-words">Long text...</AlertDescription>
+    </Alert>
+  </CardContent>
+</Card>
+```
+
+**Key Classes:**
+- Card: `overflow-hidden` (clips content to boundaries)
+- Header content div: `min-w-0 flex-1` (allows shrinking)
+- Buttons/icons: `shrink-0` (prevents shrinking)
+- Code wrapper: `overflow-x-auto` (horizontal scroll)
+- AlertDescription: `break-words` (wraps long text)
+
 ### System Design
 The backend uses PostgreSQL and Drizzle ORM, with a robust job queue system for background processing, supporting 24 job types across categories like Rate Cards, DID Management, and Billing. The frontend uses Zustand for state management. All new features require testing with fake super admin actions, with results logged in the "Dev Tests" module.
 

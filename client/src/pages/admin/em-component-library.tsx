@@ -2013,6 +2013,93 @@ interface DataPageHeaderProps {
 </Select>`,
     note: "Use this pattern for consistency across all data listing pages. Include timeframe filter only when data is time-sensitive (logs, metrics, history)."
   },
+  {
+    id: "focus-safe-page",
+    name: "Focus-Safe Page Initialization",
+    category: "ui",
+    badge: "Critical",
+    badgeVariant: "destructive" as const,
+    description: "Scroll to top on mount for pages with autofocus elements (Command, inputs). Prevents browser from scrolling to focused element.",
+    code: `import { useEffect, useRef } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+export default function MyPage() {
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top after autofocus elements steal focus
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (viewport) {
+          viewport.scrollTop = 0;
+        }
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <ScrollArea ref={scrollAreaRef} className="h-full">
+      <div className="p-6 space-y-6">
+        {/* Page content with Command, inputs, or other autofocus elements */}
+        <Command>
+          <CommandInput placeholder="Type a command..." />
+          {/* ... */}
+        </Command>
+      </div>
+    </ScrollArea>
+  );
+}`,
+    note: "REQUIRED for any page containing Command, CommandInput, or other autofocus elements. Without this, the browser scrolls to the focused element on page load."
+  },
+  {
+    id: "overflow-safe-cards",
+    name: "Overflow-Safe Cards",
+    category: "ui",
+    badge: "Critical",
+    badgeVariant: "destructive" as const,
+    description: "Proper overflow handling for Cards with code blocks, long text, or pre-formatted content. Prevents text from extending beyond card boundaries.",
+    code: `// Overflow-safe Card structure for code blocks and long content
+
+<Card className="overflow-hidden">
+  <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
+    <div className="space-y-1 min-w-0 flex-1">
+      <CardTitle className="text-lg">Title</CardTitle>
+      <CardDescription>Description text</CardDescription>
+    </div>
+    <Button size="icon" variant="ghost" className="shrink-0">
+      <Copy className="h-4 w-4" />
+    </Button>
+  </CardHeader>
+  <CardContent className="space-y-3 overflow-hidden">
+    {/* Wrap code blocks in scrollable container */}
+    <div className="overflow-x-auto">
+      <pre className="p-4 bg-muted rounded-md text-sm max-h-64 overflow-y-auto min-w-0">
+        <code className="whitespace-pre">{codeContent}</code>
+      </pre>
+    </div>
+    
+    {/* Alert with break-words for long text */}
+    <Alert className="overflow-hidden">
+      <AlertCircle className="h-4 w-4 shrink-0" />
+      <AlertTitle>Note</AlertTitle>
+      <AlertDescription className="break-words">
+        Long text that should wrap within the alert boundaries...
+      </AlertDescription>
+    </Alert>
+  </CardContent>
+</Card>
+
+// Key classes:
+// - Card: overflow-hidden (clips content to card boundaries)
+// - Header content div: min-w-0 flex-1 (allows shrinking)
+// - Buttons/icons: shrink-0 (prevents shrinking)
+// - Code wrapper: overflow-x-auto (horizontal scroll for code)
+// - Alert: overflow-hidden (clips to boundaries)
+// - AlertDescription: break-words (wraps long text)`,
+    note: "REQUIRED for any Card containing code blocks, pre-formatted content, or long text. Without this, content extends beyond card boundaries and gets cut off."
+  },
 ];
 
 const designRules = [
@@ -2027,6 +2114,8 @@ const designRules = [
   { rule: "Use DataTableFooter for ALL data tables in Super Admin portal", category: "component" },
   { rule: "Follow VitalPBX-style layout with double sidebars", category: "layout" },
   { rule: "All data listing pages must include search bar, category quick filters, and timeframe filter (if time-sensitive)", category: "data" },
+  { rule: "Pages with Command/CommandInput or autofocus elements MUST implement scroll-to-top on mount (Focus-Safe Page pattern)", category: "layout" },
+  { rule: "Cards with code blocks or long text MUST use overflow-hidden and wrap content in overflow-x-auto (Overflow-Safe Cards pattern)", category: "component" },
 ];
 
 export default function EMComponentLibraryPage() {
