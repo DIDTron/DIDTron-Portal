@@ -40,20 +40,24 @@ import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMe
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { 
   Search, Copy, Check, Plus, Trash2, Edit, MoreHorizontal, 
   ChevronRight, Settings, User, Bell, LogOut, Layers, Terminal,
   AlertCircle, ChevronDown, Bold, Italic, Underline, Home, ChevronsUpDown,
   Calculator, Calendar as CalendarIcon, CreditCard, Smile, Mail, MessageSquare,
   PlusCircle, UserPlus, Cloud, Github, Keyboard, LifeBuoy, Settings2,
-  ChevronLeft, Menu, PanelLeft, Image
+  ChevronLeft, Menu, PanelLeft, Image, Inbox, FileText
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 interface ComponentExample {
   name: string;
   description: string;
-  category: "inputs" | "display" | "feedback" | "navigation" | "layout" | "overlay";
+  category: "inputs" | "display" | "feedback" | "navigation" | "layout" | "overlay" | "data" | "custom";
   variants?: string[];
   code: string;
   preview: JSX.Element;
@@ -1257,6 +1261,283 @@ const componentExamples: ComponentExample[] = [
       </DropdownMenu>
     ),
   },
+  {
+    name: "Carousel",
+    description: "Scrollable content carousel with navigation controls.",
+    category: "display",
+    code: `<Carousel>
+  <CarouselContent>
+    <CarouselItem>Slide 1</CarouselItem>
+    <CarouselItem>Slide 2</CarouselItem>
+  </CarouselContent>
+  <CarouselPrevious />
+  <CarouselNext />
+</Carousel>`,
+    preview: (
+      <Carousel className="w-full max-w-xs mx-auto" data-testid="preview-carousel">
+        <CarouselContent>
+          {[1, 2, 3, 4, 5].map((num) => (
+            <CarouselItem key={num}>
+              <div className="p-1">
+                <Card>
+                  <CardContent className="flex aspect-square items-center justify-center p-6" data-testid={`preview-carousel-item-${num}`}>
+                    <span className="text-4xl font-semibold">{num}</span>
+                  </CardContent>
+                </Card>
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious data-testid="preview-carousel-prev" />
+        <CarouselNext data-testid="preview-carousel-next" />
+      </Carousel>
+    ),
+  },
+  {
+    name: "InputOTP",
+    description: "One-time password input with configurable slots.",
+    category: "inputs",
+    code: `<InputOTP maxLength={6}>
+  <InputOTPGroup>
+    <InputOTPSlot index={0} />
+    <InputOTPSlot index={1} />
+    <InputOTPSlot index={2} />
+  </InputOTPGroup>
+  <InputOTPSeparator />
+  <InputOTPGroup>
+    <InputOTPSlot index={3} />
+    <InputOTPSlot index={4} />
+    <InputOTPSlot index={5} />
+  </InputOTPGroup>
+</InputOTP>`,
+    preview: (
+      <InputOTP maxLength={6} data-testid="preview-inputotp">
+        <InputOTPGroup>
+          <InputOTPSlot index={0} data-testid="preview-inputotp-slot-0" />
+          <InputOTPSlot index={1} data-testid="preview-inputotp-slot-1" />
+          <InputOTPSlot index={2} data-testid="preview-inputotp-slot-2" />
+        </InputOTPGroup>
+        <InputOTPSeparator />
+        <InputOTPGroup>
+          <InputOTPSlot index={3} data-testid="preview-inputotp-slot-3" />
+          <InputOTPSlot index={4} data-testid="preview-inputotp-slot-4" />
+          <InputOTPSlot index={5} data-testid="preview-inputotp-slot-5" />
+        </InputOTPGroup>
+      </InputOTP>
+    ),
+  },
+  {
+    name: "Toast",
+    description: "Brief notification that appears temporarily. Triggered via useToast hook.",
+    category: "feedback",
+    code: `import { useToast } from "@/hooks/use-toast";
+
+const { toast } = useToast();
+
+// Show toast
+toast({
+  title: "Success",
+  description: "Your action completed",
+});
+
+// Destructive variant
+toast({
+  variant: "destructive",
+  title: "Error",
+  description: "Something went wrong",
+});`,
+    preview: (
+      <div className="flex flex-col gap-2" data-testid="preview-toast">
+        <Button 
+          variant="outline" 
+          data-testid="preview-toast-default"
+          onClick={() => {}}
+        >
+          Show Default Toast
+        </Button>
+        <Button 
+          variant="destructive" 
+          data-testid="preview-toast-destructive"
+          onClick={() => {}}
+        >
+          Show Error Toast
+        </Button>
+        <p className="text-sm text-muted-foreground">Note: Use useToast() hook to trigger toasts</p>
+      </div>
+    ),
+  },
+  {
+    name: "Toaster",
+    description: "Container component that renders toast notifications. Mount once at app root.",
+    category: "feedback",
+    code: `// In App.tsx or main layout
+import { Toaster } from "@/components/ui/toaster";
+
+function App() {
+  return (
+    <>
+      <YourAppContent />
+      <Toaster />
+    </>
+  );
+}`,
+    preview: (
+      <div className="border rounded-lg p-4 max-w-sm" data-testid="preview-toaster">
+        <p className="text-sm font-medium mb-2">Toaster Setup:</p>
+        <div className="space-y-2 text-sm">
+          <div className="bg-muted p-2 rounded text-xs font-mono" data-testid="preview-toaster-code">
+            {"<Toaster />"}
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Mount this component once at the root of your application.
+            It will render all toast notifications triggered by useToast().
+          </p>
+        </div>
+        <div className="mt-3 border-t pt-3">
+          <p className="text-xs font-medium">Toast positions:</p>
+          <div className="grid grid-cols-3 gap-1 mt-1 text-xs text-muted-foreground">
+            <span data-testid="preview-toaster-pos-1">top-left</span>
+            <span data-testid="preview-toaster-pos-2">top-center</span>
+            <span data-testid="preview-toaster-pos-3">top-right</span>
+            <span data-testid="preview-toaster-pos-4">bottom-left</span>
+            <span data-testid="preview-toaster-pos-5">bottom-center</span>
+            <span data-testid="preview-toaster-pos-6">bottom-right</span>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    name: "SidebarComponent",
+    description: "CUSTOM: Application sidebar with icon rail and expandable menu. Use SidebarProvider at app root.",
+    category: "custom",
+    code: `<SidebarProvider>
+  <Sidebar>
+    <SidebarHeader>
+      <h2>App Name</h2>
+    </SidebarHeader>
+    <SidebarContent>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <a href="/dashboard">Dashboard</a>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarContent>
+  </Sidebar>
+  <SidebarTrigger />
+  <main>Content</main>
+</SidebarProvider>`,
+    preview: (
+      <div className="border rounded-lg p-4 max-w-sm" data-testid="preview-sidebar">
+        <p className="text-sm font-medium mb-2">Sidebar Structure:</p>
+        <div className="flex gap-2 text-sm">
+          <div className="bg-sidebar border rounded p-2 w-12" data-testid="preview-sidebar-icon-rail">
+            <div className="space-y-2">
+              <Home className="h-4 w-4 mx-auto" />
+              <Settings className="h-4 w-4 mx-auto" />
+              <User className="h-4 w-4 mx-auto" />
+            </div>
+          </div>
+          <div className="bg-sidebar border rounded p-2 flex-1" data-testid="preview-sidebar-menu">
+            <p className="font-medium text-xs mb-1">Menu</p>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>Dashboard</p>
+              <p>Settings</p>
+              <p>Profile</p>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">See App.tsx for full implementation</p>
+      </div>
+    ),
+  },
+  {
+    name: "Form",
+    description: "Form wrapper using react-hook-form with Zod validation. Use with FormField components.",
+    category: "inputs",
+    code: `import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
+const form = useForm({
+  resolver: zodResolver(schema),
+  defaultValues: { name: "" }
+});
+
+<Form {...form}>
+  <form onSubmit={form.handleSubmit(onSubmit)}>
+    <FormField
+      control={form.control}
+      name="name"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Name</FormLabel>
+          <FormControl>
+            <Input {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+    <Button type="submit">Submit</Button>
+  </form>
+</Form>`,
+    preview: (
+      <div className="space-y-4 max-w-sm" data-testid="preview-form">
+        <div className="space-y-2">
+          <Label htmlFor="form-name" data-testid="preview-form-label">Username</Label>
+          <Input id="form-name" placeholder="Enter username" data-testid="preview-form-input" />
+          <p className="text-xs text-muted-foreground">This is your public display name.</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="form-email" data-testid="preview-form-email-label">Email</Label>
+          <Input id="form-email" type="email" placeholder="email@example.com" data-testid="preview-form-email-input" />
+        </div>
+        <Button className="w-full" data-testid="preview-form-submit">Submit</Button>
+      </div>
+    ),
+  },
+  {
+    name: "Chart",
+    description: "Data visualization using Recharts. Import from @/components/ui/chart.",
+    category: "data",
+    code: `import { ChartContainer, ChartTooltip, ChartLegend } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis } from "recharts";
+
+const chartConfig = {
+  revenue: { label: "Revenue", color: "hsl(var(--chart-1))" }
+};
+
+<ChartContainer config={chartConfig}>
+  <BarChart data={data}>
+    <XAxis dataKey="month" />
+    <YAxis />
+    <Bar dataKey="revenue" fill="var(--color-revenue)" />
+    <ChartTooltip />
+  </BarChart>
+</ChartContainer>`,
+    preview: (
+      <div className="border rounded-lg p-4" data-testid="preview-chart">
+        <div className="flex items-end gap-2 h-24">
+          <div className="bg-primary w-8 h-16 rounded-t" data-testid="preview-chart-bar-1" />
+          <div className="bg-primary w-8 h-20 rounded-t" data-testid="preview-chart-bar-2" />
+          <div className="bg-primary w-8 h-12 rounded-t" data-testid="preview-chart-bar-3" />
+          <div className="bg-primary w-8 h-24 rounded-t" data-testid="preview-chart-bar-4" />
+          <div className="bg-primary w-8 h-18 rounded-t" data-testid="preview-chart-bar-5" />
+        </div>
+        <div className="flex justify-between text-xs text-muted-foreground mt-2">
+          <span>Jan</span>
+          <span>Feb</span>
+          <span>Mar</span>
+          <span>Apr</span>
+          <span>May</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">Uses Recharts with shadcn chart wrapper</p>
+      </div>
+    ),
+  },
 ];
 
 const categories = [
@@ -1268,6 +1549,7 @@ const categories = [
   { id: "layout", label: "Layout" },
   { id: "overlay", label: "Overlay" },
   { id: "data", label: "Data & Tables" },
+  { id: "custom", label: "Custom/Platform" },
 ] as const;
 
 export default function EMComponentLibraryPage() {
