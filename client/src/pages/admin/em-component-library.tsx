@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1950,6 +1950,14 @@ export default function EMComponentLibraryPage() {
   const [activeTab, setActiveTab] = useState<string>("components");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const { toast } = useToast();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0 });
+    }
+  };
 
   const filteredComponents = componentExamples.filter((component) => {
     const matchesSearch = component.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1971,8 +1979,8 @@ export default function EMComponentLibraryPage() {
   };
 
   return (
-    <ScrollArea className="h-full" aria-label="Component library content">
-      <div className="p-6 space-y-6">
+    <div ref={scrollRef} className="h-full overflow-auto" aria-label="Component library content">
+      <div className="p-6 space-y-6 max-w-5xl mx-auto">
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -1991,7 +1999,7 @@ export default function EMComponentLibraryPage() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-3 max-w-lg" data-testid="tabs-library-main">
             <TabsTrigger value="components" data-testid="tab-components">
               <Layers className="h-4 w-4 mr-2" />
@@ -2296,6 +2304,6 @@ export default function EMComponentLibraryPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </ScrollArea>
+    </div>
   );
 }
