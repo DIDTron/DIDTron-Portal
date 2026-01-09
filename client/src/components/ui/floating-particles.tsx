@@ -11,6 +11,7 @@ interface Particle {
   anchorY: number;
   noiseOffsetX: number;
   noiseOffsetY: number;
+  trail: { x: number; y: number }[];
 }
 
 // Loose D shape anchor points - abstract, not perfect
@@ -76,18 +77,23 @@ export function FloatingParticles() {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    particlesRef.current = D_ANCHORS.map((anchor, i) => ({
-      x: centerX + (Math.random() - 0.5) * 300,
-      y: centerY + (Math.random() - 0.5) * 300,
-      vx: 0,
-      vy: 0,
-      size: Math.random() * 2 + 2.5,
-      color: colors[i % 2],
-      anchorX: anchor.x,
-      anchorY: anchor.y,
-      noiseOffsetX: Math.random() * 1000,
-      noiseOffsetY: Math.random() * 1000,
-    }));
+    particlesRef.current = D_ANCHORS.map((anchor, i) => {
+      const startX = centerX + (Math.random() - 0.5) * 300;
+      const startY = centerY + (Math.random() - 0.5) * 300;
+      return {
+        x: startX,
+        y: startY,
+        vx: 0,
+        vy: 0,
+        size: Math.random() * 2 + 2.5,
+        color: colors[i % 2],
+        anchorX: anchor.x,
+        anchorY: anchor.y,
+        noiseOffsetX: Math.random() * 1000,
+        noiseOffsetY: Math.random() * 1000,
+        trail: Array(6).fill({ x: startX, y: startY }),
+      };
+    });
 
     startTimeRef.current = Date.now();
 
@@ -186,7 +192,26 @@ export function FloatingParticles() {
           particle.x += particle.vx;
           particle.y += particle.vy;
 
-          // Render
+          // Update trail (meteor tail effect)
+          particle.trail.pop();
+          particle.trail.unshift({ x: particle.x, y: particle.y });
+
+          // Render trail first (behind main particle)
+          particle.trail.forEach((point, trailIndex) => {
+            if (trailIndex === 0) return; // Skip first point (main particle position)
+            const trailOpacity = (1 - trailIndex / particle.trail.length) * 0.4;
+            const trailSize = particle.size * (1 - trailIndex / particle.trail.length) * 0.7;
+            
+            ctx.save();
+            ctx.globalAlpha = opacityRef.current * trailOpacity * (isDark ? 0.75 : 0.6);
+            ctx.fillStyle = `rgba(${particle.color}, 1)`;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, trailSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          });
+
+          // Render main particle
           ctx.save();
           ctx.globalAlpha = opacityRef.current * (isDark ? 0.75 : 0.6);
           ctx.fillStyle = `rgba(${particle.color}, 1)`;
