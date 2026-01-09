@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Building2, Pencil, Trash2, ChevronLeft, Lightbulb, X, Save } from "lucide-react";
+import { Link } from "wouter";
 import type { Carrier, Currency } from "@shared/schema";
 
 type ViewMode = "list" | "add";
@@ -516,11 +517,13 @@ export default function CarriersPage() {
                   {paginatedCarriers.map((carrier) => (
                     <TableRow 
                       key={carrier.id} 
-                      className="cursor-pointer hover-elevate"
-                      onClick={() => handleEdit(carrier)}
                       data-testid={`row-carrier-${carrier.id}`}
                     >
-                      <TableCell className="font-medium">{carrier.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <Link href={`/admin/carriers/${carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                          {carrier.name}
+                        </Link>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={
                           carrier.partnerType === "bilateral" ? "default" :
@@ -553,7 +556,7 @@ export default function CarriersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1">
                           <Button size="icon" variant="ghost" onClick={() => handleEdit(carrier)} data-testid={`button-edit-${carrier.id}`}>
                             <Pencil className="h-4 w-4" />
                           </Button>

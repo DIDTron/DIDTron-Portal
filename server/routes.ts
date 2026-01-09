@@ -26,6 +26,7 @@ import {
   insertCarrierAssignmentSchema,
   insertCarrierInterconnectSchema,
   insertCarrierContactSchema,
+  insertCarrierCreditAlertSchema,
   insertRouteSchema,
   insertMonitoringRuleSchema,
   insertAlertSchema,
@@ -5234,6 +5235,73 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete carrier contact" });
+    }
+  });
+
+  // Carrier Credit Alerts
+  app.get("/api/carriers/:id/credit-alerts", async (req, res) => {
+    try {
+      const alerts = await storage.getCarrierCreditAlerts(req.params.id);
+      res.json(alerts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch carrier credit alerts" });
+    }
+  });
+
+  app.post("/api/carriers/:id/credit-alerts", async (req, res) => {
+    try {
+      const parsed = insertCarrierCreditAlertSchema.safeParse({ ...req.body, carrierId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const alert = await storage.createCarrierCreditAlert(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "carrier_credit_alerts",
+        recordId: alert.id,
+        newValues: alert,
+      });
+      res.status(201).json(alert);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create carrier credit alert" });
+    }
+  });
+
+  app.put("/api/credit-alerts/:id", async (req, res) => {
+    try {
+      const oldAlert = await storage.getCarrierCreditAlert(req.params.id);
+      if (!oldAlert) return res.status(404).json({ error: "Credit alert not found" });
+      const parsed = insertCarrierCreditAlertSchema.partial().safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const alert = await storage.updateCarrierCreditAlert(req.params.id, parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "carrier_credit_alerts",
+        recordId: req.params.id,
+        oldValues: oldAlert,
+        newValues: alert,
+      });
+      res.json(alert);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update carrier credit alert" });
+    }
+  });
+
+  app.delete("/api/credit-alerts/:id", async (req, res) => {
+    try {
+      const oldAlert = await storage.getCarrierCreditAlert(req.params.id);
+      if (!oldAlert) return res.status(404).json({ error: "Credit alert not found" });
+      await storage.deleteCarrierCreditAlert(req.params.id);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "carrier_credit_alerts",
+        recordId: req.params.id,
+        oldValues: oldAlert,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete carrier credit alert" });
     }
   });
 

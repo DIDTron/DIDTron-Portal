@@ -17,6 +17,7 @@ import CodecsPage from "./codecs";
 import ChannelPlansPage from "./channel-plans";
 import DIDCountriesPage from "./did-countries";
 import CarriersPage from "./carriers";
+import CarrierDetailPage from "./carrier-detail";
 import RoutesPage from "./routes";
 import DIDProvidersPage from "./did-providers";
 import IntegrationsPage from "./integrations";
@@ -241,6 +242,7 @@ export default function AdminLayout() {
                 <Route path="/admin/codecs" component={CodecsPage} />
                 <Route path="/admin/channel-plans" component={ChannelPlansPage} />
                 <Route path="/admin/carriers" component={CarriersPage} />
+                <Route path="/admin/carriers/:id" component={CarrierDetailPage} />
                 <Route path="/admin/rate-cards/customer" component={CustomerRatesPage} />
                 <Route path="/admin/rate-cards/carrier" component={CarrierRatesPage} />
                 <Route path="/admin/routes" component={RoutesPage} />

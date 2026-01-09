@@ -85,6 +85,7 @@ import {
   type BillingTerm, type InsertBillingTerm,
   type CarrierInterconnect, type InsertCarrierInterconnect,
   type CarrierContact, type InsertCarrierContact,
+  type CarrierCreditAlert, type InsertCarrierCreditAlert,
   customers as customersTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -188,6 +189,13 @@ export interface IStorage {
   createCarrierContact(contact: InsertCarrierContact): Promise<CarrierContact>;
   updateCarrierContact(id: string, data: Partial<InsertCarrierContact>): Promise<CarrierContact | undefined>;
   deleteCarrierContact(id: string): Promise<boolean>;
+
+  // Carrier Credit Alerts
+  getCarrierCreditAlerts(carrierId: string): Promise<CarrierCreditAlert[]>;
+  getCarrierCreditAlert(id: string): Promise<CarrierCreditAlert | undefined>;
+  createCarrierCreditAlert(alert: InsertCarrierCreditAlert): Promise<CarrierCreditAlert>;
+  updateCarrierCreditAlert(id: string, data: Partial<InsertCarrierCreditAlert>): Promise<CarrierCreditAlert | undefined>;
+  deleteCarrierCreditAlert(id: string): Promise<boolean>;
 
   // Audit Logs
   getAuditLogs(tableName?: string, recordId?: string, limit?: number): Promise<AuditLog[]>;
@@ -670,6 +678,7 @@ export class MemStorage implements IStorage {
   private carriers: Map<string, Carrier>;
   private carrierInterconnects: Map<string, CarrierInterconnect>;
   private carrierContacts: Map<string, CarrierContact>;
+  private carrierCreditAlerts: Map<string, CarrierCreditAlert>;
   private carrierAssignments: Map<string, CarrierAssignment>;
   private auditLogs: Map<string, AuditLog>;
   private routes: Map<string, Route>;
@@ -746,6 +755,7 @@ export class MemStorage implements IStorage {
     this.carriers = new Map();
     this.carrierInterconnects = new Map();
     this.carrierContacts = new Map();
+    this.carrierCreditAlerts = new Map();
     this.carrierAssignments = new Map();
     this.auditLogs = new Map();
     this.routes = new Map();
@@ -1492,10 +1502,20 @@ export class MemStorage implements IStorage {
     const c: CarrierContact = {
       id,
       carrierId: contact.carrierId,
+      title: contact.title ?? null,
+      firstName: contact.firstName ?? null,
+      lastName: contact.lastName ?? null,
       name: contact.name,
+      jobTitle: contact.jobTitle ?? null,
+      telephone: contact.telephone ?? null,
+      mobile: contact.mobile ?? null,
+      fax: contact.fax ?? null,
       email: contact.email ?? null,
-      phone: contact.phone ?? null,
-      role: contact.role ?? null,
+      note: contact.note ?? null,
+      portalAccess: contact.portalAccess ?? false,
+      portalUsername: contact.portalUsername ?? null,
+      portalLocked: contact.portalLocked ?? false,
+      lastAccessed: null,
       isPrimary: contact.isPrimary ?? false,
       createdAt: now,
       updatedAt: now
@@ -1514,6 +1534,51 @@ export class MemStorage implements IStorage {
 
   async deleteCarrierContact(id: string): Promise<boolean> {
     return this.carrierContacts.delete(id);
+  }
+
+  // Carrier Credit Alerts
+  async getCarrierCreditAlerts(carrierId: string): Promise<CarrierCreditAlert[]> {
+    return Array.from(this.carrierCreditAlerts.values()).filter(a => a.carrierId === carrierId);
+  }
+
+  async getCarrierCreditAlert(id: string): Promise<CarrierCreditAlert | undefined> {
+    return this.carrierCreditAlerts.get(id);
+  }
+
+  async createCarrierCreditAlert(alert: InsertCarrierCreditAlert): Promise<CarrierCreditAlert> {
+    const id = randomUUID();
+    const now = new Date();
+    const a: CarrierCreditAlert = {
+      id,
+      carrierId: alert.carrierId,
+      alertType: alert.alertType,
+      currencyCode: alert.currencyCode ?? "USD",
+      threshold: alert.threshold,
+      direction: alert.direction ?? "customer",
+      templateId: alert.templateId ?? null,
+      clearedTemplateId: alert.clearedTemplateId ?? null,
+      maxAlerts: alert.maxAlerts ?? 4,
+      perMinutes: alert.perMinutes ?? 1440,
+      restrictionTemplate: alert.restrictionTemplate ?? null,
+      recipients: alert.recipients ?? null,
+      isActive: alert.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.carrierCreditAlerts.set(id, a);
+    return a;
+  }
+
+  async updateCarrierCreditAlert(id: string, data: Partial<InsertCarrierCreditAlert>): Promise<CarrierCreditAlert | undefined> {
+    const existing = this.carrierCreditAlerts.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data, updatedAt: new Date() };
+    this.carrierCreditAlerts.set(id, updated);
+    return updated;
+  }
+
+  async deleteCarrierCreditAlert(id: string): Promise<boolean> {
+    return this.carrierCreditAlerts.delete(id);
   }
 
   // Audit Logs

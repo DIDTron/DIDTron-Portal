@@ -320,6 +320,27 @@ export const carriers = pgTable("carriers", {
   technicalEmail: text("technical_email"),
   connexcsCarrierId: text("connexcs_carrier_id"),
   
+  billingName: text("billing_name"),
+  telephone: text("telephone"),
+  fax: text("fax"),
+  website: text("website"),
+  companyAddress: text("company_address"),
+  companyAddress2: text("company_address_2"),
+  companyPostcode: text("company_postcode"),
+  companyCountry: text("company_country"),
+  billingAddress: text("billing_address"),
+  billingAddress2: text("billing_address_2"),
+  billingPostcode: text("billing_postcode"),
+  billingCountry: text("billing_country"),
+  billingAddressSameAsCompany: boolean("billing_address_same_as_company").default(true),
+  
+  customerAccountNumber: text("customer_account_number"),
+  supplierAccountNumber: text("supplier_account_number"),
+  supplierAccountSameAsCustomer: boolean("supplier_account_same_as_customer").default(true),
+  taxCode: text("tax_code"),
+  billTo: text("bill_to"),
+  shipTo: text("ship_to"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -329,14 +350,20 @@ export const carrierInterconnects = pgTable("carrier_interconnects", {
   carrierId: varchar("carrier_id").references(() => carriers.id).notNull(),
   name: text("name").notNull(),
   direction: text("direction").default("both"),
-  sipHost: text("sip_host"),
+  currencyCode: text("currency_code").default("USD"),
+  protocol: text("protocol").default("SIP"),
+  capacityMode: capacityModeEnum("capacity_mode").default("unrestricted"),
+  capacityLimit: integer("capacity_limit"),
+  isActive: boolean("is_active").default(true),
+  techPrefix: text("tech_prefix"),
+  ipAddress: text("ip_address"),
   sipPort: integer("sip_port").default(5060),
   sipUsername: text("sip_username"),
   sipPassword: text("sip_password"),
-  techPrefix: text("tech_prefix"),
   codec: text("codec"),
-  protocol: text("protocol").default("UDP"),
-  isActive: boolean("is_active").default(true),
+  supplierBuyRates: text("supplier_buy_rates"),
+  servicesCount: integer("services_count").default(0),
+  displayOrder: integer("display_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -344,11 +371,39 @@ export const carrierInterconnects = pgTable("carrier_interconnects", {
 export const carrierContacts = pgTable("carrier_contacts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   carrierId: varchar("carrier_id").references(() => carriers.id).notNull(),
+  title: text("title"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   name: text("name").notNull(),
+  jobTitle: text("job_title"),
+  telephone: text("telephone"),
+  mobile: text("mobile"),
+  fax: text("fax"),
   email: text("email"),
-  phone: text("phone"),
-  role: text("role"),
+  note: text("note"),
+  portalAccess: boolean("portal_access").default(false),
+  portalUsername: text("portal_username"),
+  portalLocked: boolean("portal_locked").default(false),
+  lastAccessed: timestamp("last_accessed"),
   isPrimary: boolean("is_primary").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const carrierCreditAlerts = pgTable("carrier_credit_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  carrierId: varchar("carrier_id").references(() => carriers.id).notNull(),
+  alertType: text("alert_type").notNull(),
+  currencyCode: text("currency_code").default("USD"),
+  threshold: decimal("threshold", { precision: 14, scale: 4 }).notNull(),
+  direction: text("direction").default("customer"),
+  templateId: varchar("template_id"),
+  clearedTemplateId: varchar("cleared_template_id"),
+  maxAlerts: integer("max_alerts").default(4),
+  perMinutes: integer("per_minutes").default(1440),
+  restrictionTemplate: text("restriction_template"),
+  recipients: jsonb("recipients"),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -2515,6 +2570,7 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({ id: tru
 export const insertCarrierSchema = createInsertSchema(carriers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierInterconnectSchema = createInsertSchema(carrierInterconnects).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierContactSchema = createInsertSchema(carrierContacts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCarrierCreditAlertSchema = createInsertSchema(carrierCreditAlerts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierAssignmentSchema = createInsertSchema(carrierAssignments).omit({ id: true, createdAt: true });
 export const insertPopSchema = createInsertSchema(pops).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertVoiceTierSchema = createInsertSchema(voiceTiers).omit({ id: true, createdAt: true, updatedAt: true });
@@ -2566,6 +2622,8 @@ export type InsertCarrierInterconnect = z.infer<typeof insertCarrierInterconnect
 export type CarrierInterconnect = typeof carrierInterconnects.$inferSelect;
 export type InsertCarrierContact = z.infer<typeof insertCarrierContactSchema>;
 export type CarrierContact = typeof carrierContacts.$inferSelect;
+export type InsertCarrierCreditAlert = z.infer<typeof insertCarrierCreditAlertSchema>;
+export type CarrierCreditAlert = typeof carrierCreditAlerts.$inferSelect;
 export type InsertPop = z.infer<typeof insertPopSchema>;
 export type Pop = typeof pops.$inferSelect;
 export type InsertVoiceTier = z.infer<typeof insertVoiceTierSchema>;
