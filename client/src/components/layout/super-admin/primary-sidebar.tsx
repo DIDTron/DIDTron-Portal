@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -38,10 +39,11 @@ export const navSections: NavSection[] = [
 interface SortableNavItemProps {
   section: NavSection;
   isActive: boolean;
+  isCollapsed: boolean;
   onClick: () => void;
 }
 
-function SortableNavItem({ section, isActive, onClick }: SortableNavItemProps) {
+function SortableNavItem({ section, isActive, isCollapsed, onClick }: SortableNavItemProps) {
   const {
     attributes,
     listeners,
@@ -58,6 +60,32 @@ function SortableNavItem({ section, isActive, onClick }: SortableNavItemProps) {
   };
 
   const Icon = section.icon;
+
+  if (isCollapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          <div
+            ref={setNodeRef}
+            style={style}
+            className={cn(
+              "flex items-center justify-center p-2 rounded-md cursor-pointer",
+              isActive
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground hover-elevate"
+            )}
+            data-testid={`nav-section-${section.id}`}
+            onClick={onClick}
+          >
+            <Icon className="h-5 w-5" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="font-medium">
+          {section.label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
 
   return (
     <div
@@ -102,6 +130,7 @@ export function PrimarySidebar() {
     openTab, 
     setActiveSubItem,
     primarySidebarOpen,
+    primarySidebarCollapsed,
     toggleBothSidebars,
     openSecondarySidebar,
     primarySectionOrder,
@@ -177,25 +206,53 @@ export function PrimarySidebar() {
     return null;
   }
 
+  const isCollapsed = primarySidebarCollapsed;
+
   return (
-    <div className="flex flex-col h-full w-48 border-r bg-sidebar shrink-0">
-      <div className="flex h-12 items-center gap-2 px-3 border-b">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleBothSidebars}
-          className="shrink-0"
-          aria-label="Menu"
-          data-testid="toggle-both-sidebars"
+    <div className={cn(
+      "flex flex-col h-full border-r bg-sidebar shrink-0 transition-all duration-200",
+      isCollapsed ? "w-14" : "w-48"
+    )}>
+      <div className={cn(
+        "flex flex-col border-b",
+        isCollapsed ? "items-center py-2" : ""
+      )}>
+        <div className={cn(
+          "flex items-center justify-center border border-dashed border-muted-foreground/30 rounded-md bg-muted/30",
+          isCollapsed ? "w-9 h-9 mx-auto mb-2" : "w-10 h-10 mx-3 mt-2 mb-2"
+        )}
+        data-testid="logo-placeholder"
         >
-          <Menu className="h-5 w-5" />
-        </Button>
-        <Phone className="h-5 w-5 text-primary shrink-0" />
-        <span className="font-bold text-base truncate">DIDTron</span>
+          <span className="text-xs text-muted-foreground">Logo</span>
+        </div>
+        <div className={cn(
+          "flex items-center gap-2",
+          isCollapsed ? "flex-col px-1 pb-2" : "h-10 px-3 pb-2"
+        )}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleBothSidebars}
+            className="shrink-0"
+            aria-label="Menu"
+            data-testid="toggle-both-sidebars"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          {!isCollapsed && (
+            <>
+              <Phone className="h-5 w-5 text-primary shrink-0" />
+              <span className="font-bold text-base truncate">DIDTron</span>
+            </>
+          )}
+        </div>
       </div>
       
       <ScrollArea className="flex-1">
-        <nav className="py-2 px-2 space-y-0.5">
+        <nav className={cn(
+          "py-2 space-y-0.5",
+          isCollapsed ? "px-1" : "px-2"
+        )}>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -210,6 +267,7 @@ export function PrimarySidebar() {
                   key={section.id}
                   section={section}
                   isActive={activeSection === section.id}
+                  isCollapsed={isCollapsed}
                   onClick={() => handleSectionClick(section)}
                 />
               ))}
@@ -218,14 +276,30 @@ export function PrimarySidebar() {
         </nav>
       </ScrollArea>
 
-      <div className="p-2 border-t">
-        <div 
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer text-sidebar-foreground hover-elevate"
-          data-testid="nav-section-help"
-        >
-          <Server className="h-5 w-5 shrink-0" />
-          <span>System Status</span>
-        </div>
+      <div className={cn("border-t", isCollapsed ? "p-1" : "p-2")}>
+        {isCollapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <div 
+                className="flex items-center justify-center p-2 rounded-md cursor-pointer text-sidebar-foreground hover-elevate"
+                data-testid="nav-section-help"
+              >
+                <Server className="h-5 w-5" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="font-medium">
+              System Status
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <div 
+            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer text-sidebar-foreground hover-elevate"
+            data-testid="nav-section-help"
+          >
+            <Server className="h-5 w-5 shrink-0" />
+            <span>System Status</span>
+          </div>
+        )}
       </div>
     </div>
   );

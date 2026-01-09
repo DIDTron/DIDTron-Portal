@@ -15,6 +15,7 @@ interface SuperAdminTabsState {
   activeSection: string | null;
   activeSubItem: string | null;
   primarySidebarOpen: boolean;
+  primarySidebarCollapsed: boolean;
   secondarySidebarOpen: boolean;
   primarySectionOrder: string[];
   sectionItemOrder: Record<string, string[]>;
@@ -28,6 +29,7 @@ interface SuperAdminTabsState {
   closeOtherTabs: (tabId: string) => void;
   closeTabsToRight: (tabId: string) => void;
   togglePrimarySidebar: () => void;
+  togglePrimarySidebarCollapsed: () => void;
   toggleSecondarySidebar: () => void;
   toggleBothSidebars: () => void;
   openSecondarySidebar: () => void;
@@ -43,6 +45,7 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
       activeSection: 'voip',
       activeSubItem: null,
       primarySidebarOpen: true,
+      primarySidebarCollapsed: false,
       secondarySidebarOpen: true,
       primarySectionOrder: [],
       sectionItemOrder: {},
@@ -133,17 +136,22 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
         set({ primarySidebarOpen: !primarySidebarOpen });
       },
 
+      togglePrimarySidebarCollapsed: () => {
+        const { primarySidebarCollapsed } = get();
+        set({ primarySidebarCollapsed: !primarySidebarCollapsed });
+      },
+
       toggleSecondarySidebar: () => {
         const { secondarySidebarOpen } = get();
         set({ secondarySidebarOpen: !secondarySidebarOpen });
       },
 
       toggleBothSidebars: () => {
-        const { primarySidebarOpen, secondarySidebarOpen } = get();
-        const bothOpen = primarySidebarOpen && secondarySidebarOpen;
+        const { primarySidebarCollapsed } = get();
         set({ 
-          primarySidebarOpen: !bothOpen, 
-          secondarySidebarOpen: !bothOpen 
+          primarySidebarCollapsed: !primarySidebarCollapsed,
+          primarySidebarOpen: true,
+          secondarySidebarOpen: true
         });
       },
 
