@@ -211,8 +211,6 @@ export function PrimarySidebar() {
       "flex flex-col h-full border-r bg-sidebar shrink-0 transition-all duration-200",
       isCollapsed ? "w-14" : "w-48"
     )}>
-      {/* Header spacer to align with secondary sidebar header */}
-      <div className="h-12 border-b shrink-0" />
       
       <ScrollArea className="flex-1">
         <nav className={cn(
