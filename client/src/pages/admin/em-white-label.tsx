@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -35,8 +37,10 @@ import {
   ExternalLink,
   Search,
   Check,
-  X
+  X,
+  AlertCircle
 } from "lucide-react";
+import type { EmContentItem } from "@shared/schema";
 
 interface WhiteLabelBrand {
   id: string;
@@ -54,20 +58,31 @@ export default function EMWhiteLabelPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingBrand, setEditingBrand] = useState<WhiteLabelBrand | null>(null);
 
-  const mockBrands: WhiteLabelBrand[] = [
-    { id: "1", customerName: "Acme Corp", domain: "voip.acme.com", primaryColor: "#EF4444", status: "active", createdAt: "2024-01-15" },
-    { id: "2", customerName: "TechStart Inc", domain: "calls.techstart.io", primaryColor: "#3B82F6", status: "active", createdAt: "2024-02-20" },
-    { id: "3", customerName: "GlobalTel", domain: "portal.globaltel.net", primaryColor: "#10B981", status: "pending", createdAt: "2024-03-10" },
-    { id: "4", customerName: "VoiceWave", domain: "app.voicewave.com", primaryColor: "#8B5CF6", status: "active", createdAt: "2024-03-25" },
-    { id: "5", customerName: "CallPro Services", domain: "my.callpro.services", primaryColor: "#F59E0B", status: "inactive", createdAt: "2024-04-01" },
-  ];
+  const { data: contentItems = [], isLoading } = useQuery<EmContentItem[]>({
+    queryKey: ["/api/em/content-items"],
+  });
+
+  const whiteLabelItems = contentItems.filter(item => item.section === "white_label");
+  
+  const brands: WhiteLabelBrand[] = whiteLabelItems
+    .filter(item => item.entityType === "brand")
+    .map(item => {
+      return {
+        id: item.id,
+        customerName: item.name || item.slug,
+        domain: item.slug,
+        primaryColor: "#3B82F6",
+        status: item.status === "published" ? "active" : "pending",
+        createdAt: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Unknown",
+      };
+    });
 
   const filteredBrands = useMemo(() => {
-    return mockBrands.filter(brand =>
+    return brands.filter(brand =>
       brand.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       brand.domain.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [brands, searchQuery]);
 
   const {
     currentPage,
@@ -139,62 +154,84 @@ export default function EMWhiteLabelPage() {
             </div>
 
             <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Domain</TableHead>
-                    <TableHead>Brand Color</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedItems.map((brand) => (
-                    <TableRow key={brand.id} data-testid={`row-brand-${brand.id}`}>
-                      <TableCell className="font-medium">{brand.customerName}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <code className="text-xs bg-muted px-2 py-1 rounded">{brand.domain}</code>
-                          <Button size="icon" variant="ghost" className="h-6 w-6" aria-label="Open in new tab" title="Open in new tab">
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-6 h-6 rounded border"
-                            style={{ backgroundColor: brand.primaryColor }}
-                          />
-                          <span className="font-mono text-xs">{brand.primaryColor}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(brand.status)}</TableCell>
-                      <TableCell className="text-muted-foreground">{brand.createdAt}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button size="icon" variant="ghost" data-testid={`button-edit-${brand.id}`} aria-label="Edit" title="Edit">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" data-testid={`button-delete-${brand.id}`} aria-label="Delete" title="Delete">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+              {isLoading ? (
+                <div className="p-6 space-y-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
                   ))}
-                </TableBody>
-              </Table>
-              <DataTableFooter
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={onPageChange}
-                onPageSizeChange={onPageSizeChange}
-              />
+                </div>
+              ) : brands.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No White-Label Brands Yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Create your first white-label brand to customize customer portals.
+                  </p>
+                  <Button onClick={() => setIsDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Brand
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Domain</TableHead>
+                        <TableHead>Brand Color</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedItems.map((brand) => (
+                        <TableRow key={brand.id} data-testid={`row-brand-${brand.id}`}>
+                          <TableCell className="font-medium">{brand.customerName}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <code className="text-xs bg-muted px-2 py-1 rounded">{brand.domain}</code>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" aria-label="Open in new tab" title="Open in new tab">
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-6 h-6 rounded border"
+                                style={{ backgroundColor: brand.primaryColor }}
+                              />
+                              <span className="font-mono text-xs">{brand.primaryColor}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{getStatusBadge(brand.status)}</TableCell>
+                          <TableCell className="text-muted-foreground">{brand.createdAt}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button size="icon" variant="ghost" data-testid={`button-edit-${brand.id}`} aria-label="Edit" title="Edit">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" data-testid={`button-delete-${brand.id}`} aria-label="Delete" title="Delete">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <DataTableFooter
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={onPageChange}
+                    onPageSizeChange={onPageSizeChange}
+                  />
+                </>
+              )}
             </Card>
           </div>
         </TabsContent>
@@ -208,7 +245,7 @@ export default function EMWhiteLabelPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockBrands.slice(0, 3).map((brand) => (
+                  {brands.slice(0, 3).map((brand) => (
                     <div key={brand.id} className="flex items-center justify-between p-4 border rounded-md">
                       <div>
                         <p className="font-medium">{brand.domain}</p>
@@ -237,7 +274,7 @@ export default function EMWhiteLabelPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mockBrands.filter(b => b.status === "active").map((brand) => (
+                  {brands.filter(b => b.status === "active").map((brand) => (
                     <Card key={brand.id} className="hover-elevate cursor-pointer">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3 mb-4">

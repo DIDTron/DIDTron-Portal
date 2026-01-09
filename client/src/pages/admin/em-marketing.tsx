@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -60,24 +61,18 @@ import {
   DollarSign,
   HelpCircle,
   Users,
-  Mail
+  Mail,
+  AlertCircle
 } from "lucide-react";
+import type { EmContentItem } from "@shared/schema";
 
 interface LandingPage {
   id: string;
   title: string;
   slug: string;
-  status: "draft" | "published";
+  status: "draft" | "published" | "preview";
   lastModified: string;
   sections: number;
-}
-
-interface PageSection {
-  id: string;
-  type: string;
-  title: string;
-  order: number;
-  isVisible: boolean;
 }
 
 const SECTION_TYPES = [
@@ -100,20 +95,45 @@ export default function EMMarketingPage() {
   const [editingPage, setEditingPage] = useState<LandingPage | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const mockPages: LandingPage[] = [
-    { id: "1", title: "Homepage", slug: "/", status: "published", lastModified: "2 hours ago", sections: 8 },
-    { id: "2", title: "Pricing", slug: "/pricing", status: "published", lastModified: "1 day ago", sections: 4 },
-    { id: "3", title: "Features", slug: "/features", status: "draft", lastModified: "3 days ago", sections: 6 },
-    { id: "4", title: "About Us", slug: "/about", status: "published", lastModified: "1 week ago", sections: 5 },
-    { id: "5", title: "Contact", slug: "/contact", status: "published", lastModified: "2 weeks ago", sections: 3 },
-  ];
+  const { data: contentItems = [], isLoading } = useQuery<EmContentItem[]>({
+    queryKey: ["/api/em/content-items"],
+  });
+
+  const marketingItems = contentItems.filter(item => item.section === "marketing");
+  
+  const formatTimeAgo = (date: Date | string | null | undefined) => {
+    if (!date) return "Never";
+    const now = new Date();
+    const then = new Date(date);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  };
+
+  const pages: LandingPage[] = marketingItems
+    .filter(item => item.entityType === "landing_page")
+    .map(item => ({
+      id: item.id,
+      title: item.name || item.slug,
+      slug: `/${item.slug}`,
+      status: item.status as "draft" | "published" | "preview",
+      lastModified: formatTimeAgo(item.updatedAt),
+      sections: 0,
+    }));
+
+  const blogPosts = marketingItems.filter(item => item.entityType === "blog_post");
+  const docs = marketingItems.filter(item => item.entityType === "documentation");
 
   const filteredPages = useMemo(() => {
-    return mockPages.filter(page =>
+    return pages.filter(page =>
       page.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       page.slug.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [pages, searchQuery]);
 
   const {
     currentPage,
@@ -197,58 +217,80 @@ export default function EMMarketingPage() {
             </div>
 
             <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Page</TableHead>
-                    <TableHead>URL</TableHead>
-                    <TableHead>Sections</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Modified</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedItems.map((page) => (
-                    <TableRow key={page.id} data-testid={`row-page-${page.id}`}>
-                      <TableCell className="font-medium">{page.title}</TableCell>
-                      <TableCell>
-                        <code className="text-xs bg-muted px-2 py-1 rounded">{page.slug}</code>
-                      </TableCell>
-                      <TableCell>{page.sections} sections</TableCell>
-                      <TableCell>
-                        {page.status === "published" ? (
-                          <Badge variant="default">Published</Badge>
-                        ) : (
-                          <Badge variant="secondary">Draft</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{page.lastModified}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button size="icon" variant="ghost" data-testid={`button-edit-${page.id}`} aria-label="Edit" title="Edit">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" data-testid={`button-preview-${page.id}`} aria-label="Preview" title="Preview">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" data-testid={`button-delete-${page.id}`} aria-label="Delete" title="Delete">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+              {isLoading ? (
+                <div className="p-6 space-y-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
                   ))}
-                </TableBody>
-              </Table>
-              <DataTableFooter
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={onPageChange}
-                onPageSizeChange={onPageSizeChange}
-              />
+                </div>
+              ) : pages.length === 0 ? (
+                <div className="p-12 text-center">
+                  <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Landing Pages Yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Create your first landing page to get started with the marketing website.
+                  </p>
+                  <Button onClick={() => setIsDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Page
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Page</TableHead>
+                        <TableHead>URL</TableHead>
+                        <TableHead>Sections</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Last Modified</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedItems.map((page) => (
+                        <TableRow key={page.id} data-testid={`row-page-${page.id}`}>
+                          <TableCell className="font-medium">{page.title}</TableCell>
+                          <TableCell>
+                            <code className="text-xs bg-muted px-2 py-1 rounded">{page.slug}</code>
+                          </TableCell>
+                          <TableCell>{page.sections} sections</TableCell>
+                          <TableCell>
+                            {page.status === "published" ? (
+                              <Badge variant="default">Published</Badge>
+                            ) : (
+                              <Badge variant="secondary">Draft</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{page.lastModified}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button size="icon" variant="ghost" data-testid={`button-edit-${page.id}`} aria-label="Edit" title="Edit">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" data-testid={`button-preview-${page.id}`} aria-label="Preview" title="Preview">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" data-testid={`button-delete-${page.id}`} aria-label="Delete" title="Delete">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <DataTableFooter
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={onPageChange}
+                    onPageSizeChange={onPageSizeChange}
+                  />
+                </>
+              )}
             </Card>
 
             <div className="mt-8">

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Palette, 
   Save, 
@@ -19,7 +22,8 @@ import {
   Settings,
   Layout,
   Type,
-  Image
+  Image,
+  Loader2
 } from "lucide-react";
 
 interface PortalTheme {
@@ -32,6 +36,21 @@ interface PortalTheme {
   isActive: boolean;
 }
 
+interface ThemeSettings {
+  primaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  textColor: string;
+  logoUrl: string;
+  faviconUrl: string;
+  fontFamily: string;
+  borderRadius: string;
+  showAIVoice: boolean;
+  showDIDs: boolean;
+  showClass4: boolean;
+  showPBX: boolean;
+}
+
 const PORTAL_TYPES = [
   { id: "super_admin", label: "Super Admin", description: "Administrative portal for platform operators", color: "#2563EB" },
   { id: "customer", label: "Customer Portal", description: "Self-service portal for customers", color: "#10B981" },
@@ -39,25 +58,92 @@ const PORTAL_TYPES = [
   { id: "class4", label: "Class 4 Portal", description: "Softswitch operator portal", color: "#8B5CF6" },
 ];
 
+const DEFAULT_THEME: ThemeSettings = {
+  primaryColor: "#10B981",
+  accentColor: "#34D399",
+  backgroundColor: "#FFFFFF",
+  textColor: "#1F2937",
+  logoUrl: "",
+  faviconUrl: "",
+  fontFamily: "Inter",
+  borderRadius: "md",
+  showAIVoice: true,
+  showDIDs: true,
+  showClass4: false,
+  showPBX: true,
+};
+
 export default function EMPortalThemesPage() {
   const { toast } = useToast();
   const [selectedPortal, setSelectedPortal] = useState("customer");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [hasChanges, setHasChanges] = useState(false);
   
-  const [themeSettings, setThemeSettings] = useState({
-    primaryColor: "#10B981",
-    accentColor: "#34D399",
-    backgroundColor: "#FFFFFF",
-    textColor: "#1F2937",
-    logoUrl: "",
-    faviconUrl: "",
-    fontFamily: "Inter",
-    borderRadius: "md",
-    showAIVoice: true,
-    showDIDs: true,
-    showClass4: false,
-    showPBX: true,
+  const { data: draftData, isLoading } = useQuery<{ data: ThemeSettings | null }>({
+    queryKey: ["/api/em/content/portal_themes/theme", selectedPortal, "draft"],
+  });
+  
+  const [themeSettings, setThemeSettings] = useState<ThemeSettings>(DEFAULT_THEME);
+
+  useEffect(() => {
+    if (draftData?.data) {
+      const data = draftData.data;
+      setThemeSettings({
+        primaryColor: data.primaryColor || PORTAL_TYPES.find(p => p.id === selectedPortal)?.color || DEFAULT_THEME.primaryColor,
+        accentColor: data.accentColor || DEFAULT_THEME.accentColor,
+        backgroundColor: data.backgroundColor || DEFAULT_THEME.backgroundColor,
+        textColor: data.textColor || DEFAULT_THEME.textColor,
+        logoUrl: data.logoUrl || DEFAULT_THEME.logoUrl,
+        faviconUrl: data.faviconUrl || DEFAULT_THEME.faviconUrl,
+        fontFamily: data.fontFamily || DEFAULT_THEME.fontFamily,
+        borderRadius: data.borderRadius || DEFAULT_THEME.borderRadius,
+        showAIVoice: data.showAIVoice ?? DEFAULT_THEME.showAIVoice,
+        showDIDs: data.showDIDs ?? DEFAULT_THEME.showDIDs,
+        showClass4: data.showClass4 ?? DEFAULT_THEME.showClass4,
+        showPBX: data.showPBX ?? DEFAULT_THEME.showPBX,
+      });
+      setHasChanges(false);
+    } else if (!isLoading) {
+      const portalDefault = PORTAL_TYPES.find(p => p.id === selectedPortal);
+      setThemeSettings({
+        ...DEFAULT_THEME,
+        primaryColor: portalDefault?.color || DEFAULT_THEME.primaryColor,
+      });
+      setHasChanges(false);
+    }
+  }, [selectedPortal, draftData, isLoading]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", `/api/em/content/portal_themes/theme/${selectedPortal}/save-draft`, {
+        data: themeSettings,
+        changeDescription: `Updated ${selectedPortal} portal theme`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/em/content/portal_themes/theme", selectedPortal, "draft"] });
+      toast({ title: "Theme saved", description: "Changes saved as draft. Preview before publishing." });
+      setHasChanges(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", `/api/em/content/portal_themes/theme/${selectedPortal}/publish`, {
+        note: `Published ${selectedPortal} portal theme`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/em/content/portal_themes/theme", selectedPortal, "draft"] });
+      toast({ title: "Theme published", description: "Theme is now live for all users." });
+      setHasChanges(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Publish failed", description: error.message, variant: "destructive" });
+    },
   });
 
   const updateSetting = (key: string, value: any) => {
@@ -66,13 +152,11 @@ export default function EMPortalThemesPage() {
   };
 
   const handleSave = () => {
-    toast({ title: "Theme saved", description: "Changes saved as draft. Preview before publishing." });
-    setHasChanges(false);
+    saveMutation.mutate();
   };
 
   const handlePublish = () => {
-    toast({ title: "Theme published", description: "Theme is now live for all users." });
-    setHasChanges(false);
+    publishMutation.mutate();
   };
 
   const currentPortal = PORTAL_TYPES.find(p => p.id === selectedPortal);
