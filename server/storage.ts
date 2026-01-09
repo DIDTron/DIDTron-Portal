@@ -82,9 +82,12 @@ import {
   type EmValidationResult, type InsertEmValidationResult,
   type EmPublishHistory, type InsertEmPublishHistory,
   type DevTest, type InsertDevTest,
-  type BillingTerm, type InsertBillingTerm
+  type BillingTerm, type InsertBillingTerm,
+  customers as customersTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -1012,27 +1015,39 @@ export class MemStorage implements IStorage {
     return this.customerGroups.delete(id);
   }
 
-  // Customers
+  // Customers - Using PostgreSQL database
   async getCustomers(categoryId?: string, groupId?: string): Promise<Customer[]> {
-    let customers = Array.from(this.customers.values());
-    if (categoryId) customers = customers.filter(c => c.categoryId === categoryId);
-    if (groupId) customers = customers.filter(c => c.groupId === groupId);
-    return customers;
+    let query = db.select().from(customersTable);
+    if (categoryId && groupId) {
+      const results = await db.select().from(customersTable).where(
+        and(eq(customersTable.categoryId, categoryId), eq(customersTable.groupId, groupId))
+      );
+      return results;
+    } else if (categoryId) {
+      const results = await db.select().from(customersTable).where(eq(customersTable.categoryId, categoryId));
+      return results;
+    } else if (groupId) {
+      const results = await db.select().from(customersTable).where(eq(customersTable.groupId, groupId));
+      return results;
+    }
+    return await db.select().from(customersTable);
   }
 
   async getCustomer(id: string): Promise<Customer | undefined> {
-    return this.customers.get(id);
+    const results = await db.select().from(customersTable).where(eq(customersTable.id, id));
+    return results[0];
   }
+  
   async getCustomerByReferralCode(code: string): Promise<Customer | undefined> {
-    return Array.from(this.customers.values()).find(c => c.referralCode === code);
+    const results = await db.select().from(customersTable).where(eq(customersTable.referralCode, code));
+    return results[0];
   }
 
   async createCustomer(customer: InsertCustomer): Promise<Customer> {
     const id = randomUUID();
-    const now = new Date();
     const accountNumber = `DT${Date.now().toString(36).toUpperCase()}`;
     const referralCode = `REF${randomUUID().slice(0, 8).toUpperCase()}`;
-    const cust: Customer = {
+    const results = await db.insert(customersTable).values({
       id,
       accountNumber,
       companyName: customer.companyName,
@@ -1060,23 +1075,22 @@ export class MemStorage implements IStorage {
       autoTopUpEnabled: customer.autoTopUpEnabled ?? false,
       autoTopUpAmount: customer.autoTopUpAmount ?? null,
       autoTopUpThreshold: customer.autoTopUpThreshold ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.customers.set(id, cust);
-    return cust;
+      billingTermId: customer.billingTermId ?? null,
+    }).returning();
+    return results[0];
   }
 
   async updateCustomer(id: string, data: Partial<InsertCustomer>): Promise<Customer | undefined> {
-    const cust = this.customers.get(id);
-    if (!cust) return undefined;
-    const updated = { ...cust, ...data, updatedAt: new Date() };
-    this.customers.set(id, updated);
-    return updated;
+    const results = await db.update(customersTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(customersTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCustomer(id: string): Promise<boolean> {
-    return this.customers.delete(id);
+    const results = await db.delete(customersTable).where(eq(customersTable.id, id)).returning();
+    return results.length > 0;
   }
 
   async moveCustomer(id: string, categoryId: string, groupId?: string): Promise<Customer | undefined> {
