@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -2036,7 +2036,20 @@ export default function EMComponentLibraryPage() {
   const [selectedPatternCategory, setSelectedPatternCategory] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<string>("components");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (viewport) {
+          viewport.scrollTop = 0;
+        }
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredComponents = componentExamples.filter((component) => {
     const matchesSearch = component.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -2070,7 +2083,7 @@ export default function EMComponentLibraryPage() {
   };
 
   return (
-    <ScrollArea className="h-full" aria-label="Component library content">
+    <ScrollArea ref={scrollAreaRef} className="h-full" aria-label="Component library content">
       <div className="p-6 space-y-6">
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-4 flex-wrap">
