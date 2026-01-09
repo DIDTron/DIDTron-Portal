@@ -2271,9 +2271,9 @@ export default function EMComponentLibraryPage() {
                 </Card>
               ) : (
                 filteredPatterns.map((pattern) => (
-                  <Card key={pattern.id} data-testid={`card-pattern-${pattern.id}`}>
+                  <Card key={pattern.id} className="overflow-hidden" data-testid={`card-pattern-${pattern.id}`}>
                     <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
-                      <div className="space-y-1">
+                      <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <CardTitle className="text-lg">{pattern.name}</CardTitle>
                           <Badge variant="outline" className="capitalize">{pattern.category}</Badge>
@@ -2284,6 +2284,7 @@ export default function EMComponentLibraryPage() {
                       <Button
                         size="icon"
                         variant="ghost"
+                        className="shrink-0"
                         onClick={() => copyCode(pattern.code, pattern.name)}
                         data-testid={`button-copy-${pattern.id}`}
                         aria-label={`Copy ${pattern.name} code`}
@@ -2295,15 +2296,17 @@ export default function EMComponentLibraryPage() {
                         )}
                       </Button>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm max-h-64 overflow-y-auto">
-                        <code>{pattern.code}</code>
-                      </pre>
+                    <CardContent className="space-y-3 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <pre className="p-4 bg-muted rounded-md text-sm max-h-64 overflow-y-auto min-w-0">
+                          <code className="whitespace-pre">{pattern.code}</code>
+                        </pre>
+                      </div>
                       {pattern.note && (
-                        <Alert>
-                          <AlertCircle className="h-4 w-4" />
+                        <Alert className="overflow-hidden">
+                          <AlertCircle className="h-4 w-4 shrink-0" />
                           <AlertTitle>Key Rule</AlertTitle>
-                          <AlertDescription>{pattern.note}</AlertDescription>
+                          <AlertDescription className="break-words">{pattern.note}</AlertDescription>
                         </Alert>
                       )}
                     </CardContent>
