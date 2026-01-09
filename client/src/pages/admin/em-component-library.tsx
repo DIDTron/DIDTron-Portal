@@ -1973,16 +1973,16 @@ export default function EMComponentLibraryPage() {
   return (
     <ScrollArea className="h-full" aria-label="Component library content">
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Layers className="h-6 w-6" />
               Component Library
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Visual components, behavioral patterns, and design rules
-            </p>
           </div>
+          <p className="text-muted-foreground">
+            Visual components, behavioral patterns, and design rules for the DIDTron platform.
+          </p>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary">{componentExamples.length} Components</Badge>
             <Badge variant="outline">{behavioralPatterns.length} Patterns</Badge>
@@ -2116,41 +2116,10 @@ export default function EMComponentLibraryPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="patterns" className="mt-6 space-y-6">
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <Card className="bg-primary/5 border-primary/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Terminal className="h-4 w-4" />
-                    Behavioral Patterns
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{behavioralPatterns.length} patterns for data fetching, forms, state management</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-primary/5 border-primary/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Layers className="h-4 w-4" />
-                    Custom Components
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{customComponents.length} platform-specific components</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Terminal className="h-5 w-5" />
-                Behavioral Patterns
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                Copy-paste patterns for data fetching, refresh buttons, forms, and mutations.
-              </p>
-            </div>
+          <TabsContent value="patterns" className="mt-6 space-y-8">
+            <p className="text-muted-foreground">
+              Copy-paste patterns for data fetching, forms, state management, and mutations. Scroll down for custom platform components.
+            </p>
 
             <div className="grid gap-4">
               {behavioralPatterns.map((pattern) => (
@@ -2193,17 +2162,9 @@ export default function EMComponentLibraryPage() {
               ))}
             </div>
 
-            <Separator className="my-8" />
+            <Separator />
 
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Layers className="h-5 w-5" />
-                Custom Platform Components
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                Platform-specific components with their import paths. These extend shadcn/ui for DIDTron-specific features.
-              </p>
-            </div>
+            <h3 className="text-lg font-semibold">Custom Platform Components</h3>
 
             <div className="grid gap-3 md:grid-cols-2">
               {customComponents.map((comp) => (
@@ -2242,11 +2203,9 @@ export default function EMComponentLibraryPage() {
           </TabsContent>
 
           <TabsContent value="rules" className="mt-6 space-y-6">
-            <div className="space-y-2">
-              <p className="text-muted-foreground">
-                Design system rules that ensure consistency across the platform. Follow these guidelines when building new features.
-              </p>
-            </div>
+            <p className="text-muted-foreground">
+              Design system rules for consistency. Follow these guidelines when building new features.
+            </p>
 
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
