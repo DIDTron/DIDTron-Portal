@@ -2,7 +2,6 @@ import { useState, KeyboardEvent } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Bell, LogOut, Cloud, CloudOff, Loader2, Menu } from "lucide-react";
-import didtronLogo from "@assets/generated_images/didtron_voip_company_logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -64,14 +63,11 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <div className="flex items-center">
-          <img 
-            src={didtronLogo} 
-            alt="DIDTron Logo" 
-            className="h-9 w-auto object-contain"
-            data-testid="header-logo"
-          />
-          <span className="font-bold text-sm ml-2">DIDTron</span>
+        <div className="flex items-center" data-testid="header-logo">
+          <span className="text-xl font-bold tracking-tight">
+            <span className="text-primary">DID</span>
+            <span className="text-foreground">Tron</span>
+          </span>
         </div>
       </div>
       
