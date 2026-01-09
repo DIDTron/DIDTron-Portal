@@ -845,6 +845,14 @@ export class MemStorage implements IStorage {
     ];
     groups.forEach(grp => this.customerGroups.set(grp.id, grp));
 
+    // Seed default currencies
+    const defaultCurrencies: Currency[] = [
+      { id: randomUUID(), code: "USD", name: "US Dollar", symbol: "$", exchangeRate: "1.000000", decimalPlaces: 2, isBase: true, isActive: true, createdAt: now, updatedAt: now },
+      { id: randomUUID(), code: "EUR", name: "Euro", symbol: "€", exchangeRate: "0.920000", decimalPlaces: 2, isBase: false, isActive: true, createdAt: now, updatedAt: now },
+      { id: randomUUID(), code: "GBP", name: "British Pound", symbol: "£", exchangeRate: "0.790000", decimalPlaces: 2, isBase: false, isActive: true, createdAt: now, updatedAt: now },
+    ];
+    defaultCurrencies.forEach(cur => this.currencies.set(cur.id, cur));
+
     // Integrations are now seeded in PostgreSQL via seedIntegrations() in index.ts
   }
 
