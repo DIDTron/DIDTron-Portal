@@ -2241,28 +2241,33 @@ export default function EMComponentLibraryPage() {
               </Select>
             </div>
 
-            <ScrollArea className="w-full whitespace-nowrap" type="hover">
-              <div className="flex gap-2 pb-2">
-                {patternCategories.map((cat) => (
-                  <Badge
-                    key={cat.id}
-                    variant={selectedPatternCategory === cat.id ? "default" : "outline"}
-                    className="cursor-pointer shrink-0"
-                    onClick={() => setSelectedPatternCategory(cat.id)}
-                    data-testid={`filter-pattern-${cat.id}`}
-                  >
-                    {cat.label}
-                    {cat.id !== "all" && <span className="ml-1 text-xs opacity-70">({getPatternCategoryCount(cat.id)})</span>}
+            <div className="flex flex-wrap gap-2">
+              {patternCategories.map((cat) => (
+                <Button
+                  key={cat.id}
+                  variant={selectedPatternCategory === cat.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedPatternCategory(cat.id)}
+                  data-testid={`filter-pattern-${cat.id}`}
+                >
+                  {cat.label}
+                  <Badge variant={selectedPatternCategory === cat.id ? "secondary" : "outline"} className="ml-2 text-xs">
+                    {getPatternCategoryCount(cat.id)}
                   </Badge>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
+                </Button>
+              ))}
+            </div>
 
-            <div className="grid gap-4">
+            <Separator />
+
+            <div className="grid gap-6">
               {filteredPatterns.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">No patterns found matching your criteria</p>
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Search className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="font-medium text-lg">No patterns found</h3>
+                    <p className="text-muted-foreground text-sm">Try adjusting your search or filter</p>
+                  </CardContent>
                 </Card>
               ) : (
                 filteredPatterns.map((pattern) => (
