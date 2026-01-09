@@ -61,6 +61,14 @@ const allSearchItems: SearchItem[] = [
   { id: "softswitch-carriers", label: "Class 4 Carriers", section: "softswitch", sectionLabel: "Softswitch", path: "/admin/class4-carriers", icon: Phone, keywords: ["class4", "softswitch", "carriers", "upstream"] },
   { id: "softswitch-rate-cards", label: "Class 4 Rate Cards", section: "softswitch", sectionLabel: "Softswitch", path: "/admin/class4-rate-cards", icon: CreditCard, keywords: ["class4", "softswitch", "rates", "pricing", "lcr"] },
   
+  { id: "em-dashboard", label: "Experience Manager", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager", icon: Palette, keywords: ["experience", "manager", "dashboard", "overview"] },
+  { id: "em-marketing", label: "Marketing Website", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/marketing", icon: Megaphone, keywords: ["marketing", "website", "landing", "pages"] },
+  { id: "em-portal-themes", label: "Portal Themes", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/portal-themes", icon: Palette, keywords: ["portal", "themes", "styling", "colors", "appearance"] },
+  { id: "em-white-label", label: "White Label", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/white-label", icon: Palette, keywords: ["white", "label", "branding", "customization", "reseller"] },
+  { id: "em-design-system", label: "Design System", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/design-system", icon: Palette, keywords: ["design", "system", "components", "ui", "ux", "guidelines"] },
+  { id: "em-component-library", label: "Component Library", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/component-library", icon: Palette, keywords: ["component", "library", "ui", "elements", "widgets"] },
+  { id: "em-branding", label: "Branding", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/branding", icon: Palette, keywords: ["branding", "logo", "colors", "identity", "brand", "customization"] },
+  
   { id: "cms-pages", label: "Website Pages", section: "cms", sectionLabel: "CMS", path: "/admin/pages", icon: FileText, keywords: ["pages", "website", "content", "cms"] },
   { id: "cms-sections", label: "Website Sections", section: "cms", sectionLabel: "CMS", path: "/admin/website-sections", icon: FileText, keywords: ["sections", "website", "blocks", "components"] },
   { id: "cms-login-pages", label: "Portal Login Pages", section: "cms", sectionLabel: "CMS", path: "/admin/login-pages", icon: FileText, keywords: ["login", "portal", "branding", "customization"] },
@@ -72,13 +80,26 @@ const allSearchItems: SearchItem[] = [
   { id: "admin-users", label: "Admin Users", section: "admin", sectionLabel: "Admin", path: "/admin/admin-users", icon: Shield, keywords: ["admin", "users", "staff", "team"] },
   { id: "admin-roles", label: "Roles & Permissions", section: "admin", sectionLabel: "Admin", path: "/admin/roles", icon: Shield, keywords: ["roles", "permissions", "access", "security"] },
   { id: "admin-audit-logs", label: "Audit Logs", section: "admin", sectionLabel: "Admin", path: "/admin/audit-logs", icon: FileText, keywords: ["audit", "logs", "history", "changes"] },
+  { id: "admin-trash", label: "Trash", section: "admin", sectionLabel: "Admin", path: "/admin/trash", icon: FileText, keywords: ["trash", "deleted", "recycle", "restore"] },
   { id: "admin-tickets", label: "Support Tickets", section: "admin", sectionLabel: "Admin", path: "/admin/tickets", icon: MessageSquare, keywords: ["tickets", "support", "help", "issues"] },
   { id: "admin-job-queue", label: "Job Queue", section: "admin", sectionLabel: "Admin", path: "/admin/job-queue", icon: Settings, keywords: ["jobs", "queue", "background", "tasks", "worker", "async"] },
+  { id: "admin-dev-tests", label: "Dev Tests", section: "admin", sectionLabel: "Admin", path: "/admin/dev-tests", icon: Settings, keywords: ["dev", "tests", "testing", "development", "debug"] },
+  { id: "admin-testing-engine", label: "Testing Engine", section: "admin", sectionLabel: "Admin", path: "/admin/testing-engine", icon: Settings, keywords: ["testing", "engine", "e2e", "automation", "test", "playwright"] },
+  
+  { id: "global-platform", label: "Platform Settings", section: "global-settings", sectionLabel: "Global Settings", path: "/admin/global-settings/platform", icon: Settings, keywords: ["global", "platform", "settings", "configuration"] },
+  { id: "global-currencies", label: "Currency Settings", section: "global-settings", sectionLabel: "Global Settings", path: "/admin/global-settings/currencies", icon: CreditCard, keywords: ["global", "currencies", "forex", "exchange"] },
+  { id: "global-localization", label: "Localization", section: "global-settings", sectionLabel: "Global Settings", path: "/admin/global-settings/localization", icon: Globe, keywords: ["global", "localization", "language", "timezone", "i18n"] },
+  { id: "global-az-database", label: "A-Z Database", section: "global-settings", sectionLabel: "Global Settings", path: "/admin/global-settings/az-database", icon: Database, keywords: ["global", "az", "database", "destinations", "country", "codes"] },
   
   { id: "settings-general", label: "General Settings", section: "settings", sectionLabel: "Settings", path: "/admin/settings/general", icon: Settings, keywords: ["settings", "general", "configuration"] },
   { id: "settings-api-keys", label: "API Keys", section: "settings", sectionLabel: "Settings", path: "/admin/settings/api-keys", icon: Settings, keywords: ["api", "keys", "integration", "tokens"] },
   { id: "settings-webhooks", label: "Webhooks", section: "settings", sectionLabel: "Settings", path: "/admin/settings/webhooks", icon: Settings, keywords: ["webhooks", "callbacks", "events"] },
   { id: "settings-integrations", label: "Integrations", section: "settings", sectionLabel: "Settings", path: "/admin/settings/integrations", icon: Settings, keywords: ["integrations", "connectors", "third-party"] },
+  { id: "settings-connexcs-status", label: "ConnexCS Status", section: "settings", sectionLabel: "Settings", path: "/admin/settings/connexcs-status", icon: Settings, keywords: ["connexcs", "status", "sync", "integration"] },
+  
+  { id: "dashboard-overview", label: "Dashboard", section: "dashboard", sectionLabel: "Dashboard", path: "/admin", icon: LayoutDashboard, keywords: ["dashboard", "overview", "home", "main"] },
+  { id: "dashboard-activity", label: "Live Activity", section: "dashboard", sectionLabel: "Dashboard", path: "/admin/activity", icon: BarChart3, keywords: ["activity", "live", "real-time", "events"] },
+  { id: "monitoring-cdrs", label: "CDRs", section: "monitoring", sectionLabel: "Monitoring", path: "/admin/cdrs", icon: Phone, keywords: ["cdrs", "call", "detail", "records", "logs", "history"] },
 ];
 
 export function AdminSearchResults() {
