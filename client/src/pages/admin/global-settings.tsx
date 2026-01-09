@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2, Trash2, XCircle } from "lucide-react";
+import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2, Trash2, XCircle, RefreshCw } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -391,7 +391,28 @@ export function GlobalSettingsAZDatabase() {
   const [allCsvRows, setAllCsvRows] = useState<string[][]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const limit = pageSize;
+
+  const { data: pendingJobs } = useQuery<{ pending: number }>({
+    queryKey: ["/api/admin/jobs/az-import-status"],
+    refetchInterval: autoRefresh ? 3000 : false,
+  });
+
+  const hasPendingImports = (pendingJobs?.pending ?? 0) > 0;
+
+  useEffect(() => {
+    if (hasPendingImports) {
+      setAutoRefresh(true);
+    }
+  }, [hasPendingImports]);
+
+  useEffect(() => {
+    if (autoRefresh && !hasPendingImports) {
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
+      setAutoRefresh(false);
+    }
+  }, [autoRefresh, hasPendingImports]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -684,9 +705,27 @@ export function GlobalSettingsAZDatabase() {
           <p className="text-muted-foreground">Master database of dial codes for rate normalization</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {hasPendingImports && (
+            <Badge variant="default" className="animate-pulse" data-testid="badge-importing">
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              Importing...
+            </Badge>
+          )}
           <Badge variant="secondary" data-testid="badge-total">
             {total.toLocaleString()} destinations
           </Badge>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
+              toast({ title: "Refreshed", description: "Data reloaded" });
+            }}
+            disabled={isLoading}
+            data-testid="button-refresh"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          </Button>
           <Button
             variant="outline"
             size="sm"

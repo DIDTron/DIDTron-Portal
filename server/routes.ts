@@ -7651,6 +7651,21 @@ export async function registerRoutes(
     }
   });
 
+  // A-Z Import job status endpoint
+  app.get("/api/admin/jobs/az-import-status", async (req, res) => {
+    try {
+      const { getJobs } = await import("./job-queue");
+      const pendingJobs = await getJobs({ status: "pending" });
+      const processingJobs = await getJobs({ status: "processing" });
+      const azPending = pendingJobs.filter(j => j.jobType === "az_destination_import").length;
+      const azProcessing = processingJobs.filter(j => j.jobType === "az_destination_import").length;
+      res.json({ pending: azPending + azProcessing });
+    } catch (error: any) {
+      console.error("Failed to get A-Z import status:", error);
+      res.json({ pending: 0 });
+    }
+  });
+
   // ==================== A-Z DESTINATIONS ====================
 
   app.get("/api/az-destinations", async (req, res) => {

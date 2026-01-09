@@ -469,10 +469,15 @@ async function initializeJobQueue(): Promise<JobQueue> {
 
 export function getJobQueue(): JobQueue {
   if (!queueInstance) {
+    console.warn("[JobQueue] getJobQueue() called before initialization - creating in-memory queue. Call ensureJobQueueInitialized() first.");
     isUsingMockQueue = true;
     queueInstance = new InMemoryJobQueue();
   }
   return queueInstance;
+}
+
+export async function getJobQueueAsync(): Promise<JobQueue> {
+  return ensureJobQueueInitialized();
 }
 
 export async function ensureJobQueueInitialized(): Promise<JobQueue> {
@@ -502,7 +507,7 @@ export async function enqueueJob<T extends DIDTronJobType>(
     tags?: string[];
   }
 ): Promise<number> {
-  const queue = await getJobQueue();
+  const queue = await getJobQueueAsync();
   
   const enrichedPayload = {
     ...payload,
