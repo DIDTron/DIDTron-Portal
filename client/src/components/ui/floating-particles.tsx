@@ -11,7 +11,6 @@ interface Particle {
   anchorY: number;
   noiseOffsetX: number;
   noiseOffsetY: number;
-  trail: { x: number; y: number }[];
 }
 
 // Loose D shape anchor points - abstract, not perfect
@@ -77,23 +76,18 @@ export function FloatingParticles() {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    particlesRef.current = D_ANCHORS.map((anchor, i) => {
-      const startX = centerX + (Math.random() - 0.5) * 300;
-      const startY = centerY + (Math.random() - 0.5) * 300;
-      return {
-        x: startX,
-        y: startY,
-        vx: 0,
-        vy: 0,
-        size: Math.random() * 2 + 2.5,
-        color: colors[i % 2],
-        anchorX: anchor.x,
-        anchorY: anchor.y,
-        noiseOffsetX: Math.random() * 1000,
-        noiseOffsetY: Math.random() * 1000,
-        trail: Array(12).fill(null).map(() => ({ x: startX, y: startY })),
-      };
-    });
+    particlesRef.current = D_ANCHORS.map((anchor, i) => ({
+      x: centerX + (Math.random() - 0.5) * 300,
+      y: centerY + (Math.random() - 0.5) * 300,
+      vx: 0,
+      vy: 0,
+      size: Math.random() * 2 + 2.5,
+      color: colors[i % 2],
+      anchorX: anchor.x,
+      anchorY: anchor.y,
+      noiseOffsetX: Math.random() * 1000,
+      noiseOffsetY: Math.random() * 1000,
+    }));
 
     startTimeRef.current = Date.now();
 
@@ -192,42 +186,7 @@ export function FloatingParticles() {
           particle.x += particle.vx;
           particle.y += particle.vy;
 
-          // Update trail with arc curve opposite to movement direction
-          particle.trail.pop();
-          particle.trail.unshift({ x: particle.x, y: particle.y });
-
-          // Calculate movement direction for arc curve
-          const moveAngle = Math.atan2(particle.vy, particle.vx);
-          const particleSpeed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
-          
-          // Render trail first (behind main particle) with arc curve
-          particle.trail.forEach((point, trailIndex) => {
-            if (trailIndex === 0) return;
-            
-            // Arc offset - curves opposite to movement direction
-            const arcProgress = trailIndex / particle.trail.length;
-            const arcIntensity = Math.sin(arcProgress * Math.PI) * particleSpeed * 3;
-            const perpAngle = moveAngle + Math.PI / 2; // Perpendicular to movement
-            
-            // Alternate arc direction based on particle index for variety
-            const arcDirection = index % 2 === 0 ? 1 : -1;
-            const arcX = point.x + Math.cos(perpAngle) * arcIntensity * arcDirection;
-            const arcY = point.y + Math.sin(perpAngle) * arcIntensity * arcDirection;
-            
-            // More visible opacity that fades with distance
-            const trailOpacity = (1 - arcProgress) * 0.7;
-            const trailSize = particle.size * (1 - arcProgress * 0.6);
-            
-            ctx.save();
-            ctx.globalAlpha = opacityRef.current * trailOpacity * (isDark ? 0.85 : 0.7);
-            ctx.fillStyle = `rgba(${particle.color}, 1)`;
-            ctx.beginPath();
-            ctx.arc(arcX, arcY, trailSize, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-          });
-
-          // Render main particle
+          // Render
           ctx.save();
           ctx.globalAlpha = opacityRef.current * (isDark ? 0.75 : 0.6);
           ctx.fillStyle = `rgba(${particle.color}, 1)`;
