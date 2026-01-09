@@ -24,6 +24,8 @@ import {
   insertChannelPlanSchema,
   insertCarrierSchema,
   insertCarrierAssignmentSchema,
+  insertCarrierInterconnectSchema,
+  insertCarrierContactSchema,
   insertRouteSchema,
   insertMonitoringRuleSchema,
   insertAlertSchema,
@@ -5098,6 +5100,140 @@ export async function registerRoutes(
       res.json(assignment);
     } catch (error) {
       res.status(500).json({ error: "Failed to update carrier assignment" });
+    }
+  });
+
+  // Carrier Interconnects
+  app.get("/api/carriers/:id/interconnects", async (req, res) => {
+    try {
+      const interconnects = await storage.getCarrierInterconnects(req.params.id);
+      res.json(interconnects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch carrier interconnects" });
+    }
+  });
+
+  app.post("/api/carriers/:id/interconnects", async (req, res) => {
+    try {
+      const parsed = insertCarrierInterconnectSchema.safeParse({ ...req.body, carrierId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const interconnect = await storage.createCarrierInterconnect(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "carrier_interconnects",
+        recordId: interconnect.id,
+        newValues: interconnect,
+      });
+      res.status(201).json(interconnect);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create carrier interconnect" });
+    }
+  });
+
+  app.put("/api/interconnects/:id", async (req, res) => {
+    try {
+      const oldInterconnect = await storage.getCarrierInterconnect(req.params.id);
+      if (!oldInterconnect) return res.status(404).json({ error: "Interconnect not found" });
+      const parsed = insertCarrierInterconnectSchema.partial().safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const interconnect = await storage.updateCarrierInterconnect(req.params.id, parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "carrier_interconnects",
+        recordId: req.params.id,
+        oldValues: oldInterconnect,
+        newValues: interconnect,
+      });
+      res.json(interconnect);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update carrier interconnect" });
+    }
+  });
+
+  app.delete("/api/interconnects/:id", async (req, res) => {
+    try {
+      const oldInterconnect = await storage.getCarrierInterconnect(req.params.id);
+      if (!oldInterconnect) return res.status(404).json({ error: "Interconnect not found" });
+      await storage.deleteCarrierInterconnect(req.params.id);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "carrier_interconnects",
+        recordId: req.params.id,
+        oldValues: oldInterconnect,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete carrier interconnect" });
+    }
+  });
+
+  // Carrier Contacts
+  app.get("/api/carriers/:id/contacts", async (req, res) => {
+    try {
+      const contacts = await storage.getCarrierContacts(req.params.id);
+      res.json(contacts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch carrier contacts" });
+    }
+  });
+
+  app.post("/api/carriers/:id/contacts", async (req, res) => {
+    try {
+      const parsed = insertCarrierContactSchema.safeParse({ ...req.body, carrierId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const contact = await storage.createCarrierContact(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "carrier_contacts",
+        recordId: contact.id,
+        newValues: contact,
+      });
+      res.status(201).json(contact);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create carrier contact" });
+    }
+  });
+
+  app.put("/api/contacts/:id", async (req, res) => {
+    try {
+      const oldContact = await storage.getCarrierContact(req.params.id);
+      if (!oldContact) return res.status(404).json({ error: "Contact not found" });
+      const parsed = insertCarrierContactSchema.partial().safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const contact = await storage.updateCarrierContact(req.params.id, parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "carrier_contacts",
+        recordId: req.params.id,
+        oldValues: oldContact,
+        newValues: contact,
+      });
+      res.json(contact);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update carrier contact" });
+    }
+  });
+
+  app.delete("/api/contacts/:id", async (req, res) => {
+    try {
+      const oldContact = await storage.getCarrierContact(req.params.id);
+      if (!oldContact) return res.status(404).json({ error: "Contact not found" });
+      await storage.deleteCarrierContact(req.params.id);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "carrier_contacts",
+        recordId: req.params.id,
+        oldValues: oldContact,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete carrier contact" });
     }
   });
 
