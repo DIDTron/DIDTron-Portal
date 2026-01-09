@@ -83,6 +83,8 @@ import {
   type EmPublishHistory, type InsertEmPublishHistory,
   type DevTest, type InsertDevTest,
   type BillingTerm, type InsertBillingTerm,
+  type CarrierInterconnect, type InsertCarrierInterconnect,
+  type CarrierContact, type InsertCarrierContact,
   customers as customersTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -172,6 +174,20 @@ export interface IStorage {
   // Carrier Assignments
   getCarrierAssignment(carrierId: string): Promise<CarrierAssignment | undefined>;
   upsertCarrierAssignment(assignment: InsertCarrierAssignment): Promise<CarrierAssignment>;
+
+  // Carrier Interconnects
+  getCarrierInterconnects(carrierId: string): Promise<CarrierInterconnect[]>;
+  getCarrierInterconnect(id: string): Promise<CarrierInterconnect | undefined>;
+  createCarrierInterconnect(interconnect: InsertCarrierInterconnect): Promise<CarrierInterconnect>;
+  updateCarrierInterconnect(id: string, data: Partial<InsertCarrierInterconnect>): Promise<CarrierInterconnect | undefined>;
+  deleteCarrierInterconnect(id: string): Promise<boolean>;
+
+  // Carrier Contacts
+  getCarrierContacts(carrierId: string): Promise<CarrierContact[]>;
+  getCarrierContact(id: string): Promise<CarrierContact | undefined>;
+  createCarrierContact(contact: InsertCarrierContact): Promise<CarrierContact>;
+  updateCarrierContact(id: string, data: Partial<InsertCarrierContact>): Promise<CarrierContact | undefined>;
+  deleteCarrierContact(id: string): Promise<boolean>;
 
   // Audit Logs
   getAuditLogs(tableName?: string, recordId?: string, limit?: number): Promise<AuditLog[]>;
@@ -652,6 +668,8 @@ export class MemStorage implements IStorage {
   private codecs: Map<string, Codec>;
   private channelPlans: Map<string, ChannelPlan>;
   private carriers: Map<string, Carrier>;
+  private carrierInterconnects: Map<string, CarrierInterconnect>;
+  private carrierContacts: Map<string, CarrierContact>;
   private carrierAssignments: Map<string, CarrierAssignment>;
   private auditLogs: Map<string, AuditLog>;
   private routes: Map<string, Route>;
@@ -726,6 +744,8 @@ export class MemStorage implements IStorage {
     this.codecs = new Map();
     this.channelPlans = new Map();
     this.carriers = new Map();
+    this.carrierInterconnects = new Map();
+    this.carrierContacts = new Map();
     this.carrierAssignments = new Map();
     this.auditLogs = new Map();
     this.routes = new Map();
@@ -1314,7 +1334,7 @@ export class MemStorage implements IStorage {
     return this.channelPlans.delete(id);
   }
 
-  // Carriers
+  // Carriers (Wholesale Partners)
   async getCarriers(): Promise<Carrier[]> {
     return Array.from(this.carriers.values());
   }
@@ -1330,17 +1350,35 @@ export class MemStorage implements IStorage {
       id,
       name: carrier.name,
       code: carrier.code,
-      type: carrier.type ?? "wholesale",
+      partnerType: carrier.partnerType ?? "bilateral",
       description: carrier.description ?? null,
       status: carrier.status ?? "active",
-      sipHost: carrier.sipHost ?? null,
-      sipPort: carrier.sipPort ?? 5060,
-      sipUsername: carrier.sipUsername ?? null,
-      sipPassword: carrier.sipPassword ?? null,
-      techPrefix: carrier.techPrefix ?? null,
-      connexcsCarrierId: carrier.connexcsCarrierId ?? null,
+      primaryCurrencyId: carrier.primaryCurrencyId ?? null,
+      timezone: carrier.timezone ?? "UTC",
+      accountManager: carrier.accountManager ?? null,
+      customerBillingMode: carrier.customerBillingMode ?? "automatic",
+      capacityMode: carrier.capacityMode ?? "unrestricted",
+      capacityLimit: carrier.capacityLimit ?? null,
+      circularRouting: carrier.circularRouting ?? false,
+      customerCreditType: carrier.customerCreditType ?? "postpaid",
+      customerCreditLimit: carrier.customerCreditLimit ?? "0",
+      customerCreditLimitUnlimited: carrier.customerCreditLimitUnlimited ?? false,
+      customerBalance: carrier.customerBalance ?? "0",
+      customerBilateralLimitBreach: carrier.customerBilateralLimitBreach ?? "alert_only",
+      customer24HrSpendLimitBreach: carrier.customer24HrSpendLimitBreach ?? "alert_only",
+      customer24HrSpendMode: carrier.customer24HrSpendMode ?? "rolling_24_hours",
+      customer24HrSpendLimit: carrier.customer24HrSpendLimit ?? null,
+      customer24HrSpend: carrier.customer24HrSpend ?? "0",
+      supplierCreditType: carrier.supplierCreditType ?? "postpaid",
+      supplierCreditLimit: carrier.supplierCreditLimit ?? "0",
+      supplierCreditLimitUnlimited: carrier.supplierCreditLimitUnlimited ?? false,
+      supplierBalance: carrier.supplierBalance ?? "0",
+      supplier24HrSpendLimit: carrier.supplier24HrSpendLimit ?? null,
+      supplier24HrSpend: carrier.supplier24HrSpend ?? "0",
+      bilateralBalance: carrier.bilateralBalance ?? "0",
       billingEmail: carrier.billingEmail ?? null,
       technicalEmail: carrier.technicalEmail ?? null,
+      connexcsCarrierId: carrier.connexcsCarrierId ?? null,
       createdAt: now,
       updatedAt: now
     };
@@ -1385,6 +1423,89 @@ export class MemStorage implements IStorage {
     };
     this.carrierAssignments.set(id, a);
     return a;
+  }
+
+  // Carrier Interconnects
+  async getCarrierInterconnects(carrierId: string): Promise<CarrierInterconnect[]> {
+    return Array.from(this.carrierInterconnects.values()).filter(i => i.carrierId === carrierId);
+  }
+
+  async getCarrierInterconnect(id: string): Promise<CarrierInterconnect | undefined> {
+    return this.carrierInterconnects.get(id);
+  }
+
+  async createCarrierInterconnect(interconnect: InsertCarrierInterconnect): Promise<CarrierInterconnect> {
+    const id = randomUUID();
+    const now = new Date();
+    const i: CarrierInterconnect = {
+      id,
+      carrierId: interconnect.carrierId,
+      name: interconnect.name,
+      direction: interconnect.direction ?? "both",
+      sipHost: interconnect.sipHost ?? null,
+      sipPort: interconnect.sipPort ?? 5060,
+      sipUsername: interconnect.sipUsername ?? null,
+      sipPassword: interconnect.sipPassword ?? null,
+      techPrefix: interconnect.techPrefix ?? null,
+      codec: interconnect.codec ?? null,
+      protocol: interconnect.protocol ?? "UDP",
+      isActive: interconnect.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.carrierInterconnects.set(id, i);
+    return i;
+  }
+
+  async updateCarrierInterconnect(id: string, data: Partial<InsertCarrierInterconnect>): Promise<CarrierInterconnect | undefined> {
+    const existing = this.carrierInterconnects.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data, updatedAt: new Date() };
+    this.carrierInterconnects.set(id, updated);
+    return updated;
+  }
+
+  async deleteCarrierInterconnect(id: string): Promise<boolean> {
+    return this.carrierInterconnects.delete(id);
+  }
+
+  // Carrier Contacts
+  async getCarrierContacts(carrierId: string): Promise<CarrierContact[]> {
+    return Array.from(this.carrierContacts.values()).filter(c => c.carrierId === carrierId);
+  }
+
+  async getCarrierContact(id: string): Promise<CarrierContact | undefined> {
+    return this.carrierContacts.get(id);
+  }
+
+  async createCarrierContact(contact: InsertCarrierContact): Promise<CarrierContact> {
+    const id = randomUUID();
+    const now = new Date();
+    const c: CarrierContact = {
+      id,
+      carrierId: contact.carrierId,
+      name: contact.name,
+      email: contact.email ?? null,
+      phone: contact.phone ?? null,
+      role: contact.role ?? null,
+      isPrimary: contact.isPrimary ?? false,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.carrierContacts.set(id, c);
+    return c;
+  }
+
+  async updateCarrierContact(id: string, data: Partial<InsertCarrierContact>): Promise<CarrierContact | undefined> {
+    const existing = this.carrierContacts.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data, updatedAt: new Date() };
+    this.carrierContacts.set(id, updated);
+    return updated;
+  }
+
+  async deleteCarrierContact(id: string): Promise<boolean> {
+    return this.carrierContacts.delete(id);
   }
 
   // Audit Logs
