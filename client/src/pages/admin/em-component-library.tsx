@@ -1552,6 +1552,22 @@ const categories = [
   { id: "custom", label: "Custom/Platform" },
 ] as const;
 
+const customComponents = [
+  { name: "DataTableFooter", path: "@/components/ui/data-table-footer", description: "Pagination footer for all data tables. REQUIRED for Super Admin tables.", category: "data" },
+  { name: "FloatingParticles", path: "@/components/ui/floating-particles", description: "Canvas-based particle effect with cursor tracking. Used on login page.", category: "effects" },
+  { name: "ThemeToggle", path: "@/components/theme-toggle", description: "Light/Dark/System mode toggle button.", category: "utility" },
+  { name: "ThemeProvider", path: "@/components/theme-provider", description: "Wraps app to provide theme context.", category: "utility" },
+  { name: "ActionDock", path: "@/components/layout/super-admin/action-dock", description: "Fixed bottom-right dock with Save/Delete/Cancel/Reset buttons.", category: "layout" },
+  { name: "ConfigWorkspace", path: "@/components/layout/super-admin/config-workspace", description: "Tab container for General/Advanced/Assignment config sections.", category: "layout" },
+  { name: "GlobalHeader", path: "@/components/layout/super-admin/global-header", description: "Main header with logo, search, notifications, user menu.", category: "layout" },
+  { name: "PrimarySidebar", path: "@/components/layout/super-admin/primary-sidebar", description: "Left icon sidebar with drag-and-drop reordering.", category: "navigation" },
+  { name: "SecondarySidebar", path: "@/components/layout/super-admin/secondary-sidebar", description: "Secondary nav sidebar with drag-and-drop reordering.", category: "navigation" },
+  { name: "WorkspaceTabs", path: "@/components/layout/super-admin/workspace-tabs", description: "Browser-like tabs with context menu (close, close others, close all).", category: "navigation" },
+  { name: "CommandPalette", path: "@/components/layout/customer-portal/command-palette", description: "Cmd+K search palette for quick navigation.", category: "navigation" },
+  { name: "SearchResults", path: "@/components/layout/super-admin/search-results", description: "Search results overlay panel.", category: "navigation" },
+  { name: "Sidebar", path: "@/components/ui/sidebar", description: "Full sidebar system with collapsible, mobile, and variants.", category: "layout" },
+];
+
 const behavioralPatterns = [
   {
     id: "refresh-button",
@@ -1731,6 +1747,188 @@ if (isLoading) {
   Save
 </Button>`,
   },
+  {
+    id: "drag-drop",
+    name: "Drag & Drop Reorder",
+    badge: "Advanced",
+    badgeVariant: "outline" as const,
+    description: "Reorderable lists using @dnd-kit. Used in sidebars for custom ordering.",
+    code: `import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+// Sortable item component
+function SortableItem({ id, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
+    </div>
+  );
+}
+
+// Parent component
+function ReorderableList({ items, onReorder }) {
+  const sensors = useSensors(useSensor(PointerSensor));
+  
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = items.findIndex(i => i.id === active.id);
+      const newIndex = items.findIndex(i => i.id === over.id);
+      onReorder(arrayMove(items, oldIndex, newIndex));
+    }
+  };
+  
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+        {items.map(item => <SortableItem key={item.id} id={item.id}>{item.name}</SortableItem>)}
+      </SortableContext>
+    </DndContext>
+  );
+}`,
+  },
+  {
+    id: "toast-notifications",
+    name: "Toast Notifications",
+    badge: "Common",
+    badgeVariant: "secondary" as const,
+    description: "Show feedback messages using useToast hook.",
+    code: `import { useToast } from "@/hooks/use-toast";
+
+const { toast } = useToast();
+
+// Success toast
+toast({ title: "Success", description: "Item created successfully" });
+
+// Error toast
+toast({ 
+  title: "Error", 
+  description: "Something went wrong", 
+  variant: "destructive" 
+});
+
+// With action button
+toast({
+  title: "Item deleted",
+  description: "The item has been removed",
+  action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>,
+});`,
+  },
+  {
+    id: "zustand-store",
+    name: "Zustand State Management",
+    badge: "Advanced",
+    badgeVariant: "outline" as const,
+    description: "Global state management with Zustand. Used for tabs, branding, portal state.",
+    code: `import { create } from "zustand";
+
+interface TabsStore {
+  tabs: WorkspaceTab[];
+  activeTabId: string | null;
+  addTab: (tab: WorkspaceTab) => void;
+  closeTab: (id: string) => void;
+  setActiveTab: (id: string) => void;
+}
+
+export const useTabsStore = create<TabsStore>((set) => ({
+  tabs: [],
+  activeTabId: null,
+  addTab: (tab) => set((state) => ({ 
+    tabs: [...state.tabs, tab], 
+    activeTabId: tab.id 
+  })),
+  closeTab: (id) => set((state) => ({
+    tabs: state.tabs.filter(t => t.id !== id),
+    activeTabId: state.tabs[0]?.id || null
+  })),
+  setActiveTab: (id) => set({ activeTabId: id }),
+}));
+
+// Usage in component
+const { tabs, activeTabId, addTab } = useTabsStore();`,
+  },
+  {
+    id: "dialog-form",
+    name: "Dialog with Form",
+    badge: "Common",
+    badgeVariant: "secondary" as const,
+    description: "Modal dialog with form for create/edit operations.",
+    code: `const [open, setOpen] = useState(false);
+
+<Dialog open={open} onOpenChange={setOpen}>
+  <DialogTrigger asChild>
+    <Button data-testid="button-create"><Plus className="h-4 w-4 mr-2" />Create</Button>
+  </DialogTrigger>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Create New Item</DialogTitle>
+      <DialogDescription>Fill in the details below.</DialogDescription>
+    </DialogHeader>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField name="name" control={form.control} render={({ field }) => (
+          <FormItem>
+            <FormLabel>Name</FormLabel>
+            <FormControl><Input {...field} data-testid="input-name" /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Create
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  </DialogContent>
+</Dialog>`,
+  },
+  {
+    id: "data-table",
+    name: "Data Table with Pagination",
+    badge: "Critical",
+    badgeVariant: "destructive" as const,
+    description: "Standard table pattern with DataTableFooter. REQUIRED for all Super Admin tables.",
+    code: `import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
+
+const { data, isFetching } = useQuery<ItemType[]>({ queryKey: ["/api/items"] });
+
+// Filter and paginate
+const filteredData = data?.filter(item => 
+  item.name.toLowerCase().includes(searchQuery.toLowerCase())
+) || [];
+
+const { paginatedData, ...paginationProps } = useDataTablePagination(filteredData);
+
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Name</TableHead>
+      <TableHead>Status</TableHead>
+      <TableHead className="text-right">Actions</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {paginatedData.map((item) => (
+      <TableRow key={item.id} data-testid={\`row-item-\${item.id}\`}>
+        <TableCell>{item.name}</TableCell>
+        <TableCell><Badge>{item.status}</Badge></TableCell>
+        <TableCell className="text-right">
+          <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
+        </TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
+<DataTableFooter {...paginationProps} />`,
+    note: "DataTableFooter is MANDATORY for all data tables in Super Admin portal."
+  },
 ];
 
 const designRules = [
@@ -1785,9 +1983,11 @@ export default function EMComponentLibraryPage() {
               Visual components, behavioral patterns, and design rules
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary">{componentExamples.length} Components</Badge>
             <Badge variant="outline">{behavioralPatterns.length} Patterns</Badge>
+            <Badge variant="outline">{customComponents.length} Custom</Badge>
+            <Badge variant="outline">{designRules.length} Rules</Badge>
           </div>
         </div>
 
@@ -1917,9 +2117,38 @@ export default function EMComponentLibraryPage() {
           </TabsContent>
 
           <TabsContent value="patterns" className="mt-6 space-y-6">
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <Card className="bg-primary/5 border-primary/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Terminal className="h-4 w-4" />
+                    Behavioral Patterns
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{behavioralPatterns.length} patterns for data fetching, forms, state management</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-primary/5 border-primary/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Layers className="h-4 w-4" />
+                    Custom Components
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{customComponents.length} platform-specific components</p>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="space-y-2">
-              <p className="text-muted-foreground">
-                Copy-paste patterns for data fetching, refresh buttons, forms, and mutations. These patterns ensure consistent behavior across the platform.
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Terminal className="h-5 w-5" />
+                Behavioral Patterns
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                Copy-paste patterns for data fetching, refresh buttons, forms, and mutations.
               </p>
             </div>
 
@@ -1959,6 +2188,53 @@ export default function EMComponentLibraryPage() {
                         <AlertDescription>{pattern.note}</AlertDescription>
                       </Alert>
                     )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Separator className="my-8" />
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Layers className="h-5 w-5" />
+                Custom Platform Components
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                Platform-specific components with their import paths. These extend shadcn/ui for DIDTron-specific features.
+              </p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              {customComponents.map((comp) => (
+                <Card key={comp.name} data-testid={`card-custom-${comp.name.toLowerCase()}`} className="hover-elevate">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-base">{comp.name}</CardTitle>
+                      <Badge variant="outline" className="capitalize text-xs">{comp.category}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p className="text-sm text-muted-foreground">{comp.description}</p>
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs bg-muted px-2 py-1 rounded flex-1 overflow-x-auto">
+                        import {"{"} {comp.name} {"}"} from "{comp.path}"
+                      </code>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="shrink-0"
+                        onClick={() => copyCode(`import { ${comp.name} } from "${comp.path}";`, comp.name)}
+                        data-testid={`button-copy-custom-${comp.name.toLowerCase()}`}
+                        aria-label={`Copy ${comp.name} import`}
+                      >
+                        {copiedCode === comp.name ? (
+                          <Check className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
