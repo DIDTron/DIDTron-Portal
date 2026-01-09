@@ -1,0 +1,306 @@
+tell me how to explain to replit AI agent how to create an advanced billing system that can handles all types of customers from individuals to enterprises to voip wholesalers to call centers
+my project is to sell 
+routes ( customers can send calls to routes i will buy from providers )
+DIDs ( virtual number sometimes it can be 2 WAY DIDs )
+AI Voice ( same VoiceHub project but i want to charge my customer per minute usage of the route destinations where they will send calls + the AI tokens they will use )
+
+
+how to orchestrate this billing cycles starting from creating the account 1st i have no subscription and no restriction to create account 
+i want the customer to see his balance so he top up and pay as per his usage from his balance
+or postpaid approved from the super admin so he will be switched to postpay customer in all the services we offer
+
+
+please dig up how the voip market works how the voip minutes invoices looks like i can give example files if you need
+how to make SOA per customer
+how to add credit note
+
+how to integrate this logically so invoices get generated from the database and scheduled to be sent via the email
+i already integrated Brevo to send emails
+also when i get invoice from a supplier i need to create auditing system to audit and compare the invoice to accept it or refuse it
+
+to do also how i know all of this we need to create a UI to create inside of this UI the templates for all what related to the voip ( invoice template / SOA template / credit note template / netting request template ) in three formats ( XLSX and CSV and PDF )
+
+
+Here’s a copy-paste prompt you can give to a Replit AI Agent so it builds the billing system the way VoIP businesses actually do it (prepaid balance + postpaid invoicing + supplier invoice audit + templates + PDF/XLSX/CSV generation).
+
+Before the prompt, quick VoIP market reality (so the agent doesn’t design it like a normal SaaS subscription):
+
+Everything is rated from usage records (CDRs): a Call Detail Record logs what happened on each call and is used for billing and analytics. 
+Telnyx Help Center
++1
+
+Wholesale voice is sold via A-Z “rate decks” (prefix/destination pricing) and calls are charged with billing increments like 6/6, 12/6, 30/6, 60/60 (minimum seconds + step seconds). Many providers document 6-second billing and increment rules explicitly. 
+Bandwidth
++2
+Sangoma Technologies
++2
+
+VoIP invoices commonly include summary by destination/prefix + optional detailed call list (CDR export) and are often exportable to CSV/XLSX/PDF. 
+wiki.kolmisoft.com
+
+Supplier invoice disputes/audits are normally handled by agreed reconciliation criteria (variance thresholds, timeframes, timezones, rounding, rate effective dates), and CDR exchange is usually the last step if summaries don’t reconcile. 
+ITU
++1
+
+Paste this into Replit AI Agent (Prompt)
+You are a senior VoIP billing + revenue assurance engineer. Build an “advanced telecom billing system” for a multi-tenant platform selling:
+1) Routes (outbound termination): customers send SIP calls to routes; we buy termination from suppliers. Charge customers per minute/second by destination prefix.
+2) DIDs (virtual numbers): recurring monthly rental + optional setup; for 2-way DIDs allow both inbound and outbound usage rating.
+3) AI Voice: for each AI call charge (a) destination minutes (same routing rating as Routes) + (b) AI tokens used.
+
+Business rules:
+- Account creation is free (no subscription). Default billing mode = PREPAID.
+- PREPAID: customer sees wallet balance, can top up, and usage is charged from balance. Enforce “no credit” unless admin grants a small overdraft.
+- POSTPAID: only super admin can approve. Postpaid customers have credit limit + payment terms and are invoiced on a billing cycle (monthly by default, but support weekly/custom).
+- Support customer types: individual, enterprise, call center, VoIP wholesaler/reseller. Must support parent/child accounts + subaccounts and consolidated billing.
+
+Important VoIP billing realities to implement:
+- Rating uses rate decks (A-Z prefix table). Each rate has: price, currency, effective_from/to, increment rules (e.g., 6/6, 12/6, 30/6, 60/60), minimum charge, connect fee (optional).
+- Store “rated usage snapshots” so invoices don’t change when rates change later.
+- Multi-currency + timezone aware invoice periods. Store exchange rate at invoice generation time for audit consistency.
+- Invoices should support:
+  - Summary by destination/prefix (minutes, rate, amount)
+  - Optional detailed CDR attachment (CSV)
+  - Multiple export formats: PDF, XLSX, CSV
+- SOA (Statement of Account) per customer: opening balance, invoices, payments/topups, credit notes, adjustments, closing balance.
+- Credit note: negative document referencing an invoice, reduces AR (postpaid) or returns credit to wallet (prepaid) depending on admin choice.
+- Supplier invoice auditing: import supplier invoice + (optional) supplier CDR detail; re-rate and compare to our internal rated cost totals. Workflow: “import → reconcile → variance report → accept / reject → dispute notes + evidence”.
+
+Tech stack constraints:
+- Implement as a Replit-ready fullstack app using:
+  - Next.js (TS) for UI + API routes
+  - PostgreSQL (Prisma ORM)
+  - A background worker (BullMQ + Redis OR a simple cron runner if Redis unavailable)
+  - File storage (local for dev; abstract so S3 later)
+  - PDF generation from HTML template (Playwright/Puppeteer)
+  - XLSX generation (exceljs) and CSV generation
+- Email sending: Brevo already integrated. Add “invoice mailer” that schedules and sends invoices/SOA/credit notes with attachments and logs delivery.
+
+DATA MODEL (must implement with migrations):
+- tenants (id, name)
+- users (id, tenant_id, email, password_hash, role)
+- accounts (id, tenant_id, type [individual|enterprise|reseller|call_center], parent_account_id nullable, status)
+- billing_profiles (account_id, mode [prepaid|postpaid], currency, timezone, billing_cycle [monthly|weekly|custom], invoice_day, credit_limit, payment_terms_days, tax_profile_id)
+- wallets (account_id, currency, available_balance)
+- ledger (double-entry recommended):
+  - ledger_accounts (id, tenant_id, name, type)
+  - ledger_entries (id, tenant_id, account_id, tx_type, amount, currency, ref_type, ref_id, created_at)
+  - IMPORTANT: do not “edit balances”; compute from ledger and cache to wallet if needed.
+- products:
+  - routes (id, tenant_id, name, enabled)
+  - did_inventory (id, tenant_id, number, country, provider_id, status)
+  - did_assignments (id, did_id, account_id, start_date, end_date)
+  - ai_voice_apps (id, account_id, config)
+- rate decks:
+  - destinations (id, e164_prefix, country, operator, category)
+  - rate_decks (id, tenant_id, name, scope [customer|supplier], owner_id (account or supplier), currency)
+  - rates (deck_id, destination_id, price_per_min, connect_fee, increment_initial_sec, increment_follow_sec, min_charge_sec, effective_from, effective_to)
+- usage ingestion:
+  - cdr_raw (id, tenant_id, account_id, call_id, from, to, start_ts, end_ts, billsec, answered, trunk_id, supplier_id, direction, metadata_json)
+  - ai_usage_raw (id, tenant_id, account_id, session_id/call_id, model, prompt_tokens, completion_tokens, total_tokens, ts, metadata_json)
+  - rated_usage (id, tenant_id, account_id, service [route|did|ai_tokens|did_rental], usage_id, qty, unit, unit_price, amount, currency, rated_at, invoice_id nullable, cost_amount nullable, margin_amount nullable, rating_snapshot_json)
+- invoicing:
+  - invoice_runs (id, tenant_id, period_start, period_end, run_ts, status)
+  - invoices (id, tenant_id, account_id, number, type [invoice|credit_note|proforma], period_start, period_end, issue_date, due_date, currency, subtotal, tax, total, status [draft|issued|sent|paid|void], parent_invoice_id nullable)
+  - invoice_items (invoice_id, service, description, destination_prefix nullable, qty, unit, unit_price, amount)
+  - invoice_files (invoice_id, format [pdf|xlsx|csv], path, hash, created_at)
+- payments/topups:
+  - payments (id, tenant_id, account_id, amount, currency, method, provider_ref, ts, status)
+- supplier auditing:
+  - suppliers (id, tenant_id, name, currency, default_rate_deck_id)
+  - supplier_invoices (id, tenant_id, supplier_id, invoice_no, period_start, period_end, currency, total, status [imported|reconciled|accepted|rejected|disputed])
+  - supplier_invoice_lines (supplier_invoice_id, destination_prefix, minutes, rate, amount)
+  - supplier_import_files (supplier_invoice_id, format, path)
+  - supplier_reconciliation (supplier_invoice_id, our_calc_total, variance_amount, variance_pct, result_json, decided_by, decided_at)
+
+CORE FLOWS (must implement end-to-end):
+1) Onboarding:
+   - Create account + billing profile (prepaid, currency, timezone)
+   - Account portal shows balance, services, invoices, usage.
+2) Top-up:
+   - Record payment → ledger credit to wallet → update available balance
+3) Usage rating pipeline:
+   - Import cdr_raw (simulate with CSV upload + later provide API endpoint)
+   - For each answered call: find destination prefix, pick correct customer rate deck, apply increment rounding, calculate charge.
+   - Also calculate supplier cost using supplier deck, store cost_amount & margin.
+   - For prepaid: decrement wallet (or reserve/settle if you implement reservations)
+   - For AI Voice: link ai_usage_raw by call_id/session_id, rate tokens (price per 1K tokens configurable per account), add to rated_usage.
+4) Postpaid switch:
+   - Admin approves postpaid → set credit_limit + terms → future rated_usage not deducted from wallet.
+5) Invoice generation:
+   - Scheduled job creates invoices for postpaid accounts each cycle.
+   - Invoice includes:
+     a) recurring DID rentals for active did_assignments in period
+     b) call charges grouped by destination prefix
+     c) AI token charges
+     d) attachments: detailed CDR CSV + optional AI usage CSV
+   - Mark invoice issued → send via Brevo → log sent status.
+6) SOA generation:
+   - Generate statement showing opening balance, invoices, credit notes, payments, closing balance for a date range.
+7) Credit note:
+   - Admin can create credit note referencing an invoice (full or partial). It produces a negative document and ledger entries.
+8) Supplier invoice audit:
+   - Upload supplier invoice summary (CSV/XLSX) + optional supplier CDR
+   - System re-calculates expected totals from our data and flags variances by destination, rounding, timezone, rate effective dates.
+   - Provide “accept / reject” + dispute notes. Export a variance report PDF/CSV.
+
+TEMPLATES UI (must implement):
+- Admin can manage document templates for:
+  - Invoice
+  - SOA
+  - Credit Note
+  - Netting Request
+- For each template, support output formats:
+  - PDF: HTML template editor with variables (handlebars-style) + preview
+  - XLSX: upload an XLSX template and map placeholders (named ranges or cell mapping)
+  - CSV: define column schema & mapping
+- Store templates per tenant and optionally per account (custom templates for enterprise customers).
+
+UI PAGES (minimum):
+- Admin: Accounts, Billing Profiles, Rate Decks, Destinations, DIDs, Invoice Runs, Invoices, Credit Notes, Templates, Supplier Audit.
+- Customer Portal: Dashboard (balance + usage), Top-ups, Invoices, SOA, Usage reports.
+
+NON-FUNCTIONAL:
+- Multi-tenant safety: every query scoped by tenant_id + account_id.
+- Audit trail: immutable logs for invoice generation, template changes, admin approvals.
+- Idempotent imports: avoid duplicate CDR ingestion (unique call_id + tenant).
+- Provide seed data + demo workflow.
+
+Deliverables:
+- Working app with database migrations + seed
+- A “Demo” script (steps) showing: create account → topup → import CDRs → prepaid balance decreases → approve postpaid → generate invoice → email send log → generate SOA → issue credit note → supplier invoice reconciliation report.
+
+Build in milestones and ensure each milestone runs before moving to next.
+
+Extra instructions you should tell the agent (so it doesn’t miss “telecom-grade” details)
+
+If you want, add this after the prompt above:
+
+Billing increments & rounding must be configurable per rate deck (initial + subsequent seconds) because that’s common in VoIP contracts. 
+Sangoma Technologies
++1
+
+Invoice exports (PDF/XLSX/CSV) + destination grouping are “normal” in VoIP billing platforms; build it as first-class, not an afterthought. 
+wiki.kolmisoft.com
+
+Supplier reconciliation should be criteria-driven (variance thresholds, timeframes, timezones, rounding, rate effective dates), and generate a variance report; this is straight out of carrier dispute management practices. 
+ITU
++1
+
+
+
+
+Dear Voiphub Technologies Limited,
+
+Please find attached your Invoice: 00781 covering all terminated minutes from 29/12/2025 to 04/01/2026.
+Total due amount 639.83000$
+Payment of the invoice is due on 11/01/2026.
+
+Please contact us if you have any queries regarding this invoice.
+
+Regards,
+Billing Team
+
+above is the email body message
+
+supplier is voice-blow and customer is voiphub, so this is invoice to customer
+also attached samples of the SOA in xlsx and PDF
+our brand name is DIDTron 
+
+Below is a cleaner, “carrier-style” email you can use for DIDTron (brand) sending Voice-Blow invoices to VoipHub.
+
+Key invoice facts to include every time (taken from your sample PDF): Invoice #00781, Invoice date 04/01/2026, period 29/12/2025–04/01/2026, due 11/01/2026 (7 days after invoice date), 13,003 connected calls, 27,058.4 minutes, USD 639.83
+
+Dear VoipHub Accounts Payable Team,
+
+Please find attached Invoice 00781 covering terminated traffic for the period 29/12/2025 to 04/01/2026 (UTC billing time zone).
+
+Invoice summary:
+
+* Connected calls: 13,003
+* Total minutes: 27,058.4
+* Total amount due: USD 639.83
+* Due date: 11/01/2026 (payment terms: 7 days from invoice date)
+
+Kindly process payment by the due date. Bank account details are included on the invoice.
+
+If you have any questions or require the CDR/itemisation in CSV format, please reply to this email.
+
+Regards,
+DIDTron Billing Team
+(Voice Blow Technologies FZ-LLC)
+
+
+Dear VoipHub Team,
+
+Invoice 00781 is attached for the billing period 29/12/2025 to 04/01/2026. Total due: USD 639.83. Due date: 11/01/2026.
+
+Please contact us if you have any queries regarding this invoice.
+
+Regards,
+DIDTron Billing Team
+(Voice Blow Technologies FZ-LLC)
+
+
+
+What your system should auto-fill in this email (based on your invoice layout)
+
+From your invoice PDF, these are the fields that should populate the email + attachments:
+
+invoice_number = 00781 
+
+Voice-Blow Invoice to Voiphub f…
+
+invoice_date = 04/01/2026 
+
+Voice-Blow Invoice to Voiphub f…
+
+period_start / period_end = 29/12/2025 to 04/01/2026 
+
+Voice-Blow Invoice to Voiphub f…
+
+due_date = 11/01/2026 and payment_terms_days = 7 
+
+Voice-Blow Invoice to Voiphub f…
+
+billing_timezone = UTC 
+
+Voice-Blow Invoice to Voiphub f…
+
+connected_calls / total_minutes / total_due = 13,003 / 27,058.4 / USD 639.83 
+
+Voice-Blow Invoice to Voiphub f…
+
+bank_details block (optional to repeat in email, but must appear on PDF): Swift + IBAN etc. 
+
+Voice-Blow Invoice to Voiphub f…
+
+Attachments that match VoIP industry expectations:
+
+Invoice PDF (always)
+
+Itemisation CSV/XLSX (optional but very useful; your PDF already has per-destination lines like “Zone / Price / Calls / Minutes / Charges” 
+
+Voice-Blow Invoice to Voiphub f…
+
+)
+
+SOA email (when you send statements)
+
+Your SOA sample shows a standard “Statement Summary” with Opening, Invoices, Payments, Credit Notes, Netting, Closing, Unbilled 
+
+A-VOICE-BLOW-SOA
+
+ and then separate sections listing invoice/payment/credit-note/netting lines. 
+
+A-VOICE-BLOW-SOA
+
+
+If you want, I’ll draft the SOA email body the same way as the invoice email (subject + short summary + attachments).
+
+Important branding tip for DIDTron
+
+If DIDTron is the brand but Voice Blow is the legal entity getting paid, keep both in the footer exactly like:
+
+“DIDTron Billing Team (Voice Blow Technologies FZ-LLC)”
+That prevents confusion when the customer opens the PDF and sees Voice Blow and the bank account details.

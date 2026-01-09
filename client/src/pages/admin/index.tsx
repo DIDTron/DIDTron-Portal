@@ -70,6 +70,14 @@ import ConnexCSStatusPage from "./connexcs-status";
 import JobQueuePage from "./job-queue";
 import DevTestsPage from "./dev-tests";
 import TestingEnginePage from "./testing-engine";
+import BillingOverviewPage from "./billing/index";
+import BillingCustomersPage from "./billing/customers";
+import CreditNotesPage from "./billing/credit-notes";
+import SOAPage from "./billing/soa";
+import NettingPage from "./billing/netting";
+import SupplierAuditPage from "./billing/supplier-audit";
+import TemplatesPage from "./billing/templates";
+import SyncStatusPage from "./billing/sync-status";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -99,6 +107,15 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/categories": { section: "customers", subItem: "categories" },
   "/admin/groups": { section: "customers", subItem: "groups" },
   "/admin/kyc": { section: "customers", subItem: "kyc" },
+  "/admin/billing": { section: "billing", subItem: "billing-overview" },
+  "/admin/billing/customers": { section: "billing", subItem: "billing-customers" },
+  "/admin/billing/invoices": { section: "billing", subItem: "invoices" },
+  "/admin/billing/credit-notes": { section: "billing", subItem: "credit-notes" },
+  "/admin/billing/soa": { section: "billing", subItem: "soa" },
+  "/admin/billing/netting": { section: "billing", subItem: "netting" },
+  "/admin/billing/supplier-audit": { section: "billing", subItem: "supplier-audit" },
+  "/admin/billing/templates": { section: "billing", subItem: "billing-templates" },
+  "/admin/billing/sync-status": { section: "billing", subItem: "sync-status" },
   "/admin/invoices": { section: "billing", subItem: "invoices" },
   "/admin/payments": { section: "billing", subItem: "payments" },
   "/admin/currencies": { section: "billing", subItem: "currencies" },
@@ -232,6 +249,15 @@ export default function AdminLayout() {
                 <Route path="/admin/categories" component={CategoriesPage} />
                 <Route path="/admin/groups" component={GroupsPage} />
                 <Route path="/admin/kyc" component={KycPage} />
+                <Route path="/admin/billing" component={BillingOverviewPage} />
+                <Route path="/admin/billing/customers" component={BillingCustomersPage} />
+                <Route path="/admin/billing/invoices" component={InvoicesPage} />
+                <Route path="/admin/billing/credit-notes" component={CreditNotesPage} />
+                <Route path="/admin/billing/soa" component={SOAPage} />
+                <Route path="/admin/billing/netting" component={NettingPage} />
+                <Route path="/admin/billing/supplier-audit" component={SupplierAuditPage} />
+                <Route path="/admin/billing/templates" component={TemplatesPage} />
+                <Route path="/admin/billing/sync-status" component={SyncStatusPage} />
                 <Route path="/admin/invoices" component={InvoicesPage} />
                 <Route path="/admin/payments" component={PaymentsPage} />
                 <Route path="/admin/currencies" component={CurrenciesPage} />

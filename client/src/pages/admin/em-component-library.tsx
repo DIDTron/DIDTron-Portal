@@ -1574,6 +1574,7 @@ const patternCategories = [
   { id: "forms", label: "Forms" },
   { id: "ui", label: "UI/UX" },
   { id: "state", label: "State Management" },
+  { id: "billing", label: "Billing" },
 ] as const;
 
 const behavioralPatterns = [
@@ -1923,7 +1924,7 @@ const filteredData = data?.filter(item =>
   item.name.toLowerCase().includes(searchQuery.toLowerCase())
 ) || [];
 
-const { paginatedData, ...paginationProps } = useDataTablePagination(filteredData);
+const { paginatedItems, ...paginationProps } = useDataTablePagination(filteredData);
 
 <Table>
   <TableHeader>
@@ -1934,7 +1935,7 @@ const { paginatedData, ...paginationProps } = useDataTablePagination(filteredDat
     </TableRow>
   </TableHeader>
   <TableBody>
-    {paginatedData.map((item) => (
+    {paginatedItems.map((item) => (
       <TableRow key={item.id} data-testid={\`row-item-\${item.id}\`}>
         <TableCell>{item.name}</TableCell>
         <TableCell><Badge>{item.status}</Badge></TableCell>
@@ -2099,6 +2100,596 @@ export default function MyPage() {
 // - Alert: overflow-hidden (clips to boundaries)
 // - AlertDescription: break-words (wraps long text)`,
     note: "REQUIRED for any Card containing code blocks, pre-formatted content, or long text. Without this, content extends beyond card boundaries and gets cut off."
+  },
+  // BILLING PATTERNS
+  {
+    id: "financial-summary-card",
+    name: "Financial Summary Card",
+    category: "billing",
+    badge: "Billing",
+    badgeVariant: "default" as const,
+    description: "Display balance, credit limit, billing type, and key financial metrics. Used in customer portal and admin billing views.",
+    code: `// Financial Summary Card - shows balance, credit, billing type
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { DollarSign, CreditCard, TrendingUp, AlertTriangle } from "lucide-react";
+
+interface FinancialSummaryProps {
+  balance: number;
+  creditLimit?: number;
+  billingType: "prepaid" | "postpaid";
+  currency: string;
+  lowBalanceThreshold?: number;
+}
+
+function FinancialSummaryCard({ balance, creditLimit, billingType, currency, lowBalanceThreshold }: FinancialSummaryProps) {
+  const isLowBalance = lowBalanceThreshold && balance < lowBalanceThreshold;
+  
+  return (
+    <Card data-testid="card-financial-summary">
+      <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+        <CardTitle className="text-sm font-medium">Account Balance</CardTitle>
+        <Badge variant={billingType === "prepaid" ? "secondary" : "outline"} data-testid="badge-billing-type">
+          {billingType}
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold" data-testid="text-balance">
+            {currency} {balance.toFixed(2)}
+          </span>
+          {isLowBalance && (
+            <Badge variant="destructive" className="gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Low
+            </Badge>
+          )}
+        </div>
+        {billingType === "postpaid" && creditLimit && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Credit Limit: {currency} {creditLimit.toFixed(2)}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}`,
+    note: "Use this pattern for all financial summary displays. Shows balance with appropriate warnings and billing type indicator."
+  },
+  {
+    id: "ledger-table",
+    name: "Ledger Table",
+    category: "billing",
+    badge: "Billing",
+    badgeVariant: "default" as const,
+    description: "Transaction history table with date, type, description, debit/credit columns, and running balance. Used in SOA and transaction history.",
+    code: `// Ledger Table - double-entry transaction history
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
+import { format } from "date-fns";
+
+interface LedgerEntry {
+  id: string;
+  date: Date;
+  type: "invoice" | "payment" | "credit_note" | "adjustment" | "netting";
+  description: string;
+  reference: string;
+  debit?: number;
+  credit?: number;
+  balance: number;
+  currency: string;
+}
+
+function LedgerTable({ entries }: { entries: LedgerEntry[] }) {
+  const { paginatedItems, ...paginationProps } = useDataTablePagination(entries);
+  
+  const getTypeBadge = (type: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      invoice: "default",
+      payment: "secondary",
+      credit_note: "outline",
+      adjustment: "outline",
+      netting: "secondary",
+    };
+    return <Badge variant={variants[type] || "outline"}>{type.replace("_", " ")}</Badge>;
+  };
+
+  return (
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Reference</TableHead>
+            <TableHead className="text-right">Debit</TableHead>
+            <TableHead className="text-right">Credit</TableHead>
+            <TableHead className="text-right">Balance</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paginatedItems.map((entry) => (
+            <TableRow key={entry.id} data-testid={\`row-ledger-\${entry.id}\`}>
+              <TableCell>{format(entry.date, "dd/MM/yyyy")}</TableCell>
+              <TableCell>{getTypeBadge(entry.type)}</TableCell>
+              <TableCell>{entry.description}</TableCell>
+              <TableCell className="font-mono text-sm">{entry.reference}</TableCell>
+              <TableCell className="text-right text-red-600">
+                {entry.debit ? \`\${entry.currency} \${entry.debit.toFixed(2)}\` : "-"}
+              </TableCell>
+              <TableCell className="text-right text-green-600">
+                {entry.credit ? \`\${entry.currency} \${entry.credit.toFixed(2)}\` : "-"}
+              </TableCell>
+              <TableCell className="text-right font-medium">
+                {entry.currency} {entry.balance.toFixed(2)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <DataTableFooter {...paginationProps} />
+    </>
+  );
+}`,
+    note: "REQUIRED for SOA and transaction history pages. Shows debit/credit with running balance column."
+  },
+  {
+    id: "status-workflow-badge",
+    name: "Status Workflow Badge",
+    category: "billing",
+    badge: "Billing",
+    badgeVariant: "default" as const,
+    description: "Visual status indicator for document workflow states: Draft → Issued → Sent → Paid → Void. Used for invoices, credit notes, netting requests.",
+    code: `// Status Workflow Badge - invoice/document status
+import { Badge } from "@/components/ui/badge";
+import { FileText, Send, CheckCircle, XCircle, Clock, Ban } from "lucide-react";
+
+type DocumentStatus = "draft" | "issued" | "sent" | "paid" | "partial" | "void" | "overdue";
+
+interface StatusWorkflowBadgeProps {
+  status: DocumentStatus;
+  showIcon?: boolean;
+}
+
+function StatusWorkflowBadge({ status, showIcon = true }: StatusWorkflowBadgeProps) {
+  const config: Record<DocumentStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof FileText }> = {
+    draft: { label: "Draft", variant: "outline", icon: FileText },
+    issued: { label: "Issued", variant: "secondary", icon: FileText },
+    sent: { label: "Sent", variant: "default", icon: Send },
+    paid: { label: "Paid", variant: "secondary", icon: CheckCircle },
+    partial: { label: "Partial", variant: "outline", icon: Clock },
+    void: { label: "Void", variant: "destructive", icon: Ban },
+    overdue: { label: "Overdue", variant: "destructive", icon: XCircle },
+  };
+
+  const { label, variant, icon: Icon } = config[status];
+
+  return (
+    <Badge variant={variant} className="gap-1" data-testid={\`badge-status-\${status}\`}>
+      {showIcon && <Icon className="h-3 w-3" />}
+      {label}
+    </Badge>
+  );
+}
+
+// Usage
+<StatusWorkflowBadge status="sent" />
+<StatusWorkflowBadge status="paid" />
+<StatusWorkflowBadge status="overdue" />`,
+    note: "Use consistent status badges across all billing documents. Always include appropriate icon for quick visual identification."
+  },
+  {
+    id: "destination-breakdown-table",
+    name: "Destination Breakdown Table",
+    category: "billing",
+    badge: "Billing",
+    badgeVariant: "default" as const,
+    description: "Usage grouped by destination/zone showing calls, minutes, rate, and charges. Matches Voice-Blow invoice format.",
+    code: `// Destination Breakdown Table - usage by zone/prefix
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+interface DestinationUsage {
+  zone: string;
+  interconnect: string;
+  periodStart: string;
+  periodEnd: string;
+  rate: number;
+  calls: number;
+  minutes: number;
+  charges: number;
+  currency: string;
+}
+
+function DestinationBreakdownTable({ usage, currency }: { usage: DestinationUsage[]; currency: string }) {
+  const totals = usage.reduce(
+    (acc, row) => ({
+      calls: acc.calls + row.calls,
+      minutes: acc.minutes + row.minutes,
+      charges: acc.charges + row.charges,
+    }),
+    { calls: 0, minutes: 0, charges: 0 }
+  );
+
+  return (
+    <Card data-testid="card-destination-breakdown">
+      <CardHeader>
+        <CardTitle>Call Itemisation</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Zone</TableHead>
+              <TableHead>Interconnect</TableHead>
+              <TableHead>From</TableHead>
+              <TableHead>To</TableHead>
+              <TableHead className="text-right">Rate ({currency})</TableHead>
+              <TableHead className="text-right">Calls</TableHead>
+              <TableHead className="text-right">Minutes</TableHead>
+              <TableHead className="text-right">Charges ({currency})</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {usage.map((row, idx) => (
+              <TableRow key={idx} data-testid={\`row-destination-\${idx}\`}>
+                <TableCell className="font-medium">{row.zone}</TableCell>
+                <TableCell>{row.interconnect}</TableCell>
+                <TableCell>{row.periodStart}</TableCell>
+                <TableCell>{row.periodEnd}</TableCell>
+                <TableCell className="text-right">{row.rate.toFixed(4)}</TableCell>
+                <TableCell className="text-right">{row.calls.toLocaleString()}</TableCell>
+                <TableCell className="text-right">{row.minutes.toFixed(1)}</TableCell>
+                <TableCell className="text-right">{row.charges.toFixed(2)}</TableCell>
+              </TableRow>
+            ))}
+            <TableRow className="font-bold bg-muted/50">
+              <TableCell colSpan={5}>Total</TableCell>
+              <TableCell className="text-right">{totals.calls.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.minutes.toFixed(1)}</TableCell>
+              <TableCell className="text-right">{totals.charges.toFixed(2)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}`,
+    note: "Matches Voice-Blow invoice format. Used for invoice line items and usage reports. Always include totals row."
+  },
+  {
+    id: "reconciliation-grid",
+    name: "Reconciliation Grid",
+    category: "billing",
+    badge: "Billing",
+    badgeVariant: "default" as const,
+    description: "Side-by-side comparison of supplier invoice vs internal calculations. Highlights variances for supplier audit.",
+    code: `// Reconciliation Grid - supplier audit comparison
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, CheckCircle } from "lucide-react";
+
+interface ReconciliationRow {
+  destination: string;
+  supplierMinutes: number;
+  supplierAmount: number;
+  ourMinutes: number;
+  ourAmount: number;
+  currency: string;
+}
+
+function ReconciliationGrid({ rows, varianceThreshold = 0.01 }: { rows: ReconciliationRow[]; varianceThreshold?: number }) {
+  const getVariance = (supplier: number, ours: number) => {
+    if (ours === 0) return supplier === 0 ? 0 : 100;
+    return ((supplier - ours) / ours) * 100;
+  };
+
+  const hasVariance = (row: ReconciliationRow) => {
+    const variance = Math.abs(getVariance(row.supplierAmount, row.ourAmount));
+    return variance > varianceThreshold * 100;
+  };
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Destination</TableHead>
+          <TableHead className="text-right">Supplier Mins</TableHead>
+          <TableHead className="text-right">Supplier Amount</TableHead>
+          <TableHead className="text-right">Our Mins</TableHead>
+          <TableHead className="text-right">Our Amount</TableHead>
+          <TableHead className="text-right">Variance</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row, idx) => {
+          const variance = getVariance(row.supplierAmount, row.ourAmount);
+          const isMatch = !hasVariance(row);
+          
+          return (
+            <TableRow 
+              key={idx} 
+              className={hasVariance(row) ? "bg-destructive/10" : ""}
+              data-testid={\`row-reconcile-\${idx}\`}
+            >
+              <TableCell className="font-medium">{row.destination}</TableCell>
+              <TableCell className="text-right">{row.supplierMinutes.toFixed(1)}</TableCell>
+              <TableCell className="text-right">{row.currency} {row.supplierAmount.toFixed(2)}</TableCell>
+              <TableCell className="text-right">{row.ourMinutes.toFixed(1)}</TableCell>
+              <TableCell className="text-right">{row.currency} {row.ourAmount.toFixed(2)}</TableCell>
+              <TableCell className="text-right font-mono">
+                {variance > 0 ? "+" : ""}{variance.toFixed(2)}%
+              </TableCell>
+              <TableCell>
+                {isMatch ? (
+                  <Badge variant="secondary" className="gap-1">
+                    <CheckCircle className="h-3 w-3" />Match
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive" className="gap-1">
+                    <AlertTriangle className="h-3 w-3" />Variance
+                  </Badge>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}`,
+    note: "Use for supplier invoice auditing. Variance threshold is configurable. Rows with variance are highlighted in red."
+  },
+  {
+    id: "document-preview",
+    name: "Document Preview",
+    category: "billing",
+    badge: "Billing",
+    badgeVariant: "default" as const,
+    description: "Full-screen preview overlay for Invoice, SOA, Credit Note before sending. Includes format selector and action buttons.",
+    code: `// Document Preview - preview before sending
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, Send, Printer, X } from "lucide-react";
+
+interface DocumentPreviewProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  documentType: "invoice" | "soa" | "credit_note" | "netting";
+  documentNumber: string;
+  onSend: () => void;
+  onDownload: (format: "pdf" | "xlsx" | "csv") => void;
+  children: React.ReactNode;
+}
+
+function DocumentPreview({ open, onClose, title, documentType, documentNumber, onSend, onDownload, children }: DocumentPreviewProps) {
+  const [format, setFormat] = useState<"pdf" | "xlsx" | "csv">("pdf");
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex flex-row items-center justify-between gap-4">
+          <div>
+            <DialogTitle>{title}</DialogTitle>
+            <p className="text-sm text-muted-foreground">{documentNumber}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={format} onValueChange={(v) => setFormat(v as any)}>
+              <SelectTrigger className="w-24" data-testid="select-format">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pdf">PDF</SelectItem>
+                <SelectItem value="xlsx">XLSX</SelectItem>
+                <SelectItem value="csv">CSV</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" onClick={() => onDownload(format)} data-testid="button-download">
+              <Download className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" data-testid="button-print">
+              <Printer className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogHeader>
+        
+        <div className="flex-1 overflow-auto border rounded-md p-6 bg-white dark:bg-zinc-900">
+          {children}
+        </div>
+        
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} data-testid="button-close">
+            <X className="h-4 w-4 mr-2" />Cancel
+          </Button>
+          <Button onClick={onSend} data-testid="button-send">
+            <Send className="h-4 w-4 mr-2" />Send to Customer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}`,
+    note: "Use for previewing any billing document before sending. Format selector allows PDF/XLSX/CSV download."
+  },
+  {
+    id: "period-selector",
+    name: "Period Selector",
+    category: "billing",
+    badge: "Billing",
+    badgeVariant: "default" as const,
+    description: "Date range picker for billing periods. Includes presets for common periods (This Month, Last Month, Custom).",
+    code: `// Period Selector - billing period picker
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon } from "lucide-react";
+import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+
+interface PeriodSelectorProps {
+  startDate: Date;
+  endDate: Date;
+  onPeriodChange: (start: Date, end: Date) => void;
+}
+
+function PeriodSelector({ startDate, endDate, onPeriodChange }: PeriodSelectorProps) {
+  const [preset, setPreset] = useState("this_month");
+
+  const handlePresetChange = (value: string) => {
+    setPreset(value);
+    const now = new Date();
+    
+    switch (value) {
+      case "this_month":
+        onPeriodChange(startOfMonth(now), endOfMonth(now));
+        break;
+      case "last_month":
+        const lastMonth = subMonths(now, 1);
+        onPeriodChange(startOfMonth(lastMonth), endOfMonth(lastMonth));
+        break;
+      case "last_3_months":
+        onPeriodChange(startOfMonth(subMonths(now, 2)), endOfMonth(now));
+        break;
+      // custom handled separately
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2" data-testid="period-selector">
+      <Select value={preset} onValueChange={handlePresetChange}>
+        <SelectTrigger className="w-40" data-testid="select-period-preset">
+          <SelectValue placeholder="Select period" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="this_month">This Month</SelectItem>
+          <SelectItem value="last_month">Last Month</SelectItem>
+          <SelectItem value="last_3_months">Last 3 Months</SelectItem>
+          <SelectItem value="custom">Custom Range</SelectItem>
+        </SelectContent>
+      </Select>
+      
+      {preset === "custom" && (
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2" data-testid="button-start-date">
+                <CalendarIcon className="h-4 w-4" />
+                {format(startDate, "dd/MM/yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar mode="single" selected={startDate} onSelect={(d) => d && onPeriodChange(d, endDate)} />
+            </PopoverContent>
+          </Popover>
+          <span className="text-muted-foreground">to</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2" data-testid="button-end-date">
+                <CalendarIcon className="h-4 w-4" />
+                {format(endDate, "dd/MM/yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar mode="single" selected={endDate} onSelect={(d) => d && onPeriodChange(startDate, d)} />
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
+    </div>
+  );
+}`,
+    note: "Use for invoice generation, SOA requests, and usage reports. Presets speed up common selections."
+  },
+  {
+    id: "sync-status-indicator",
+    name: "Sync Status Indicator",
+    category: "billing",
+    badge: "Billing",
+    badgeVariant: "default" as const,
+    description: "Shows ConnexCS sync health with last sync time, status, and manual trigger button. Used in admin dashboard.",
+    code: `// Sync Status Indicator - ConnexCS sync health
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Clock } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+interface SyncStatus {
+  service: string;
+  lastSync: Date | null;
+  status: "synced" | "syncing" | "error" | "stale";
+  recordsProcessed?: number;
+  errorMessage?: string;
+}
+
+function SyncStatusIndicator({ syncs, onManualSync, isSyncing }: { 
+  syncs: SyncStatus[]; 
+  onManualSync: () => void; 
+  isSyncing: boolean;
+}) {
+  const getStatusIcon = (status: SyncStatus["status"]) => {
+    switch (status) {
+      case "synced": return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "syncing": return <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />;
+      case "error": return <XCircle className="h-4 w-4 text-red-500" />;
+      case "stale": return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+    }
+  };
+
+  const getStatusBadge = (status: SyncStatus["status"]) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      synced: "secondary",
+      syncing: "default",
+      error: "destructive",
+      stale: "outline",
+    };
+    return <Badge variant={variants[status]}>{status}</Badge>;
+  };
+
+  return (
+    <Card data-testid="card-sync-status">
+      <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+        <CardTitle className="text-sm font-medium">ConnexCS Sync Status</CardTitle>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={onManualSync} 
+          disabled={isSyncing}
+          data-testid="button-manual-sync"
+        >
+          <RefreshCw className={\`h-4 w-4 mr-2 \${isSyncing ? "animate-spin" : ""}\`} />
+          Sync Now
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {syncs.map((sync) => (
+          <div key={sync.service} className="flex items-center justify-between gap-4" data-testid={\`sync-row-\${sync.service}\`}>
+            <div className="flex items-center gap-2">
+              {getStatusIcon(sync.status)}
+              <span className="font-medium">{sync.service}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {sync.lastSync && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatDistanceToNow(sync.lastSync, { addSuffix: true })}
+                </span>
+              )}
+              {getStatusBadge(sync.status)}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}`,
+    note: "Shows sync health for CDRs, customers, balances, rate cards. Include manual sync trigger for admin control."
   },
 ];
 

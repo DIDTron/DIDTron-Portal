@@ -80,12 +80,20 @@ export const sectionConfigs: Record<string, SectionConfig> = {
   billing: {
     title: "Billing & Payments",
     items: [
-      { id: "invoices", label: "Invoices", route: "/admin/invoices", icon: FileText },
+      { id: "billing-overview", label: "Overview", route: "/admin/billing", icon: LayoutDashboard },
+      { id: "billing-customers", label: "Customer Billing", route: "/admin/billing/customers", icon: Users },
+      { id: "invoices", label: "Invoices", route: "/admin/billing/invoices", icon: FileText },
+      { id: "credit-notes", label: "Credit Notes", route: "/admin/billing/credit-notes", icon: FileText },
+      { id: "soa", label: "Statements (SOA)", route: "/admin/billing/soa", icon: FileText },
+      { id: "netting", label: "Netting", route: "/admin/billing/netting", icon: Link2 },
+      { id: "supplier-audit", label: "Supplier Audit", route: "/admin/billing/supplier-audit", icon: Shield },
+      { id: "billing-templates", label: "Templates", route: "/admin/billing/templates", icon: Palette },
       { id: "payments", label: "Payments", route: "/admin/payments", icon: CreditCard },
       { id: "currencies", label: "Currencies", route: "/admin/currencies", icon: Globe },
       { id: "referrals", label: "Referrals", route: "/admin/referrals", icon: Users },
       { id: "promo-codes", label: "Promo Codes", route: "/admin/promo-codes", icon: Gift },
       { id: "bonuses", label: "Bonuses", route: "/admin/bonuses", icon: Gift },
+      { id: "sync-status", label: "Sync Status", route: "/admin/billing/sync-status", icon: Server },
     ],
   },
   marketing: {
