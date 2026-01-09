@@ -27,6 +27,15 @@ interface ActivityEvent {
 
 export default function LiveActivityPage() {
   const [isPaused, setIsPaused] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    // Simulate refresh for mock data
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setIsRefreshing(false);
+  };
+
   const [activeCalls, setActiveCalls] = useState<LiveCall[]>([
     {
       id: "1",
@@ -88,7 +97,7 @@ export default function LiveActivityPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Live Activity</h1>
-          <p className="text-muted-foreground">Real-time platform activity monitoring</p>
+          <p className="text-muted-foreground">Platform activity monitoring (Demo)</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -108,8 +117,13 @@ export default function LiveActivityPage() {
               </>
             )}
           </Button>
-          <Button variant="outline" data-testid="button-refresh">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            data-testid="button-refresh"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>

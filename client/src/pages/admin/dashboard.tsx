@@ -7,58 +7,97 @@ import {
   Building2, Route, Phone, Sparkles, RefreshCw, ArrowUpRight, TrendingUp, Clock
 } from "lucide-react";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
+import { queryClient } from "@/lib/queryClient";
+import { useState } from "react";
 import type { CustomerCategory, CustomerGroup, Carrier, Pop, Route as RouteType, DidCountry, VoiceTier, Customer, Invoice, Payment, PromoCode, Referral } from "@shared/schema";
 
 export default function AdminDashboard() {
   const { openTab, setActiveSection, setActiveSubItem } = useSuperAdminTabs();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { data: categories } = useQuery<CustomerCategory[]>({
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+
+  const { data: categories, isFetching: categoriesFetching, refetch: refetchCategories } = useQuery<CustomerCategory[]>({
     queryKey: ["/api/categories"],
   });
 
-  const { data: carriers } = useQuery<Carrier[]>({
+  const { data: carriers, isFetching: carriersFetching, refetch: refetchCarriers } = useQuery<Carrier[]>({
     queryKey: ["/api/carriers"],
   });
 
-  const { data: pops } = useQuery<Pop[]>({
+  const { data: pops, isFetching: popsFetching, refetch: refetchPops } = useQuery<Pop[]>({
     queryKey: ["/api/pops"],
   });
 
-  const { data: routes } = useQuery<RouteType[]>({
+  const { data: routes, isFetching: routesFetching, refetch: refetchRoutes } = useQuery<RouteType[]>({
     queryKey: ["/api/routes"],
   });
 
-  const { data: didCountries } = useQuery<DidCountry[]>({
+  const { data: didCountries, isFetching: didFetching, refetch: refetchDids } = useQuery<DidCountry[]>({
     queryKey: ["/api/did-countries"],
   });
 
-  const { data: voiceTiers } = useQuery<VoiceTier[]>({
+  const { data: voiceTiers, isFetching: tiersFetching, refetch: refetchTiers } = useQuery<VoiceTier[]>({
     queryKey: ["/api/voice-tiers"],
   });
 
-  const { data: customers } = useQuery<Customer[]>({
+  const { data: customers, isFetching: customersFetching, refetch: refetchCustomers } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
   });
 
-  const { data: groups } = useQuery<CustomerGroup[]>({
+  const { data: groups, isFetching: groupsFetching, refetch: refetchGroups } = useQuery<CustomerGroup[]>({
     queryKey: ["/api/groups"],
   });
 
-  const { data: invoices } = useQuery<Invoice[]>({
+  const { data: invoices, isFetching: invoicesFetching, refetch: refetchInvoices } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
   });
 
-  const { data: payments } = useQuery<Payment[]>({
+  const { data: payments, isFetching: paymentsFetching, refetch: refetchPayments } = useQuery<Payment[]>({
     queryKey: ["/api/payments"],
   });
 
-  const { data: promoCodes } = useQuery<PromoCode[]>({
+  const { data: promoCodes, isFetching: promoFetching, refetch: refetchPromos } = useQuery<PromoCode[]>({
     queryKey: ["/api/promo-codes"],
   });
 
-  const { data: referrals } = useQuery<Referral[]>({
+  const { data: referrals, isFetching: referralsFetching, refetch: refetchReferrals } = useQuery<Referral[]>({
     queryKey: ["/api/referrals"],
   });
+
+  const isAnyFetching = isRefreshing || categoriesFetching || carriersFetching || popsFetching || 
+    routesFetching || didFetching || tiersFetching || customersFetching || groupsFetching || 
+    invoicesFetching || paymentsFetching || promoFetching || referralsFetching;
+
+  const handleSyncAll = async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      refetchCategories(),
+      refetchCarriers(),
+      refetchPops(),
+      refetchRoutes(),
+      refetchDids(),
+      refetchTiers(),
+      refetchCustomers(),
+      refetchGroups(),
+      refetchInvoices(),
+      refetchPayments(),
+      refetchPromos(),
+      refetchReferrals(),
+    ]);
+    setLastSyncTime(new Date());
+    setIsRefreshing(false);
+  };
+
+  const formatLastSync = () => {
+    if (!lastSyncTime) return "Not synced yet";
+    const seconds = Math.floor((Date.now() - lastSyncTime.getTime()) / 1000);
+    if (seconds < 60) return "Just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ago`;
+  };
 
   const handleQuickAction = (section: string, subItem: string, label: string, route: string) => {
     setActiveSection(section);
@@ -81,10 +120,16 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="gap-1">
             <Clock className="h-3 w-3" />
-            Last sync: 2 min ago
+            Last sync: {formatLastSync()}
           </Badge>
-          <Button variant="outline" size="sm" data-testid="button-refresh-all">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSyncAll}
+            disabled={isAnyFetching}
+            data-testid="button-refresh-all"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isAnyFetching ? "animate-spin" : ""}`} />
             Sync All
           </Button>
         </div>

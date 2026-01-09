@@ -18,6 +18,14 @@ interface MetricCard {
 
 export default function MetricsPage() {
   const [timeRange, setTimeRange] = useState("24h");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    // Simulate refresh for mock data
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setIsRefreshing(false);
+  };
 
   const metrics: MetricCard[] = [
     { title: "Total Calls", value: "12,456", change: 8.2, icon: Phone, trend: "up" },
@@ -41,7 +49,7 @@ export default function MetricsPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Platform Metrics</h1>
-          <p className="text-muted-foreground">Real-time analytics and performance data</p>
+          <p className="text-muted-foreground">Analytics and performance data (Demo)</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -55,8 +63,13 @@ export default function MetricsPage() {
               <SelectItem value="30d">Last 30 Days</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" data-testid="button-refresh-metrics">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            data-testid="button-refresh-metrics"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>

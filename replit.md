@@ -59,6 +59,60 @@ The platform uses a VitalPBX-like layout with a double sidebar, two headers, a f
 ### Technical Implementations
 Key features include billing, referral system, promo codes, email communications, AI-powered social media management, support tickets, webhooks, API, CMS, white-labeling, audit/compliance, and multi-currency support. VoIP products include Voice Termination, DIDs, Cloud PBX, AI Voice Agents, a Class 4 Softswitch, and a SIP Tester module with monitoring and alerts. An automated Testing Engine, a metadata-driven system, enables comprehensive testing of modules, pages, and features across various levels. All data modification operations must go through a job queue for auditing. All user actions in the Super Admin portal are logged, and deleted records are soft-deleted with configurable retention.
 
+## CRITICAL: Data Refresh Patterns (MANDATORY FOR ALL DATA-DRIVEN PAGES)
+
+**All pages with refresh buttons or auto-refresh must follow these patterns:**
+
+### Refresh Button Pattern
+```tsx
+// 1. Get refetch and isFetching from useQuery
+const { data, isFetching, refetch } = useQuery<DataType>({
+  queryKey: ["/api/endpoint"],
+});
+
+// 2. Refresh button uses refetch() directly, spinner uses isFetching
+<Button
+  variant="outline"
+  size="icon"
+  onClick={() => refetch()}
+  disabled={isFetching}
+  data-testid="button-refresh"
+>
+  <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+</Button>
+```
+
+### Auto-Refresh Pattern
+```tsx
+const [autoRefresh, setAutoRefresh] = useState(false);
+
+const { data, isFetching, refetch } = useQuery<DataType>({
+  queryKey: ["/api/endpoint"],
+  refetchInterval: autoRefresh ? 30000 : false, // Refresh every 30s when enabled
+});
+
+// Spinner ONLY when actually fetching - NEVER based on autoRefresh alone
+<RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+```
+
+### Multiple Queries Pattern
+```tsx
+// Track isFetching from all queries
+const { data: data1, isFetching: fetching1 } = useQuery(...);
+const { data: data2, isFetching: fetching2 } = useQuery(...);
+
+const isAnyFetching = fetching1 || fetching2;
+
+// Use combined state for spinner
+<RefreshCw className={`h-4 w-4 ${isAnyFetching ? "animate-spin" : ""}`} />
+```
+
+**Key Rules:**
+1. NEVER spin the refresh icon when `autoRefresh` is true - only when `isFetching` is true
+2. ALWAYS use `refetch()` for refresh buttons (not just `invalidateQueries`)
+3. ALWAYS use `isFetching` (not `isLoading`) - `isLoading` is only true on first load
+4. For multiple queries, combine all `isFetching` states with OR
+
 ### System Design
 The backend uses PostgreSQL and Drizzle ORM, with a robust job queue system for background processing, supporting 24 job types across categories like Rate Cards, DID Management, and Billing. The frontend uses Zustand for state management. All new features require testing with fake super admin actions, with results logged in the "Dev Tests" module.
 
