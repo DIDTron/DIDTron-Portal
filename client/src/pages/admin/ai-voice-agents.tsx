@@ -615,7 +615,8 @@ export default function AiVoiceAgentsPage() {
                           variant="ghost"
                           data-testid={`button-toggle-${agent.id}`}
                           onClick={() => handleToggleStatus(agent)}
-                          title={agent.status === "active" ? "Pause" : "Activate"}
+                          aria-label={agent.status === "active" ? "Pause" : "Start"}
+                          title={agent.status === "active" ? "Pause" : "Start"}
                         >
                           {agent.status === "active" ? (
                             <Pause className="w-4 h-4" />
@@ -628,6 +629,8 @@ export default function AiVoiceAgentsPage() {
                           variant="ghost"
                           data-testid={`button-edit-${agent.id}`}
                           onClick={() => handleEdit(agent)}
+                          aria-label="Edit"
+                          title="Edit"
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
@@ -637,6 +640,8 @@ export default function AiVoiceAgentsPage() {
                           data-testid={`button-delete-${agent.id}`}
                           onClick={() => handleDelete(agent.id)}
                           disabled={deleteMutation.isPending}
+                          aria-label="Delete"
+                          title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

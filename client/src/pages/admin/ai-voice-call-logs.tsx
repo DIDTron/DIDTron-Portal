@@ -306,6 +306,8 @@ export default function AiVoiceCallLogsPage() {
                       <Button
                         size="icon"
                         variant="ghost"
+                        aria-label="View details"
+                        title="View details"
                         data-testid={`button-view-call-${log.id}`}
                         onClick={() => setSelectedCall(log)}
                       >

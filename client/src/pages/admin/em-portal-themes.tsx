@@ -298,6 +298,8 @@ export default function EMPortalThemesPage() {
                 size="icon"
                 onClick={() => setPreviewMode("desktop")}
                 data-testid="button-preview-desktop"
+                aria-label="Desktop preview"
+                title="Desktop preview"
               >
                 <Monitor className="h-4 w-4" />
               </Button>
@@ -306,10 +308,12 @@ export default function EMPortalThemesPage() {
                 size="icon"
                 onClick={() => setPreviewMode("mobile")}
                 data-testid="button-preview-mobile"
+                aria-label="Mobile preview"
+                title="Mobile preview"
               >
                 <Smartphone className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" data-testid="button-refresh-preview">
+              <Button variant="outline" size="icon" data-testid="button-refresh-preview" aria-label="Refresh preview" title="Refresh preview">
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>

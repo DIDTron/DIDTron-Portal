@@ -339,7 +339,7 @@ export default function CarriersPage() {
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-4 p-4 border-b bg-muted/30">
-          <Button variant="ghost" size="icon" onClick={handleCancel} data-testid="button-back">
+          <Button variant="ghost" size="icon" onClick={handleCancel} aria-label="Go back" title="Go back" data-testid="button-back">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
@@ -898,6 +898,8 @@ export default function CarriersPage() {
                               variant="ghost" 
                               onClick={() => syncCarrierMutation.mutate(carrier.id)}
                               disabled={syncCarrierMutation.isPending}
+                              aria-label="Sync to Platform"
+                              title="Sync to Platform"
                               data-testid={`button-sync-carrier-${carrier.id}`}
                             >
                               <RefreshCw className={`h-4 w-4 ${syncCarrierMutation.isPending ? 'animate-spin' : ''}`} />
@@ -912,6 +914,8 @@ export default function CarriersPage() {
                               variant="ghost" 
                               onClick={() => analyzeCarrierMutation.mutate(carrier)}
                               disabled={analyzeCarrierMutation.isPending}
+                              aria-label="AI Analysis"
+                              title="AI Analysis"
                               data-testid={`button-analyze-carrier-${carrier.id}`}
                             >
                               <Sparkles className="h-4 w-4" />
@@ -919,13 +923,15 @@ export default function CarriersPage() {
                           </TooltipTrigger>
                           <TooltipContent>AI Analysis</TooltipContent>
                         </Tooltip>
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(carrier)} data-testid={`button-edit-carrier-${carrier.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(carrier)} aria-label="Edit" title="Edit" data-testid={`button-edit-carrier-${carrier.id}`}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
                           onClick={() => deleteMutation.mutate(carrier.id)} 
+                          aria-label="Delete"
+                          title="Delete"
                           data-testid={`button-delete-carrier-${carrier.id}`}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -966,7 +972,7 @@ export default function CarriersPage() {
               <Sparkles className="h-5 w-5" />
               AI Carrier Analysis
             </CardTitle>
-            <Button size="icon" variant="ghost" onClick={() => setShowAnalysis(null)}>
+            <Button size="icon" variant="ghost" onClick={() => setShowAnalysis(null)} aria-label="Close analysis" title="Close analysis">
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>

@@ -262,6 +262,8 @@ export default function DevTestsPage() {
                           size="icon"
                           onClick={() => viewDetails(test)}
                           data-testid={`button-view-${test.id}`}
+                          aria-label="View details"
+                          title="View details"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -271,6 +273,8 @@ export default function DevTestsPage() {
                           onClick={() => deleteMutation.mutate(test.id)}
                           disabled={deleteMutation.isPending}
                           data-testid={`button-delete-${test.id}`}
+                          aria-label="Delete"
+                          title="Delete"
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>

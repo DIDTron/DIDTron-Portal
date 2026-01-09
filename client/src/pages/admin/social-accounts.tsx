@@ -306,6 +306,8 @@ export default function SocialAccountsPage() {
                           variant="ghost"
                           onClick={() => handleEdit(account)}
                           data-testid={`button-edit-${account.id}`}
+                          aria-label="Edit account"
+                          title="Edit account"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -314,6 +316,8 @@ export default function SocialAccountsPage() {
                           variant="ghost"
                           onClick={() => deleteMutation.mutate(account.id)}
                           data-testid={`button-delete-${account.id}`}
+                          aria-label="Delete account"
+                          title="Delete account"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

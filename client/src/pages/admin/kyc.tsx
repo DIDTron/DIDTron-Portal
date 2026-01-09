@@ -258,6 +258,8 @@ export default function KycPage() {
                                 setShowReviewDialog(true);
                               }}
                               data-testid={`button-review-kyc-${kyc.id}`}
+                              aria-label="Review"
+                              title="Review"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -269,6 +271,8 @@ export default function KycPage() {
                                   onClick={() => approveKyc.mutate(kyc.id)}
                                   disabled={approveKyc.isPending}
                                   data-testid={`button-approve-kyc-${kyc.id}`}
+                                  aria-label="Approve"
+                                  title="Approve"
                                 >
                                   <ThumbsUp className="h-4 w-4 text-green-600" />
                                 </Button>
@@ -280,6 +284,8 @@ export default function KycPage() {
                                     setShowReviewDialog(true);
                                   }}
                                   data-testid={`button-reject-kyc-${kyc.id}`}
+                                  aria-label="Reject"
+                                  title="Reject"
                                 >
                                   <ThumbsDown className="h-4 w-4 text-red-600" />
                                 </Button>

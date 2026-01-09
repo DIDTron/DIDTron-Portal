@@ -365,6 +365,8 @@ export default function TicketsPage() {
                           variant="ghost"
                           onClick={() => handleEdit(ticket)}
                           data-testid={`button-edit-ticket-${ticket.id}`}
+                          aria-label="Edit ticket"
+                          title="Edit ticket"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -374,6 +376,8 @@ export default function TicketsPage() {
                           onClick={() => deleteMutation.mutate(ticket.id)}
                           disabled={deleteMutation.isPending}
                           data-testid={`button-delete-ticket-${ticket.id}`}
+                          aria-label="Delete ticket"
+                          title="Delete ticket"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

@@ -325,6 +325,8 @@ export default function GroupsPage() {
                             size="icon"
                             variant="ghost"
                             onClick={() => handleEdit(group)}
+                            aria-label="Edit"
+                            title="Edit"
                             data-testid={`button-edit-group-${group.id}`}
                           >
                             <Pencil className="h-4 w-4" />
@@ -334,6 +336,8 @@ export default function GroupsPage() {
                             variant="ghost"
                             onClick={() => deleteMutation.mutate(group.id)}
                             disabled={deleteMutation.isPending}
+                            aria-label="Delete"
+                            title="Delete"
                             data-testid={`button-delete-group-${group.id}`}
                           >
                             <Trash2 className="h-4 w-4" />

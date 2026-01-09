@@ -357,6 +357,7 @@ export default function CdrsPage() {
                             onClick={() => setSelectedCdr(cdr)}
                             data-testid={`button-view-cdr-${cdr.id}`}
                             aria-label="View call details"
+                            title="View call details"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>

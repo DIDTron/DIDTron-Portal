@@ -570,6 +570,8 @@ function HistoryPage() {
                         variant="ghost"
                         onClick={() => toggleExpanded(test.id)}
                         data-testid={`button-expand-${test.id}`}
+                        aria-label={expandedTests.has(test.id) ? "Collapse" : "Expand"}
+                        title={expandedTests.has(test.id) ? "Collapse" : "Expand"}
                       >
                         {expandedTests.has(test.id) ? (
                           <ChevronDown className="h-4 w-4" />
@@ -618,6 +620,8 @@ function HistoryPage() {
                           variant="ghost"
                           onClick={() => copyShareLink(test.id)}
                           data-testid={`button-share-${test.id}`}
+                          aria-label="Copy link"
+                          title="Copy link"
                         >
                           <Link className="h-4 w-4" />
                         </Button>
@@ -625,6 +629,8 @@ function HistoryPage() {
                           size="icon" 
                           variant="ghost"
                           data-testid={`button-repeat-${test.id}`}
+                          aria-label="Repeat test"
+                          title="Repeat test"
                         >
                           <RefreshCw className="h-4 w-4" />
                         </Button>
@@ -932,7 +938,7 @@ function ProfilesTab() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button size="icon" variant="ghost" data-testid={`button-edit-profile-${profile.id}`}>
+                      <Button size="icon" variant="ghost" data-testid={`button-edit-profile-${profile.id}`} aria-label="Edit" title="Edit">
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
@@ -940,6 +946,8 @@ function ProfilesTab() {
                         variant="ghost"
                         onClick={() => deleteProfile.mutate(profile.id)}
                         data-testid={`button-delete-profile-${profile.id}`}
+                        aria-label="Delete"
+                        title="Delete"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -1152,7 +1160,7 @@ function SuppliersTab() {
                   <TableCell className="text-right">
                     {!supplier.isOurTier && (
                       <div className="flex items-center justify-end gap-2">
-                        <Button size="icon" variant="ghost" data-testid={`button-edit-supplier-${supplier.id}`}>
+                        <Button size="icon" variant="ghost" data-testid={`button-edit-supplier-${supplier.id}`} aria-label="Edit" title="Edit">
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -1160,6 +1168,8 @@ function SuppliersTab() {
                           variant="ghost"
                           onClick={() => deleteSupplier.mutate(supplier.id)}
                           data-testid={`button-delete-supplier-${supplier.id}`}
+                          aria-label="Delete"
+                          title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -1332,7 +1342,7 @@ function AudiosTab() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button size="icon" variant="ghost" data-testid={`button-edit-audio-${audio.id}`}>
+                      <Button size="icon" variant="ghost" data-testid={`button-edit-audio-${audio.id}`} aria-label="Edit" title="Edit">
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
@@ -1340,6 +1350,8 @@ function AudiosTab() {
                         variant="ghost"
                         onClick={() => deleteAudio.mutate(audio.id)}
                         data-testid={`button-delete-audio-${audio.id}`}
+                        aria-label="Delete"
+                        title="Delete"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

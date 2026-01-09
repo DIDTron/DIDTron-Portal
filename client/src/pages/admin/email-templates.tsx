@@ -441,6 +441,8 @@ export default function EmailTemplatesPage() {
                           variant="ghost"
                           onClick={() => handlePreview(template)}
                           data-testid={`button-preview-template-${template.id}`}
+                          aria-label="Preview"
+                          title="Preview"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -449,6 +451,8 @@ export default function EmailTemplatesPage() {
                           variant="ghost"
                           onClick={() => handleSendTest(template)}
                           data-testid={`button-test-template-${template.id}`}
+                          aria-label="Send test email"
+                          title="Send test email"
                         >
                           <Send className="h-4 w-4" />
                         </Button>
@@ -457,6 +461,8 @@ export default function EmailTemplatesPage() {
                           variant="ghost"
                           onClick={() => handleEdit(template)}
                           data-testid={`button-edit-template-${template.id}`}
+                          aria-label="Edit"
+                          title="Edit"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -466,6 +472,8 @@ export default function EmailTemplatesPage() {
                           onClick={() => deleteMutation.mutate(template.id)}
                           disabled={deleteMutation.isPending}
                           data-testid={`button-delete-template-${template.id}`}
+                          aria-label="Delete"
+                          title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

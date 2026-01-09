@@ -324,6 +324,8 @@ export default function PromoCodesPage() {
                             variant="ghost"
                             onClick={() => handleEdit(promo)}
                             data-testid={`button-edit-promo-${promo.id}`}
+                            aria-label="Edit promo code"
+                            title="Edit promo code"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -333,6 +335,8 @@ export default function PromoCodesPage() {
                             onClick={() => deleteMutation.mutate(promo.id)}
                             disabled={deleteMutation.isPending}
                             data-testid={`button-delete-promo-${promo.id}`}
+                            aria-label="Delete promo code"
+                            title="Delete promo code"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

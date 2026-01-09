@@ -443,6 +443,8 @@ export default function CustomersPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEdit(customer)}
+                            aria-label="Edit"
+                            title="Edit"
                             data-testid={`button-edit-${customer.id}`}
                           >
                             <Pencil className="h-4 w-4" />
@@ -455,6 +457,8 @@ export default function CustomersPage() {
                                 deleteMutation.mutate(customer.id);
                               }
                             }}
+                            aria-label="Delete"
+                            title="Delete"
                             data-testid={`button-delete-${customer.id}`}
                           >
                             <Trash2 className="h-4 w-4" />

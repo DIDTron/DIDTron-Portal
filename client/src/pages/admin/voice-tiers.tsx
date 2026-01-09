@@ -237,10 +237,10 @@ export default function VoiceTiersPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(tier)} data-testid={`button-edit-tier-${tier.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(tier)} data-testid={`button-edit-tier-${tier.id}`} aria-label="Edit tier" title="Edit tier">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(tier.id)} data-testid={`button-delete-tier-${tier.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(tier.id)} data-testid={`button-delete-tier-${tier.id}`} aria-label="Delete tier" title="Delete tier">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

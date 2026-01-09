@@ -504,6 +504,8 @@ export default function DocumentationPage() {
                               variant="ghost"
                               data-testid={`button-edit-article-${art.id}`}
                               onClick={() => handleEditArticle(art)}
+                              aria-label="Edit"
+                              title="Edit"
                             >
                               <Pencil className="w-4 h-4" />
                             </Button>
@@ -513,6 +515,8 @@ export default function DocumentationPage() {
                               data-testid={`button-delete-article-${art.id}`}
                               onClick={() => handleDeleteArticle(art.id)}
                               disabled={deleteArtMutation.isPending}
+                              aria-label="Delete"
+                              title="Delete"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -682,6 +686,8 @@ export default function DocumentationPage() {
                                 variant="ghost"
                                 data-testid={`button-edit-category-${cat.id}`}
                                 onClick={() => handleEditCategory(cat)}
+                                aria-label="Edit"
+                                title="Edit"
                               >
                                 <Pencil className="w-4 h-4" />
                               </Button>
@@ -691,6 +697,8 @@ export default function DocumentationPage() {
                                 data-testid={`button-delete-category-${cat.id}`}
                                 onClick={() => handleDeleteCategory(cat.id)}
                                 disabled={deleteCatMutation.isPending}
+                                aria-label="Delete"
+                                title="Delete"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>

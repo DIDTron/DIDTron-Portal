@@ -244,6 +244,8 @@ export default function JobQueuePage() {
                 }}
                 disabled={retryJob.isPending}
                 data-testid={`retry-job-${job.id}`}
+                aria-label="Retry"
+                title="Retry"
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
@@ -258,6 +260,8 @@ export default function JobQueuePage() {
                 }}
                 disabled={cancelJob.isPending}
                 data-testid={`cancel-job-${job.id}`}
+                aria-label="Cancel"
+                title="Cancel"
               >
                 <Ban className="h-4 w-4" />
               </Button>
@@ -324,6 +328,8 @@ export default function JobQueuePage() {
                   toast({ title: "Refreshed", description: "Job queue data updated" });
                 }}
                 data-testid="button-refresh"
+                aria-label="Refresh"
+                title="Refresh"
               >
                 <RefreshCw className={`h-4 w-4 ${isRefreshing || autoRefresh ? "animate-spin" : ""}`} />
               </Button>

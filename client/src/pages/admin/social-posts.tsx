@@ -458,6 +458,8 @@ export default function SocialPostsPage() {
                           variant="ghost"
                           onClick={() => handleEdit(post)}
                           data-testid={`button-edit-${post.id}`}
+                          aria-label="Edit post"
+                          title="Edit post"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -466,6 +468,8 @@ export default function SocialPostsPage() {
                           variant="ghost"
                           onClick={() => deleteMutation.mutate(post.id)}
                           data-testid={`button-delete-${post.id}`}
+                          aria-label="Delete post"
+                          title="Delete post"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

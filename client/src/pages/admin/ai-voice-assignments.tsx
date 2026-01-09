@@ -380,6 +380,8 @@ export default function AiVoiceAssignmentsPage() {
                           size="icon"
                           onClick={() => handleEdit(assignment)}
                           data-testid={`button-edit-${assignment.id}`}
+                          aria-label="Edit"
+                          title="Edit"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -388,6 +390,8 @@ export default function AiVoiceAssignmentsPage() {
                           size="icon"
                           onClick={() => deleteMutation.mutate(assignment.id)}
                           data-testid={`button-delete-${assignment.id}`}
+                          aria-label="Delete"
+                          title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

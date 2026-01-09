@@ -312,6 +312,8 @@ export default function ReferralsPage() {
                             variant="ghost"
                             onClick={() => handleEdit(referral)}
                             data-testid={`button-edit-referral-${referral.id}`}
+                            aria-label="Edit referral"
+                            title="Edit referral"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -321,6 +323,8 @@ export default function ReferralsPage() {
                             onClick={() => deleteMutation.mutate(referral.id)}
                             disabled={deleteMutation.isPending}
                             data-testid={`button-delete-referral-${referral.id}`}
+                            aria-label="Delete referral"
+                            title="Delete referral"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

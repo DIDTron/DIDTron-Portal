@@ -343,6 +343,8 @@ export default function PaymentsPage() {
                             variant="ghost"
                             onClick={() => handleEdit(payment)}
                             data-testid={`button-edit-payment-${payment.id}`}
+                            aria-label="Edit payment"
+                            title="Edit payment"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -352,6 +354,8 @@ export default function PaymentsPage() {
                             onClick={() => deleteMutation.mutate(payment.id)}
                             disabled={deleteMutation.isPending}
                             data-testid={`button-delete-payment-${payment.id}`}
+                            aria-label="Delete payment"
+                            title="Delete payment"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

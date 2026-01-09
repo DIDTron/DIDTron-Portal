@@ -417,6 +417,8 @@ export default function AiVoiceCampaignsPage() {
                           <Button
                             size="icon"
                             variant="ghost"
+                            aria-label="Pause"
+                            title="Pause"
                             data-testid={`button-pause-${campaign.id}`}
                             onClick={() => pauseMutation.mutate(campaign.id)}
                             disabled={pauseMutation.isPending}
@@ -427,6 +429,8 @@ export default function AiVoiceCampaignsPage() {
                           <Button
                             size="icon"
                             variant="ghost"
+                            aria-label="Start"
+                            title="Start"
                             data-testid={`button-start-${campaign.id}`}
                             onClick={() => startMutation.mutate(campaign.id)}
                             disabled={startMutation.isPending}
@@ -437,6 +441,8 @@ export default function AiVoiceCampaignsPage() {
                         <Button
                           size="icon"
                           variant="ghost"
+                          aria-label="Delete"
+                          title="Delete"
                           data-testid={`button-delete-campaign-${campaign.id}`}
                           onClick={() => {
                             if (confirm("Delete this campaign?")) {

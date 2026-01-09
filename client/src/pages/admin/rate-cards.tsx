@@ -272,6 +272,8 @@ function CustomerRatesPage() {
             size="icon"
             onClick={() => setViewMode("list")}
             data-testid="button-back-list"
+            aria-label="Go back"
+            title="Go back"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -453,6 +455,8 @@ function CustomerRatesPage() {
             size="icon"
             onClick={() => setViewMode("list")}
             data-testid="button-back-list"
+            aria-label="Go back"
+            title="Go back"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -477,7 +481,7 @@ function CustomerRatesPage() {
                   data-testid="input-search-rates"
                 />
               </div>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" aria-label="Filter" title="Filter">
                 <Filter className="h-4 w-4" />
               </Button>
             </div>
@@ -515,6 +519,8 @@ function CustomerRatesPage() {
             size="icon"
             onClick={() => setViewMode("list")}
             data-testid="button-back-list"
+            aria-label="Go back"
+            title="Go back"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -553,7 +559,7 @@ function CustomerRatesPage() {
                   <TableCell>All</TableCell>
                   <TableCell><Badge variant="default" className="bg-green-600">Active</Badge></TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" aria-label="More options" title="More options">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -565,7 +571,7 @@ function CustomerRatesPage() {
                   <TableCell>Per Minute</TableCell>
                   <TableCell><Badge variant="default" className="bg-green-600">Active</Badge></TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" aria-label="More options" title="More options">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -577,7 +583,7 @@ function CustomerRatesPage() {
                   <TableCell>All</TableCell>
                   <TableCell><Badge variant="default" className="bg-green-600">Active</Badge></TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" aria-label="More options" title="More options">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -671,7 +677,7 @@ function CustomerRatesPage() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" data-testid={`button-actions-${card.id}`}>
+                        <Button variant="ghost" size="icon" data-testid={`button-actions-${card.id}`} aria-label="More actions" title="More actions">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -861,6 +867,8 @@ function CarrierRatesPage() {
             size="icon"
             onClick={() => setViewMode("list")}
             data-testid="button-back-list"
+            aria-label="Go back"
+            title="Go back"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -1042,6 +1050,8 @@ function CarrierRatesPage() {
             size="icon"
             onClick={() => setViewMode("list")}
             data-testid="button-back-list"
+            aria-label="Go back"
+            title="Go back"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -1070,7 +1080,7 @@ function CarrierRatesPage() {
                   data-testid="input-search-carrier-rates"
                 />
               </div>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" aria-label="Filter" title="Filter">
                 <Filter className="h-4 w-4" />
               </Button>
             </div>
@@ -1209,7 +1219,7 @@ function CarrierRatesPage() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" data-testid={`button-carrier-actions-${card.id}`}>
+                        <Button variant="ghost" size="icon" data-testid={`button-carrier-actions-${card.id}`} aria-label="More actions" title="More actions">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>

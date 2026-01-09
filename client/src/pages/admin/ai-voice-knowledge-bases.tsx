@@ -351,19 +351,22 @@ export default function AiVoiceKnowledgeBasesPage() {
                           <Button
                             size="icon"
                             variant="ghost"
+                            aria-label="Start"
+                            title="Train"
                             data-testid={`button-train-${kb.id}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               trainMutation.mutate(kb.id);
                             }}
                             disabled={trainMutation.isPending}
-                            title="Train"
                           >
                             <Play className="w-4 h-4" />
                           </Button>
                           <Button
                             size="icon"
                             variant="ghost"
+                            aria-label="Delete"
+                            title="Delete"
                             data-testid={`button-delete-kb-${kb.id}`}
                             onClick={(e) => {
                               e.stopPropagation();

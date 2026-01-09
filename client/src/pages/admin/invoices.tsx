@@ -339,6 +339,8 @@ export default function InvoicesPage() {
                             variant="ghost"
                             onClick={() => handleEdit(invoice)}
                             data-testid={`button-edit-invoice-${invoice.id}`}
+                            aria-label="Edit invoice"
+                            title="Edit invoice"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -348,6 +350,8 @@ export default function InvoicesPage() {
                             onClick={() => deleteMutation.mutate(invoice.id)}
                             disabled={deleteMutation.isPending}
                             data-testid={`button-delete-invoice-${invoice.id}`}
+                            aria-label="Delete invoice"
+                            title="Delete invoice"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

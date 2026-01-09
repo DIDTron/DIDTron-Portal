@@ -299,6 +299,8 @@ export default function SettingsPage() {
                             size="icon"
                             variant="ghost"
                             onClick={() => setShowApiKey(showApiKey === key.id ? null : key.id)}
+                            aria-label={showApiKey === key.id ? "Hide" : "Show"}
+                            title={showApiKey === key.id ? "Hide" : "Show"}
                           >
                             {showApiKey === key.id ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
@@ -306,6 +308,8 @@ export default function SettingsPage() {
                             size="icon"
                             variant="ghost"
                             onClick={() => copyToClipboard(key.key)}
+                            aria-label="Copy"
+                            title="Copy"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -322,7 +326,7 @@ export default function SettingsPage() {
                         {key.lastUsed ? new Date(key.lastUsed).toLocaleString() : "Never"}
                       </TableCell>
                       <TableCell>
-                        <Button size="icon" variant="ghost">
+                        <Button size="icon" variant="ghost" aria-label="Delete" title="Delete">
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -430,7 +434,7 @@ export default function SettingsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost">
+                          <Button size="icon" variant="ghost" aria-label="Delete" title="Delete">
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>

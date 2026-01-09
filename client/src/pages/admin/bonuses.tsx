@@ -329,6 +329,8 @@ export default function BonusesPage() {
                             size="icon"
                             variant="ghost"
                             onClick={() => handleEdit(bonus)}
+                            aria-label="Edit"
+                            title="Edit"
                             data-testid={`button-edit-bonus-${bonus.id}`}
                           >
                             <Pencil className="h-4 w-4" />
@@ -338,6 +340,8 @@ export default function BonusesPage() {
                             variant="ghost"
                             onClick={() => deleteMutation.mutate(bonus.id)}
                             disabled={deleteMutation.isPending}
+                            aria-label="Delete"
+                            title="Delete"
                             data-testid={`button-delete-bonus-${bonus.id}`}
                           >
                             <Trash2 className="h-4 w-4" />

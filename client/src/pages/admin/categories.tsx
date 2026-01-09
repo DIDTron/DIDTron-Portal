@@ -336,6 +336,8 @@ export default function CategoriesPage() {
                           size="icon"
                           variant="ghost"
                           onClick={() => handleEdit(category)}
+                          aria-label="Edit"
+                          title="Edit"
                           data-testid={`button-edit-category-${category.id}`}
                         >
                           <Pencil className="h-4 w-4" />
@@ -345,6 +347,8 @@ export default function CategoriesPage() {
                           variant="ghost"
                           onClick={() => deleteMutation.mutate(category.id)}
                           disabled={deleteMutation.isPending}
+                          aria-label="Delete"
+                          title="Delete"
                           data-testid={`button-delete-category-${category.id}`}
                         >
                           <Trash2 className="h-4 w-4" />

@@ -157,7 +157,7 @@ export default function EMWhiteLabelPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <code className="text-xs bg-muted px-2 py-1 rounded">{brand.domain}</code>
-                          <Button size="icon" variant="ghost" className="h-6 w-6">
+                          <Button size="icon" variant="ghost" className="h-6 w-6" aria-label="Open in new tab" title="Open in new tab">
                             <ExternalLink className="h-3 w-3" />
                           </Button>
                         </div>
@@ -175,10 +175,10 @@ export default function EMWhiteLabelPage() {
                       <TableCell className="text-muted-foreground">{brand.createdAt}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button size="icon" variant="ghost" data-testid={`button-edit-${brand.id}`}>
+                          <Button size="icon" variant="ghost" data-testid={`button-edit-${brand.id}`} aria-label="Edit" title="Edit">
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" data-testid={`button-delete-${brand.id}`}>
+                          <Button size="icon" variant="ghost" data-testid={`button-delete-${brand.id}`} aria-label="Delete" title="Delete">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

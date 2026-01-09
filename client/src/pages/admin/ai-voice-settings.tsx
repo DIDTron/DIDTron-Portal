@@ -313,6 +313,8 @@ export default function AiVoiceSettingsPage() {
                             variant="ghost"
                             data-testid={`button-delete-webhook-${webhook.id}`}
                             onClick={() => deleteWebhookMutation.mutate(webhook.id)}
+                            aria-label="Delete"
+                            title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>

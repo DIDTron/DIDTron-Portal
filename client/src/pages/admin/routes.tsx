@@ -287,10 +287,10 @@ export default function RoutesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(route)} data-testid={`button-edit-route-${route.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(route)} data-testid={`button-edit-route-${route.id}`} aria-label="Edit route" title="Edit route">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(route.id)} data-testid={`button-delete-route-${route.id}`}>
+                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(route.id)} data-testid={`button-delete-route-${route.id}`} aria-label="Delete route" title="Delete route">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

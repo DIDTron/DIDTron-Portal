@@ -300,6 +300,8 @@ export default function RolesPage() {
                         variant="ghost"
                         onClick={() => handleEditRole(role)}
                         disabled={role.isSystem}
+                        aria-label="Edit role"
+                        title="Edit role"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -307,6 +309,8 @@ export default function RolesPage() {
                         size="icon"
                         variant="ghost"
                         disabled={role.isSystem}
+                        aria-label="Delete role"
+                        title="Delete role"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>

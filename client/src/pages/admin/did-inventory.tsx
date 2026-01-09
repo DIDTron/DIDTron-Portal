@@ -522,6 +522,8 @@ export default function DIDInventoryPage() {
                         <Button
                           size="icon"
                           variant="ghost"
+                          aria-label="Edit"
+                          title="Edit"
                           data-testid={`button-edit-${did.id}`}
                           onClick={() => handleEdit(did)}
                         >

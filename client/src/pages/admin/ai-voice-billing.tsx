@@ -444,6 +444,8 @@ export default function AiVoiceBillingPage() {
                           variant="ghost"
                           data-testid={`button-edit-tier-${tier.id}`}
                           onClick={() => handleEdit(tier)}
+                          aria-label="Edit"
+                          title="Edit"
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
@@ -457,6 +459,8 @@ export default function AiVoiceBillingPage() {
                             }
                           }}
                           disabled={tier.isDefault}
+                          aria-label="Delete"
+                          title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

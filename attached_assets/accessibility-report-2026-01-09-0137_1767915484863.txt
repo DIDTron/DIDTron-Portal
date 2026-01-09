@@ -1,0 +1,1859 @@
+======================================================================
+         ACCESSIBILITY ISSUES REPORT - WCAG 2.1 AA COMPLIANCE
+======================================================================
+
+Generated: Jan 9, 2026, 1:37:43 AM
+Test Run: E2E Test: All Modules
+Completed: Jan 9, 2026, 12:02:57 AM
+
+----------------------------------------------------------------------
+SUMMARY
+----------------------------------------------------------------------
+Total Issues: 184
+  - Critical: 50
+  - Serious: 134
+  - Moderate/Minor: 0
+Pages Affected: 66
+
+----------------------------------------------------------------------
+DETAILED ISSUES
+----------------------------------------------------------------------
+Issue #1
+  Severity: SERIOUS
+  Module: Dashboard
+  Page: Overview
+  Route: /admin
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 16
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #2
+  Severity: SERIOUS
+  Module: Dashboard
+  Page: Overview
+  Route: /admin
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #3
+  Severity: SERIOUS
+  Module: VoIP
+  Page: POPs
+  Route: /admin/pops
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #4
+  Severity: SERIOUS
+  Module: VoIP
+  Page: POPs
+  Route: /admin/pops
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #5
+  Severity: SERIOUS
+  Module: VoIP
+  Page: Voice Tiers
+  Route: /admin/voice-tiers
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #6
+  Severity: SERIOUS
+  Module: VoIP
+  Page: Voice Tiers
+  Route: /admin/voice-tiers
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #7
+  Severity: SERIOUS
+  Module: VoIP
+  Page: Codecs
+  Route: /admin/codecs
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #8
+  Severity: SERIOUS
+  Module: VoIP
+  Page: Codecs
+  Route: /admin/codecs
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #9
+  Severity: SERIOUS
+  Module: VoIP
+  Page: Channel Plans
+  Route: /admin/channel-plans
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #10
+  Severity: SERIOUS
+  Module: VoIP
+  Page: Channel Plans
+  Route: /admin/channel-plans
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #11
+  Severity: SERIOUS
+  Module: VoIP
+  Page: Routes
+  Route: /admin/routes
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #12
+  Severity: SERIOUS
+  Module: VoIP
+  Page: Routes
+  Route: /admin/routes
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #13
+  Severity: SERIOUS
+  Module: Carriers
+  Page: Carriers
+  Route: /admin/carriers
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 17
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #14
+  Severity: SERIOUS
+  Module: Carriers
+  Page: Carriers
+  Route: /admin/carriers
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 6
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #15
+  Severity: SERIOUS
+  Module: Rate Cards
+  Page: Customer Rates
+  Route: /admin/rate-cards/customer
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 18
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #16
+  Severity: CRITICAL
+  Module: Rate Cards
+  Page: Customer Rates
+  Route: /admin/rate-cards/customer
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 2
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #17
+  Severity: SERIOUS
+  Module: Rate Cards
+  Page: Customer Rates
+  Route: /admin/rate-cards/customer
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #18
+  Severity: CRITICAL
+  Module: Rate Cards
+  Page: Customer Rates
+  Route: /admin/rate-cards/customer
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #19
+  Severity: SERIOUS
+  Module: Rate Cards
+  Page: Carrier Rates
+  Route: /admin/rate-cards/carrier
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 18
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #20
+  Severity: CRITICAL
+  Module: Rate Cards
+  Page: Carrier Rates
+  Route: /admin/rate-cards/carrier
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #21
+  Severity: SERIOUS
+  Module: Rate Cards
+  Page: Carrier Rates
+  Route: /admin/rate-cards/carrier
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #22
+  Severity: SERIOUS
+  Module: DID
+  Page: DID Countries
+  Route: /admin/did-countries
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #23
+  Severity: SERIOUS
+  Module: DID
+  Page: DID Countries
+  Route: /admin/did-countries
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #24
+  Severity: SERIOUS
+  Module: DID
+  Page: DID Providers
+  Route: /admin/did-providers
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #25
+  Severity: SERIOUS
+  Module: DID
+  Page: DID Providers
+  Route: /admin/did-providers
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #26
+  Severity: SERIOUS
+  Module: DID
+  Page: DID Inventory
+  Route: /admin/did-inventory
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #27
+  Severity: CRITICAL
+  Module: DID
+  Page: DID Inventory
+  Route: /admin/did-inventory
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #28
+  Severity: SERIOUS
+  Module: DID
+  Page: DID Inventory
+  Route: /admin/did-inventory
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #29
+  Severity: SERIOUS
+  Module: Customers
+  Page: Customers
+  Route: /admin/customers
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #30
+  Severity: SERIOUS
+  Module: Customers
+  Page: Customers
+  Route: /admin/customers
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #31
+  Severity: SERIOUS
+  Module: Customers
+  Page: Categories
+  Route: /admin/categories
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #32
+  Severity: CRITICAL
+  Module: Customers
+  Page: Categories
+  Route: /admin/categories
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 9
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #33
+  Severity: SERIOUS
+  Module: Customers
+  Page: Categories
+  Route: /admin/categories
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 7
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #34
+  Severity: CRITICAL
+  Module: Customers
+  Page: Categories
+  Route: /admin/categories
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #35
+  Severity: SERIOUS
+  Module: Customers
+  Page: Groups
+  Route: /admin/groups
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #36
+  Severity: CRITICAL
+  Module: Customers
+  Page: Groups
+  Route: /admin/groups
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #37
+  Severity: SERIOUS
+  Module: Customers
+  Page: Groups
+  Route: /admin/groups
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 12
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #38
+  Severity: CRITICAL
+  Module: Customers
+  Page: Groups
+  Route: /admin/groups
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #39
+  Severity: SERIOUS
+  Module: Customers
+  Page: KYC Requests
+  Route: /admin/kyc
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #40
+  Severity: SERIOUS
+  Module: Customers
+  Page: KYC Requests
+  Route: /admin/kyc
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 6
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #41
+  Severity: SERIOUS
+  Module: Billing
+  Page: Invoices
+  Route: /admin/invoices
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #42
+  Severity: SERIOUS
+  Module: Billing
+  Page: Invoices
+  Route: /admin/invoices
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #43
+  Severity: SERIOUS
+  Module: Billing
+  Page: Payments
+  Route: /admin/payments
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #44
+  Severity: SERIOUS
+  Module: Billing
+  Page: Payments
+  Route: /admin/payments
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #45
+  Severity: SERIOUS
+  Module: Billing
+  Page: Currencies
+  Route: /admin/currencies
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #46
+  Severity: SERIOUS
+  Module: Billing
+  Page: Currencies
+  Route: /admin/currencies
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 6
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #47
+  Severity: SERIOUS
+  Module: Billing
+  Page: Referrals
+  Route: /admin/referrals
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #48
+  Severity: SERIOUS
+  Module: Billing
+  Page: Referrals
+  Route: /admin/referrals
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #49
+  Severity: SERIOUS
+  Module: Billing
+  Page: Promo Codes
+  Route: /admin/promo-codes
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #50
+  Severity: SERIOUS
+  Module: Billing
+  Page: Promo Codes
+  Route: /admin/promo-codes
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #51
+  Severity: SERIOUS
+  Module: Billing
+  Page: Bonuses
+  Route: /admin/bonuses
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #52
+  Severity: SERIOUS
+  Module: Billing
+  Page: Bonuses
+  Route: /admin/bonuses
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #53
+  Severity: SERIOUS
+  Module: Marketing
+  Page: Social Accounts
+  Route: /admin/social-accounts
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #54
+  Severity: SERIOUS
+  Module: Marketing
+  Page: Social Accounts
+  Route: /admin/social-accounts
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #55
+  Severity: SERIOUS
+  Module: Marketing
+  Page: Social Posts
+  Route: /admin/social-posts
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #56
+  Severity: SERIOUS
+  Module: Marketing
+  Page: Social Posts
+  Route: /admin/social-posts
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #57
+  Severity: SERIOUS
+  Module: Marketing
+  Page: Email Templates
+  Route: /admin/email-templates
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #58
+  Severity: SERIOUS
+  Module: Marketing
+  Page: Email Templates
+  Route: /admin/email-templates
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #59
+  Severity: SERIOUS
+  Module: Monitoring
+  Page: Metrics
+  Route: /admin/metrics
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #60
+  Severity: CRITICAL
+  Module: Monitoring
+  Page: Metrics
+  Route: /admin/metrics
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #61
+  Severity: SERIOUS
+  Module: Monitoring
+  Page: Metrics
+  Route: /admin/metrics
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 8
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #62
+  Severity: SERIOUS
+  Module: Monitoring
+  Page: CDRs
+  Route: /admin/cdrs
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #63
+  Severity: CRITICAL
+  Module: Monitoring
+  Page: CDRs
+  Route: /admin/cdrs
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 28
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #64
+  Severity: CRITICAL
+  Module: Monitoring
+  Page: CDRs
+  Route: /admin/cdrs
+  Score: 85/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #65
+  Severity: SERIOUS
+  Module: Monitoring
+  Page: Alerts
+  Route: /admin/alerts
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #66
+  Severity: CRITICAL
+  Module: Monitoring
+  Page: Alerts
+  Route: /admin/alerts
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 2
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #67
+  Severity: SERIOUS
+  Module: Monitoring
+  Page: Alerts
+  Route: /admin/alerts
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 7
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #68
+  Severity: CRITICAL
+  Module: Monitoring
+  Page: Alerts
+  Route: /admin/alerts
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #69
+  Severity: SERIOUS
+  Module: Monitoring
+  Page: Rules
+  Route: /admin/rules
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #70
+  Severity: CRITICAL
+  Module: Monitoring
+  Page: Rules
+  Route: /admin/rules
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 13
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #71
+  Severity: SERIOUS
+  Module: Monitoring
+  Page: Rules
+  Route: /admin/rules
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #72
+  Severity: CRITICAL
+  Module: Monitoring
+  Page: Rules
+  Route: /admin/rules
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #73
+  Severity: SERIOUS
+  Module: SIP Tester
+  Page: New Test
+  Route: /admin/sip-tester/new
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #74
+  Severity: CRITICAL
+  Module: SIP Tester
+  Page: New Test
+  Route: /admin/sip-tester/new
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 32
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #75
+  Severity: SERIOUS
+  Module: SIP Tester
+  Page: New Test
+  Route: /admin/sip-tester/new
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #76
+  Severity: SERIOUS
+  Module: SIP Tester
+  Page: History
+  Route: /admin/sip-tester/history
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #77
+  Severity: SERIOUS
+  Module: SIP Tester
+  Page: History
+  Route: /admin/sip-tester/history
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #78
+  Severity: SERIOUS
+  Module: SIP Tester
+  Page: Settings
+  Route: /admin/sip-tester/settings
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #79
+  Severity: SERIOUS
+  Module: SIP Tester
+  Page: Settings
+  Route: /admin/sip-tester/settings
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 7
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #80
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Dashboard
+  Route: /admin/ai-voice/dashboard
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #81
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Dashboard
+  Route: /admin/ai-voice/dashboard
+  Score: 85/100
+  Description: Ensure every ARIA progressbar node has an accessible name
+  Affected Elements: 2
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #82
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Dashboard
+  Route: /admin/ai-voice/dashboard
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #83
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Agents
+  Route: /admin/ai-voice/agents
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #84
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Agents
+  Route: /admin/ai-voice/agents
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #85
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Knowledge Bases
+  Route: /admin/ai-voice/knowledge-bases
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #86
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Knowledge Bases
+  Route: /admin/ai-voice/knowledge-bases
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #87
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Campaigns
+  Route: /admin/ai-voice/campaigns
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #88
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Campaigns
+  Route: /admin/ai-voice/campaigns
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #89
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Call Logs
+  Route: /admin/ai-voice/call-logs
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #90
+  Severity: CRITICAL
+  Module: AI Voice
+  Page: Call Logs
+  Route: /admin/ai-voice/call-logs
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 2
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #91
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Call Logs
+  Route: /admin/ai-voice/call-logs
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #92
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Analytics
+  Route: /admin/ai-voice/analytics
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #93
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Analytics
+  Route: /admin/ai-voice/analytics
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #94
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Billing
+  Route: /admin/ai-voice/billing
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #95
+  Severity: CRITICAL
+  Module: AI Voice
+  Page: Billing
+  Route: /admin/ai-voice/billing
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 2
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #96
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Billing
+  Route: /admin/ai-voice/billing
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #97
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Settings
+  Route: /admin/ai-voice/settings
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #98
+  Severity: CRITICAL
+  Module: AI Voice
+  Page: Settings
+  Route: /admin/ai-voice/settings
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #99
+  Severity: SERIOUS
+  Module: AI Voice
+  Page: Settings
+  Route: /admin/ai-voice/settings
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 6
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #100
+  Severity: SERIOUS
+  Module: Class 4
+  Page: Customers
+  Route: /admin/class4-customers
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #101
+  Severity: SERIOUS
+  Module: Class 4
+  Page: Customers
+  Route: /admin/class4-customers
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #102
+  Severity: SERIOUS
+  Module: Class 4
+  Page: Carriers
+  Route: /admin/class4-carriers
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #103
+  Severity: SERIOUS
+  Module: Class 4
+  Page: Carriers
+  Route: /admin/class4-carriers
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #104
+  Severity: SERIOUS
+  Module: Class 4
+  Page: Rate Cards
+  Route: /admin/class4-rate-cards
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 19
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #105
+  Severity: SERIOUS
+  Module: Class 4
+  Page: Rate Cards
+  Route: /admin/class4-rate-cards
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 6
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #106
+  Severity: SERIOUS
+  Module: Experience
+  Page: Dashboard
+  Route: /admin/experience-manager
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #107
+  Severity: SERIOUS
+  Module: Experience
+  Page: Dashboard
+  Route: /admin/experience-manager
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 7
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #108
+  Severity: SERIOUS
+  Module: Experience
+  Page: Marketing Website
+  Route: /admin/experience-manager/marketing
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #109
+  Severity: CRITICAL
+  Module: Experience
+  Page: Marketing Website
+  Route: /admin/experience-manager/marketing
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 16
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #110
+  Severity: SERIOUS
+  Module: Experience
+  Page: Marketing Website
+  Route: /admin/experience-manager/marketing
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 11
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #111
+  Severity: CRITICAL
+  Module: Experience
+  Page: Marketing Website
+  Route: /admin/experience-manager/marketing
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #112
+  Severity: SERIOUS
+  Module: Experience
+  Page: Portal Themes
+  Route: /admin/experience-manager/portal-themes
+  Score: 75/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #113
+  Severity: CRITICAL
+  Module: Experience
+  Page: Portal Themes
+  Route: /admin/experience-manager/portal-themes
+  Score: 75/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 6
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #114
+  Severity: SERIOUS
+  Module: Experience
+  Page: Portal Themes
+  Route: /admin/experience-manager/portal-themes
+  Score: 75/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 15
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #115
+  Severity: CRITICAL
+  Module: Experience
+  Page: Portal Themes
+  Route: /admin/experience-manager/portal-themes
+  Score: 75/100
+  Description: Ensure every form element has a label
+  Affected Elements: 2
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #116
+  Severity: SERIOUS
+  Module: Experience
+  Page: Portal Themes
+  Route: /admin/experience-manager/portal-themes
+  Score: 75/100
+  Description: Ensure elements that have scrollable content are accessible by keyboard
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #117
+  Severity: SERIOUS
+  Module: Experience
+  Page: White-Label
+  Route: /admin/experience-manager/white-label
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #118
+  Severity: CRITICAL
+  Module: Experience
+  Page: White-Label
+  Route: /admin/experience-manager/white-label
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 16
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #119
+  Severity: SERIOUS
+  Module: Experience
+  Page: White-Label
+  Route: /admin/experience-manager/white-label
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 9
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #120
+  Severity: CRITICAL
+  Module: Experience
+  Page: White-Label
+  Route: /admin/experience-manager/white-label
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #121
+  Severity: SERIOUS
+  Module: Experience
+  Page: Design System
+  Route: /admin/experience-manager/design-system
+  Score: 75/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #122
+  Severity: SERIOUS
+  Module: Experience
+  Page: Design System
+  Route: /admin/experience-manager/design-system
+  Score: 75/100
+  Description: Ensure every ARIA progressbar node has an accessible name
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #123
+  Severity: CRITICAL
+  Module: Experience
+  Page: Design System
+  Route: /admin/experience-manager/design-system
+  Score: 75/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #124
+  Severity: SERIOUS
+  Module: Experience
+  Page: Design System
+  Route: /admin/experience-manager/design-system
+  Score: 75/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 11
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #125
+  Severity: CRITICAL
+  Module: Experience
+  Page: Design System
+  Route: /admin/experience-manager/design-system
+  Score: 75/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #126
+  Severity: SERIOUS
+  Module: Experience
+  Page: Documentation
+  Route: /admin/documentation
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #127
+  Severity: CRITICAL
+  Module: Experience
+  Page: Documentation
+  Route: /admin/documentation
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #128
+  Severity: SERIOUS
+  Module: Experience
+  Page: Documentation
+  Route: /admin/documentation
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 10
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #129
+  Severity: SERIOUS
+  Module: Admin
+  Page: Admin Users
+  Route: /admin/admin-users
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #130
+  Severity: SERIOUS
+  Module: Admin
+  Page: Admin Users
+  Route: /admin/admin-users
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #131
+  Severity: SERIOUS
+  Module: Admin
+  Page: Roles
+  Route: /admin/roles
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #132
+  Severity: CRITICAL
+  Module: Admin
+  Page: Roles
+  Route: /admin/roles
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 9
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #133
+  Severity: SERIOUS
+  Module: Admin
+  Page: Roles
+  Route: /admin/roles
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #134
+  Severity: CRITICAL
+  Module: Admin
+  Page: Roles
+  Route: /admin/roles
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #135
+  Severity: SERIOUS
+  Module: Admin
+  Page: Audit Logs
+  Route: /admin/audit-logs
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #136
+  Severity: CRITICAL
+  Module: Admin
+  Page: Audit Logs
+  Route: /admin/audit-logs
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #137
+  Severity: CRITICAL
+  Module: Admin
+  Page: Audit Logs
+  Route: /admin/audit-logs
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #138
+  Severity: SERIOUS
+  Module: Admin
+  Page: Audit Logs
+  Route: /admin/audit-logs
+  Score: 80/100
+  Description: Ensure elements that have scrollable content are accessible by keyboard
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #139
+  Severity: SERIOUS
+  Module: Admin
+  Page: Trash
+  Route: /admin/trash
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #140
+  Severity: CRITICAL
+  Module: Admin
+  Page: Trash
+  Route: /admin/trash
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 2
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #141
+  Severity: SERIOUS
+  Module: Admin
+  Page: Trash
+  Route: /admin/trash
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #142
+  Severity: CRITICAL
+  Module: Admin
+  Page: Trash
+  Route: /admin/trash
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #143
+  Severity: SERIOUS
+  Module: Admin
+  Page: Support Tickets
+  Route: /admin/tickets
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #144
+  Severity: SERIOUS
+  Module: Admin
+  Page: Support Tickets
+  Route: /admin/tickets
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #145
+  Severity: SERIOUS
+  Module: Admin
+  Page: Job Queue
+  Route: /admin/job-queue
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #146
+  Severity: CRITICAL
+  Module: Admin
+  Page: Job Queue
+  Route: /admin/job-queue
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #147
+  Severity: SERIOUS
+  Module: Admin
+  Page: Job Queue
+  Route: /admin/job-queue
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 9
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #148
+  Severity: SERIOUS
+  Module: Admin
+  Page: Dev Tests
+  Route: /admin/dev-tests
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #149
+  Severity: CRITICAL
+  Module: Admin
+  Page: Dev Tests
+  Route: /admin/dev-tests
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 15
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #150
+  Severity: SERIOUS
+  Module: Admin
+  Page: Dev Tests
+  Route: /admin/dev-tests
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 11
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #151
+  Severity: CRITICAL
+  Module: Admin
+  Page: Dev Tests
+  Route: /admin/dev-tests
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #152
+  Severity: SERIOUS
+  Module: Admin
+  Page: Testing Engine
+  Route: /admin/testing-engine
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 24
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #153
+  Severity: CRITICAL
+  Module: Admin
+  Page: Testing Engine
+  Route: /admin/testing-engine
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #154
+  Severity: SERIOUS
+  Module: Admin
+  Page: Testing Engine
+  Route: /admin/testing-engine
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 9
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #155
+  Severity: SERIOUS
+  Module: Global Settings
+  Page: Platform
+  Route: /admin/global-settings/platform
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #156
+  Severity: CRITICAL
+  Module: Global Settings
+  Page: Platform
+  Route: /admin/global-settings/platform
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #157
+  Severity: SERIOUS
+  Module: Global Settings
+  Page: Platform
+  Route: /admin/global-settings/platform
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #158
+  Severity: SERIOUS
+  Module: Global Settings
+  Page: Currencies
+  Route: /admin/global-settings/currencies
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #159
+  Severity: CRITICAL
+  Module: Global Settings
+  Page: Currencies
+  Route: /admin/global-settings/currencies
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #160
+  Severity: SERIOUS
+  Module: Global Settings
+  Page: Currencies
+  Route: /admin/global-settings/currencies
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #161
+  Severity: SERIOUS
+  Module: Global Settings
+  Page: Localization
+  Route: /admin/global-settings/localization
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #162
+  Severity: CRITICAL
+  Module: Global Settings
+  Page: Localization
+  Route: /admin/global-settings/localization
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #163
+  Severity: SERIOUS
+  Module: Global Settings
+  Page: Localization
+  Route: /admin/global-settings/localization
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #164
+  Severity: SERIOUS
+  Module: Global Settings
+  Page: A-Z Database
+  Route: /admin/global-settings/az-database
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 20
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #165
+  Severity: CRITICAL
+  Module: Global Settings
+  Page: A-Z Database
+  Route: /admin/global-settings/az-database
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 2
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #166
+  Severity: SERIOUS
+  Module: Global Settings
+  Page: A-Z Database
+  Route: /admin/global-settings/az-database
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #167
+  Severity: CRITICAL
+  Module: Global Settings
+  Page: A-Z Database
+  Route: /admin/global-settings/az-database
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #168
+  Severity: SERIOUS
+  Module: Settings
+  Page: General
+  Route: /admin/settings/general
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #169
+  Severity: CRITICAL
+  Module: Settings
+  Page: General
+  Route: /admin/settings/general
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #170
+  Severity: SERIOUS
+  Module: Settings
+  Page: General
+  Route: /admin/settings/general
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #171
+  Severity: CRITICAL
+  Module: Settings
+  Page: General
+  Route: /admin/settings/general
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #172
+  Severity: SERIOUS
+  Module: Settings
+  Page: API Keys
+  Route: /admin/settings/api-keys
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #173
+  Severity: CRITICAL
+  Module: Settings
+  Page: API Keys
+  Route: /admin/settings/api-keys
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #174
+  Severity: SERIOUS
+  Module: Settings
+  Page: API Keys
+  Route: /admin/settings/api-keys
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #175
+  Severity: CRITICAL
+  Module: Settings
+  Page: API Keys
+  Route: /admin/settings/api-keys
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #176
+  Severity: SERIOUS
+  Module: Settings
+  Page: Webhooks
+  Route: /admin/settings/webhooks
+  Score: 80/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #177
+  Severity: CRITICAL
+  Module: Settings
+  Page: Webhooks
+  Route: /admin/settings/webhooks
+  Score: 80/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #178
+  Severity: SERIOUS
+  Module: Settings
+  Page: Webhooks
+  Route: /admin/settings/webhooks
+  Score: 80/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 5
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #179
+  Severity: CRITICAL
+  Module: Settings
+  Page: Webhooks
+  Route: /admin/settings/webhooks
+  Score: 80/100
+  Description: Ensure every form element has a label
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #180
+  Severity: SERIOUS
+  Module: Settings
+  Page: Integrations
+  Route: /admin/settings/integrations
+  Score: 85/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #181
+  Severity: CRITICAL
+  Module: Settings
+  Page: Integrations
+  Route: /admin/settings/integrations
+  Score: 85/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 22
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #182
+  Severity: SERIOUS
+  Module: Settings
+  Page: Integrations
+  Route: /admin/settings/integrations
+  Score: 85/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 7
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #183
+  Severity: SERIOUS
+  Module: Settings
+  Page: ConnexCS Status
+  Route: /admin/settings/connexcs-status
+  Score: 90/100
+  Description: Ensure every ARIA button, link and menuitem has an accessible name
+  Affected Elements: 21
+  Detected: Jan 9, 2026, 12:02:57 AM
+
+Issue #184
+  Severity: SERIOUS
+  Module: Settings
+  Page: ConnexCS Status
+  Route: /admin/settings/connexcs-status
+  Score: 90/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 6
+  Detected: Jan 9, 2026, 12:02:57 AM

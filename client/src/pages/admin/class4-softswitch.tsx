@@ -407,6 +407,8 @@ export function Class4CustomersPage() {
                           variant="ghost"
                           data-testid={`button-edit-${customer.id}`}
                           onClick={() => handleEdit(customer)}
+                          aria-label="Edit"
+                          title="Edit"
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
@@ -736,6 +738,8 @@ export function Class4CarriersPage() {
                           variant="ghost"
                           data-testid={`button-edit-carrier-${carrier.id}`}
                           onClick={() => handleEdit(carrier)}
+                          aria-label="Edit"
+                          title="Edit"
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>

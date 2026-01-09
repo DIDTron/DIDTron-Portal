@@ -226,13 +226,13 @@ export default function EMMarketingPage() {
                       <TableCell className="text-muted-foreground">{page.lastModified}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button size="icon" variant="ghost" data-testid={`button-edit-${page.id}`}>
+                          <Button size="icon" variant="ghost" data-testid={`button-edit-${page.id}`} aria-label="Edit" title="Edit">
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" data-testid={`button-preview-${page.id}`}>
+                          <Button size="icon" variant="ghost" data-testid={`button-preview-${page.id}`} aria-label="Preview" title="Preview">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" data-testid={`button-delete-${page.id}`}>
+                          <Button size="icon" variant="ghost" data-testid={`button-delete-${page.id}`} aria-label="Delete" title="Delete">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
