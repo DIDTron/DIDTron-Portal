@@ -1,0 +1,139 @@
+======================================================================
+         ACCESSIBILITY ISSUES REPORT - WCAG 2.1 AA COMPLIANCE
+======================================================================
+
+Generated: Jan 9, 2026, 2:41:11 AM
+Test Run: E2E Test: experience
+Completed: Jan 9, 2026, 2:40:43 AM
+
+----------------------------------------------------------------------
+SUMMARY
+----------------------------------------------------------------------
+Total Issues: 12
+  - Critical: 4
+  - Serious: 8
+  - Moderate/Minor: 0
+Pages Affected: 6
+
+----------------------------------------------------------------------
+DETAILED ISSUES
+----------------------------------------------------------------------
+Issue #1
+  Severity: SERIOUS
+  Module: Experience
+  Page: Dashboard
+  Route: /admin/experience-manager
+  Score: 97/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #2
+  Severity: SERIOUS
+  Module: Experience
+  Page: Marketing Website
+  Route: /admin/experience-manager/marketing
+  Score: 97/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #3
+  Severity: CRITICAL
+  Module: Experience
+  Page: Portal Themes
+  Route: /admin/experience-manager/portal-themes
+  Score: 88/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 3
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #4
+  Severity: SERIOUS
+  Module: Experience
+  Page: Portal Themes
+  Route: /admin/experience-manager/portal-themes
+  Score: 88/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 9
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #5
+  Severity: CRITICAL
+  Module: Experience
+  Page: Portal Themes
+  Route: /admin/experience-manager/portal-themes
+  Score: 88/100
+  Description: Ensure every form element has a label
+  Affected Elements: 2
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #6
+  Severity: SERIOUS
+  Module: Experience
+  Page: Portal Themes
+  Route: /admin/experience-manager/portal-themes
+  Score: 88/100
+  Description: Ensure elements that have scrollable content are accessible by keyboard
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #7
+  Severity: CRITICAL
+  Module: Experience
+  Page: White-Label
+  Route: /admin/experience-manager/white-label
+  Score: 94/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #8
+  Severity: SERIOUS
+  Module: Experience
+  Page: White-Label
+  Route: /admin/experience-manager/white-label
+  Score: 94/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 4
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #9
+  Severity: SERIOUS
+  Module: Experience
+  Page: Design System
+  Route: /admin/experience-manager/design-system
+  Score: 91/100
+  Description: Ensure every ARIA progressbar node has an accessible name
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #10
+  Severity: CRITICAL
+  Module: Experience
+  Page: Design System
+  Route: /admin/experience-manager/design-system
+  Score: 91/100
+  Description: Ensure buttons have discernible text
+  Affected Elements: 1
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #11
+  Severity: SERIOUS
+  Module: Experience
+  Page: Design System
+  Route: /admin/experience-manager/design-system
+  Score: 91/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 6
+  Detected: Jan 9, 2026, 2:40:43 AM
+
+Issue #12
+  Severity: SERIOUS
+  Module: Experience
+  Page: Documentation
+  Route: /admin/documentation
+  Score: 97/100
+  Description: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  Affected Elements: 7
+  Detected: Jan 9, 2026, 2:40:43 AM

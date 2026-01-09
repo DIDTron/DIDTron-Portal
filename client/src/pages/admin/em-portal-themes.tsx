@@ -217,13 +217,13 @@ export default function EMPortalThemesPage() {
 
           <Tabs defaultValue="brand">
             <TabsList className="w-full grid grid-cols-3">
-              <TabsTrigger value="brand" data-testid="tab-brand">
+              <TabsTrigger value="brand" data-testid="tab-brand" aria-label="Brand settings" title="Brand settings">
                 <Palette className="h-4 w-4" />
               </TabsTrigger>
-              <TabsTrigger value="layout" data-testid="tab-layout">
+              <TabsTrigger value="layout" data-testid="tab-layout" aria-label="Layout settings" title="Layout settings">
                 <Layout className="h-4 w-4" />
               </TabsTrigger>
-              <TabsTrigger value="features" data-testid="tab-features">
+              <TabsTrigger value="features" data-testid="tab-features" aria-label="Feature settings" title="Feature settings">
                 <Settings className="h-4 w-4" />
               </TabsTrigger>
             </TabsList>
@@ -403,7 +403,7 @@ export default function EMPortalThemesPage() {
             </div>
           </div>
 
-          <div className="flex-1 p-8 overflow-auto">
+          <div className="flex-1 p-8 overflow-auto" tabIndex={0} role="region" aria-label="Theme preview panel">
             <div 
               className={`mx-auto bg-background rounded-lg shadow-lg overflow-hidden transition-all ${
                 previewMode === "mobile" ? "max-w-sm" : "max-w-4xl"

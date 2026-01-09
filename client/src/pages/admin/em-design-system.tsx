@@ -219,7 +219,7 @@ export default function EMDesignSystemPage() {
               ) : (
                 <div className="text-3xl font-bold text-chart-2">{healthScore}%</div>
               )}
-              <Progress value={healthScore} className="mt-2" />
+              <Progress value={healthScore} className="mt-2" aria-label="UI health score progress" />
             </CardContent>
           </Card>
 
