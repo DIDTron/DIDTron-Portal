@@ -55,18 +55,66 @@ export default function EMBrandingPage() {
 
   const handleHeaderLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setHeaderLogo(result);
-        toast({
-          title: "Header logo uploaded",
-          description: "The logo will appear in the header immediately.",
-        });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 1MB.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const originalWidth = img.width;
+        const originalHeight = img.height;
+        const aspectRatio = originalWidth / originalHeight;
+
+        if (originalHeight > 512) {
+          toast({
+            title: "Image too tall",
+            description: "Please upload an image with height under 512px for best performance.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (originalHeight < 24 || originalHeight > 96) {
+          toast({
+            title: "Size recommendation",
+            description: `Your logo is ${originalWidth}x${originalHeight}px. For best results, use 200x32px (height between 24-96px).`,
+          });
+        } else if (aspectRatio > 8) {
+          toast({
+            title: "Aspect ratio warning",
+            description: "Your logo is very wide. It may be cropped on smaller screens.",
+          });
+        }
+
+        const targetHeight = 32;
+        const scaledWidth = Math.round((targetHeight / originalHeight) * originalWidth);
+        const canvas = document.createElement("canvas");
+        canvas.width = scaledWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, scaledWidth, targetHeight);
+          const scaledDataUrl = canvas.toDataURL("image/png");
+          setHeaderLogo(scaledDataUrl);
+          toast({
+            title: "Header logo uploaded",
+            description: "The logo has been scaled to fit the header and will appear immediately.",
+          });
+        }
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
   };
 
   const removeHeaderLogo = () => {
