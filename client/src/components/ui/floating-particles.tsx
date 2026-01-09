@@ -91,7 +91,7 @@ export function FloatingParticles() {
         anchorY: anchor.y,
         noiseOffsetX: Math.random() * 1000,
         noiseOffsetY: Math.random() * 1000,
-        trail: Array(6).fill({ x: startX, y: startY }),
+        trail: Array(12).fill(null).map(() => ({ x: startX, y: startY })),
       };
     });
 
@@ -192,21 +192,37 @@ export function FloatingParticles() {
           particle.x += particle.vx;
           particle.y += particle.vy;
 
-          // Update trail (meteor tail effect)
+          // Update trail with arc curve opposite to movement direction
           particle.trail.pop();
           particle.trail.unshift({ x: particle.x, y: particle.y });
 
-          // Render trail first (behind main particle)
+          // Calculate movement direction for arc curve
+          const moveAngle = Math.atan2(particle.vy, particle.vx);
+          const particleSpeed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+          
+          // Render trail first (behind main particle) with arc curve
           particle.trail.forEach((point, trailIndex) => {
-            if (trailIndex === 0) return; // Skip first point (main particle position)
-            const trailOpacity = (1 - trailIndex / particle.trail.length) * 0.4;
-            const trailSize = particle.size * (1 - trailIndex / particle.trail.length) * 0.7;
+            if (trailIndex === 0) return;
+            
+            // Arc offset - curves opposite to movement direction
+            const arcProgress = trailIndex / particle.trail.length;
+            const arcIntensity = Math.sin(arcProgress * Math.PI) * particleSpeed * 3;
+            const perpAngle = moveAngle + Math.PI / 2; // Perpendicular to movement
+            
+            // Alternate arc direction based on particle index for variety
+            const arcDirection = index % 2 === 0 ? 1 : -1;
+            const arcX = point.x + Math.cos(perpAngle) * arcIntensity * arcDirection;
+            const arcY = point.y + Math.sin(perpAngle) * arcIntensity * arcDirection;
+            
+            // More visible opacity that fades with distance
+            const trailOpacity = (1 - arcProgress) * 0.7;
+            const trailSize = particle.size * (1 - arcProgress * 0.6);
             
             ctx.save();
-            ctx.globalAlpha = opacityRef.current * trailOpacity * (isDark ? 0.75 : 0.6);
+            ctx.globalAlpha = opacityRef.current * trailOpacity * (isDark ? 0.85 : 0.7);
             ctx.fillStyle = `rgba(${particle.color}, 1)`;
             ctx.beginPath();
-            ctx.arc(point.x, point.y, trailSize, 0, Math.PI * 2);
+            ctx.arc(arcX, arcY, trailSize, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
           });
