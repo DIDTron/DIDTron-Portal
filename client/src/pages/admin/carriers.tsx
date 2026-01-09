@@ -86,6 +86,7 @@ export default function CarriersPage() {
     name: "",
     code: "",
     type: "wholesale",
+    partnerType: "customer" as "customer" | "supplier" | "bilateral",
     status: "active",
     sipHost: "",
     sipPort: "5060",
@@ -95,6 +96,12 @@ export default function CarriersPage() {
     billingEmail: "",
     technicalEmail: "",
     description: "",
+    customerCreditType: "prepaid" as "prepaid" | "postpaid",
+    customerCreditLimit: "0",
+    supplierCreditType: "postpaid" as "prepaid" | "postpaid",
+    supplierCreditLimit: "0",
+    capacityMode: "unrestricted" as "unrestricted" | "capped",
+    capacityLimit: "",
   });
 
   const [assignmentData, setAssignmentData] = useState({
@@ -276,6 +283,7 @@ export default function CarriersPage() {
       name: "",
       code: "",
       type: "wholesale",
+      partnerType: "customer",
       status: "active",
       sipHost: "",
       sipPort: "5060",
@@ -285,6 +293,12 @@ export default function CarriersPage() {
       billingEmail: "",
       technicalEmail: "",
       description: "",
+      customerCreditType: "prepaid",
+      customerCreditLimit: "0",
+      supplierCreditType: "postpaid",
+      supplierCreditLimit: "0",
+      capacityMode: "unrestricted",
+      capacityLimit: "",
     });
     setAssignmentData({
       assignmentType: "all",
@@ -306,6 +320,7 @@ export default function CarriersPage() {
       name: carrier.name,
       code: carrier.code,
       type: carrier.type || "wholesale",
+      partnerType: (carrier.partnerType || "customer") as "customer" | "supplier" | "bilateral",
       status: carrier.status || "active",
       sipHost: carrier.sipHost || "",
       sipPort: String(carrier.sipPort || 5060),
@@ -315,6 +330,12 @@ export default function CarriersPage() {
       billingEmail: carrier.billingEmail || "",
       technicalEmail: carrier.technicalEmail || "",
       description: carrier.description || "",
+      customerCreditType: (carrier.customerCreditType || "prepaid") as "prepaid" | "postpaid",
+      customerCreditLimit: carrier.customerCreditLimit || "0",
+      supplierCreditType: (carrier.supplierCreditType || "postpaid") as "prepaid" | "postpaid",
+      supplierCreditLimit: carrier.supplierCreditLimit || "0",
+      capacityMode: (carrier.capacityMode || "unrestricted") as "unrestricted" | "capped",
+      capacityLimit: carrier.capacityLimit ? String(carrier.capacityLimit) : "",
     });
     setViewMode("edit");
   };
@@ -397,9 +418,22 @@ export default function CarriersPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="type">Type</Label>
+                    <Label htmlFor="partnerType">Partner Type *</Label>
+                    <Select value={formData.partnerType} onValueChange={(v: "customer" | "supplier" | "bilateral") => setFormData({ ...formData, partnerType: v })}>
+                      <SelectTrigger data-testid="select-partner-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="customer">Customer (They buy from us)</SelectItem>
+                        <SelectItem value="supplier">Supplier (We buy from them)</SelectItem>
+                        <SelectItem value="bilateral">Bilateral (Two-way trading)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Business Type</Label>
                     <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
                       <SelectTrigger data-testid="select-carrier-type">
                         <SelectValue />
@@ -425,6 +459,72 @@ export default function CarriersPage() {
                     </Select>
                   </div>
                 </div>
+
+                {/* Customer Financial Details - shown for customer and bilateral partners */}
+                {(formData.partnerType === "customer" || formData.partnerType === "bilateral") && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Customer Financial Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label>Credit Type</Label>
+                        <Select value={formData.customerCreditType} onValueChange={(v: "prepaid" | "postpaid") => setFormData({ ...formData, customerCreditType: v })}>
+                          <SelectTrigger data-testid="select-customer-credit-type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="prepaid">Prepaid (Must top-up first)</SelectItem>
+                            <SelectItem value="postpaid">Postpaid (Pay later)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Credit Limit</Label>
+                        <Input
+                          type="number"
+                          value={formData.customerCreditLimit}
+                          onChange={(e) => setFormData({ ...formData, customerCreditLimit: e.target.value })}
+                          placeholder="0.00"
+                          data-testid="input-customer-credit-limit"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Supplier Financial Details - shown for supplier and bilateral partners */}
+                {(formData.partnerType === "supplier" || formData.partnerType === "bilateral") && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Supplier Financial Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label>Credit Type</Label>
+                        <Select value={formData.supplierCreditType} onValueChange={(v: "prepaid" | "postpaid") => setFormData({ ...formData, supplierCreditType: v })}>
+                          <SelectTrigger data-testid="select-supplier-credit-type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="prepaid">Prepaid (We pay upfront)</SelectItem>
+                            <SelectItem value="postpaid">Postpaid (We pay later)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Credit Limit</Label>
+                        <Input
+                          type="number"
+                          value={formData.supplierCreditLimit}
+                          onChange={(e) => setFormData({ ...formData, supplierCreditLimit: e.target.value })}
+                          placeholder="0.00"
+                          data-testid="input-supplier-credit-limit"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 <div className="grid grid-cols-3 gap-6">
                   <div className="space-y-2 col-span-2">
@@ -750,7 +850,7 @@ export default function CarriersPage() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-carriers-title">Carriers</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-carriers-title">Wholesale Partners</h1>
           <p className="text-muted-foreground">Manage carrier connections and routing</p>
         </div>
         <div className="flex items-center gap-3">
@@ -845,8 +945,9 @@ export default function CarriersPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Code</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>SIP Host</TableHead>
+                  <TableHead>Partner Type</TableHead>
+                  <TableHead className="text-right">Customer Balance</TableHead>
+                  <TableHead className="text-right">Supplier Balance</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Synced</TableHead>
                   <TableHead className="w-32">Actions</TableHead>
@@ -870,9 +971,29 @@ export default function CarriersPage() {
                     </TableCell>
                     <TableCell><code className="text-xs">{carrier.code}</code></TableCell>
                     <TableCell>
-                      <Badge variant="outline">{carrier.type}</Badge>
+                      <Badge variant={
+                        carrier.partnerType === "bilateral" ? "default" :
+                        carrier.partnerType === "supplier" ? "secondary" : "outline"
+                      }>
+                        {carrier.partnerType === "bilateral" ? "B" :
+                         carrier.partnerType === "supplier" ? "S" : "C"}
+                        <span className="ml-1 capitalize">{carrier.partnerType || "customer"}</span>
+                      </Badge>
                     </TableCell>
-                    <TableCell>{carrier.sipHost ? `${carrier.sipHost}:${carrier.sipPort}` : "-"}</TableCell>
+                    <TableCell className="text-right font-mono">
+                      {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") ? (
+                        <span className={parseFloat(carrier.customerBalance || "0") >= 0 ? "text-green-600" : "text-red-600"}>
+                          ${parseFloat(carrier.customerBalance || "0").toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      ) : "-"}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") ? (
+                        <span className={parseFloat(carrier.supplierBalance || "0") <= 0 ? "text-green-600" : "text-red-600"}>
+                          ${parseFloat(carrier.supplierBalance || "0").toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      ) : "-"}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={carrier.status === "active" ? "default" : "secondary"}>
                         {carrier.status}

@@ -19,7 +19,7 @@ export interface NavSection {
 export const navSections: NavSection[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, defaultRoute: "/admin" },
   { id: "voip", label: "VoIP", icon: Phone, defaultRoute: "/admin/pops" },
-  { id: "carriers", label: "Carriers", icon: Building2, defaultRoute: "/admin/carriers" },
+  { id: "wholesale-partners", label: "Wholesale", icon: Building2, defaultRoute: "/admin/carriers" },
   { id: "rate-cards", label: "Rate Cards", icon: Receipt, defaultRoute: "/admin/rate-cards/customer" },
   { id: "did", label: "DID", icon: Globe, defaultRoute: "/admin/did-countries" },
   { id: "customers", label: "Customers", icon: Users, defaultRoute: "/admin/customers" },
@@ -281,7 +281,7 @@ const sectionDefaultItems: Record<string, { id: string; label: string; route: st
     { id: "channel-plans", label: "Channel Plans", route: "/admin/channel-plans" },
     { id: "routes", label: "Routes", route: "/admin/routes" },
   ],
-  carriers: [{ id: "carriers", label: "Carriers", route: "/admin/carriers" }],
+  "wholesale-partners": [{ id: "wholesale-partners", label: "Partners", route: "/admin/carriers" }],
   "rate-cards": [
     { id: "customer-rates", label: "Customer Rates", route: "/admin/rate-cards/customer" },
     { id: "carrier-rates", label: "Carrier Rates", route: "/admin/rate-cards/carrier" },

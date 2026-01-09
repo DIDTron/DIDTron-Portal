@@ -47,10 +47,10 @@ export const sectionConfigs: Record<string, SectionConfig> = {
       { id: "routes", label: "Routes", route: "/admin/routes", icon: RouteIcon },
     ],
   },
-  carriers: {
-    title: "Carriers",
+  "wholesale-partners": {
+    title: "Wholesale Partners",
     items: [
-      { id: "carriers", label: "Carriers", route: "/admin/carriers", icon: Building2 },
+      { id: "wholesale-partners", label: "Partners", route: "/admin/carriers", icon: Building2 },
     ],
   },
   "rate-cards": {
@@ -69,7 +69,7 @@ export const sectionConfigs: Record<string, SectionConfig> = {
     ],
   },
   customers: {
-    title: "Customer Management",
+    title: "Retail Customers",
     items: [
       { id: "customers", label: "Customers", route: "/admin/customers", icon: Users },
       { id: "categories", label: "Categories", route: "/admin/categories", icon: Tags },
