@@ -68,9 +68,10 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
           <img 
             src={didtronLogo} 
             alt="DIDTron Logo" 
-            className="h-8 w-8 object-contain"
+            className="h-9 w-auto object-contain"
             data-testid="header-logo"
           />
+          <span className="font-bold text-sm ml-2">DIDTron</span>
         </div>
       </div>
       
