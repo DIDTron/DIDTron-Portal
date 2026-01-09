@@ -1,7 +1,6 @@
 import { useLocation } from "wouter";
-import { Phone, LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Menu, Bot, Network, Cpu, Globe, Building2, GripVertical, Cog, Receipt } from "lucide-react";
+import { LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Bot, Network, Cpu, Globe, Building2, GripVertical, Cog, Receipt, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -131,7 +130,6 @@ export function PrimarySidebar() {
     setActiveSubItem,
     primarySidebarOpen,
     primarySidebarCollapsed,
-    toggleBothSidebars,
     openSecondarySidebar,
     primarySectionOrder,
     setPrimarySectionOrder,
@@ -213,40 +211,6 @@ export function PrimarySidebar() {
       "flex flex-col h-full border-r bg-sidebar shrink-0 transition-all duration-200",
       isCollapsed ? "w-14" : "w-48"
     )}>
-      <div className={cn(
-        "flex flex-col border-b",
-        isCollapsed ? "items-center py-2" : ""
-      )}>
-        <div className={cn(
-          "flex items-center justify-center border border-dashed border-muted-foreground/30 rounded-md bg-muted/30",
-          isCollapsed ? "w-9 h-9 mx-auto mb-2" : "w-10 h-10 mx-3 mt-2 mb-2"
-        )}
-        data-testid="logo-placeholder"
-        >
-          <span className="text-xs text-muted-foreground">Logo</span>
-        </div>
-        <div className={cn(
-          "flex items-center gap-2",
-          isCollapsed ? "flex-col px-1 pb-2" : "h-10 px-3 pb-2"
-        )}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleBothSidebars}
-            className="shrink-0"
-            aria-label="Menu"
-            data-testid="toggle-both-sidebars"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          {!isCollapsed && (
-            <>
-              <Phone className="h-5 w-5 text-primary shrink-0" />
-              <span className="font-bold text-base truncate">DIDTron</span>
-            </>
-          )}
-        </div>
-      </div>
       
       <ScrollArea className="flex-1">
         <nav className={cn(

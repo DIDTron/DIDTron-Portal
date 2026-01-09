@@ -140,6 +140,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "em-dashboard", label: "Dashboard", route: "/admin/experience-manager", icon: LayoutDashboard },
       { id: "em-marketing", label: "Marketing Website", route: "/admin/experience-manager/marketing", icon: Globe },
       { id: "em-portal-themes", label: "Portal Themes", route: "/admin/experience-manager/portal-themes", icon: Palette },
+      { id: "em-branding", label: "Branding", route: "/admin/experience-manager/branding", icon: Image },
       { id: "em-white-label", label: "White-Label", route: "/admin/experience-manager/white-label", icon: Building2 },
       { id: "em-design-system", label: "Design System", route: "/admin/experience-manager/design-system", icon: Settings },
       { id: "em-component-library", label: "Component Library", route: "/admin/experience-manager/component-library", icon: Layers },

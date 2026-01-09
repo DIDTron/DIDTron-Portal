@@ -39,6 +39,7 @@ import EMPortalThemesPage from "./em-portal-themes";
 import EMWhiteLabelPage from "./em-white-label";
 import EMDesignSystemPage from "./em-design-system";
 import EMComponentLibraryPage from "./em-component-library";
+import EMBrandingPage from "./em-branding";
 import SipTesterPage from "./sip-tester";
 import KycPage from "./kyc";
 import AdminUsersPage from "./admin-users";
@@ -132,6 +133,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/experience-manager/white-label": { section: "experience-manager", subItem: "em-white-label" },
   "/admin/experience-manager/design-system": { section: "experience-manager", subItem: "em-design-system" },
   "/admin/experience-manager/component-library": { section: "experience-manager", subItem: "em-component-library" },
+  "/admin/experience-manager/branding": { section: "experience-manager", subItem: "em-branding" },
   "/admin/documentation": { section: "experience-manager", subItem: "em-documentation" },
   "/admin/admin-users": { section: "admin", subItem: "admin-users" },
   "/admin/roles": { section: "admin", subItem: "roles" },
@@ -264,6 +266,7 @@ export default function AdminLayout() {
                 <Route path="/admin/experience-manager/white-label" component={EMWhiteLabelPage} />
                 <Route path="/admin/experience-manager/design-system" component={EMDesignSystemPage} />
                 <Route path="/admin/experience-manager/component-library" component={EMComponentLibraryPage} />
+                <Route path="/admin/experience-manager/branding" component={EMBrandingPage} />
                 <Route path="/admin/documentation" component={DocumentationPage} />
                 <Route path="/admin/admin-users" component={AdminUsersPage} />
                 <Route path="/admin/roles" component={RolesPage} />

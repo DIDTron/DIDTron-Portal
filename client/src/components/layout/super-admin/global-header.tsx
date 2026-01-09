@@ -1,7 +1,7 @@
 import { useState, KeyboardEvent } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Bell, LogOut, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { Search, Bell, LogOut, Cloud, CloudOff, Loader2, Menu, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -32,7 +32,7 @@ interface GlobalHeaderProps {
 export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
   const [, setLocation] = useLocation();
   const initials = userEmail?.substring(0, 2).toUpperCase() || "SA";
-  const { openTab } = useSuperAdminTabs();
+  const { openTab, toggleBothSidebars } = useSuperAdminTabs();
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: connexcsStatus, isLoading: statusLoading } = useQuery<ConnexCSStatus>({
@@ -52,27 +52,49 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-12 items-center justify-between gap-4 border-b bg-background px-4">
-      <div className="flex-1" />
-      
-      <div className="relative w-full max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search carriers, routes, customers..."
-          aria-label="Search carriers, routes, customers"
-          className="pl-9 h-8"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
-          data-testid="input-global-search"
-        />
-        <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-          <span className="text-xs">Ctrl</span>K
-        </kbd>
+    <header className="sticky top-0 z-50 flex h-12 items-center gap-4 border-b bg-background px-4">
+      <div className="flex items-center gap-3 shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleBothSidebars}
+          aria-label="Toggle sidebar"
+          data-testid="header-toggle-sidebars"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <div className="flex items-center gap-2">
+          <div 
+            className="flex items-center justify-center w-8 h-8 border border-dashed border-muted-foreground/30 rounded bg-muted/30"
+            data-testid="header-logo-placeholder"
+          >
+            <span className="text-[8px] text-muted-foreground">Logo</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Phone className="h-4 w-4 text-primary" />
+            <span className="font-bold text-sm">DIDTron</span>
+          </div>
+        </div>
       </div>
       
-      <div className="flex-1" />
+      <div className="flex-1 flex justify-center">
+        <div className="relative w-full max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search carriers, routes, customers..."
+            aria-label="Search carriers, routes, customers"
+            className="pl-9 h-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            data-testid="input-global-search"
+          />
+          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+            <span className="text-xs">Ctrl</span>K
+          </kbd>
+        </div>
+      </div>
 
       <div className="flex items-center gap-2">
         <Tooltip>
