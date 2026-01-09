@@ -17,19 +17,19 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo } from "react";
 
-interface NavSubItem {
+export interface NavSubItem {
   id: string;
   label: string;
   route: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
-interface SectionConfig {
+export interface SectionConfig {
   title: string;
   items: NavSubItem[];
 }
 
-const sectionConfigs: Record<string, SectionConfig> = {
+export const sectionConfigs: Record<string, SectionConfig> = {
   dashboard: {
     title: "Dashboard",
     items: [

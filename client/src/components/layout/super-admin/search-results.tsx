@@ -1,106 +1,41 @@
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Phone, Globe, Users, CreditCard, BarChart3, Shield, Settings, MessageSquare, FileText, Palette, Bot, Radio, Database, LayoutDashboard, Megaphone } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search, Phone, Globe, Users, CreditCard, BarChart3, Shield, Settings, MessageSquare, FileText, Palette, Bot, Radio, Database, LayoutDashboard, Megaphone, Building2, Route, Ticket } from "lucide-react";
 import { useSuperAdminTabs } from "@/stores/super-admin-tabs";
+import { allPageSearchItems, filterSearchItems, type SearchItem } from "@/lib/search-registry";
 
-interface SearchItem {
+interface DataResult {
   id: string;
   label: string;
-  section: string;
-  sectionLabel: string;
+  type: string;
   path: string;
-  icon: typeof Phone;
-  keywords: string[];
+  description?: string;
+  icon?: string;
 }
 
-const allSearchItems: SearchItem[] = [
-  { id: "voip-pops", label: "POPs", section: "voip", sectionLabel: "VoIP", path: "/admin/pops", icon: Radio, keywords: ["pops", "points of presence", "locations", "servers"] },
-  { id: "voip-voice-tiers", label: "Voice Tiers", section: "voip", sectionLabel: "VoIP", path: "/admin/voice-tiers", icon: Phone, keywords: ["tiers", "quality", "voice", "premium", "standard"] },
-  { id: "voip-codecs", label: "Codecs", section: "voip", sectionLabel: "VoIP", path: "/admin/codecs", icon: Settings, keywords: ["codecs", "audio", "g711", "g729", "opus"] },
-  { id: "voip-channel-plans", label: "Channel Plans", section: "voip", sectionLabel: "VoIP", path: "/admin/channel-plans", icon: Database, keywords: ["channels", "plans", "capacity"] },
-  { id: "voip-carriers", label: "Carriers", section: "voip", sectionLabel: "VoIP", path: "/admin/carriers", icon: Phone, keywords: ["carriers", "providers", "upstream", "termination"] },
-  { id: "voip-routes", label: "Routes", section: "voip", sectionLabel: "VoIP", path: "/admin/routes", icon: Phone, keywords: ["routes", "routing", "lcr", "destinations"] },
-  { id: "voip-did-countries", label: "DID Countries", section: "voip", sectionLabel: "VoIP", path: "/admin/did-countries", icon: Globe, keywords: ["did", "countries", "numbers", "international"] },
-  { id: "voip-did-providers", label: "DID Providers", section: "voip", sectionLabel: "VoIP", path: "/admin/did-providers", icon: Globe, keywords: ["did", "providers", "numbers", "suppliers"] },
-  { id: "voip-did-inventory", label: "DID Inventory", section: "voip", sectionLabel: "VoIP", path: "/admin/did-inventory", icon: Globe, keywords: ["did", "inventory", "numbers", "stock"] },
-  
-  { id: "customers-customers", label: "Customers", section: "customers", sectionLabel: "Customers", path: "/admin/customers", icon: Users, keywords: ["customers", "users", "accounts", "clients"] },
-  { id: "customers-categories", label: "Categories", section: "customers", sectionLabel: "Customers", path: "/admin/categories", icon: Users, keywords: ["categories", "types", "groups", "segments"] },
-  { id: "customers-groups", label: "Groups", section: "customers", sectionLabel: "Customers", path: "/admin/groups", icon: Users, keywords: ["groups", "teams", "organizations"] },
-  { id: "customers-kyc", label: "KYC", section: "customers", sectionLabel: "Customers", path: "/admin/kyc", icon: Shield, keywords: ["kyc", "verification", "identity", "compliance"] },
-  
-  { id: "billing-invoices", label: "Invoices", section: "billing", sectionLabel: "Billing", path: "/admin/invoices", icon: CreditCard, keywords: ["invoices", "billing", "payments", "charges"] },
-  { id: "billing-payments", label: "Payments", section: "billing", sectionLabel: "Billing", path: "/admin/payments", icon: CreditCard, keywords: ["payments", "transactions", "receipts"] },
-  { id: "billing-currencies", label: "Currencies", section: "billing", sectionLabel: "Billing", path: "/admin/currencies", icon: CreditCard, keywords: ["currencies", "forex", "exchange", "rates"] },
-  { id: "billing-referrals", label: "Referrals", section: "billing", sectionLabel: "Billing", path: "/admin/referrals", icon: Users, keywords: ["referrals", "affiliate", "rewards"] },
-  { id: "billing-promo-codes", label: "Promo Codes", section: "billing", sectionLabel: "Billing", path: "/admin/promo-codes", icon: CreditCard, keywords: ["promo", "codes", "discounts", "coupons"] },
-  { id: "billing-bonuses", label: "Bonuses", section: "billing", sectionLabel: "Billing", path: "/admin/bonuses", icon: CreditCard, keywords: ["bonuses", "rewards", "credits"] },
-  
-  { id: "marketing-social-accounts", label: "Social Accounts", section: "marketing", sectionLabel: "Marketing", path: "/admin/social-accounts", icon: MessageSquare, keywords: ["social", "accounts", "facebook", "twitter", "linkedin"] },
-  { id: "marketing-social-posts", label: "Social Posts", section: "marketing", sectionLabel: "Marketing", path: "/admin/social-posts", icon: MessageSquare, keywords: ["social", "posts", "content", "publishing"] },
-  { id: "marketing-email-templates", label: "Email Templates", section: "marketing", sectionLabel: "Marketing", path: "/admin/email-templates", icon: FileText, keywords: ["email", "templates", "notifications", "messages"] },
-  
-  { id: "monitoring-metrics", label: "Metrics", section: "monitoring", sectionLabel: "Monitoring", path: "/admin/metrics", icon: BarChart3, keywords: ["metrics", "statistics", "analytics", "data"] },
-  { id: "monitoring-alerts", label: "Alerts", section: "monitoring", sectionLabel: "Monitoring", path: "/admin/alerts", icon: BarChart3, keywords: ["alerts", "notifications", "warnings"] },
-  { id: "monitoring-rules", label: "Monitoring Rules", section: "monitoring", sectionLabel: "Monitoring", path: "/admin/rules", icon: Settings, keywords: ["rules", "monitoring", "thresholds"] },
-  
-  { id: "sip-tester-new", label: "New Test", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester/new", icon: Phone, keywords: ["sip", "tester", "testing", "new", "quality"] },
-  { id: "sip-tester-history", label: "History", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester/history", icon: Phone, keywords: ["sip", "history", "tests", "results"] },
-  { id: "sip-tester-settings", label: "Settings", section: "sip-tester", sectionLabel: "SIP Tester", path: "/admin/sip-tester/settings", icon: Settings, keywords: ["sip", "settings", "profiles", "suppliers", "audio"] },
-  
-  { id: "ai-voice-dashboard", label: "Dashboard", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/dashboard", icon: LayoutDashboard, keywords: ["ai", "voice", "dashboard", "overview"] },
-  { id: "ai-voice-agents", label: "Agents", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/agents", icon: Bot, keywords: ["ai", "voice", "agents", "assistant", "chatbot", "ivr"] },
-  { id: "ai-voice-knowledge-bases", label: "Knowledge Bases", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/knowledge-bases", icon: Database, keywords: ["ai", "voice", "knowledge", "training", "documents"] },
-  { id: "ai-voice-campaigns", label: "Campaigns", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/campaigns", icon: Megaphone, keywords: ["ai", "voice", "campaigns", "outbound", "phonebook"] },
-  { id: "ai-voice-call-logs", label: "Call Logs", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/call-logs", icon: Phone, keywords: ["ai", "voice", "calls", "logs", "history", "recordings"] },
-  { id: "ai-voice-analytics", label: "Analytics", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/analytics", icon: BarChart3, keywords: ["ai", "voice", "analytics", "reports", "usage"] },
-  { id: "ai-voice-billing", label: "Billing", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/billing", icon: CreditCard, keywords: ["ai", "voice", "billing", "pricing", "usage"] },
-  { id: "ai-voice-settings", label: "Settings", section: "ai-voice", sectionLabel: "AI Voice", path: "/admin/ai-voice/settings", icon: Settings, keywords: ["ai", "voice", "settings", "configuration", "providers"] },
-  
-  { id: "softswitch-customers", label: "Class 4 Customers", section: "softswitch", sectionLabel: "Softswitch", path: "/admin/class4-customers", icon: Users, keywords: ["class4", "softswitch", "customers", "wholesale"] },
-  { id: "softswitch-carriers", label: "Class 4 Carriers", section: "softswitch", sectionLabel: "Softswitch", path: "/admin/class4-carriers", icon: Phone, keywords: ["class4", "softswitch", "carriers", "upstream"] },
-  { id: "softswitch-rate-cards", label: "Class 4 Rate Cards", section: "softswitch", sectionLabel: "Softswitch", path: "/admin/class4-rate-cards", icon: CreditCard, keywords: ["class4", "softswitch", "rates", "pricing", "lcr"] },
-  
-  { id: "em-dashboard", label: "Experience Manager", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager", icon: Palette, keywords: ["experience", "manager", "dashboard", "overview"] },
-  { id: "em-marketing", label: "Marketing Website", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/marketing", icon: Megaphone, keywords: ["marketing", "website", "landing", "pages"] },
-  { id: "em-portal-themes", label: "Portal Themes", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/portal-themes", icon: Palette, keywords: ["portal", "themes", "styling", "colors", "appearance"] },
-  { id: "em-white-label", label: "White Label", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/white-label", icon: Palette, keywords: ["white", "label", "branding", "customization", "reseller"] },
-  { id: "em-design-system", label: "Design System", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/design-system", icon: Palette, keywords: ["design", "system", "components", "ui", "ux", "guidelines"] },
-  { id: "em-component-library", label: "Component Library", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/component-library", icon: Palette, keywords: ["component", "library", "ui", "elements", "widgets"] },
-  { id: "em-branding", label: "Branding", section: "experience-manager", sectionLabel: "Experience Manager", path: "/admin/experience-manager/branding", icon: Palette, keywords: ["branding", "logo", "colors", "identity", "brand", "customization"] },
-  
-  { id: "cms-pages", label: "Website Pages", section: "cms", sectionLabel: "CMS", path: "/admin/pages", icon: FileText, keywords: ["pages", "website", "content", "cms"] },
-  { id: "cms-sections", label: "Website Sections", section: "cms", sectionLabel: "CMS", path: "/admin/website-sections", icon: FileText, keywords: ["sections", "website", "blocks", "components"] },
-  { id: "cms-login-pages", label: "Portal Login Pages", section: "cms", sectionLabel: "CMS", path: "/admin/login-pages", icon: FileText, keywords: ["login", "portal", "branding", "customization"] },
-  { id: "cms-site-settings", label: "Site Settings", section: "cms", sectionLabel: "CMS", path: "/admin/site-settings", icon: Settings, keywords: ["site", "settings", "configuration", "seo"] },
-  { id: "cms-themes", label: "Themes", section: "cms", sectionLabel: "CMS", path: "/admin/themes", icon: Palette, keywords: ["themes", "design", "colors", "branding"] },
-  { id: "cms-media", label: "Media Library", section: "cms", sectionLabel: "CMS", path: "/admin/media", icon: FileText, keywords: ["media", "images", "files", "uploads"] },
-  { id: "cms-documentation", label: "Documentation", section: "cms", sectionLabel: "CMS", path: "/admin/documentation", icon: FileText, keywords: ["docs", "documentation", "help", "guides"] },
-  
-  { id: "admin-users", label: "Admin Users", section: "admin", sectionLabel: "Admin", path: "/admin/admin-users", icon: Shield, keywords: ["admin", "users", "staff", "team"] },
-  { id: "admin-roles", label: "Roles & Permissions", section: "admin", sectionLabel: "Admin", path: "/admin/roles", icon: Shield, keywords: ["roles", "permissions", "access", "security"] },
-  { id: "admin-audit-logs", label: "Audit Logs", section: "admin", sectionLabel: "Admin", path: "/admin/audit-logs", icon: FileText, keywords: ["audit", "logs", "history", "changes"] },
-  { id: "admin-trash", label: "Trash", section: "admin", sectionLabel: "Admin", path: "/admin/trash", icon: FileText, keywords: ["trash", "deleted", "recycle", "restore"] },
-  { id: "admin-tickets", label: "Support Tickets", section: "admin", sectionLabel: "Admin", path: "/admin/tickets", icon: MessageSquare, keywords: ["tickets", "support", "help", "issues"] },
-  { id: "admin-job-queue", label: "Job Queue", section: "admin", sectionLabel: "Admin", path: "/admin/job-queue", icon: Settings, keywords: ["jobs", "queue", "background", "tasks", "worker", "async"] },
-  { id: "admin-dev-tests", label: "Dev Tests", section: "admin", sectionLabel: "Admin", path: "/admin/dev-tests", icon: Settings, keywords: ["dev", "tests", "testing", "development", "debug"] },
-  { id: "admin-testing-engine", label: "Testing Engine", section: "admin", sectionLabel: "Admin", path: "/admin/testing-engine", icon: Settings, keywords: ["testing", "engine", "e2e", "automation", "test", "playwright"] },
-  
-  { id: "global-platform", label: "Platform Settings", section: "global-settings", sectionLabel: "Global Settings", path: "/admin/global-settings/platform", icon: Settings, keywords: ["global", "platform", "settings", "configuration"] },
-  { id: "global-currencies", label: "Currency Settings", section: "global-settings", sectionLabel: "Global Settings", path: "/admin/global-settings/currencies", icon: CreditCard, keywords: ["global", "currencies", "forex", "exchange"] },
-  { id: "global-localization", label: "Localization", section: "global-settings", sectionLabel: "Global Settings", path: "/admin/global-settings/localization", icon: Globe, keywords: ["global", "localization", "language", "timezone", "i18n"] },
-  { id: "global-az-database", label: "A-Z Database", section: "global-settings", sectionLabel: "Global Settings", path: "/admin/global-settings/az-database", icon: Database, keywords: ["global", "az", "database", "destinations", "country", "codes"] },
-  
-  { id: "settings-general", label: "General Settings", section: "settings", sectionLabel: "Settings", path: "/admin/settings/general", icon: Settings, keywords: ["settings", "general", "configuration"] },
-  { id: "settings-api-keys", label: "API Keys", section: "settings", sectionLabel: "Settings", path: "/admin/settings/api-keys", icon: Settings, keywords: ["api", "keys", "integration", "tokens"] },
-  { id: "settings-webhooks", label: "Webhooks", section: "settings", sectionLabel: "Settings", path: "/admin/settings/webhooks", icon: Settings, keywords: ["webhooks", "callbacks", "events"] },
-  { id: "settings-integrations", label: "Integrations", section: "settings", sectionLabel: "Settings", path: "/admin/settings/integrations", icon: Settings, keywords: ["integrations", "connectors", "third-party"] },
-  { id: "settings-connexcs-status", label: "ConnexCS Status", section: "settings", sectionLabel: "Settings", path: "/admin/settings/connexcs-status", icon: Settings, keywords: ["connexcs", "status", "sync", "integration"] },
-  
-  { id: "dashboard-overview", label: "Dashboard", section: "dashboard", sectionLabel: "Dashboard", path: "/admin", icon: LayoutDashboard, keywords: ["dashboard", "overview", "home", "main"] },
-  { id: "dashboard-activity", label: "Live Activity", section: "dashboard", sectionLabel: "Dashboard", path: "/admin/activity", icon: BarChart3, keywords: ["activity", "live", "real-time", "events"] },
-  { id: "monitoring-cdrs", label: "CDRs", section: "monitoring", sectionLabel: "Monitoring", path: "/admin/cdrs", icon: Phone, keywords: ["cdrs", "call", "detail", "records", "logs", "history"] },
-];
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  users: Users,
+  building2: Building2,
+  "file-text": FileText,
+  ticket: Ticket,
+  route: Route,
+  phone: Phone,
+  globe: Globe,
+  creditcard: CreditCard,
+  shield: Shield,
+  settings: Settings,
+  palette: Palette,
+  bot: Bot,
+  radio: Radio,
+  database: Database,
+  barchart3: BarChart3,
+  messagesquare: MessageSquare,
+  layoutdashboard: LayoutDashboard,
+  megaphone: Megaphone,
+};
 
 export function AdminSearchResults() {
   const [, setLocation] = useLocation();
@@ -110,18 +45,21 @@ export function AdminSearchResults() {
   const query = searchParams.get("q") || "";
   const searchTerm = query.toLowerCase().trim();
   
-  const filteredItems = searchTerm
-    ? allSearchItems.filter((item) => {
-        const searchableText = [
-          item.label.toLowerCase(),
-          item.sectionLabel.toLowerCase(),
-          ...item.keywords.map(k => k.toLowerCase()),
-        ].join(" ");
-        return searchableText.includes(searchTerm);
-      })
-    : [];
+  // Get page results from registry (auto-discovered from navigation)
+  const pageResults = filterSearchItems(allPageSearchItems, searchTerm);
+  
+  // Get data results from API (customers, carriers, invoices, etc.)
+  const { data: dataResults, isLoading } = useQuery<{ results: DataResult[] }>({
+    queryKey: ["/api/search", searchTerm],
+    queryFn: async () => {
+      if (searchTerm.length < 2) return { results: [] };
+      const response = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
+      return response.json();
+    },
+    enabled: searchTerm.length >= 2,
+  });
 
-  const handleItemClick = (item: SearchItem) => {
+  const handlePageClick = (item: SearchItem) => {
     closeTab("search");
     setActiveSection(item.section);
     setActiveSubItem(item.id.split("-").slice(1).join("-"));
@@ -133,39 +71,127 @@ export function AdminSearchResults() {
     setLocation(item.path);
   };
 
+  const handleDataClick = (item: DataResult) => {
+    closeTab("search");
+    setLocation(item.path);
+  };
+
+  const getDataIcon = (iconName?: string) => {
+    if (!iconName) return FileText;
+    return iconMap[iconName.toLowerCase()] || FileText;
+  };
+
+  const totalResults = pageResults.length + (dataResults?.results?.length || 0);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-2">Search Results</h1>
       <p className="text-muted-foreground mb-6">
-        {filteredItems.length} results for "{query}"
+        {isLoading ? "Searching..." : `${totalResults} results for "${query}"`}
       </p>
 
-      {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredItems.map((item) => (
-            <Card
-              key={item.id}
-              className="hover-elevate cursor-pointer transition-all"
-              onClick={() => handleItemClick(item)}
-              data-testid={`search-result-${item.id}`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-md bg-primary/10">
-                    <item.icon className="h-5 w-5 text-primary" />
+      {/* Page Results Section */}
+      {pageResults.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5 text-primary" />
+            Pages & Modules
+            <Badge variant="secondary">{pageResults.length}</Badge>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {pageResults.map((item) => (
+              <Card
+                key={item.id}
+                className="hover-elevate cursor-pointer transition-all"
+                onClick={() => handlePageClick(item)}
+                data-testid={`search-result-page-${item.id}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-md bg-primary/10">
+                      <item.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium truncate">{item.label}</h3>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {item.sectionLabel}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate">{item.label}</h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {item.sectionLabel}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      ) : (
+      )}
+
+      {/* Data Results Section */}
+      {isLoading ? (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Database className="h-5 w-5 text-primary" />
+            Data Records
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="h-9 w-9 rounded-md" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-24 mb-2" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : dataResults?.results && dataResults.results.length > 0 ? (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Database className="h-5 w-5 text-primary" />
+            Data Records
+            <Badge variant="secondary">{dataResults.results.length}</Badge>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {dataResults.results.map((item) => {
+              const Icon = getDataIcon(item.icon);
+              return (
+                <Card
+                  key={item.id}
+                  className="hover-elevate cursor-pointer transition-all"
+                  onClick={() => handleDataClick(item)}
+                  data-testid={`search-result-data-${item.id}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-md bg-accent/50">
+                        <Icon className="h-5 w-5 text-accent-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{item.label}</h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {item.type}
+                        </p>
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground truncate mt-1">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {/* No Results */}
+      {!isLoading && totalResults === 0 && searchTerm && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-medium text-muted-foreground">

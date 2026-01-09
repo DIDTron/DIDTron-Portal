@@ -3441,6 +3441,128 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== GLOBAL SEARCH ====================
+
+  app.get("/api/search", async (req, res) => {
+    try {
+      const query = (req.query.q as string || "").toLowerCase().trim();
+      if (!query || query.length < 2) {
+        return res.json({ results: [] });
+      }
+
+      const results: Array<{
+        id: string;
+        label: string;
+        type: string;
+        path: string;
+        description?: string;
+        icon?: string;
+      }> = [];
+
+      // Search customers
+      const customers = await storage.getCustomers();
+      for (const customer of customers) {
+        const searchText = `${customer.companyName} ${customer.accountNumber}`.toLowerCase();
+        if (searchText.includes(query)) {
+          results.push({
+            id: `customer-${customer.id}`,
+            label: customer.companyName,
+            type: "Customer",
+            path: `/admin/customers?id=${customer.id}`,
+            description: `Account: ${customer.accountNumber}`,
+            icon: "users",
+          });
+        }
+      }
+
+      // Search carriers
+      const carriers = await storage.getCarriers();
+      for (const carrier of carriers) {
+        const searchText = `${carrier.name} ${carrier.code}`.toLowerCase();
+        if (searchText.includes(query)) {
+          results.push({
+            id: `carrier-${carrier.id}`,
+            label: carrier.name,
+            type: "Carrier",
+            path: `/admin/carriers?id=${carrier.id}`,
+            description: `Code: ${carrier.code}`,
+            icon: "building2",
+          });
+        }
+      }
+
+      // Search invoices
+      const invoices = await storage.getInvoices();
+      for (const invoice of invoices) {
+        const searchText = `${invoice.invoiceNumber}`.toLowerCase();
+        if (searchText.includes(query)) {
+          results.push({
+            id: `invoice-${invoice.id}`,
+            label: invoice.invoiceNumber,
+            type: "Invoice",
+            path: `/admin/invoices?id=${invoice.id}`,
+            description: `Amount: ${invoice.total} ${invoice.currency || "USD"}`,
+            icon: "file-text",
+          });
+        }
+      }
+
+      // Search tickets
+      const tickets = await storage.getTickets();
+      for (const ticket of tickets) {
+        const searchText = `${ticket.subject} ${ticket.ticketNumber}`.toLowerCase();
+        if (searchText.includes(query)) {
+          results.push({
+            id: `ticket-${ticket.id}`,
+            label: ticket.subject,
+            type: "Ticket",
+            path: `/admin/tickets?id=${ticket.id}`,
+            description: `#${ticket.ticketNumber} - ${ticket.status}`,
+            icon: "ticket",
+          });
+        }
+      }
+
+      // Search routes
+      const routes = await storage.getRoutes();
+      for (const route of routes) {
+        const searchText = `${route.name} ${route.prefix || ""}`.toLowerCase();
+        if (searchText.includes(query)) {
+          results.push({
+            id: `route-${route.id}`,
+            label: route.name,
+            type: "Route",
+            path: `/admin/routes?id=${route.id}`,
+            description: route.prefix ? `Prefix: ${route.prefix}` : undefined,
+            icon: "route",
+          });
+        }
+      }
+
+      // Search DIDs
+      const dids = await storage.getDids();
+      for (const did of dids) {
+        const searchText = `${did.number}`.toLowerCase();
+        if (searchText.includes(query)) {
+          results.push({
+            id: `did-${did.id}`,
+            label: did.number,
+            type: "DID",
+            path: `/admin/did-inventory?id=${did.id}`,
+            description: `Status: ${did.status}`,
+            icon: "phone",
+          });
+        }
+      }
+
+      // Limit results to 50
+      res.json({ results: results.slice(0, 50) });
+    } catch (error) {
+      console.error("Search error:", error);
+      res.status(500).json({ error: "Search failed" });
+    }
+  });
+
   // ==================== CUSTOMER CATEGORIES ====================
 
   app.get("/api/categories", async (req, res) => {
