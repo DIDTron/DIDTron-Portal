@@ -434,7 +434,7 @@ export function GlobalSettingsAZDatabase() {
   queryParams.set("offset", String(page * limit));
   const queryString = queryParams.toString();
   
-  const { data, isLoading, isFetching } = useQuery<{ destinations: AzDestination[]; total: number }>({
+  const { data, isLoading, isFetching, refetch } = useQuery<{ destinations: AzDestination[]; total: number }>({
     queryKey: [`/api/az-destinations?${queryString}`],
     refetchInterval: autoRefresh ? 3000 : false,
   });
@@ -719,7 +719,7 @@ export function GlobalSettingsAZDatabase() {
             variant="outline"
             size="icon"
             onClick={() => {
-              queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
+              refetch();
             }}
             disabled={isFetching}
             data-testid="button-refresh"
