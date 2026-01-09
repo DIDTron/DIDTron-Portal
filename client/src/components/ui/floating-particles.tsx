@@ -1,111 +1,138 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface Particle {
-  id: number;
   x: number;
   y: number;
   vx: number;
   vy: number;
   size: number;
   opacity: number;
-  icon: string;
   color: string;
+  type: "circle" | "square" | "diamond";
 }
 
-const ICONS = [
-  "📞", "📱", "☎️", "📡", "🌐", "💬", "📶", "🔊", "🎙️", "📲",
-  "⚡", "🔗", "💻", "🖥️", "⌨️", "🔒", "✨", "🚀", "💎", "🌟"
-];
-
-const COLORS = [
-  "rgba(37, 99, 235, 0.6)",   // Primary blue
-  "rgba(59, 130, 246, 0.5)",  // Lighter blue
-  "rgba(99, 102, 241, 0.5)",  // Indigo
-  "rgba(139, 92, 246, 0.4)",  // Purple
-  "rgba(34, 197, 94, 0.4)",   // Green
+const BRAND_COLORS = [
+  "29, 78, 216",    // #1d4ed8 - Dark blue
+  "37, 99, 235",    // #2563eb - Primary blue
+  "56, 189, 248",   // #38bdf8 - Light blue
+  "67, 56, 202",    // #4338ca - Indigo
+  "99, 102, 241",   // #6366f1 - Violet
 ];
 
 export function FloatingParticles() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const mouseRef = useRef({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mouseRef = useRef({ x: -1000, y: -1000 });
+  const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number>();
+  const timeRef = useRef(0);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const { width, height } = container.getBoundingClientRect();
-    const particleCount = 40;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const initialParticles: Particle[] = Array.from({ length: particleCount }, (_, i) => ({
-      id: i,
-      x: Math.random() * width,
-      y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      size: Math.random() * 16 + 12,
-      opacity: Math.random() * 0.4 + 0.2,
-      icon: ICONS[Math.floor(Math.random() * ICONS.length)],
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    const resizeCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+    };
+
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    const isMobile = window.innerWidth < 768;
+    const particleCount = isMobile ? 40 : 80;
+    const rect = canvas.getBoundingClientRect();
+
+    particlesRef.current = Array.from({ length: particleCount }, () => ({
+      x: Math.random() * rect.width,
+      y: Math.random() * rect.height,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      size: Math.random() * 4 + 2,
+      opacity: Math.random() * 0.12 + 0.06,
+      color: BRAND_COLORS[Math.floor(Math.random() * BRAND_COLORS.length)],
+      type: ["circle", "square", "diamond"][Math.floor(Math.random() * 3)] as "circle" | "square" | "diamond",
     }));
 
-    setParticles(initialParticles);
-
     const handleMouseMove = (e: MouseEvent) => {
-      const rect = container.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect();
       mouseRef.current = {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,
       };
     };
 
-    container.addEventListener("mousemove", handleMouseMove);
+    const handleMouseLeave = () => {
+      mouseRef.current = { x: -1000, y: -1000 };
+    };
+
+    canvas.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("mouseleave", handleMouseLeave);
 
     const animate = () => {
-      setParticles((prev) =>
-        prev.map((particle) => {
-          const rect = container.getBoundingClientRect();
-          const mouse = mouseRef.current;
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      timeRef.current += 0.01;
 
-          const dx = mouse.x - particle.x;
-          const dy = mouse.y - particle.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+      particlesRef.current.forEach((particle) => {
+        const mouse = mouseRef.current;
+        const dx = mouse.x - particle.x;
+        const dy = mouse.y - particle.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-          let newVx = particle.vx;
-          let newVy = particle.vy;
+        if (distance < 120 && distance > 0) {
+          const force = (120 - distance) / 120 * 0.15;
+          const angle = Math.atan2(dy, dx);
+          particle.vx += Math.cos(angle) * force;
+          particle.vy += Math.sin(angle) * force;
+        }
 
-          if (distance < 150 && distance > 0) {
-            const force = (150 - distance) / 150;
-            const angle = Math.atan2(dy, dx);
-            newVx += Math.cos(angle) * force * 0.3;
-            newVy += Math.sin(angle) * force * 0.3;
-          }
+        particle.vx += Math.sin(timeRef.current + particle.x * 0.01) * 0.002;
+        particle.vy += Math.cos(timeRef.current + particle.y * 0.01) * 0.002;
 
-          newVx *= 0.98;
-          newVy *= 0.98;
+        particle.vx *= 0.98;
+        particle.vy *= 0.98;
 
-          newVx += (Math.random() - 0.5) * 0.1;
-          newVy += (Math.random() - 0.5) * 0.1;
+        const maxSpeed = 1.5;
+        const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+        if (speed > maxSpeed) {
+          particle.vx = (particle.vx / speed) * maxSpeed;
+          particle.vy = (particle.vy / speed) * maxSpeed;
+        }
 
-          let newX = particle.x + newVx;
-          let newY = particle.y + newVy;
+        particle.x += particle.vx;
+        particle.y += particle.vy;
 
-          if (newX < 0 || newX > rect.width) newVx *= -1;
-          if (newY < 0 || newY > rect.height) newVy *= -1;
+        if (particle.x < -20) particle.x = rect.width + 20;
+        if (particle.x > rect.width + 20) particle.x = -20;
+        if (particle.y < -20) particle.y = rect.height + 20;
+        if (particle.y > rect.height + 20) particle.y = -20;
 
-          newX = Math.max(0, Math.min(rect.width, newX));
-          newY = Math.max(0, Math.min(rect.height, newY));
+        ctx.save();
+        ctx.globalAlpha = particle.opacity;
+        ctx.fillStyle = `rgba(${particle.color}, 1)`;
+        ctx.translate(particle.x, particle.y);
 
-          return {
-            ...particle,
-            x: newX,
-            y: newY,
-            vx: newVx,
-            vy: newVy,
-          };
-        })
-      );
+        if (particle.type === "circle") {
+          ctx.beginPath();
+          ctx.arc(0, 0, particle.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (particle.type === "square") {
+          ctx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
+        } else if (particle.type === "diamond") {
+          ctx.rotate(Math.PI / 4);
+          ctx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
+        }
+
+        ctx.restore();
+      });
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -113,7 +140,9 @@ export function FloatingParticles() {
     animationRef.current = requestAnimationFrame(animate);
 
     return () => {
-      container.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("resize", resizeCanvas);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("mouseleave", handleMouseLeave);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
@@ -121,34 +150,10 @@ export function FloatingParticles() {
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className="absolute inset-0 overflow-hidden pointer-events-auto"
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full"
       style={{ zIndex: 0 }}
-    >
-      {particles.map((particle) => (
-        <div
-          key={particle.id}
-          className="absolute transition-transform duration-100 select-none"
-          style={{
-            left: particle.x,
-            top: particle.y,
-            fontSize: particle.size,
-            opacity: particle.opacity,
-            transform: "translate(-50%, -50%)",
-            filter: "blur(0.5px)",
-            textShadow: `0 0 10px ${particle.color}`,
-          }}
-        >
-          {particle.icon}
-        </div>
-      ))}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.3) 100%)",
-        }}
-      />
-    </div>
+    />
   );
 }
