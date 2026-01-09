@@ -167,9 +167,9 @@ export default function CarrierDetailPage() {
     direction: "customer",
     maxAlerts: 4,
     perMinutes: 1440,
-    templateId: "",
-    clearedTemplateId: "",
-    restrictionTemplate: "",
+    templateId: "none",
+    clearedTemplateId: "none",
+    restrictionTemplate: "none",
     recipients: [] as Array<{ type: string; recipientId: string; recipientName: string; addressType: string }>,
   });
 
@@ -262,7 +262,13 @@ export default function CarrierDetailPage() {
 
   const createAlertMutation = useMutation({
     mutationFn: async (data: typeof alertForm) => {
-      const res = await apiRequest("POST", `/api/carriers/${carrierId}/credit-alerts`, data);
+      const payload = {
+        ...data,
+        templateId: data.templateId === "none" ? "" : data.templateId,
+        clearedTemplateId: data.clearedTemplateId === "none" ? "" : data.clearedTemplateId,
+        restrictionTemplate: data.restrictionTemplate === "none" ? "" : data.restrictionTemplate,
+      };
+      const res = await apiRequest("POST", `/api/carriers/${carrierId}/credit-alerts`, payload);
       return res.json();
     },
     onSuccess: () => {
@@ -331,9 +337,9 @@ export default function CarrierDetailPage() {
       direction: "customer",
       maxAlerts: 4,
       perMinutes: 1440,
-      templateId: "",
-      clearedTemplateId: "",
-      restrictionTemplate: "",
+      templateId: "none",
+      clearedTemplateId: "none",
+      restrictionTemplate: "none",
       recipients: [],
     });
     setNewRecipient({
@@ -769,7 +775,7 @@ export default function CarrierDetailPage() {
                       <SelectValue placeholder="Select template" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {alertTemplates.map((template) => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name}
@@ -788,7 +794,7 @@ export default function CarrierDetailPage() {
                       <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {alertTemplates.map((template) => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name}
@@ -883,7 +889,7 @@ export default function CarrierDetailPage() {
                       <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {restrictionTemplates.map((template) => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name}
@@ -978,10 +984,11 @@ export default function CarrierDetailPage() {
                               value={newRecipient.recipientId}
                               onValueChange={(v) => {
                                 const user = users?.find(u => u.id === v);
+                                const userName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "";
                                 setNewRecipient({
                                   ...newRecipient,
                                   recipientId: v,
-                                  recipientName: user?.name || user?.email || "",
+                                  recipientName: userName,
                                 });
                               }}
                             >
@@ -991,7 +998,7 @@ export default function CarrierDetailPage() {
                               <SelectContent>
                                 {users?.map((user) => (
                                   <SelectItem key={user.id} value={user.id}>
-                                    {user.name || user.email}
+                                    {`${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
