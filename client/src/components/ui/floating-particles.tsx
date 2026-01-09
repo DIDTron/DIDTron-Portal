@@ -1,18 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
-interface Ring {
-  baseRadius: number;
-  phase: number;
-}
-
 interface Dot {
-  ringIndex: number;
-  baseAngle: number;
-  angleJitter: number;
-  radiusJitter: number;
+  x: number;
+  y: number;
+  distance: number;
+  angle: number;
   size: number;
   colorIndex: number;
   brightness: number;
+  noiseOffset: number;
 }
 
 export function FloatingParticles() {
@@ -20,7 +16,6 @@ export function FloatingParticles() {
   const mouseRef = useRef({ x: -1000, y: -1000 });
   const smoothMouseRef = useRef({ x: -1000, y: -1000 });
   const dotsRef = useRef<Dot[]>([]);
-  const ringsRef = useRef<Ring[]>([]);
   const animationRef = useRef<number>();
   const timeRef = useRef(0);
   const lastMoveRef = useRef(0);
@@ -57,29 +52,27 @@ export function FloatingParticles() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // 8 rings with 60px spacing (400% of 15px), hollow center at 50px
-    const ringCount = 8;
-    ringsRef.current = Array.from({ length: ringCount }, (_, i) => ({
-      baseRadius: 50 + i * 60, // Wide spacing: 50, 110, 170, 230...
-      phase: i * 0.3,
-    }));
-
-    // Only 12 dots per ring - sparse, with jitter
-    const dotsPerRing = 12;
+    // Generate randomly distributed dots in radial bands
+    // Hollow center: min 40px, max 300px
+    const dotCount = 80;
     dotsRef.current = [];
     
-    for (let ringIdx = 0; ringIdx < ringCount; ringIdx++) {
-      for (let d = 0; d < dotsPerRing; d++) {
-        dotsRef.current.push({
-          ringIndex: ringIdx,
-          baseAngle: (d / dotsPerRing) * Math.PI * 2,
-          angleJitter: (Math.random() - 0.5) * 0.3, // Random angular offset
-          radiusJitter: (Math.random() - 0.5) * 8, // Random radial offset
-          size: 1.5 + Math.random() * 1,
-          colorIndex: (ringIdx + d) % 2,
-          brightness: 0.15,
-        });
-      }
+    for (let i = 0; i < dotCount; i++) {
+      // Random distance from center (hollow core at 40px)
+      const distance = 40 + Math.random() * 260;
+      // Random angle
+      const angle = Math.random() * Math.PI * 2;
+      
+      dotsRef.current.push({
+        x: 0,
+        y: 0,
+        distance,
+        angle,
+        size: 1.5 + Math.random() * 1.2,
+        colorIndex: i % 2,
+        brightness: 0,
+        noiseOffset: Math.random() * 100,
+      });
     }
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -93,6 +86,13 @@ export function FloatingParticles() {
 
     const colorsLight = ["37, 99, 235", "30, 41, 59"];
     const colorsDark = ["46, 75, 255", "248, 250, 252"];
+
+    // Simple noise function
+    const noise = (x: number, y: number) => {
+      return Math.sin(x * 0.5) * Math.cos(y * 0.7) * 0.5 + 
+             Math.sin(x * 0.3 + y * 0.4) * 0.3 +
+             Math.cos(x * 0.8 - y * 0.2) * 0.2;
+    };
 
     const animate = () => {
       const rect = canvas.getBoundingClientRect();
@@ -118,38 +118,51 @@ export function FloatingParticles() {
         const centerX = smoothMouseRef.current.x;
         const centerY = smoothMouseRef.current.y;
 
-        // Very slow crest rotation - only ~30% of arc visible
-        const crestAngle = timeRef.current * 0.15; // Very slow rotation
-        const crestWidth = Math.PI * 0.6; // ~30% of circle (0.6 radians = ~34 degrees each side)
+        // Slow expanding ripple wave (radial)
+        const ripplePhase = (timeRef.current * 0.08) % 1; // Very slow
+        
+        // Slow rotating angular wave
+        const angularWave = timeRef.current * 0.03; // Very slow rotation
 
         dotsRef.current.forEach((dot) => {
-          const ring = ringsRef.current[dot.ringIndex];
+          // Slight position wobble
+          const wobbleX = Math.sin(timeRef.current * 0.1 + dot.noiseOffset) * 3;
+          const wobbleY = Math.cos(timeRef.current * 0.08 + dot.noiseOffset * 1.3) * 3;
           
-          // Very slow wave motion
-          const radiusWave = Math.sin(timeRef.current * 0.08 + ring.phase) * 5;
-          const currentRadius = ring.baseRadius + radiusWave + dot.radiusJitter;
+          // Calculate position
+          const x = centerX + Math.cos(dot.angle) * dot.distance + wobbleX;
+          const y = centerY + Math.sin(dot.angle) * dot.distance + wobbleY;
           
-          // Angle with jitter and slow drift
-          const angleDrift = Math.sin(timeRef.current * 0.05 + dot.baseAngle) * 0.08;
-          const angle = dot.baseAngle + dot.angleJitter + angleDrift;
+          // Normalize distance (0 = inner, 1 = outer)
+          const distNorm = (dot.distance - 40) / 260;
           
-          // Position
-          const x = centerX + Math.cos(angle) * currentRadius;
-          const y = centerY + Math.sin(angle) * currentRadius;
+          // Radial ripple: wave expanding outward
+          const radialDist = Math.abs(distNorm - ripplePhase);
+          const radialWrap = Math.min(radialDist, 1 - radialDist);
+          const radialInfluence = Math.max(0, 1 - radialWrap / 0.2);
           
-          // Calculate if dot is in the visible crest arc
-          const ringCrestOffset = ring.phase * 0.5; // Each ring has offset crest
-          const dotAngleFromCrest = Math.abs(((angle - crestAngle - ringCrestOffset) + Math.PI) % (Math.PI * 2) - Math.PI);
+          // Angular wave: sweeping around
+          const angleDist = Math.abs(Math.sin(dot.angle - angularWave));
+          const angularInfluence = angleDist > 0.7 ? (angleDist - 0.7) / 0.3 : 0;
           
-          // Smooth visibility based on distance from crest
-          const visibility = Math.max(0, 1 - dotAngleFromCrest / crestWidth);
-          const smoothVis = visibility * visibility; // Quadratic falloff
+          // Noise field for organic variation
+          const noiseVal = noise(
+            dot.angle * 2 + timeRef.current * 0.05,
+            distNorm * 3 + timeRef.current * 0.03 + dot.noiseOffset
+          );
+          const noiseInfluence = (noiseVal + 1) * 0.5; // 0 to 1
           
-          // Target brightness: mostly dim, bright only in crest
-          const targetBrightness = 0.15 + smoothVis * 0.6;
+          // Combined visibility: need both radial AND angular OR noise to be high
+          const combined = Math.max(
+            radialInfluence * angularInfluence,
+            radialInfluence * noiseInfluence * 0.6
+          );
           
-          // Very slow fade transition
-          const fadeSpeed = smoothVis > 0.3 ? 0.08 : 0.02;
+          // Target brightness
+          const targetBrightness = 0.1 + combined * 0.7;
+          
+          // Slow smooth transition
+          const fadeSpeed = combined > 0.3 ? 0.04 : 0.015;
           dot.brightness += (targetBrightness - dot.brightness) * fadeSpeed;
 
           ctx.save();
