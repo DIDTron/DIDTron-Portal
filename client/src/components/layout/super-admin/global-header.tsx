@@ -64,7 +64,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
           <Menu className="h-5 w-5" />
         </Button>
         <div className="flex items-center" data-testid="header-logo">
-          <span className="text-xl font-bold tracking-tight">
+          <span className="text-2xl font-bold tracking-tight">
             <span className="text-primary">DID</span>
             <span className="text-foreground">Tron</span>
           </span>
