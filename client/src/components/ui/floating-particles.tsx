@@ -68,16 +68,16 @@ export function FloatingParticles() {
       fadePhase: i * 0.5, // fade phase offset
     }));
 
-    // 8 dots per arch, evenly distributed
-    const dotsPerArch = 8;
+    // 12 dots per arch, evenly distributed around full circle
+    const dotsPerArch = 12;
     dotsRef.current = [];
     
     for (let archIdx = 0; archIdx < archCount; archIdx++) {
       for (let d = 0; d < dotsPerArch; d++) {
         dotsRef.current.push({
           archIndex: archIdx,
-          anglePosition: (d + 0.5) / dotsPerArch, // 0 to 1 evenly spaced
-          size: 3 + Math.random() * 1.5,
+          anglePosition: d / dotsPerArch, // 0 to 1 evenly spaced around circle
+          size: 1.5 + Math.random() * 1,  // smaller dots
           colorIndex: (archIdx + d) % 2,
         });
       }
@@ -124,28 +124,28 @@ export function FloatingParticles() {
         dotsRef.current.forEach((dot) => {
           const arch = archesRef.current[dot.archIndex];
           
-          // Wave motion - arches move up and down like waves
-          const waveY = Math.sin(timeRef.current * 1.5 + arch.phase) * 12;
+          // Wave motion - arches move up and down like waves (slower)
+          const waveY = Math.sin(timeRef.current * 0.6 + arch.phase) * 10;
           
-          // Fade/solid breathing - each arch fades at different times
-          const fadeValue = 0.3 + (Math.sin(timeRef.current * 0.8 + arch.fadePhase) + 1) * 0.35;
+          // Fade/solid breathing - MUCH slower, each arch fades at different times
+          const fadeValue = 0.35 + (Math.sin(timeRef.current * 0.2 + arch.fadePhase) + 1) * 0.3;
           
-          // Scale pulse - arches grow and shrink slightly
-          const scaleValue = 1 + Math.sin(timeRef.current * 1.2 + arch.phase) * 0.08;
+          // Scale pulse - arches grow and shrink slightly (slower)
+          const scaleValue = 1 + Math.sin(timeRef.current * 0.3 + arch.phase) * 0.1;
           
-          // Calculate dot position on the arch (semi-circle)
-          const angle = dot.anglePosition * Math.PI; // 0 to PI for semi-circle
+          // Calculate dot position on FULL 360 degree circle
+          const angle = dot.anglePosition * Math.PI * 2; // 0 to 2*PI for full circle
           const currentRadius = arch.radius * scaleValue;
           
-          const x = centerX + Math.cos(angle) * currentRadius - currentRadius; // offset so arch is centered
-          const y = centerY + arch.yOffset + waveY - Math.sin(angle) * currentRadius * 0.4;
+          const x = centerX + Math.cos(angle) * currentRadius;
+          const y = centerY + arch.yOffset + waveY + Math.sin(angle) * currentRadius * 0.6;
 
           // Render dot
           ctx.save();
           ctx.globalAlpha = opacityRef.current * fadeValue * (isDark ? 0.85 : 0.7);
           ctx.fillStyle = `rgba(${colors[dot.colorIndex]}, 1)`;
           ctx.beginPath();
-          ctx.arc(x + currentRadius, y, dot.size, 0, Math.PI * 2);
+          ctx.arc(x, y, dot.size, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         });
