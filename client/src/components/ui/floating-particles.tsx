@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 
-interface Arch {
-  yOffset: number;
-  radius: number;
-  phase: number;
-  fadePhase: number;
+interface Ring {
+  baseRadius: number;
+  wavePhase: number;
+  waveSpeed: number;
 }
 
 interface Dot {
-  archIndex: number;
-  anglePosition: number; // 0 to 1 along the arch
+  ringIndex: number;
+  anglePosition: number;
   size: number;
   colorIndex: number;
+  brightness: number;
 }
 
 export function FloatingParticles() {
@@ -19,7 +19,7 @@ export function FloatingParticles() {
   const mouseRef = useRef({ x: -1000, y: -1000 });
   const smoothMouseRef = useRef({ x: -1000, y: -1000 });
   const dotsRef = useRef<Dot[]>([]);
-  const archesRef = useRef<Arch[]>([]);
+  const ringsRef = useRef<Ring[]>([]);
   const animationRef = useRef<number>();
   const timeRef = useRef(0);
   const lastMoveRef = useRef(0);
@@ -56,29 +56,26 @@ export function FloatingParticles() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // 10 arches stacked vertically above each other
-    const archCount = 10;
-    const archSpacing = 22;
-    const baseRadius = 120;
-
-    archesRef.current = Array.from({ length: archCount }, (_, i) => ({
-      yOffset: -i * archSpacing, // stacked upward from cursor
-      radius: baseRadius - i * 8, // slightly smaller as they go up
-      phase: i * 0.4, // wave phase offset
-      fadePhase: i * 0.5, // fade phase offset
+    // 10 concentric rings around cursor
+    const ringCount = 10;
+    ringsRef.current = Array.from({ length: ringCount }, (_, i) => ({
+      baseRadius: 30 + i * 22,
+      wavePhase: i * 0.6,
+      waveSpeed: 0.15 + Math.random() * 0.1,
     }));
 
-    // 12 dots per arch, evenly distributed around full circle
-    const dotsPerArch = 12;
+    // 12 dots per ring
+    const dotsPerRing = 12;
     dotsRef.current = [];
     
-    for (let archIdx = 0; archIdx < archCount; archIdx++) {
-      for (let d = 0; d < dotsPerArch; d++) {
+    for (let ringIdx = 0; ringIdx < ringCount; ringIdx++) {
+      for (let d = 0; d < dotsPerRing; d++) {
         dotsRef.current.push({
-          archIndex: archIdx,
-          anglePosition: d / dotsPerArch, // 0 to 1 evenly spaced around circle
-          size: 1.5 + Math.random() * 1,  // smaller dots
-          colorIndex: (archIdx + d) % 2,
+          ringIndex: ringIdx,
+          anglePosition: d / dotsPerRing,
+          size: 1.5 + Math.random() * 1,
+          colorIndex: (ringIdx + d) % 2,
+          brightness: 0.15,
         });
       }
     }
@@ -93,18 +90,17 @@ export function FloatingParticles() {
     window.addEventListener("mousemove", handleMouseMove);
 
     // Colors
-    const colorsLight = ["37, 99, 235", "30, 41, 59"];       // blue accent + pale black
-    const colorsDark = ["46, 75, 255", "248, 250, 252"];     // phosphoric royal blue + pale white
+    const colorsLight = ["37, 99, 235", "30, 41, 59"];
+    const colorsDark = ["46, 75, 255", "248, 250, 252"];
 
     const animate = () => {
       const rect = canvas.getBoundingClientRect();
       ctx.clearRect(0, 0, rect.width, rect.height);
-      timeRef.current += 0.025;
+      timeRef.current += 0.016;
 
       const timeSinceMove = Date.now() - lastMoveRef.current;
       const isMoving = timeSinceMove < 200;
 
-      // Fade based on cursor movement
       if (isMoving) {
         opacityRef.current = Math.min(1, opacityRef.current + 0.06);
       } else {
@@ -112,8 +108,8 @@ export function FloatingParticles() {
       }
 
       // Smooth cursor following
-      smoothMouseRef.current.x += (mouseRef.current.x - smoothMouseRef.current.x) * 0.1;
-      smoothMouseRef.current.y += (mouseRef.current.y - smoothMouseRef.current.y) * 0.1;
+      smoothMouseRef.current.x += (mouseRef.current.x - smoothMouseRef.current.x) * 0.08;
+      smoothMouseRef.current.y += (mouseRef.current.y - smoothMouseRef.current.y) * 0.08;
 
       const colors = isDark ? colorsDark : colorsLight;
 
@@ -122,27 +118,41 @@ export function FloatingParticles() {
         const centerY = smoothMouseRef.current.y;
 
         dotsRef.current.forEach((dot) => {
-          const arch = archesRef.current[dot.archIndex];
+          const ring = ringsRef.current[dot.ringIndex];
           
-          // Wave motion - arches move up and down like waves (slower)
-          const waveY = Math.sin(timeRef.current * 0.6 + arch.phase) * 10;
+          // Sea wave motion - ripple outward
+          const waveTime = timeRef.current * ring.waveSpeed;
+          const dotAngle = dot.anglePosition * Math.PI * 2;
           
-          // Fade/solid breathing - MUCH slower, each arch fades at different times
-          const fadeValue = 0.35 + (Math.sin(timeRef.current * 0.2 + arch.fadePhase) + 1) * 0.3;
+          // Ripple effect: wave travels through the rings
+          const ripplePhase = waveTime * 2 + ring.wavePhase + dotAngle * 0.3;
+          const waveHeight = Math.sin(ripplePhase) * 8;
           
-          // Scale pulse - arches grow and shrink slightly (slower)
-          const scaleValue = 1 + Math.sin(timeRef.current * 0.3 + arch.phase) * 0.1;
+          // Radius undulation
+          const radiusWave = Math.sin(waveTime * 1.5 + ring.wavePhase) * 6;
+          const currentRadius = ring.baseRadius + radiusWave;
           
-          // Calculate dot position on FULL 360 degree circle
-          const angle = dot.anglePosition * Math.PI * 2; // 0 to 2*PI for full circle
-          const currentRadius = arch.radius * scaleValue;
+          // Position on concentric circle
+          const x = centerX + Math.cos(dotAngle) * currentRadius;
+          const y = centerY + Math.sin(dotAngle) * currentRadius + waveHeight;
           
-          const x = centerX + Math.cos(angle) * currentRadius;
-          const y = centerY + arch.yOffset + waveY + Math.sin(angle) * currentRadius * 0.6;
+          // Brightness: dim most of the time, bright only at wave peak
+          const peakValue = Math.sin(ripplePhase);
+          const isAtPeak = peakValue > 0.85;
+          
+          // Target brightness
+          const targetBrightness = isAtPeak ? 0.75 : 0.15;
+          
+          // Smooth transition - fast rise, slow fade
+          if (isAtPeak) {
+            dot.brightness = Math.min(0.75, dot.brightness + 0.15);
+          } else {
+            dot.brightness = Math.max(0.15, dot.brightness - 0.008);
+          }
 
           // Render dot
           ctx.save();
-          ctx.globalAlpha = opacityRef.current * fadeValue * (isDark ? 0.85 : 0.7);
+          ctx.globalAlpha = opacityRef.current * dot.brightness * (isDark ? 1 : 0.9);
           ctx.fillStyle = `rgba(${colors[dot.colorIndex]}, 1)`;
           ctx.beginPath();
           ctx.arc(x, y, dot.size, 0, Math.PI * 2);
