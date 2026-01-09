@@ -5,10 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { login } from "@/lib/auth";
+import { FloatingParticles } from "@/components/ui/floating-particles";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -45,20 +46,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col relative overflow-hidden">
+      <FloatingParticles />
+      
+      <header className="border-b bg-background/80 backdrop-blur-sm relative z-10">
         <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-6">
           <Link href="/" className="flex items-center gap-2" data-testid="link-home">
             <ArrowLeft className="h-4 w-4" />
-            <Phone className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">DIDTron</span>
+            <span className="text-xl font-bold">
+              <span className="text-primary">DID</span>
+              <span className="text-foreground">Tron</span>
+            </span>
           </Link>
           <ThemeToggle />
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-6">
-        <Card className="w-full max-w-md">
+      <main className="flex-1 flex items-center justify-center p-6 relative z-10">
+        <Card className="w-full max-w-md bg-card/95 backdrop-blur-sm shadow-2xl border-primary/20">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl" data-testid="text-login-title">Welcome Back</CardTitle>
             <CardDescription>Sign in to your DIDTron account</CardDescription>
