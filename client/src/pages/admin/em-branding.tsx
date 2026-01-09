@@ -253,6 +253,31 @@ export default function EMBrandingPage() {
               </CardContent>
             </Card>
 
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Logo Size Reference</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg bg-muted/20">
+                    <p className="font-medium text-sm mb-1">Header Logo</p>
+                    <p className="text-2xl font-bold text-primary">32 x 32 px</p>
+                    <p className="text-xs text-muted-foreground mt-1">Square icon shown in the global header</p>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/20">
+                    <p className="font-medium text-sm mb-1">Desktop Logo</p>
+                    <p className="text-2xl font-bold text-primary">200 x 60 px</p>
+                    <p className="text-xs text-muted-foreground mt-1">Horizontal logo for sidebar and login</p>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/20">
+                    <p className="font-medium text-sm mb-1">Mobile Logo</p>
+                    <p className="text-2xl font-bold text-primary">60 x 60 px</p>
+                    <p className="text-xs text-muted-foreground mt-1">Square logo for mobile views</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Desktop Logo</CardTitle>
