@@ -5001,6 +5001,16 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/carriers/:id", async (req, res) => {
+    try {
+      const carrier = await storage.getCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      res.json(carrier);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch carrier" });
+    }
+  });
+
   app.post("/api/carriers", async (req, res) => {
     try {
       const parsed = insertCarrierSchema.safeParse(req.body);

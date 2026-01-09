@@ -86,7 +86,11 @@ import {
   type CarrierInterconnect, type InsertCarrierInterconnect,
   type CarrierContact, type InsertCarrierContact,
   type CarrierCreditAlert, type InsertCarrierCreditAlert,
-  customers as customersTable
+  customers as customersTable,
+  carriers as carriersTable,
+  carrierInterconnects as carrierInterconnectsTable,
+  carrierContacts as carrierContactsTable,
+  carrierCreditAlerts as carrierCreditAlertsTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -1352,68 +1356,32 @@ export class MemStorage implements IStorage {
     return this.channelPlans.delete(id);
   }
 
-  // Carriers (Wholesale Partners)
+  // Carriers (Wholesale Partners) - Persisted to Database
   async getCarriers(): Promise<Carrier[]> {
-    return Array.from(this.carriers.values());
+    return await db.select().from(carriersTable);
   }
 
   async getCarrier(id: string): Promise<Carrier | undefined> {
-    return this.carriers.get(id);
+    const results = await db.select().from(carriersTable).where(eq(carriersTable.id, id));
+    return results[0];
   }
 
   async createCarrier(carrier: InsertCarrier): Promise<Carrier> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: Carrier = {
-      id,
-      name: carrier.name,
-      code: carrier.code,
-      partnerType: carrier.partnerType ?? "bilateral",
-      description: carrier.description ?? null,
-      status: carrier.status ?? "active",
-      primaryCurrencyId: carrier.primaryCurrencyId ?? null,
-      timezone: carrier.timezone ?? "UTC",
-      accountManager: carrier.accountManager ?? null,
-      customerBillingMode: carrier.customerBillingMode ?? "automatic",
-      capacityMode: carrier.capacityMode ?? "unrestricted",
-      capacityLimit: carrier.capacityLimit ?? null,
-      circularRouting: carrier.circularRouting ?? false,
-      customerCreditType: carrier.customerCreditType ?? "postpaid",
-      customerCreditLimit: carrier.customerCreditLimit ?? "0",
-      customerCreditLimitUnlimited: carrier.customerCreditLimitUnlimited ?? false,
-      customerBalance: carrier.customerBalance ?? "0",
-      customerBilateralLimitBreach: carrier.customerBilateralLimitBreach ?? "alert_only",
-      customer24HrSpendLimitBreach: carrier.customer24HrSpendLimitBreach ?? "alert_only",
-      customer24HrSpendMode: carrier.customer24HrSpendMode ?? "rolling_24_hours",
-      customer24HrSpendLimit: carrier.customer24HrSpendLimit ?? null,
-      customer24HrSpend: carrier.customer24HrSpend ?? "0",
-      supplierCreditType: carrier.supplierCreditType ?? "postpaid",
-      supplierCreditLimit: carrier.supplierCreditLimit ?? "0",
-      supplierCreditLimitUnlimited: carrier.supplierCreditLimitUnlimited ?? false,
-      supplierBalance: carrier.supplierBalance ?? "0",
-      supplier24HrSpendLimit: carrier.supplier24HrSpendLimit ?? null,
-      supplier24HrSpend: carrier.supplier24HrSpend ?? "0",
-      bilateralBalance: carrier.bilateralBalance ?? "0",
-      billingEmail: carrier.billingEmail ?? null,
-      technicalEmail: carrier.technicalEmail ?? null,
-      connexcsCarrierId: carrier.connexcsCarrierId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.carriers.set(id, c);
-    return c;
+    const results = await db.insert(carriersTable).values(carrier).returning();
+    return results[0];
   }
 
   async updateCarrier(id: string, data: Partial<InsertCarrier>): Promise<Carrier | undefined> {
-    const carrier = this.carriers.get(id);
-    if (!carrier) return undefined;
-    const updated = { ...carrier, ...data, updatedAt: new Date() };
-    this.carriers.set(id, updated);
-    return updated;
+    const results = await db.update(carriersTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(carriersTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCarrier(id: string): Promise<boolean> {
-    return this.carriers.delete(id);
+    const results = await db.delete(carriersTable).where(eq(carriersTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // Carrier Assignments
@@ -1443,142 +1411,88 @@ export class MemStorage implements IStorage {
     return a;
   }
 
-  // Carrier Interconnects
+  // Carrier Interconnects - Persisted to Database
   async getCarrierInterconnects(carrierId: string): Promise<CarrierInterconnect[]> {
-    return Array.from(this.carrierInterconnects.values()).filter(i => i.carrierId === carrierId);
+    return await db.select().from(carrierInterconnectsTable).where(eq(carrierInterconnectsTable.carrierId, carrierId));
   }
 
   async getCarrierInterconnect(id: string): Promise<CarrierInterconnect | undefined> {
-    return this.carrierInterconnects.get(id);
+    const results = await db.select().from(carrierInterconnectsTable).where(eq(carrierInterconnectsTable.id, id));
+    return results[0];
   }
 
   async createCarrierInterconnect(interconnect: InsertCarrierInterconnect): Promise<CarrierInterconnect> {
-    const id = randomUUID();
-    const now = new Date();
-    const i: CarrierInterconnect = {
-      id,
-      carrierId: interconnect.carrierId,
-      name: interconnect.name,
-      direction: interconnect.direction ?? "both",
-      sipHost: interconnect.sipHost ?? null,
-      sipPort: interconnect.sipPort ?? 5060,
-      sipUsername: interconnect.sipUsername ?? null,
-      sipPassword: interconnect.sipPassword ?? null,
-      techPrefix: interconnect.techPrefix ?? null,
-      codec: interconnect.codec ?? null,
-      protocol: interconnect.protocol ?? "UDP",
-      isActive: interconnect.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.carrierInterconnects.set(id, i);
-    return i;
+    const results = await db.insert(carrierInterconnectsTable).values(interconnect).returning();
+    return results[0];
   }
 
   async updateCarrierInterconnect(id: string, data: Partial<InsertCarrierInterconnect>): Promise<CarrierInterconnect | undefined> {
-    const existing = this.carrierInterconnects.get(id);
-    if (!existing) return undefined;
-    const updated = { ...existing, ...data, updatedAt: new Date() };
-    this.carrierInterconnects.set(id, updated);
-    return updated;
+    const results = await db.update(carrierInterconnectsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(carrierInterconnectsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCarrierInterconnect(id: string): Promise<boolean> {
-    return this.carrierInterconnects.delete(id);
+    const results = await db.delete(carrierInterconnectsTable).where(eq(carrierInterconnectsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Carrier Contacts
+  // Carrier Contacts - Persisted to Database
   async getCarrierContacts(carrierId: string): Promise<CarrierContact[]> {
-    return Array.from(this.carrierContacts.values()).filter(c => c.carrierId === carrierId);
+    return await db.select().from(carrierContactsTable).where(eq(carrierContactsTable.carrierId, carrierId));
   }
 
   async getCarrierContact(id: string): Promise<CarrierContact | undefined> {
-    return this.carrierContacts.get(id);
+    const results = await db.select().from(carrierContactsTable).where(eq(carrierContactsTable.id, id));
+    return results[0];
   }
 
   async createCarrierContact(contact: InsertCarrierContact): Promise<CarrierContact> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: CarrierContact = {
-      id,
-      carrierId: contact.carrierId,
-      title: contact.title ?? null,
-      firstName: contact.firstName ?? null,
-      lastName: contact.lastName ?? null,
-      name: contact.name,
-      jobTitle: contact.jobTitle ?? null,
-      telephone: contact.telephone ?? null,
-      mobile: contact.mobile ?? null,
-      fax: contact.fax ?? null,
-      email: contact.email ?? null,
-      note: contact.note ?? null,
-      portalAccess: contact.portalAccess ?? false,
-      portalUsername: contact.portalUsername ?? null,
-      portalLocked: contact.portalLocked ?? false,
-      lastAccessed: null,
-      isPrimary: contact.isPrimary ?? false,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.carrierContacts.set(id, c);
-    return c;
+    const results = await db.insert(carrierContactsTable).values(contact).returning();
+    return results[0];
   }
 
   async updateCarrierContact(id: string, data: Partial<InsertCarrierContact>): Promise<CarrierContact | undefined> {
-    const existing = this.carrierContacts.get(id);
-    if (!existing) return undefined;
-    const updated = { ...existing, ...data, updatedAt: new Date() };
-    this.carrierContacts.set(id, updated);
-    return updated;
+    const results = await db.update(carrierContactsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(carrierContactsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCarrierContact(id: string): Promise<boolean> {
-    return this.carrierContacts.delete(id);
+    const results = await db.delete(carrierContactsTable).where(eq(carrierContactsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Carrier Credit Alerts
+  // Carrier Credit Alerts - Persisted to Database
   async getCarrierCreditAlerts(carrierId: string): Promise<CarrierCreditAlert[]> {
-    return Array.from(this.carrierCreditAlerts.values()).filter(a => a.carrierId === carrierId);
+    return await db.select().from(carrierCreditAlertsTable).where(eq(carrierCreditAlertsTable.carrierId, carrierId));
   }
 
   async getCarrierCreditAlert(id: string): Promise<CarrierCreditAlert | undefined> {
-    return this.carrierCreditAlerts.get(id);
+    const results = await db.select().from(carrierCreditAlertsTable).where(eq(carrierCreditAlertsTable.id, id));
+    return results[0];
   }
 
   async createCarrierCreditAlert(alert: InsertCarrierCreditAlert): Promise<CarrierCreditAlert> {
-    const id = randomUUID();
-    const now = new Date();
-    const a: CarrierCreditAlert = {
-      id,
-      carrierId: alert.carrierId,
-      alertType: alert.alertType,
-      currencyCode: alert.currencyCode ?? "USD",
-      threshold: alert.threshold,
-      direction: alert.direction ?? "customer",
-      templateId: alert.templateId ?? null,
-      clearedTemplateId: alert.clearedTemplateId ?? null,
-      maxAlerts: alert.maxAlerts ?? 4,
-      perMinutes: alert.perMinutes ?? 1440,
-      restrictionTemplate: alert.restrictionTemplate ?? null,
-      recipients: alert.recipients ?? null,
-      isActive: alert.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.carrierCreditAlerts.set(id, a);
-    return a;
+    const results = await db.insert(carrierCreditAlertsTable).values(alert).returning();
+    return results[0];
   }
 
   async updateCarrierCreditAlert(id: string, data: Partial<InsertCarrierCreditAlert>): Promise<CarrierCreditAlert | undefined> {
-    const existing = this.carrierCreditAlerts.get(id);
-    if (!existing) return undefined;
-    const updated = { ...existing, ...data, updatedAt: new Date() };
-    this.carrierCreditAlerts.set(id, updated);
-    return updated;
+    const results = await db.update(carrierCreditAlertsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(carrierCreditAlertsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCarrierCreditAlert(id: string): Promise<boolean> {
-    return this.carrierCreditAlerts.delete(id);
+    const results = await db.delete(carrierCreditAlertsTable).where(eq(carrierCreditAlertsTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // Audit Logs
