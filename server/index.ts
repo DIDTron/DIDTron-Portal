@@ -791,9 +791,100 @@ Failed deliveries are retried:
   log(`Documentation complete: ${totalCategories} categories, ${totalArticles} articles`, "seed");
 }
 
+async function seedPortalThemeVersions() {
+  const portalThemeData: Record<string, any> = {
+    super_admin: {
+      primaryColor: "#2563EB",
+      accentColor: "#3B82F6",
+      backgroundColor: "#FFFFFF",
+      textColor: "#1F2937",
+      logoUrl: "",
+      faviconUrl: "",
+      fontFamily: "Inter",
+      borderRadius: "md",
+      showAIVoice: true,
+      showDIDs: true,
+      showClass4: true,
+      showPBX: true,
+    },
+    customer: {
+      primaryColor: "#10B981",
+      accentColor: "#34D399",
+      backgroundColor: "#FFFFFF",
+      textColor: "#1F2937",
+      logoUrl: "",
+      faviconUrl: "",
+      fontFamily: "Inter",
+      borderRadius: "md",
+      showAIVoice: true,
+      showDIDs: true,
+      showClass4: false,
+      showPBX: true,
+    },
+    carrier: {
+      primaryColor: "#14B8A6",
+      accentColor: "#2DD4BF",
+      backgroundColor: "#FFFFFF",
+      textColor: "#1F2937",
+      logoUrl: "",
+      faviconUrl: "",
+      fontFamily: "Inter",
+      borderRadius: "md",
+      showAIVoice: false,
+      showDIDs: true,
+      showClass4: true,
+      showPBX: false,
+    },
+    class4: {
+      primaryColor: "#8B5CF6",
+      accentColor: "#A78BFA",
+      backgroundColor: "#FFFFFF",
+      textColor: "#1F2937",
+      logoUrl: "",
+      faviconUrl: "",
+      fontFamily: "Inter",
+      borderRadius: "md",
+      showAIVoice: false,
+      showDIDs: false,
+      showClass4: true,
+      showPBX: false,
+    },
+  };
+
+  let versionsCreated = 0;
+  for (const [slug, data] of Object.entries(portalThemeData)) {
+    try {
+      const contentItem = await storage.getEmContentItem("portal_themes", "theme", slug);
+      if (contentItem && !contentItem.draftVersionId) {
+        const version = await storage.createEmContentVersion({
+          contentItemId: contentItem.id,
+          version: 1,
+          data,
+          changeDescription: "Initial theme configuration",
+          createdBy: null,
+        });
+        await storage.updateEmContentItem(contentItem.id, {
+          draftVersionId: version.id,
+          publishedVersionId: version.id,
+        });
+        versionsCreated++;
+      }
+    } catch (error) {
+      log(`Failed to create theme version for ${slug}: ${error}`, "seed");
+    }
+  }
+  
+  if (versionsCreated > 0) {
+    log(`Created ${versionsCreated} portal theme versions`, "seed");
+  }
+}
+
 async function seedExperienceManager() {
   const existingItems = await storage.getAllEmContentItems();
+  
   if (existingItems.length > 0) {
+    // Always check and seed portal theme versions if missing (for existing content)
+    await seedPortalThemeVersions();
     log(`Experience Manager already has ${existingItems.length} content items`, "seed");
     return;
   }
@@ -808,8 +899,8 @@ async function seedExperienceManager() {
     { section: "marketing" as const, entityType: "blog", slug: "getting-started-voip", name: "Getting Started with VoIP", status: "published" as const },
     { section: "marketing" as const, entityType: "blog", slug: "5g-voice", name: "5G and the Future of Voice", status: "preview" as const },
     
-    // Portal Themes
-    { section: "portal_themes" as const, entityType: "theme", slug: "super-admin", name: "Super Admin Theme", status: "published" as const },
+    // Portal Themes - these will be seeded with version data below
+    { section: "portal_themes" as const, entityType: "theme", slug: "super_admin", name: "Super Admin Theme", status: "published" as const },
     { section: "portal_themes" as const, entityType: "theme", slug: "customer", name: "Customer Portal Theme", status: "published" as const },
     { section: "portal_themes" as const, entityType: "theme", slug: "carrier", name: "Carrier Portal Theme", status: "draft" as const },
     { section: "portal_themes" as const, entityType: "theme", slug: "class4", name: "Class 4 Portal Theme", status: "published" as const },
@@ -838,6 +929,9 @@ async function seedExperienceManager() {
       log(`Failed to create EM content item ${item.slug}: ${error}`, "seed");
     }
   }
+
+  // Now seed portal theme versions for newly created content items
+  await seedPortalThemeVersions();
 
   log(`Experience Manager seeding complete: ${created} content items created`, "seed");
 }
