@@ -87,20 +87,22 @@ export default function JobQueuePage() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const { toast } = useToast();
 
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery<JobStats>({
+  const { data: stats, isLoading: statsLoading, isFetching: statsFetching, refetch: refetchStats } = useQuery<JobStats>({
     queryKey: ["/api/admin/jobs/stats"],
     refetchInterval: autoRefresh ? 30000 : false,
   });
 
-  const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useQuery<JobsResponse>({
+  const { data: jobsData, isLoading: jobsLoading, isFetching: jobsFetching, refetch: refetchJobs } = useQuery<JobsResponse>({
     queryKey: ["/api/admin/jobs", statusFilter, typeFilter],
     refetchInterval: autoRefresh ? 30000 : false,
   });
 
-  const { data: workerStatus, refetch: refetchWorker } = useQuery<{ running: boolean }>({
+  const { data: workerStatus, isFetching: workerFetching, refetch: refetchWorker } = useQuery<{ running: boolean }>({
     queryKey: ["/api/admin/jobs/worker/status"],
     refetchInterval: autoRefresh ? 30000 : false,
   });
+
+  const isAnyFetching = statsFetching || jobsFetching || workerFetching || isRefreshing;
 
   const startWorker = useMutation({
     mutationFn: () => apiRequest("POST", "/api/admin/jobs/worker/start"),
@@ -316,7 +318,7 @@ export default function JobQueuePage() {
               <Button 
                 variant="outline" 
                 size="icon" 
-                disabled={isRefreshing}
+                disabled={isAnyFetching}
                 onClick={async () => {
                   setIsRefreshing(true);
                   await Promise.all([
@@ -325,13 +327,12 @@ export default function JobQueuePage() {
                     refetchWorker(),
                   ]);
                   setIsRefreshing(false);
-                  toast({ title: "Refreshed", description: "Job queue data updated" });
                 }}
                 data-testid="button-refresh"
                 aria-label="Refresh"
                 title="Refresh"
               >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing || autoRefresh ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-4 w-4 ${isAnyFetching ? "animate-spin" : ""}`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Refresh</TooltipContent>
