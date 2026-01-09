@@ -2,16 +2,14 @@ import { useEffect, useRef, useState } from "react";
 
 interface Ring {
   baseRadius: number;
-  wavePhase: number;
-  waveSpeed: number;
+  phase: number;
 }
 
 interface Dot {
   ringIndex: number;
-  anglePosition: number;
+  angle: number;
   size: number;
   colorIndex: number;
-  brightness: number;
 }
 
 export function FloatingParticles() {
@@ -56,26 +54,24 @@ export function FloatingParticles() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // 10 concentric rings - START AT 60px for hollow center
-    const ringCount = 10;
+    // 8 rings, smaller size, hollow center starts at 35px
+    const ringCount = 8;
     ringsRef.current = Array.from({ length: ringCount }, (_, i) => ({
-      baseRadius: 60 + i * 25, // Hollow center: starts at 60px
-      wavePhase: i * 0.5,
-      waveSpeed: 0.15 + i * 0.02,
+      baseRadius: 35 + i * 15, // Smaller: 35px to 140px
+      phase: i * 0.4,
     }));
 
-    // 12 dots per ring
-    const dotsPerRing = 12;
+    // MANY dots per ring (48) to make solid-looking circles
+    const dotsPerRing = 48;
     dotsRef.current = [];
     
     for (let ringIdx = 0; ringIdx < ringCount; ringIdx++) {
       for (let d = 0; d < dotsPerRing; d++) {
         dotsRef.current.push({
           ringIndex: ringIdx,
-          anglePosition: d / dotsPerRing,
-          size: 1.5 + Math.random() * 1,
+          angle: (d / dotsPerRing) * Math.PI * 2,
+          size: 1.2 + Math.random() * 0.6, // Tiny dots
           colorIndex: (ringIdx + d) % 2,
-          brightness: 0,
         });
       }
     }
@@ -89,7 +85,6 @@ export function FloatingParticles() {
 
     window.addEventListener("mousemove", handleMouseMove);
 
-    // Colors
     const colorsLight = ["37, 99, 235", "30, 41, 59"];
     const colorsDark = ["46, 75, 255", "248, 250, 252"];
 
@@ -117,55 +112,31 @@ export function FloatingParticles() {
         const centerX = smoothMouseRef.current.x;
         const centerY = smoothMouseRef.current.y;
 
-        // Wave crest position - travels outward slowly
-        const waveCrests = [
-          (timeRef.current * 0.15) % 1,
-          ((timeRef.current * 0.15) + 0.33) % 1,
-          ((timeRef.current * 0.15) + 0.66) % 1,
-        ];
+        // Wave travels outward - expands from center
+        const wavePosition = (timeRef.current * 0.2) % 1; // Slow wave
 
         dotsRef.current.forEach((dot) => {
           const ring = ringsRef.current[dot.ringIndex];
-          
-          // Ring's normalized position (0 = innermost, 1 = outermost)
           const ringNorm = dot.ringIndex / (ringCount - 1);
           
-          // Sea wave motion
-          const waveTime = timeRef.current * ring.waveSpeed;
-          const dotAngle = dot.anglePosition * Math.PI * 2;
+          // Gentle wave motion on each ring
+          const waveOffset = Math.sin(timeRef.current * 0.5 + ring.phase) * 4;
+          const currentRadius = ring.baseRadius + waveOffset;
           
-          // Gentle vertical wave
-          const waveHeight = Math.sin(waveTime * 2 + ring.wavePhase) * 6;
+          // Position
+          const x = centerX + Math.cos(dot.angle) * currentRadius;
+          const y = centerY + Math.sin(dot.angle) * currentRadius;
           
-          // Radius expansion effect
-          const radiusWave = Math.sin(waveTime * 1.2 + ring.wavePhase) * 8;
-          const currentRadius = ring.baseRadius + radiusWave;
+          // Wave crest visibility - expanding outward
+          const distFromWave = Math.abs(ringNorm - wavePosition);
+          const wrappedDist = Math.min(distFromWave, 1 - distFromWave);
           
-          // Position on concentric circle
-          const x = centerX + Math.cos(dotAngle) * currentRadius;
-          const y = centerY + Math.sin(dotAngle) * currentRadius + waveHeight;
-          
-          // Calculate distance from each wave crest
-          // Wave crest illuminates ~30% of rings at a time
-          let maxCrestInfluence = 0;
-          waveCrests.forEach(crest => {
-            const distFromCrest = Math.abs(ringNorm - crest);
-            const wrappedDist = Math.min(distFromCrest, 1 - distFromCrest);
-            // Narrow window: ~0.15 on each side = 30% total
-            const influence = Math.max(0, 1 - wrappedDist / 0.15);
-            maxCrestInfluence = Math.max(maxCrestInfluence, influence);
-          });
-          
-          // Target brightness based on crest proximity
-          const targetBrightness = 0.15 + maxCrestInfluence * 0.6;
-          
-          // Smooth transition
-          const fadeSpeed = maxCrestInfluence > 0.5 ? 0.2 : 0.02;
-          dot.brightness += (targetBrightness - dot.brightness) * fadeSpeed;
+          // Only ~30% visible: sharp falloff
+          const visibility = Math.max(0, 1 - wrappedDist / 0.15);
+          const brightness = 0.1 + visibility * 0.65;
 
-          // Render dot
           ctx.save();
-          ctx.globalAlpha = opacityRef.current * dot.brightness * (isDark ? 1 : 0.9);
+          ctx.globalAlpha = opacityRef.current * brightness * (isDark ? 1 : 0.85);
           ctx.fillStyle = `rgba(${colors[dot.colorIndex]}, 1)`;
           ctx.beginPath();
           ctx.arc(x, y, dot.size, 0, Math.PI * 2);
