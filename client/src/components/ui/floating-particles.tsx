@@ -1,36 +1,46 @@
 import { useEffect, useRef, useState } from "react";
 
+const D_LETTER_POINTS = [
+  // Vertical line of D (left side)
+  { x: -40, y: -50 }, { x: -40, y: -40 }, { x: -40, y: -30 }, { x: -40, y: -20 },
+  { x: -40, y: -10 }, { x: -40, y: 0 }, { x: -40, y: 10 }, { x: -40, y: 20 },
+  { x: -40, y: 30 }, { x: -40, y: 40 }, { x: -40, y: 50 },
+  // Top horizontal of D
+  { x: -30, y: -50 }, { x: -20, y: -50 }, { x: -10, y: -48 }, { x: 0, y: -44 },
+  // Right curve of D (top to middle)
+  { x: 10, y: -38 }, { x: 18, y: -30 }, { x: 24, y: -20 }, { x: 28, y: -10 },
+  { x: 30, y: 0 },
+  // Right curve of D (middle to bottom)
+  { x: 28, y: 10 }, { x: 24, y: 20 }, { x: 18, y: 30 }, { x: 10, y: 38 },
+  // Bottom horizontal of D
+  { x: 0, y: 44 }, { x: -10, y: 48 }, { x: -20, y: 50 }, { x: -30, y: 50 },
+  // Extra dots for fuller D shape
+  { x: -30, y: -40 }, { x: -30, y: 40 },
+  { x: -20, y: -42 }, { x: -20, y: 42 },
+  { x: -10, y: -40 }, { x: -10, y: 40 },
+  { x: 5, y: -35 }, { x: 5, y: 35 },
+  { x: 15, y: -25 }, { x: 15, y: 25 },
+  { x: 22, y: -15 }, { x: 22, y: 15 },
+  { x: 25, y: -5 }, { x: 25, y: 5 },
+];
+
 interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
+  targetX: number;
+  targetY: number;
+  currentX: number;
+  currentY: number;
   size: number;
-  baseOpacity: number;
+  opacity: number;
   color: string;
-  type: "circle" | "square" | "diamond";
 }
-
-const BRAND_COLORS_LIGHT = [
-  "15, 23, 42",     // Slate-900 - Very dark
-  "29, 78, 216",    // #1d4ed8 - Dark blue
-  "37, 99, 235",    // #2563eb - Primary blue
-  "67, 56, 202",    // #4338ca - Indigo
-];
-
-const BRAND_COLORS_DARK = [
-  "56, 189, 248",   // #38bdf8 - Light blue
-  "99, 102, 241",   // #6366f1 - Violet
-  "129, 140, 248",  // #818cf8 - Light violet
-  "147, 197, 253",  // #93c5fd - Very light blue
-];
 
 export function FloatingParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: -1000, y: -1000 });
+  const mouseRef = useRef({ x: -1000, y: -1000, moving: false });
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number>();
-  const timeRef = useRef(0);
+  const fadeRef = useRef(0);
+  const lastMoveRef = useRef(0);
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -63,21 +73,18 @@ export function FloatingParticles() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    const isMobile = window.innerWidth < 768;
-    const particleCount = isMobile ? 40 : 80;
-    const rect = canvas.getBoundingClientRect();
-    const colors = isDark ? BRAND_COLORS_DARK : BRAND_COLORS_LIGHT;
-    const baseOpacityRange = isDark ? { min: 0.25, max: 0.5 } : { min: 0.15, max: 0.35 };
+    const colors = isDark 
+      ? ["56, 189, 248", "99, 102, 241", "129, 140, 248", "147, 197, 253"]
+      : ["29, 78, 216", "37, 99, 235", "67, 56, 202", "99, 102, 241"];
 
-    particlesRef.current = Array.from({ length: particleCount }, () => ({
-      x: Math.random() * rect.width,
-      y: Math.random() * rect.height,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      size: Math.random() * 5 + 3,
-      baseOpacity: Math.random() * (baseOpacityRange.max - baseOpacityRange.min) + baseOpacityRange.min,
+    particlesRef.current = D_LETTER_POINTS.map((point) => ({
+      targetX: point.x,
+      targetY: point.y,
+      currentX: point.x + (Math.random() - 0.5) * 100,
+      currentY: point.y + (Math.random() - 0.5) * 100,
+      size: Math.random() * 4 + 3,
+      opacity: isDark ? 0.7 : 0.5,
       color: colors[Math.floor(Math.random() * colors.length)],
-      type: ["circle", "square", "diamond"][Math.floor(Math.random() * 3)] as "circle" | "square" | "diamond",
     }));
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -85,76 +92,47 @@ export function FloatingParticles() {
       mouseRef.current = {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,
+        moving: true,
       };
+      lastMoveRef.current = Date.now();
+      fadeRef.current = 1;
     };
 
     const handleMouseLeave = () => {
-      mouseRef.current = { x: -1000, y: -1000 };
+      mouseRef.current.moving = false;
     };
 
-    canvas.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseleave", handleMouseLeave);
 
     const animate = () => {
       const rect = canvas.getBoundingClientRect();
       ctx.clearRect(0, 0, rect.width, rect.height);
-      timeRef.current += 0.01;
 
-      particlesRef.current.forEach((particle) => {
+      const timeSinceMove = Date.now() - lastMoveRef.current;
+      if (timeSinceMove > 100) {
+        fadeRef.current = Math.max(0, fadeRef.current - 0.02);
+      }
+
+      if (fadeRef.current > 0) {
         const mouse = mouseRef.current;
-        const dx = mouse.x - particle.x;
-        const dy = mouse.y - particle.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < 200 && distance > 0) {
-          const force = (200 - distance) / 200 * 0.4;
-          const angle = Math.atan2(dy, dx);
-          particle.vx += Math.cos(angle) * force;
-          particle.vy += Math.sin(angle) * force;
-        }
+        particlesRef.current.forEach((particle) => {
+          const targetScreenX = mouse.x + particle.targetX;
+          const targetScreenY = mouse.y + particle.targetY;
 
-        particle.vx += Math.sin(timeRef.current + particle.x * 0.01) * 0.003;
-        particle.vy += Math.cos(timeRef.current + particle.y * 0.01) * 0.003;
+          particle.currentX += (targetScreenX - particle.currentX) * 0.15;
+          particle.currentY += (targetScreenY - particle.currentY) * 0.15;
 
-        particle.vx *= 0.96;
-        particle.vy *= 0.96;
-
-        const maxSpeed = 3;
-        const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
-        if (speed > maxSpeed) {
-          particle.vx = (particle.vx / speed) * maxSpeed;
-          particle.vy = (particle.vy / speed) * maxSpeed;
-        }
-
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-
-        if (particle.x < -20) particle.x = rect.width + 20;
-        if (particle.x > rect.width + 20) particle.x = -20;
-        if (particle.y < -20) particle.y = rect.height + 20;
-        if (particle.y > rect.height + 20) particle.y = -20;
-
-        const proximityBoost = distance < 150 ? (150 - distance) / 150 * 0.3 : 0;
-        const finalOpacity = Math.min(particle.baseOpacity + proximityBoost, 0.8);
-
-        ctx.save();
-        ctx.globalAlpha = finalOpacity;
-        ctx.fillStyle = `rgba(${particle.color}, 1)`;
-        ctx.translate(particle.x, particle.y);
-
-        if (particle.type === "circle") {
+          ctx.save();
+          ctx.globalAlpha = particle.opacity * fadeRef.current;
+          ctx.fillStyle = `rgba(${particle.color}, 1)`;
           ctx.beginPath();
-          ctx.arc(0, 0, particle.size, 0, Math.PI * 2);
+          ctx.arc(particle.currentX, particle.currentY, particle.size, 0, Math.PI * 2);
           ctx.fill();
-        } else if (particle.type === "square") {
-          ctx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
-        } else if (particle.type === "diamond") {
-          ctx.rotate(Math.PI / 4);
-          ctx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
-        }
-
-        ctx.restore();
-      });
+          ctx.restore();
+        });
+      }
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -163,7 +141,7 @@ export function FloatingParticles() {
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
-      canvas.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseleave", handleMouseLeave);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
@@ -174,8 +152,8 @@ export function FloatingParticles() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
-      style={{ zIndex: 0 }}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{ zIndex: 1 }}
     />
   );
 }
