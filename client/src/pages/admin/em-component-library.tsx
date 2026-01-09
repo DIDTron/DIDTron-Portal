@@ -1568,10 +1568,19 @@ const customComponents = [
   { name: "Sidebar", path: "@/components/ui/sidebar", description: "Full sidebar system with collapsible, mobile, and variants.", category: "layout" },
 ];
 
+const patternCategories = [
+  { id: "all", label: "All Patterns" },
+  { id: "data", label: "Data Fetching" },
+  { id: "forms", label: "Forms" },
+  { id: "ui", label: "UI/UX" },
+  { id: "state", label: "State Management" },
+] as const;
+
 const behavioralPatterns = [
   {
     id: "refresh-button",
     name: "Refresh Button Pattern",
+    category: "data",
     badge: "Critical",
     badgeVariant: "destructive" as const,
     description: "Use refetch() directly and isFetching for spinner. Never use isLoading for refresh buttons.",
@@ -1595,6 +1604,7 @@ const { data, isFetching, refetch } = useQuery<DataType>({
   {
     id: "auto-refresh",
     name: "Auto-Refresh Pattern",
+    category: "data",
     badge: "Critical",
     badgeVariant: "destructive" as const,
     description: "Spinner only when fetching - NEVER based on autoRefresh toggle alone.",
@@ -1617,6 +1627,7 @@ const { data, isFetching, refetch } = useQuery<DataType>({
   {
     id: "multiple-queries",
     name: "Multiple Queries Pattern",
+    category: "data",
     badge: "Common",
     badgeVariant: "secondary" as const,
     description: "Combine isFetching states for pages with multiple data sources.",
@@ -1644,6 +1655,7 @@ const handleSyncAll = async () => {
   {
     id: "mutation",
     name: "Mutation with Cache Invalidation",
+    category: "data",
     badge: "Common",
     badgeVariant: "secondary" as const,
     description: "Create/Update/Delete with automatic cache refresh.",
@@ -1671,6 +1683,7 @@ const createMutation = useMutation({
   {
     id: "form",
     name: "Form with Validation",
+    category: "forms",
     badge: "Common",
     badgeVariant: "secondary" as const,
     description: "React Hook Form with Zod validation and shadcn Form components.",
@@ -1713,6 +1726,7 @@ const onSubmit = (data: z.infer<typeof insertItemSchema>) => {
   {
     id: "loading-states",
     name: "Loading States",
+    category: "ui",
     badge: "UX",
     badgeVariant: "outline" as const,
     description: "Proper loading indicators for queries and mutations.",
@@ -1750,6 +1764,7 @@ if (isLoading) {
   {
     id: "drag-drop",
     name: "Drag & Drop Reorder",
+    category: "ui",
     badge: "Advanced",
     badgeVariant: "outline" as const,
     description: "Reorderable lists using @dnd-kit. Used in sidebars for custom ordering.",
@@ -1794,6 +1809,7 @@ function ReorderableList({ items, onReorder }) {
   {
     id: "toast-notifications",
     name: "Toast Notifications",
+    category: "ui",
     badge: "Common",
     badgeVariant: "secondary" as const,
     description: "Show feedback messages using useToast hook.",
@@ -1821,6 +1837,7 @@ toast({
   {
     id: "zustand-store",
     name: "Zustand State Management",
+    category: "state",
     badge: "Advanced",
     badgeVariant: "outline" as const,
     description: "Global state management with Zustand. Used for tabs, branding, portal state.",
@@ -1854,6 +1871,7 @@ const { tabs, activeTabId, addTab } = useTabsStore();`,
   {
     id: "dialog-form",
     name: "Dialog with Form",
+    category: "forms",
     badge: "Common",
     badgeVariant: "secondary" as const,
     description: "Modal dialog with form for create/edit operations.",
@@ -1892,6 +1910,7 @@ const { tabs, activeTabId, addTab } = useTabsStore();`,
   {
     id: "data-table",
     name: "Data Table with Pagination",
+    category: "data",
     badge: "Critical",
     badgeVariant: "destructive" as const,
     description: "Standard table pattern with DataTableFooter. REQUIRED for all Super Admin tables.",
@@ -1929,6 +1948,71 @@ const { paginatedData, ...paginationProps } = useDataTablePagination(filteredDat
 <DataTableFooter {...paginationProps} />`,
     note: "DataTableFooter is MANDATORY for all data tables in Super Admin portal."
   },
+  {
+    id: "data-page-structure",
+    name: "Data Page Structure",
+    category: "ui",
+    badge: "Critical",
+    badgeVariant: "destructive" as const,
+    description: "Standard structure for all data listing pages with search, filters, and optional timeframe selection.",
+    code: `// Standard Data Page Structure
+// All data listing pages should include: search bar, category/quick filters, and timeframe filter (if applicable)
+
+interface DataPageHeaderProps {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  selectedCategory: string;
+  setSelectedCategory: (cat: string) => void;
+  categories: { id: string; label: string }[];
+  timeframe?: string;
+  setTimeframe?: (tf: string) => void;
+}
+
+// 1. Search bar with icon
+<div className="relative flex-1 min-w-64">
+  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+  <Input
+    placeholder="Search..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    className="pl-9"
+    data-testid="input-search"
+  />
+</div>
+
+// 2. Category quick filters (horizontal scrolling badges/buttons)
+<ScrollArea className="w-full whitespace-nowrap" type="hover">
+  <div className="flex gap-2 pb-2">
+    {categories.map((cat) => (
+      <Badge
+        key={cat.id}
+        variant={selectedCategory === cat.id ? "default" : "outline"}
+        className="cursor-pointer shrink-0"
+        onClick={() => setSelectedCategory(cat.id)}
+        data-testid={\`filter-\${cat.id}\`}
+      >
+        {cat.label}
+        {cat.id !== "all" && <span className="ml-1 text-xs">({getCategoryCount(cat.id)})</span>}
+      </Badge>
+    ))}
+  </div>
+  <ScrollBar orientation="horizontal" />
+</ScrollArea>
+
+// 3. Timeframe filter (when data is time-sensitive)
+<Select value={timeframe} onValueChange={setTimeframe}>
+  <SelectTrigger className="w-40" data-testid="select-timeframe">
+    <SelectValue placeholder="Timeframe" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="24h">Last 24 hours</SelectItem>
+    <SelectItem value="7d">Last 7 days</SelectItem>
+    <SelectItem value="30d">Last 30 days</SelectItem>
+    <SelectItem value="all">All time</SelectItem>
+  </SelectContent>
+</Select>`,
+    note: "Use this pattern for consistency across all data listing pages. Include timeframe filter only when data is time-sensitive (logs, metrics, history)."
+  },
 ];
 
 const designRules = [
@@ -1942,11 +2026,14 @@ const designRules = [
   { rule: "Add data-testid to all interactive elements and key display content", category: "testing" },
   { rule: "Use DataTableFooter for ALL data tables in Super Admin portal", category: "component" },
   { rule: "Follow VitalPBX-style layout with double sidebars", category: "layout" },
+  { rule: "All data listing pages must include search bar, category quick filters, and timeframe filter (if time-sensitive)", category: "data" },
 ];
 
 export default function EMComponentLibraryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [patternSearchQuery, setPatternSearchQuery] = useState("");
+  const [selectedPatternCategory, setSelectedPatternCategory] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<string>("components");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const { toast } = useToast();
@@ -1957,6 +2044,18 @@ export default function EMComponentLibraryPage() {
     const matchesCategory = selectedCategory === "all" || component.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const filteredPatterns = behavioralPatterns.filter((pattern) => {
+    const matchesSearch = pattern.name.toLowerCase().includes(patternSearchQuery.toLowerCase()) ||
+      pattern.description.toLowerCase().includes(patternSearchQuery.toLowerCase());
+    const matchesCategory = selectedPatternCategory === "all" || pattern.category === selectedPatternCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const getPatternCategoryCount = (categoryId: string) => {
+    if (categoryId === "all") return behavioralPatterns.length;
+    return behavioralPatterns.filter(p => p.category === categoryId).length;
+  };
 
   const copyCode = (code: string, name: string) => {
     navigator.clipboard.writeText(code);
@@ -2116,50 +2215,96 @@ export default function EMComponentLibraryPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="patterns" className="mt-6 space-y-8">
-            <p className="text-muted-foreground">
-              Copy-paste patterns for data fetching, forms, state management, and mutations. Scroll down for custom platform components.
-            </p>
+          <TabsContent value="patterns" className="mt-6 space-y-6">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="relative flex-1 min-w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search patterns..."
+                  value={patternSearchQuery}
+                  onChange={(e) => setPatternSearchQuery(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-search-patterns"
+                />
+              </div>
+              <Select value={selectedPatternCategory} onValueChange={setSelectedPatternCategory}>
+                <SelectTrigger className="w-56" data-testid="select-pattern-category">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {patternCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label} ({getPatternCategoryCount(cat.id)})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <ScrollArea className="w-full whitespace-nowrap" type="hover">
+              <div className="flex gap-2 pb-2">
+                {patternCategories.map((cat) => (
+                  <Badge
+                    key={cat.id}
+                    variant={selectedPatternCategory === cat.id ? "default" : "outline"}
+                    className="cursor-pointer shrink-0"
+                    onClick={() => setSelectedPatternCategory(cat.id)}
+                    data-testid={`filter-pattern-${cat.id}`}
+                  >
+                    {cat.label}
+                    {cat.id !== "all" && <span className="ml-1 text-xs opacity-70">({getPatternCategoryCount(cat.id)})</span>}
+                  </Badge>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
 
             <div className="grid gap-4">
-              {behavioralPatterns.map((pattern) => (
-                <Card key={pattern.id} data-testid={`card-pattern-${pattern.id}`}>
-                  <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <CardTitle className="text-lg">{pattern.name}</CardTitle>
-                        <Badge variant={pattern.badgeVariant}>{pattern.badge}</Badge>
-                      </div>
-                      <CardDescription>{pattern.description}</CardDescription>
-                    </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => copyCode(pattern.code, pattern.name)}
-                      data-testid={`button-copy-${pattern.id}`}
-                      aria-label={`Copy ${pattern.name} code`}
-                    >
-                      {copiedCode === pattern.name ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm max-h-64 overflow-y-auto">
-                      <code>{pattern.code}</code>
-                    </pre>
-                    {pattern.note && (
-                      <Alert>
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Key Rule</AlertTitle>
-                        <AlertDescription>{pattern.note}</AlertDescription>
-                      </Alert>
-                    )}
-                  </CardContent>
+              {filteredPatterns.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <p className="text-muted-foreground">No patterns found matching your criteria</p>
                 </Card>
-              ))}
+              ) : (
+                filteredPatterns.map((pattern) => (
+                  <Card key={pattern.id} data-testid={`card-pattern-${pattern.id}`}>
+                    <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <CardTitle className="text-lg">{pattern.name}</CardTitle>
+                          <Badge variant="outline" className="capitalize">{pattern.category}</Badge>
+                          <Badge variant={pattern.badgeVariant}>{pattern.badge}</Badge>
+                        </div>
+                        <CardDescription>{pattern.description}</CardDescription>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => copyCode(pattern.code, pattern.name)}
+                        data-testid={`button-copy-${pattern.id}`}
+                        aria-label={`Copy ${pattern.name} code`}
+                      >
+                        {copiedCode === pattern.name ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm max-h-64 overflow-y-auto">
+                        <code>{pattern.code}</code>
+                      </pre>
+                      {pattern.note && (
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>Key Rule</AlertTitle>
+                          <AlertDescription>{pattern.note}</AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
 
             <Separator />
