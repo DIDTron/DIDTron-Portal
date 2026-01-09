@@ -21,9 +21,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Toggle } from "@/components/ui/toggle";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { 
   Search, Copy, Check, Plus, Trash2, Edit, MoreHorizontal, 
-  ChevronRight, Settings, User, Bell, LogOut, Layers
+  ChevronRight, Settings, User, Bell, LogOut, Layers, Terminal,
+  AlertCircle, ChevronDown, Bold, Italic, Underline, Home, ChevronsUpDown
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -543,6 +553,252 @@ const componentExamples: ComponentExample[] = [
           <span>Right</span>
         </div>
       </div>
+    ),
+  },
+  {
+    name: "Alert",
+    description: "Displays a callout for important information. Use for notifications and messages.",
+    category: "feedback",
+    variants: ["default", "destructive"],
+    code: `<Alert>
+  <Terminal className="h-4 w-4" />
+  <AlertTitle>Heads up!</AlertTitle>
+  <AlertDescription>You can add components.</AlertDescription>
+</Alert>`,
+    preview: (
+      <div className="flex flex-col gap-4 w-full max-w-md">
+        <Alert data-testid="preview-alert-default">
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Heads up!</AlertTitle>
+          <AlertDescription>You can add components to your app using the CLI.</AlertDescription>
+        </Alert>
+        <Alert variant="destructive" data-testid="preview-alert-destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>Your session has expired. Please log in again.</AlertDescription>
+        </Alert>
+      </div>
+    ),
+  },
+  {
+    name: "Breadcrumb",
+    description: "Navigation trail showing the current page location.",
+    category: "navigation",
+    code: `<Breadcrumb>
+  <BreadcrumbList>
+    <BreadcrumbItem>
+      <BreadcrumbLink href="/">Home</BreadcrumbLink>
+    </BreadcrumbItem>
+    <BreadcrumbSeparator />
+    <BreadcrumbItem>
+      <BreadcrumbPage>Current</BreadcrumbPage>
+    </BreadcrumbItem>
+  </BreadcrumbList>
+</Breadcrumb>`,
+    preview: (
+      <Breadcrumb data-testid="preview-breadcrumb">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="#" data-testid="preview-breadcrumb-home">Home</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="#" data-testid="preview-breadcrumb-components">Components</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage data-testid="preview-breadcrumb-current">Breadcrumb</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    ),
+  },
+  {
+    name: "Collapsible",
+    description: "Expandable/collapsible content section with trigger.",
+    category: "display",
+    code: `<Collapsible>
+  <CollapsibleTrigger>Toggle</CollapsibleTrigger>
+  <CollapsibleContent>Content</CollapsibleContent>
+</Collapsible>`,
+    preview: (
+      <Collapsible className="w-full max-w-sm" data-testid="preview-collapsible">
+        <div className="flex items-center justify-between px-4 py-2 border rounded-md">
+          <span className="text-sm font-medium">@peduarte starred 3 repositories</span>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="icon" data-testid="preview-collapsible-trigger">
+              <ChevronsUpDown className="h-4 w-4" />
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent className="space-y-2 mt-2">
+          <div className="px-4 py-2 border rounded-md text-sm" data-testid="preview-collapsible-item-1">@radix-ui/primitives</div>
+          <div className="px-4 py-2 border rounded-md text-sm" data-testid="preview-collapsible-item-2">@radix-ui/colors</div>
+        </CollapsibleContent>
+      </Collapsible>
+    ),
+  },
+  {
+    name: "RadioGroup",
+    description: "Single selection from a list of options.",
+    category: "inputs",
+    code: `<RadioGroup defaultValue="option1">
+  <div className="flex items-center gap-2">
+    <RadioGroupItem value="option1" id="r1" />
+    <Label htmlFor="r1">Option 1</Label>
+  </div>
+</RadioGroup>`,
+    preview: (
+      <RadioGroup defaultValue="comfortable" data-testid="preview-radiogroup">
+        <div className="flex items-center gap-2">
+          <RadioGroupItem value="default" id="r1" data-testid="preview-radio-default" />
+          <Label htmlFor="r1">Default</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <RadioGroupItem value="comfortable" id="r2" data-testid="preview-radio-comfortable" />
+          <Label htmlFor="r2">Comfortable</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <RadioGroupItem value="compact" id="r3" data-testid="preview-radio-compact" />
+          <Label htmlFor="r3">Compact</Label>
+        </div>
+      </RadioGroup>
+    ),
+  },
+  {
+    name: "Sheet",
+    description: "Slide-out panel from screen edge. Great for mobile menus and forms.",
+    category: "overlay",
+    code: `<Sheet>
+  <SheetTrigger asChild>
+    <Button>Open Sheet</Button>
+  </SheetTrigger>
+  <SheetContent>
+    <SheetHeader>
+      <SheetTitle>Sheet Title</SheetTitle>
+      <SheetDescription>Description</SheetDescription>
+    </SheetHeader>
+  </SheetContent>
+</Sheet>`,
+    preview: (
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" data-testid="preview-sheet-trigger">Open Sheet</Button>
+        </SheetTrigger>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Edit Profile</SheetTitle>
+            <SheetDescription>Make changes to your profile here.</SheetDescription>
+          </SheetHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" placeholder="Your name" data-testid="preview-sheet-input" />
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    ),
+  },
+  {
+    name: "Skeleton",
+    description: "Loading placeholder that mimics content shape.",
+    category: "feedback",
+    code: `<Skeleton className="h-4 w-[250px]" />
+<Skeleton className="h-12 w-12 rounded-full" />`,
+    preview: (
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-12 w-12 rounded-full" data-testid="preview-skeleton-avatar" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[200px]" data-testid="preview-skeleton-line1" />
+          <Skeleton className="h-4 w-[150px]" data-testid="preview-skeleton-line2" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    name: "Toggle",
+    description: "Two-state button that can be on or off.",
+    category: "inputs",
+    variants: ["default", "outline"],
+    code: `<Toggle aria-label="Toggle bold">
+  <Bold className="h-4 w-4" />
+</Toggle>`,
+    preview: (
+      <div className="flex items-center gap-2">
+        <Toggle aria-label="Toggle bold" data-testid="preview-toggle-bold">
+          <Bold className="h-4 w-4" />
+        </Toggle>
+        <Toggle aria-label="Toggle italic" data-testid="preview-toggle-italic">
+          <Italic className="h-4 w-4" />
+        </Toggle>
+        <Toggle aria-label="Toggle underline" variant="outline" data-testid="preview-toggle-underline">
+          <Underline className="h-4 w-4" />
+        </Toggle>
+      </div>
+    ),
+  },
+  {
+    name: "ToggleGroup",
+    description: "Group of toggles where one or multiple can be active.",
+    category: "inputs",
+    code: `<ToggleGroup type="single">
+  <ToggleGroupItem value="bold">
+    <Bold className="h-4 w-4" />
+  </ToggleGroupItem>
+</ToggleGroup>`,
+    preview: (
+      <div className="flex flex-col gap-4">
+        <ToggleGroup type="single" defaultValue="center" data-testid="preview-togglegroup-single">
+          <ToggleGroupItem value="left" aria-label="Left align" data-testid="preview-togglegroup-left">
+            <Bold className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="center" aria-label="Center align" data-testid="preview-togglegroup-center">
+            <Italic className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="right" aria-label="Right align" data-testid="preview-togglegroup-right">
+            <Underline className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <ToggleGroup type="multiple" data-testid="preview-togglegroup-multiple">
+          <ToggleGroupItem value="bold" aria-label="Toggle bold" data-testid="preview-togglegroup-bold">
+            <Bold className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="italic" aria-label="Toggle italic" data-testid="preview-togglegroup-italic">
+            <Italic className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+    ),
+  },
+  {
+    name: "HoverCard",
+    description: "Card that appears on hover for additional information.",
+    category: "overlay",
+    code: `<HoverCard>
+  <HoverCardTrigger>Hover me</HoverCardTrigger>
+  <HoverCardContent>Content</HoverCardContent>
+</HoverCard>`,
+    preview: (
+      <HoverCard>
+        <HoverCardTrigger asChild>
+          <Button variant="ghost" className="text-primary underline-offset-4 hover:underline p-0 h-auto" data-testid="preview-hovercard-trigger">@nextjs</Button>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-80" data-testid="preview-hovercard-content">
+          <div className="flex justify-between space-x-4">
+            <Avatar data-testid="preview-hovercard-avatar">
+              <AvatarImage src="" />
+              <AvatarFallback>NJ</AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold">@nextjs</h4>
+              <p className="text-sm text-muted-foreground">
+                The React Framework – created and maintained by Vercel.
+              </p>
+            </div>
+          </div>
+        </HoverCardContent>
+      </HoverCard>
     ),
   },
 ];
