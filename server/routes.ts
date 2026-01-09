@@ -53,6 +53,7 @@ import {
   insertBonusTypeSchema,
   insertPromoCodeSchema,
   insertEmailTemplateSchema,
+  insertFileTemplateSchema,
   insertSocialAccountSchema,
   insertSocialPostSchema,
   insertRateCardSchema,
@@ -4423,6 +4424,83 @@ export async function registerRoutes(
       res.json(logs);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch email logs" });
+    }
+  });
+
+  // ==================== FILE TEMPLATES (PDF Generation) ====================
+
+  app.get("/api/file-templates", async (req, res) => {
+    try {
+      const templates = await storage.getFileTemplates();
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch file templates" });
+    }
+  });
+
+  app.get("/api/file-templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getFileTemplate(req.params.id);
+      if (!template) return res.status(404).json({ error: "File template not found" });
+      res.json(template);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch file template" });
+    }
+  });
+
+  app.post("/api/file-templates", async (req, res) => {
+    try {
+      const parsed = insertFileTemplateSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const template = await storage.createFileTemplate(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "file_templates",
+        recordId: template.id,
+        newValues: template,
+      });
+      res.status(201).json(template);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create file template" });
+    }
+  });
+
+  app.patch("/api/file-templates/:id", async (req, res) => {
+    try {
+      const oldTemplate = await storage.getFileTemplate(req.params.id);
+      if (!oldTemplate) return res.status(404).json({ error: "File template not found" });
+      const template = await storage.updateFileTemplate(req.params.id, req.body);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "file_templates",
+        recordId: req.params.id,
+        oldValues: oldTemplate,
+        newValues: template,
+      });
+      res.json(template);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update file template" });
+    }
+  });
+
+  app.delete("/api/file-templates/:id", async (req, res) => {
+    try {
+      const oldTemplate = await storage.getFileTemplate(req.params.id);
+      if (!oldTemplate) return res.status(404).json({ error: "File template not found" });
+      const deleted = await storage.deleteFileTemplate(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "File template not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "file_templates",
+        recordId: req.params.id,
+        oldValues: oldTemplate,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete file template" });
     }
   });
 

@@ -65,8 +65,8 @@ import {
   type Integration, type InsertIntegration,
   type Invoice, type Payment, type PromoCode, type Referral,
   type InsertPayment, type InsertPromoCode,
-  type BonusType, type EmailTemplate, type EmailLog,
-  type InsertBonusType, type InsertEmailTemplate, type InsertEmailLog,
+  type BonusType, type EmailTemplate, type EmailLog, type FileTemplate,
+  type InsertBonusType, type InsertEmailTemplate, type InsertEmailLog, type InsertFileTemplate,
   type SocialAccount, type InsertSocialAccount,
   type SocialPost, type InsertSocialPost,
   type RateCard, type InsertRateCard,
@@ -90,7 +90,8 @@ import {
   carriers as carriersTable,
   carrierInterconnects as carrierInterconnectsTable,
   carrierContacts as carrierContactsTable,
-  carrierCreditAlerts as carrierCreditAlertsTable
+  carrierCreditAlerts as carrierCreditAlertsTable,
+  fileTemplates
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -333,6 +334,13 @@ export interface IStorage {
   // Email Logs
   getEmailLogs(): Promise<EmailLog[]>;
   createEmailLog(log: InsertEmailLog): Promise<EmailLog>;
+
+  // File Templates
+  getFileTemplates(): Promise<FileTemplate[]>;
+  getFileTemplate(id: string): Promise<FileTemplate | undefined>;
+  createFileTemplate(template: InsertFileTemplate): Promise<FileTemplate>;
+  updateFileTemplate(id: string, data: Partial<InsertFileTemplate>): Promise<FileTemplate | undefined>;
+  deleteFileTemplate(id: string): Promise<boolean>;
 
   // Social Accounts
   getSocialAccounts(): Promise<SocialAccount[]>;
@@ -2329,6 +2337,31 @@ export class MemStorage implements IStorage {
     };
     this.emailLogs.set(id, newLog);
     return newLog;
+  }
+
+  // File Templates
+  async getFileTemplates(): Promise<FileTemplate[]> {
+    return db.select().from(fileTemplates).orderBy(fileTemplates.name);
+  }
+  async getFileTemplate(id: string): Promise<FileTemplate | undefined> {
+    const [template] = await db.select().from(fileTemplates).where(eq(fileTemplates.id, id));
+    return template;
+  }
+  async createFileTemplate(template: InsertFileTemplate): Promise<FileTemplate> {
+    const [created] = await db.insert(fileTemplates).values(template).returning();
+    return created;
+  }
+  async updateFileTemplate(id: string, data: Partial<InsertFileTemplate>): Promise<FileTemplate | undefined> {
+    const [updated] = await db
+      .update(fileTemplates)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(fileTemplates.id, id))
+      .returning();
+    return updated;
+  }
+  async deleteFileTemplate(id: string): Promise<boolean> {
+    const result = await db.delete(fileTemplates).where(eq(fileTemplates.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   // Social Accounts

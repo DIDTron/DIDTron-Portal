@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronLeft, MoreVertical, Plus, Pencil, Trash2, Save, X } from "lucide-react";
-import type { Carrier, Currency, CarrierInterconnect, CarrierContact, CarrierCreditAlert } from "@shared/schema";
+import type { Carrier, Currency, CarrierInterconnect, CarrierContact, CarrierCreditAlert, EmailTemplate, User } from "@shared/schema";
 
 export default function CarrierDetailPage() {
   const { toast } = useToast();
@@ -72,6 +72,14 @@ export default function CarrierDetailPage() {
   const { data: creditAlerts } = useQuery<CarrierCreditAlert[]>({
     queryKey: ["/api/carriers", carrierId, "credit-alerts"],
     enabled: !!carrierId,
+  });
+
+  const { data: emailTemplates } = useQuery<EmailTemplate[]>({
+    queryKey: ["/api/email-templates"],
+  });
+
+  const { data: users } = useQuery<User[]>({
+    queryKey: ["/api/users"],
   });
 
   const [formData, setFormData] = useState({
@@ -159,6 +167,18 @@ export default function CarrierDetailPage() {
     direction: "customer",
     maxAlerts: 4,
     perMinutes: 1440,
+    templateId: "",
+    clearedTemplateId: "",
+    restrictionTemplate: "",
+    recipients: [] as Array<{ type: string; recipientId: string; recipientName: string; addressType: string }>,
+  });
+
+  const [newRecipient, setNewRecipient] = useState({
+    type: "Carrier Contact",
+    recipientId: "",
+    recipientName: "",
+    addressType: "To",
+    email: "",
   });
 
   const updateCarrierMutation = useMutation({
@@ -311,9 +331,62 @@ export default function CarrierDetailPage() {
       direction: "customer",
       maxAlerts: 4,
       perMinutes: 1440,
+      templateId: "",
+      clearedTemplateId: "",
+      restrictionTemplate: "",
+      recipients: [],
+    });
+    setNewRecipient({
+      type: "Carrier Contact",
+      recipientId: "",
+      recipientName: "",
+      addressType: "To",
+      email: "",
     });
     setEditingAlert(null);
   };
+
+  const addRecipient = () => {
+    if (newRecipient.type === "Email" && newRecipient.email) {
+      setAlertForm({
+        ...alertForm,
+        recipients: [
+          ...alertForm.recipients,
+          {
+            type: "Email",
+            recipientId: "",
+            recipientName: newRecipient.email,
+            addressType: newRecipient.addressType,
+          },
+        ],
+      });
+      setNewRecipient({ ...newRecipient, email: "" });
+    } else if (newRecipient.recipientId) {
+      setAlertForm({
+        ...alertForm,
+        recipients: [
+          ...alertForm.recipients,
+          {
+            type: newRecipient.type,
+            recipientId: newRecipient.recipientId,
+            recipientName: newRecipient.recipientName,
+            addressType: newRecipient.addressType,
+          },
+        ],
+      });
+      setNewRecipient({ ...newRecipient, recipientId: "", recipientName: "" });
+    }
+  };
+
+  const removeRecipient = (index: number) => {
+    setAlertForm({
+      ...alertForm,
+      recipients: alertForm.recipients.filter((_, i) => i !== index),
+    });
+  };
+
+  const alertTemplates = emailTemplates?.filter(t => t.category === "alerts" || t.category === "credit_alert") || [];
+  const restrictionTemplates = emailTemplates?.filter(t => t.category === "alerts" || t.category === "restriction") || [];
 
   const currency = currencies?.find(c => c.id === carrier?.primaryCurrencyId);
 
@@ -656,88 +729,308 @@ export default function CarrierDetailPage() {
       </Dialog>
 
       <Dialog open={showAlertDialog} onOpenChange={setShowAlertDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Add Credit Alert</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Alert Type</Label>
-              <Select
-                value={alertForm.alertType}
-                onValueChange={(v) => setAlertForm({ ...alertForm, alertType: v })}
-              >
-                <SelectTrigger data-testid="select-alert-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Low Balance Alert">Low Balance Alert</SelectItem>
-                  <SelectItem value="Credit Limit Alert">Credit Limit Alert</SelectItem>
-                  <SelectItem value="Spend Limit Alert">Spend Limit Alert</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Direction</Label>
-                <Select
-                  value={alertForm.direction}
-                  onValueChange={(v) => setAlertForm({ ...alertForm, direction: v })}
-                >
-                  <SelectTrigger data-testid="select-alert-direction">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="customer">Customer</SelectItem>
-                    <SelectItem value="supplier">Supplier</SelectItem>
-                  </SelectContent>
-                </Select>
+          <div className="grid grid-cols-2 gap-6 py-4">
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm border-b pb-2">Alert Type</h4>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select
+                    value={alertForm.alertType}
+                    onValueChange={(v) => setAlertForm({ ...alertForm, alertType: v })}
+                  >
+                    <SelectTrigger data-testid="select-alert-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low Balance Alert">Low Balance Alert</SelectItem>
+                      <SelectItem value="Customer Net Exposure Alert">Customer Net Exposure Alert</SelectItem>
+                      <SelectItem value="Supplier Net Exposure Alert">Supplier Net Exposure Alert</SelectItem>
+                      <SelectItem value="Customer Spend Limit">Customer Spend Limit</SelectItem>
+                      <SelectItem value="Supplier Spend Limit">Supplier Spend Limit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Currency</Label>
-                <Select
-                  value={alertForm.currencyCode}
-                  onValueChange={(v) => setAlertForm({ ...alertForm, currencyCode: v })}
-                >
-                  <SelectTrigger data-testid="select-alert-currency">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                  </SelectContent>
-                </Select>
+              
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm border-b pb-2">Alert Details</h4>
+                <div className="space-y-2">
+                  <Label>Template</Label>
+                  <Select
+                    value={alertForm.templateId}
+                    onValueChange={(v) => setAlertForm({ ...alertForm, templateId: v })}
+                  >
+                    <SelectTrigger data-testid="select-alert-template">
+                      <SelectValue placeholder="Select template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {alertTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Cleared Template</Label>
+                  <Select
+                    value={alertForm.clearedTemplateId}
+                    onValueChange={(v) => setAlertForm({ ...alertForm, clearedTemplateId: v })}
+                  >
+                    <SelectTrigger data-testid="select-cleared-template">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {alertTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Carrier</Label>
+                  <Input value={carrier?.name || ""} disabled className="bg-muted" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select
+                    value={alertForm.direction}
+                    onValueChange={(v) => setAlertForm({ ...alertForm, direction: v })}
+                  >
+                    <SelectTrigger data-testid="select-alert-direction">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="supplier">Supplier</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Threshold</Label>
+                    <Input
+                      type="number"
+                      value={alertForm.threshold}
+                      onChange={(e) => setAlertForm({ ...alertForm, threshold: e.target.value })}
+                      placeholder="-8000"
+                      data-testid="input-alert-threshold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Currency</Label>
+                    <Select
+                      value={alertForm.currencyCode}
+                      onValueChange={(v) => setAlertForm({ ...alertForm, currencyCode: v })}
+                    >
+                      <SelectTrigger data-testid="select-alert-currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="GBP">GBP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Threshold</Label>
-              <Input
-                type="number"
-                value={alertForm.threshold}
-                onChange={(e) => setAlertForm({ ...alertForm, threshold: e.target.value })}
-                placeholder="-8000"
-                data-testid="input-alert-threshold"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Max Alerts</Label>
-                <Input
-                  type="number"
-                  value={alertForm.maxAlerts}
-                  onChange={(e) => setAlertForm({ ...alertForm, maxAlerts: parseInt(e.target.value) || 4 })}
-                  data-testid="input-max-alerts"
-                />
+            
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm border-b pb-2">Alert Restriction Details</h4>
+                <div className="grid grid-cols-3 gap-2 items-end">
+                  <div className="space-y-2">
+                    <Label>Max Alerts</Label>
+                    <Input
+                      type="number"
+                      value={alertForm.maxAlerts}
+                      onChange={(e) => setAlertForm({ ...alertForm, maxAlerts: parseInt(e.target.value) || 4 })}
+                      data-testid="input-max-alerts"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Per</Label>
+                    <Input
+                      type="number"
+                      value={alertForm.perMinutes}
+                      onChange={(e) => setAlertForm({ ...alertForm, perMinutes: parseInt(e.target.value) || 1440 })}
+                      data-testid="input-per-minutes"
+                    />
+                  </div>
+                  <div className="pb-2">
+                    <span className="text-sm text-muted-foreground">Minutes</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Template</Label>
+                  <Select
+                    value={alertForm.restrictionTemplate}
+                    onValueChange={(v) => setAlertForm({ ...alertForm, restrictionTemplate: v })}
+                  >
+                    <SelectTrigger data-testid="select-restriction-template">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {restrictionTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Per (Minutes)</Label>
-                <Input
-                  type="number"
-                  value={alertForm.perMinutes}
-                  onChange={(e) => setAlertForm({ ...alertForm, perMinutes: parseInt(e.target.value) || 1440 })}
-                  data-testid="input-per-minutes"
-                />
+              
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm border-b pb-2">Alert Recipients</h4>
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-primary/10">
+                        <TableHead className="text-xs">Type</TableHead>
+                        <TableHead className="text-xs">Recipient</TableHead>
+                        <TableHead className="text-xs">Address</TableHead>
+                        <TableHead className="w-16"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {alertForm.recipients.map((recipient, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="text-sm py-2">{recipient.type}</TableCell>
+                          <TableCell className="text-sm py-2">{recipient.recipientName}</TableCell>
+                          <TableCell className="text-sm py-2">{recipient.addressType}</TableCell>
+                          <TableCell className="py-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeRecipient(index)}
+                              data-testid={`button-delete-recipient-${index}`}
+                            >
+                              Delete
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow>
+                        <TableCell className="py-2">
+                          <Select
+                            value={newRecipient.type}
+                            onValueChange={(v) => setNewRecipient({ ...newRecipient, type: v, recipientId: "", recipientName: "", email: "" })}
+                          >
+                            <SelectTrigger className="h-8 text-xs" data-testid="select-recipient-type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Carrier Contact">Carrier Contact</SelectItem>
+                              <SelectItem value="User">User</SelectItem>
+                              <SelectItem value="Email">Email</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="py-2">
+                          {newRecipient.type === "Email" ? (
+                            <Input
+                              type="email"
+                              value={newRecipient.email}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, email: e.target.value })}
+                              placeholder="Email Address"
+                              className="h-8 text-xs"
+                              data-testid="input-recipient-email"
+                            />
+                          ) : newRecipient.type === "Carrier Contact" ? (
+                            <Select
+                              value={newRecipient.recipientId}
+                              onValueChange={(v) => {
+                                const contact = contacts?.find(c => c.id === v);
+                                setNewRecipient({
+                                  ...newRecipient,
+                                  recipientId: v,
+                                  recipientName: contact ? `${contact.firstName || ""} ${contact.lastName || ""}`.trim() || contact.name || "" : "",
+                                });
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs" data-testid="select-recipient-contact">
+                                <SelectValue placeholder="Select contact" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {contacts?.map((contact) => (
+                                  <SelectItem key={contact.id} value={contact.id}>
+                                    {`${contact.firstName || ""} ${contact.lastName || ""}`.trim() || contact.name || "Unnamed"}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Select
+                              value={newRecipient.recipientId}
+                              onValueChange={(v) => {
+                                const user = users?.find(u => u.id === v);
+                                setNewRecipient({
+                                  ...newRecipient,
+                                  recipientId: v,
+                                  recipientName: user?.name || user?.email || "",
+                                });
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs" data-testid="select-recipient-user">
+                                <SelectValue placeholder="Select user" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {users?.map((user) => (
+                                  <SelectItem key={user.id} value={user.id}>
+                                    {user.name || user.email}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <Select
+                            value={newRecipient.addressType}
+                            onValueChange={(v) => setNewRecipient({ ...newRecipient, addressType: v })}
+                          >
+                            <SelectTrigger className="h-8 text-xs w-20" data-testid="select-address-type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="To">To</SelectItem>
+                              <SelectItem value="Cc">Cc</SelectItem>
+                              <SelectItem value="Bcc">Bcc</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={addRecipient}
+                            disabled={
+                              (newRecipient.type === "Email" && !newRecipient.email) ||
+                              (newRecipient.type !== "Email" && !newRecipient.recipientId)
+                            }
+                            data-testid="button-add-recipient"
+                          >
+                            Add
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
           </div>

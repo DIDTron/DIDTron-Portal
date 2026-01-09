@@ -1064,6 +1064,42 @@ export const emailLogs = pgTable("email_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ==================== FILE TEMPLATES (PDF Generation) ====================
+
+export const fileTemplateTypeEnum = pgEnum("file_template_type", [
+  "invoice",
+  "statement",
+  "credit_note",
+  "receipt",
+  "rate_card",
+  "contract",
+  "other",
+]);
+
+export const fileTemplates = pgTable("file_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  templateType: fileTemplateTypeEnum("template_type").default("invoice"),
+  description: text("description"),
+  dateFormat: text("date_format").default("dd/mm/yyyy"),
+  numberSeparators: text("number_separators").default("comma_dot"),
+  decimalPlaces: integer("decimal_places").default(2),
+  taxationRate: decimal("taxation_rate", { precision: 5, scale: 2 }),
+  negativeValueFormat: text("negative_value_format").default("minus_sign"),
+  durationFormat: text("duration_format").default("m.0"),
+  callItemizationTop: integer("call_itemization_top").default(50),
+  callItemizationSortBy: text("call_itemization_sort_by").default("zone_ascending"),
+  headerContent: text("header_content"),
+  bodyContent: text("body_content"),
+  footerContent: text("footer_content"),
+  variables: text("variables").array(),
+  isDraft: boolean("is_draft").default(true),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== SUPPORT TICKETS ====================
 
 export const tickets = pgTable("tickets", {
@@ -2596,6 +2632,7 @@ export const insertCustomerKycSchema = createInsertSchema(customerKyc).omit({ id
 export const insertBonusTypeSchema = createInsertSchema(bonusTypes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, createdAt: true });
+export const insertFileTemplateSchema = createInsertSchema(fileTemplates).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertWebhookSchema = createInsertSchema(webhooks).omit({ id: true, createdAt: true, updatedAt: true });
@@ -2670,6 +2707,8 @@ export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
 export type EmailLog = typeof emailLogs.$inferSelect;
+export type InsertFileTemplate = z.infer<typeof insertFileTemplateSchema>;
+export type FileTemplate = typeof fileTemplates.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type InsertCustomerKyc = z.infer<typeof insertCustomerKycSchema>;
 export type CustomerKyc = typeof customerKyc.$inferSelect;
