@@ -63,7 +63,7 @@ export default function Login() {
       </header>
 
       <main className="flex-1 flex items-center justify-center p-6 relative z-10">
-        <Card className="w-full max-w-md bg-card/95 backdrop-blur-sm shadow-2xl border-primary/20">
+        <Card className="w-full max-w-md bg-transparent backdrop-blur-md shadow-2xl border-primary/30">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl" data-testid="text-login-title">Welcome Back</CardTitle>
             <CardDescription>Sign in to your DIDTron account</CardDescription>
@@ -79,6 +79,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="bg-background/90"
                   data-testid="input-email"
                 />
               </div>
@@ -96,6 +97,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="bg-background/90"
                   data-testid="input-password"
                 />
               </div>

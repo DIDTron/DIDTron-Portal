@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Particle {
   x: number;
@@ -6,17 +6,23 @@ interface Particle {
   vx: number;
   vy: number;
   size: number;
-  opacity: number;
+  baseOpacity: number;
   color: string;
   type: "circle" | "square" | "diamond";
 }
 
-const BRAND_COLORS = [
+const BRAND_COLORS_LIGHT = [
+  "15, 23, 42",     // Slate-900 - Very dark
   "29, 78, 216",    // #1d4ed8 - Dark blue
   "37, 99, 235",    // #2563eb - Primary blue
-  "56, 189, 248",   // #38bdf8 - Light blue
   "67, 56, 202",    // #4338ca - Indigo
+];
+
+const BRAND_COLORS_DARK = [
+  "56, 189, 248",   // #38bdf8 - Light blue
   "99, 102, 241",   // #6366f1 - Violet
+  "129, 140, 248",  // #818cf8 - Light violet
+  "147, 197, 253",  // #93c5fd - Very light blue
 ];
 
 export function FloatingParticles() {
@@ -25,6 +31,17 @@ export function FloatingParticles() {
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number>();
   const timeRef = useRef(0);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -49,15 +66,17 @@ export function FloatingParticles() {
     const isMobile = window.innerWidth < 768;
     const particleCount = isMobile ? 40 : 80;
     const rect = canvas.getBoundingClientRect();
+    const colors = isDark ? BRAND_COLORS_DARK : BRAND_COLORS_LIGHT;
+    const baseOpacityRange = isDark ? { min: 0.25, max: 0.5 } : { min: 0.15, max: 0.35 };
 
     particlesRef.current = Array.from({ length: particleCount }, () => ({
       x: Math.random() * rect.width,
       y: Math.random() * rect.height,
       vx: (Math.random() - 0.5) * 0.3,
       vy: (Math.random() - 0.5) * 0.3,
-      size: Math.random() * 4 + 2,
-      opacity: Math.random() * 0.12 + 0.06,
-      color: BRAND_COLORS[Math.floor(Math.random() * BRAND_COLORS.length)],
+      size: Math.random() * 5 + 3,
+      baseOpacity: Math.random() * (baseOpacityRange.max - baseOpacityRange.min) + baseOpacityRange.min,
+      color: colors[Math.floor(Math.random() * colors.length)],
       type: ["circle", "square", "diamond"][Math.floor(Math.random() * 3)] as "circle" | "square" | "diamond",
     }));
 
@@ -87,20 +106,20 @@ export function FloatingParticles() {
         const dy = mouse.y - particle.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < 120 && distance > 0) {
-          const force = (120 - distance) / 120 * 0.15;
+        if (distance < 200 && distance > 0) {
+          const force = (200 - distance) / 200 * 0.4;
           const angle = Math.atan2(dy, dx);
           particle.vx += Math.cos(angle) * force;
           particle.vy += Math.sin(angle) * force;
         }
 
-        particle.vx += Math.sin(timeRef.current + particle.x * 0.01) * 0.002;
-        particle.vy += Math.cos(timeRef.current + particle.y * 0.01) * 0.002;
+        particle.vx += Math.sin(timeRef.current + particle.x * 0.01) * 0.003;
+        particle.vy += Math.cos(timeRef.current + particle.y * 0.01) * 0.003;
 
-        particle.vx *= 0.98;
-        particle.vy *= 0.98;
+        particle.vx *= 0.96;
+        particle.vy *= 0.96;
 
-        const maxSpeed = 1.5;
+        const maxSpeed = 3;
         const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
         if (speed > maxSpeed) {
           particle.vx = (particle.vx / speed) * maxSpeed;
@@ -115,8 +134,11 @@ export function FloatingParticles() {
         if (particle.y < -20) particle.y = rect.height + 20;
         if (particle.y > rect.height + 20) particle.y = -20;
 
+        const proximityBoost = distance < 150 ? (150 - distance) / 150 * 0.3 : 0;
+        const finalOpacity = Math.min(particle.baseOpacity + proximityBoost, 0.8);
+
         ctx.save();
-        ctx.globalAlpha = particle.opacity;
+        ctx.globalAlpha = finalOpacity;
         ctx.fillStyle = `rgba(${particle.color}, 1)`;
         ctx.translate(particle.x, particle.y);
 
@@ -147,7 +169,7 @@ export function FloatingParticles() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, []);
+  }, [isDark]);
 
   return (
     <canvas
