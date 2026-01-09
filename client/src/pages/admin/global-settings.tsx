@@ -434,8 +434,9 @@ export function GlobalSettingsAZDatabase() {
   queryParams.set("offset", String(page * limit));
   const queryString = queryParams.toString();
   
-  const { data, isLoading } = useQuery<{ destinations: AzDestination[]; total: number }>({
+  const { data, isLoading, isFetching } = useQuery<{ destinations: AzDestination[]; total: number }>({
     queryKey: [`/api/az-destinations?${queryString}`],
+    refetchInterval: autoRefresh ? 3000 : false,
   });
 
   const updateMutation = useMutation({
@@ -719,12 +720,11 @@ export function GlobalSettingsAZDatabase() {
             size="icon"
             onClick={() => {
               queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("/api/az-destinations") });
-              toast({ title: "Refreshed", description: "Data reloaded" });
             }}
-            disabled={isLoading}
+            disabled={isFetching}
             data-testid="button-refresh"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
           </Button>
           <Button
             variant="outline"
