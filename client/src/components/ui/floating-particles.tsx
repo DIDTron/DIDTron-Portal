@@ -7,9 +7,12 @@ interface Ring {
 
 interface Dot {
   ringIndex: number;
-  angle: number;
+  baseAngle: number;
+  angleJitter: number;
+  radiusJitter: number;
   size: number;
   colorIndex: number;
+  brightness: number;
 }
 
 export function FloatingParticles() {
@@ -54,24 +57,27 @@ export function FloatingParticles() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // 8 rings, smaller size, hollow center starts at 35px
+    // 8 rings with 60px spacing (400% of 15px), hollow center at 50px
     const ringCount = 8;
     ringsRef.current = Array.from({ length: ringCount }, (_, i) => ({
-      baseRadius: 35 + i * 15, // Smaller: 35px to 140px
-      phase: i * 0.4,
+      baseRadius: 50 + i * 60, // Wide spacing: 50, 110, 170, 230...
+      phase: i * 0.3,
     }));
 
-    // MANY dots per ring (48) to make solid-looking circles
-    const dotsPerRing = 48;
+    // Only 12 dots per ring - sparse, with jitter
+    const dotsPerRing = 12;
     dotsRef.current = [];
     
     for (let ringIdx = 0; ringIdx < ringCount; ringIdx++) {
       for (let d = 0; d < dotsPerRing; d++) {
         dotsRef.current.push({
           ringIndex: ringIdx,
-          angle: (d / dotsPerRing) * Math.PI * 2,
-          size: 1.2 + Math.random() * 0.6, // Tiny dots
+          baseAngle: (d / dotsPerRing) * Math.PI * 2,
+          angleJitter: (Math.random() - 0.5) * 0.3, // Random angular offset
+          radiusJitter: (Math.random() - 0.5) * 8, // Random radial offset
+          size: 1.5 + Math.random() * 1,
           colorIndex: (ringIdx + d) % 2,
+          brightness: 0.15,
         });
       }
     }
@@ -112,31 +118,42 @@ export function FloatingParticles() {
         const centerX = smoothMouseRef.current.x;
         const centerY = smoothMouseRef.current.y;
 
-        // Wave travels outward - expands from center
-        const wavePosition = (timeRef.current * 0.2) % 1; // Slow wave
+        // Very slow crest rotation - only ~30% of arc visible
+        const crestAngle = timeRef.current * 0.15; // Very slow rotation
+        const crestWidth = Math.PI * 0.6; // ~30% of circle (0.6 radians = ~34 degrees each side)
 
         dotsRef.current.forEach((dot) => {
           const ring = ringsRef.current[dot.ringIndex];
-          const ringNorm = dot.ringIndex / (ringCount - 1);
           
-          // Gentle wave motion on each ring
-          const waveOffset = Math.sin(timeRef.current * 0.5 + ring.phase) * 4;
-          const currentRadius = ring.baseRadius + waveOffset;
+          // Very slow wave motion
+          const radiusWave = Math.sin(timeRef.current * 0.08 + ring.phase) * 5;
+          const currentRadius = ring.baseRadius + radiusWave + dot.radiusJitter;
+          
+          // Angle with jitter and slow drift
+          const angleDrift = Math.sin(timeRef.current * 0.05 + dot.baseAngle) * 0.08;
+          const angle = dot.baseAngle + dot.angleJitter + angleDrift;
           
           // Position
-          const x = centerX + Math.cos(dot.angle) * currentRadius;
-          const y = centerY + Math.sin(dot.angle) * currentRadius;
+          const x = centerX + Math.cos(angle) * currentRadius;
+          const y = centerY + Math.sin(angle) * currentRadius;
           
-          // Wave crest visibility - expanding outward
-          const distFromWave = Math.abs(ringNorm - wavePosition);
-          const wrappedDist = Math.min(distFromWave, 1 - distFromWave);
+          // Calculate if dot is in the visible crest arc
+          const ringCrestOffset = ring.phase * 0.5; // Each ring has offset crest
+          const dotAngleFromCrest = Math.abs(((angle - crestAngle - ringCrestOffset) + Math.PI) % (Math.PI * 2) - Math.PI);
           
-          // Only ~30% visible: sharp falloff
-          const visibility = Math.max(0, 1 - wrappedDist / 0.15);
-          const brightness = 0.1 + visibility * 0.65;
+          // Smooth visibility based on distance from crest
+          const visibility = Math.max(0, 1 - dotAngleFromCrest / crestWidth);
+          const smoothVis = visibility * visibility; // Quadratic falloff
+          
+          // Target brightness: mostly dim, bright only in crest
+          const targetBrightness = 0.15 + smoothVis * 0.6;
+          
+          // Very slow fade transition
+          const fadeSpeed = smoothVis > 0.3 ? 0.08 : 0.02;
+          dot.brightness += (targetBrightness - dot.brightness) * fadeSpeed;
 
           ctx.save();
-          ctx.globalAlpha = opacityRef.current * brightness * (isDark ? 1 : 0.85);
+          ctx.globalAlpha = opacityRef.current * dot.brightness * (isDark ? 1 : 0.85);
           ctx.fillStyle = `rgba(${colors[dot.colorIndex]}, 1)`;
           ctx.beginPath();
           ctx.arc(x, y, dot.size, 0, Math.PI * 2);
