@@ -56,12 +56,12 @@ export function FloatingParticles() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // 10 concentric rings around cursor
+    // 10 concentric rings - START AT 60px for hollow center
     const ringCount = 10;
     ringsRef.current = Array.from({ length: ringCount }, (_, i) => ({
-      baseRadius: 30 + i * 22,
-      wavePhase: i * 0.6,
-      waveSpeed: 0.15 + Math.random() * 0.1,
+      baseRadius: 60 + i * 25, // Hollow center: starts at 60px
+      wavePhase: i * 0.5,
+      waveSpeed: 0.15 + i * 0.02,
     }));
 
     // 12 dots per ring
@@ -75,7 +75,7 @@ export function FloatingParticles() {
           anglePosition: d / dotsPerRing,
           size: 1.5 + Math.random() * 1,
           colorIndex: (ringIdx + d) % 2,
-          brightness: 0.15,
+          brightness: 0,
         });
       }
     }
@@ -117,38 +117,51 @@ export function FloatingParticles() {
         const centerX = smoothMouseRef.current.x;
         const centerY = smoothMouseRef.current.y;
 
+        // Wave crest position - travels outward slowly
+        const waveCrests = [
+          (timeRef.current * 0.15) % 1,
+          ((timeRef.current * 0.15) + 0.33) % 1,
+          ((timeRef.current * 0.15) + 0.66) % 1,
+        ];
+
         dotsRef.current.forEach((dot) => {
           const ring = ringsRef.current[dot.ringIndex];
           
-          // Sea wave motion - ripple outward
+          // Ring's normalized position (0 = innermost, 1 = outermost)
+          const ringNorm = dot.ringIndex / (ringCount - 1);
+          
+          // Sea wave motion
           const waveTime = timeRef.current * ring.waveSpeed;
           const dotAngle = dot.anglePosition * Math.PI * 2;
           
-          // Ripple effect: wave travels through the rings
-          const ripplePhase = waveTime * 2 + ring.wavePhase + dotAngle * 0.3;
-          const waveHeight = Math.sin(ripplePhase) * 8;
+          // Gentle vertical wave
+          const waveHeight = Math.sin(waveTime * 2 + ring.wavePhase) * 6;
           
-          // Radius undulation
-          const radiusWave = Math.sin(waveTime * 1.5 + ring.wavePhase) * 6;
+          // Radius expansion effect
+          const radiusWave = Math.sin(waveTime * 1.2 + ring.wavePhase) * 8;
           const currentRadius = ring.baseRadius + radiusWave;
           
           // Position on concentric circle
           const x = centerX + Math.cos(dotAngle) * currentRadius;
           const y = centerY + Math.sin(dotAngle) * currentRadius + waveHeight;
           
-          // Brightness: dim most of the time, bright only at wave peak
-          const peakValue = Math.sin(ripplePhase);
-          const isAtPeak = peakValue > 0.85;
+          // Calculate distance from each wave crest
+          // Wave crest illuminates ~30% of rings at a time
+          let maxCrestInfluence = 0;
+          waveCrests.forEach(crest => {
+            const distFromCrest = Math.abs(ringNorm - crest);
+            const wrappedDist = Math.min(distFromCrest, 1 - distFromCrest);
+            // Narrow window: ~0.15 on each side = 30% total
+            const influence = Math.max(0, 1 - wrappedDist / 0.15);
+            maxCrestInfluence = Math.max(maxCrestInfluence, influence);
+          });
           
-          // Target brightness
-          const targetBrightness = isAtPeak ? 0.75 : 0.15;
+          // Target brightness based on crest proximity
+          const targetBrightness = 0.15 + maxCrestInfluence * 0.6;
           
-          // Smooth transition - fast rise, slow fade
-          if (isAtPeak) {
-            dot.brightness = Math.min(0.75, dot.brightness + 0.15);
-          } else {
-            dot.brightness = Math.max(0.15, dot.brightness - 0.008);
-          }
+          // Smooth transition
+          const fadeSpeed = maxCrestInfluence > 0.5 ? 0.2 : 0.02;
+          dot.brightness += (targetBrightness - dot.brightness) * fadeSpeed;
 
           // Render dot
           ctx.save();
