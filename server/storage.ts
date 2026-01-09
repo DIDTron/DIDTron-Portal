@@ -81,7 +81,8 @@ import {
   type EmContentVersion, type InsertEmContentVersion,
   type EmValidationResult, type InsertEmValidationResult,
   type EmPublishHistory, type InsertEmPublishHistory,
-  type DevTest, type InsertDevTest
+  type DevTest, type InsertDevTest,
+  type BillingTerm, type InsertBillingTerm
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -91,6 +92,14 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined>;
+
+  // Billing Terms
+  getBillingTerms(): Promise<BillingTerm[]>;
+  getBillingTerm(id: string): Promise<BillingTerm | undefined>;
+  createBillingTerm(term: InsertBillingTerm): Promise<BillingTerm>;
+  updateBillingTerm(id: string, data: Partial<InsertBillingTerm>): Promise<BillingTerm | undefined>;
+  deleteBillingTerm(id: string): Promise<boolean>;
+  setDefaultBillingTerm(id: string): Promise<BillingTerm | undefined>;
 
   // Customer Categories
   getCustomerCategories(): Promise<CustomerCategory[]>;
@@ -701,6 +710,7 @@ export class MemStorage implements IStorage {
   private docArticles: Map<string, DocArticle>;
   private webhooks: Map<string, Webhook>;
   private customerApiKeys: Map<string, CustomerApiKey>;
+  private billingTerms: Map<string, BillingTerm>;
 
   constructor() {
     this.users = new Map();
@@ -774,6 +784,7 @@ export class MemStorage implements IStorage {
     this.docArticles = new Map();
     this.webhooks = new Map();
     this.customerApiKeys = new Map();
+    this.billingTerms = new Map();
 
     this.seedDefaultData();
   }
@@ -857,6 +868,63 @@ export class MemStorage implements IStorage {
     if (!user) return undefined;
     const updated = { ...user, ...data, updatedAt: new Date() };
     this.users.set(id, updated);
+    return updated;
+  }
+
+  // Billing Terms
+  async getBillingTerms(): Promise<BillingTerm[]> {
+    return Array.from(this.billingTerms.values()).sort((a, b) => a.cycleDays - b.cycleDays || a.dueDays - b.dueDays);
+  }
+
+  async getBillingTerm(id: string): Promise<BillingTerm | undefined> {
+    return this.billingTerms.get(id);
+  }
+
+  async createBillingTerm(term: InsertBillingTerm): Promise<BillingTerm> {
+    const id = randomUUID();
+    const now = new Date();
+    const billingTerm: BillingTerm = {
+      id,
+      code: term.code,
+      label: term.label,
+      cycleType: term.cycleType,
+      cycleDays: term.cycleDays,
+      dueDays: term.dueDays,
+      anchorConfig: term.anchorConfig ?? null,
+      description: term.description ?? null,
+      isDefault: term.isDefault ?? false,
+      isActive: term.isActive ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.billingTerms.set(id, billingTerm);
+    return billingTerm;
+  }
+
+  async updateBillingTerm(id: string, data: Partial<InsertBillingTerm>): Promise<BillingTerm | undefined> {
+    const term = this.billingTerms.get(id);
+    if (!term) return undefined;
+    const updated = { ...term, ...data, updatedAt: new Date() };
+    this.billingTerms.set(id, updated);
+    return updated;
+  }
+
+  async deleteBillingTerm(id: string): Promise<boolean> {
+    return this.billingTerms.delete(id);
+  }
+
+  async setDefaultBillingTerm(id: string): Promise<BillingTerm | undefined> {
+    const term = this.billingTerms.get(id);
+    if (!term) return undefined;
+    // Remove default from all other terms
+    for (const [termId, t] of this.billingTerms) {
+      if (t.isDefault) {
+        this.billingTerms.set(termId, { ...t, isDefault: false, updatedAt: new Date() });
+      }
+    }
+    // Set this one as default
+    const updated = { ...term, isDefault: true, updatedAt: new Date() };
+    this.billingTerms.set(id, updated);
     return updated;
   }
 

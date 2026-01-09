@@ -49,6 +49,34 @@ export const emSectionEnum = pgEnum("em_section", ["marketing", "portal_themes",
 
 export const emContentStatusEnum = pgEnum("em_content_status", ["draft", "preview", "published", "archived"]);
 
+export const billingCycleTypeEnum = pgEnum("billing_cycle_type", ["weekly", "semi_monthly", "monthly"]);
+
+// ==================== BILLING TERMS ====================
+
+export const billingTerms = pgTable("billing_terms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  label: text("label").notNull(),
+  cycleType: billingCycleTypeEnum("cycle_type").notNull(),
+  cycleDays: integer("cycle_days").notNull(),
+  dueDays: integer("due_days").notNull(),
+  anchorConfig: jsonb("anchor_config"),
+  description: text("description"),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertBillingTermSchema = createInsertSchema(billingTerms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertBillingTerm = z.infer<typeof insertBillingTermSchema>;
+export type BillingTerm = typeof billingTerms.$inferSelect;
+
 // ==================== CUSTOMER CATEGORIES & GROUPS ====================
 
 export const customerCategories = pgTable("customer_categories", {
@@ -148,6 +176,7 @@ export const customers = pgTable("customers", {
   autoTopUpEnabled: boolean("auto_top_up_enabled").default(false),
   autoTopUpAmount: decimal("auto_top_up_amount", { precision: 12, scale: 4 }),
   autoTopUpThreshold: decimal("auto_top_up_threshold", { precision: 12, scale: 4 }),
+  billingTermId: varchar("billing_term_id").references(() => billingTerms.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

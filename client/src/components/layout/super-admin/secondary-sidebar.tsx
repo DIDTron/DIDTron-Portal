@@ -82,6 +82,7 @@ export const sectionConfigs: Record<string, SectionConfig> = {
     items: [
       { id: "billing-overview", label: "Overview", route: "/admin/billing", icon: LayoutDashboard },
       { id: "billing-customers", label: "Customer Billing", route: "/admin/billing/customers", icon: Users },
+      { id: "billing-terms", label: "Billing Terms", route: "/admin/billing/terms", icon: ListTodo },
       { id: "invoices", label: "Invoices", route: "/admin/billing/invoices", icon: FileText },
       { id: "credit-notes", label: "Credit Notes", route: "/admin/billing/credit-notes", icon: FileText },
       { id: "soa", label: "Statements (SOA)", route: "/admin/billing/soa", icon: FileText },

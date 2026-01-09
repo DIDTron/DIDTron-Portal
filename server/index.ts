@@ -945,11 +945,41 @@ async function seedIntegrations() {
   }
 }
 
+async function seedBillingTerms() {
+  try {
+    const existingTerms = await storage.getBillingTerms();
+    if (existingTerms.length > 0) {
+      log(`Billing terms already exist (${existingTerms.length} found)`, "seed");
+      return;
+    }
+
+    const defaultTerms = [
+      { code: "7/3", label: "Weekly (Due 3 Days)", cycleType: "weekly" as const, cycleDays: 7, dueDays: 3, anchorConfig: { dayOfWeek: 1 }, isDefault: false },
+      { code: "7/7", label: "Weekly (Due 7 Days)", cycleType: "weekly" as const, cycleDays: 7, dueDays: 7, anchorConfig: { dayOfWeek: 1 }, isDefault: true },
+      { code: "15/7", label: "Bi-Weekly (Due 7 Days)", cycleType: "semi_monthly" as const, cycleDays: 15, dueDays: 7, anchorConfig: { daysOfMonth: [1, 16] }, isDefault: false },
+      { code: "15/15", label: "Bi-Weekly (Due 15 Days)", cycleType: "semi_monthly" as const, cycleDays: 15, dueDays: 15, anchorConfig: { daysOfMonth: [1, 16] }, isDefault: false },
+      { code: "30/15", label: "Monthly (Due 15 Days)", cycleType: "monthly" as const, cycleDays: 30, dueDays: 15, anchorConfig: { dayOfMonth: 1 }, isDefault: false },
+      { code: "30/30", label: "Monthly (Due 30 Days)", cycleType: "monthly" as const, cycleDays: 30, dueDays: 30, anchorConfig: { dayOfMonth: 1 }, isDefault: false },
+    ];
+
+    let created = 0;
+    for (const term of defaultTerms) {
+      await storage.createBillingTerm(term);
+      created++;
+    }
+
+    log(`Created ${created} default billing terms`, "seed");
+  } catch (error) {
+    log(`Failed to seed billing terms: ${error}`, "seed");
+  }
+}
+
 (async () => {
   await seedSuperAdmin();
   await seedDocumentation();
   await seedExperienceManager();
   await seedIntegrations();
+  await seedBillingTerms();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -59,7 +59,8 @@ import {
   insertIvrSchema,
   insertRingGroupSchema,
   insertQueueSchema,
-  insertWebhookSchema
+  insertWebhookSchema,
+  insertBillingTermSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -3665,6 +3666,68 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete group" });
+    }
+  });
+
+  // ==================== BILLING TERMS ====================
+
+  app.get("/api/billing-terms", async (req, res) => {
+    try {
+      const terms = await storage.getBillingTerms();
+      res.json(terms);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch billing terms" });
+    }
+  });
+
+  app.get("/api/billing-terms/:id", async (req, res) => {
+    try {
+      const term = await storage.getBillingTerm(req.params.id);
+      if (!term) return res.status(404).json({ error: "Billing term not found" });
+      res.json(term);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch billing term" });
+    }
+  });
+
+  app.post("/api/billing-terms", async (req, res) => {
+    try {
+      const parsed = insertBillingTermSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const term = await storage.createBillingTerm(parsed.data);
+      res.status(201).json(term);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create billing term" });
+    }
+  });
+
+  app.patch("/api/billing-terms/:id", async (req, res) => {
+    try {
+      const term = await storage.updateBillingTerm(req.params.id, req.body);
+      if (!term) return res.status(404).json({ error: "Billing term not found" });
+      res.json(term);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update billing term" });
+    }
+  });
+
+  app.delete("/api/billing-terms/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteBillingTerm(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Billing term not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete billing term" });
+    }
+  });
+
+  app.post("/api/billing-terms/:id/set-default", async (req, res) => {
+    try {
+      const term = await storage.setDefaultBillingTerm(req.params.id);
+      if (!term) return res.status(404).json({ error: "Billing term not found" });
+      res.json(term);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to set default billing term" });
     }
   });
 

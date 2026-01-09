@@ -78,6 +78,7 @@ import NettingPage from "./billing/netting";
 import SupplierAuditPage from "./billing/supplier-audit";
 import TemplatesPage from "./billing/templates";
 import SyncStatusPage from "./billing/sync-status";
+import BillingTermsPage from "./billing/terms";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -109,6 +110,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/kyc": { section: "customers", subItem: "kyc" },
   "/admin/billing": { section: "billing", subItem: "billing-overview" },
   "/admin/billing/customers": { section: "billing", subItem: "billing-customers" },
+  "/admin/billing/terms": { section: "billing", subItem: "billing-terms" },
   "/admin/billing/invoices": { section: "billing", subItem: "invoices" },
   "/admin/billing/credit-notes": { section: "billing", subItem: "credit-notes" },
   "/admin/billing/soa": { section: "billing", subItem: "soa" },
@@ -251,6 +253,7 @@ export default function AdminLayout() {
                 <Route path="/admin/kyc" component={KycPage} />
                 <Route path="/admin/billing" component={BillingOverviewPage} />
                 <Route path="/admin/billing/customers" component={BillingCustomersPage} />
+                <Route path="/admin/billing/terms" component={BillingTermsPage} />
                 <Route path="/admin/billing/invoices" component={InvoicesPage} />
                 <Route path="/admin/billing/credit-notes" component={CreditNotesPage} />
                 <Route path="/admin/billing/soa" component={SOAPage} />
