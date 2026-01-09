@@ -35,7 +35,7 @@ export default function BillingCustomersPage() {
   const filteredCustomers = customers?.filter((customer) => {
     const matchesSearch = 
       customer.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.contactEmail?.toLowerCase().includes(searchQuery.toLowerCase());
+      customer.accountNumber?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesCategory = 
       selectedCategory === "all" ||
@@ -140,7 +140,7 @@ export default function BillingCustomersPage() {
                         <TableCell>
                           <div>
                             <div className="font-medium">{customer.companyName || "Individual"}</div>
-                            <div className="text-sm text-muted-foreground">{customer.contactEmail}</div>
+                            <div className="text-sm text-muted-foreground">{customer.accountNumber}</div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -191,7 +191,7 @@ export default function BillingCustomersPage() {
           <DialogHeader>
             <DialogTitle>Edit Billing Settings</DialogTitle>
             <DialogDescription>
-              Update billing type and credit settings for {editingCustomer?.companyName || editingCustomer?.contactEmail}
+              Update billing type and credit settings for {editingCustomer?.companyName || editingCustomer?.accountNumber}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

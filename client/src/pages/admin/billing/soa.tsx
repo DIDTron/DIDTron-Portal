@@ -90,7 +90,7 @@ export default function SOAPage() {
                 <SelectContent>
                   {customers?.map((customer) => (
                     <SelectItem key={customer.id} value={customer.id}>
-                      {customer.companyName || customer.contactEmail}
+                      {customer.companyName} ({customer.accountNumber})
                     </SelectItem>
                   ))}
                 </SelectContent>
