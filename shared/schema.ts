@@ -68,10 +68,84 @@ export const billingTerms = pgTable("billing_terms", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertBillingTermSchema = createInsertSchema(billingTerms).omit({
+const baseBillingTermSchema = createInsertSchema(billingTerms).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertBillingTermSchema = baseBillingTermSchema.extend({
+  anchorConfig: z.record(z.unknown()).refine((config) => config !== null && config !== undefined, {
+    message: "anchorConfig is required",
+  }),
+}).superRefine((data, ctx) => {
+  const config = data.anchorConfig as Record<string, unknown>;
+  switch (data.cycleType) {
+    case "weekly":
+      if (typeof config?.dayOfWeek !== "number" || config.dayOfWeek < 0 || config.dayOfWeek > 6) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Weekly cycle requires dayOfWeek (0-6)",
+          path: ["anchorConfig"],
+        });
+      }
+      break;
+    case "semi_monthly":
+      if (!Array.isArray(config?.daysOfMonth) || config.daysOfMonth.length !== 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Semi-monthly cycle requires daysOfMonth array with 2 values",
+          path: ["anchorConfig"],
+        });
+      }
+      break;
+    case "monthly":
+      if (typeof config?.dayOfMonth !== "number" || config.dayOfMonth < 1 || config.dayOfMonth > 28) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Monthly cycle requires dayOfMonth (1-28)",
+          path: ["anchorConfig"],
+        });
+      }
+      break;
+  }
+});
+
+export const updateBillingTermSchema = baseBillingTermSchema.partial().extend({
+  anchorConfig: z.record(z.unknown()).optional(),
+}).superRefine((data, ctx) => {
+  if (data.cycleType && data.anchorConfig) {
+    const config = data.anchorConfig as Record<string, unknown>;
+    switch (data.cycleType) {
+      case "weekly":
+        if (typeof config?.dayOfWeek !== "number" || config.dayOfWeek < 0 || config.dayOfWeek > 6) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Weekly cycle requires dayOfWeek (0-6)",
+            path: ["anchorConfig"],
+          });
+        }
+        break;
+      case "semi_monthly":
+        if (!Array.isArray(config?.daysOfMonth) || config.daysOfMonth.length !== 2) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Semi-monthly cycle requires daysOfMonth array with 2 values",
+            path: ["anchorConfig"],
+          });
+        }
+        break;
+      case "monthly":
+        if (typeof config?.dayOfMonth !== "number" || config.dayOfMonth < 1 || config.dayOfMonth > 28) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Monthly cycle requires dayOfMonth (1-28)",
+            path: ["anchorConfig"],
+          });
+        }
+        break;
+    }
+  }
 });
 
 export type InsertBillingTerm = z.infer<typeof insertBillingTermSchema>;

@@ -40,14 +40,14 @@ export default function BillingTermsPage() {
 
   const { paginatedItems, ...paginationProps } = useDataTablePagination(billingTerms || []);
 
-  const buildAnchorConfig = () => {
-    switch (formData.cycleType) {
+  const buildAnchorConfig = (data: typeof formData) => {
+    switch (data.cycleType) {
       case "weekly":
-        return { dayOfWeek: formData.anchorDayOfWeek };
+        return { dayOfWeek: data.anchorDayOfWeek };
       case "semi_monthly":
-        return { daysOfMonth: formData.anchorDaysOfMonth };
+        return { daysOfMonth: data.anchorDaysOfMonth };
       case "monthly":
-        return { dayOfMonth: formData.anchorDayOfMonth };
+        return { dayOfMonth: data.anchorDayOfMonth };
     }
   };
 
@@ -60,7 +60,7 @@ export default function BillingTermsPage() {
         cycleDays: data.cycleDays,
         dueDays: data.dueDays,
         description: data.description,
-        anchorConfig: buildAnchorConfig(),
+        anchorConfig: buildAnchorConfig(data),
       };
       return await apiRequest("POST", "/api/billing-terms", payload);
     },
@@ -76,7 +76,7 @@ export default function BillingTermsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       const payload = {
         code: data.code,
         label: data.label,
@@ -84,7 +84,7 @@ export default function BillingTermsPage() {
         cycleDays: data.cycleDays,
         dueDays: data.dueDays,
         description: data.description,
-        anchorConfig: buildAnchorConfig(),
+        anchorConfig: buildAnchorConfig(data),
       };
       return await apiRequest("PATCH", `/api/billing-terms/${id}`, payload);
     },

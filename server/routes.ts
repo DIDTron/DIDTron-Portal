@@ -60,7 +60,8 @@ import {
   insertRingGroupSchema,
   insertQueueSchema,
   insertWebhookSchema,
-  insertBillingTermSchema
+  insertBillingTermSchema,
+  updateBillingTermSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -3690,10 +3691,46 @@ export async function registerRoutes(
     }
   });
 
+  const validateBillingTermAnchorConfig = (cycleType: string, anchorConfig: unknown): string | null => {
+    if (!anchorConfig || typeof anchorConfig !== "object") {
+      return "anchorConfig is required and must be an object";
+    }
+    const config = anchorConfig as Record<string, unknown>;
+    
+    switch (cycleType) {
+      case "weekly":
+        if (typeof config.dayOfWeek !== "number" || config.dayOfWeek < 0 || config.dayOfWeek > 6) {
+          return "Weekly cycle requires dayOfWeek (0-6)";
+        }
+        break;
+      case "semi_monthly":
+        if (!Array.isArray(config.daysOfMonth) || config.daysOfMonth.length !== 2) {
+          return "Semi-monthly cycle requires daysOfMonth array with 2 values";
+        }
+        const [day1, day2] = config.daysOfMonth as number[];
+        if (typeof day1 !== "number" || typeof day2 !== "number" || day1 < 1 || day1 > 28 || day2 < 1 || day2 > 28) {
+          return "daysOfMonth values must be numbers between 1 and 28";
+        }
+        break;
+      case "monthly":
+        if (typeof config.dayOfMonth !== "number" || config.dayOfMonth < 1 || config.dayOfMonth > 28) {
+          return "Monthly cycle requires dayOfMonth (1-28)";
+        }
+        break;
+      default:
+        return "Invalid cycleType";
+    }
+    return null;
+  };
+
   app.post("/api/billing-terms", async (req, res) => {
     try {
       const parsed = insertBillingTermSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      
+      const anchorError = validateBillingTermAnchorConfig(parsed.data.cycleType, parsed.data.anchorConfig);
+      if (anchorError) return res.status(400).json({ error: anchorError });
+      
       const term = await storage.createBillingTerm(parsed.data);
       res.status(201).json(term);
     } catch (error) {
@@ -3703,7 +3740,32 @@ export async function registerRoutes(
 
   app.patch("/api/billing-terms/:id", async (req, res) => {
     try {
-      const term = await storage.updateBillingTerm(req.params.id, req.body);
+      const existing = await storage.getBillingTerm(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Billing term not found" });
+      
+      const cycleType = req.body.cycleType || existing.cycleType;
+      
+      if (req.body.cycleType && req.body.cycleType !== existing.cycleType && !req.body.anchorConfig) {
+        return res.status(400).json({ error: "anchorConfig is required when changing cycleType" });
+      }
+      
+      const anchorConfig = req.body.anchorConfig ?? existing.anchorConfig;
+      
+      const anchorError = validateBillingTermAnchorConfig(cycleType, anchorConfig);
+      if (anchorError) return res.status(400).json({ error: anchorError });
+      
+      const updatePayload = {
+        ...req.body,
+        cycleType,
+        anchorConfig,
+      };
+      
+      const schemaValidation = updateBillingTermSchema.safeParse(updatePayload);
+      if (!schemaValidation.success) {
+        return res.status(400).json({ error: schemaValidation.error.errors });
+      }
+      
+      const term = await storage.updateBillingTerm(req.params.id, updatePayload);
       if (!term) return res.status(404).json({ error: "Billing term not found" });
       res.json(term);
     } catch (error) {
