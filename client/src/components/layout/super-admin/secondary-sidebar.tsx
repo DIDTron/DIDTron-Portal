@@ -142,6 +142,7 @@ const sectionConfigs: Record<string, SectionConfig> = {
       { id: "em-portal-themes", label: "Portal Themes", route: "/admin/experience-manager/portal-themes", icon: Palette },
       { id: "em-white-label", label: "White-Label", route: "/admin/experience-manager/white-label", icon: Building2 },
       { id: "em-design-system", label: "Design System", route: "/admin/experience-manager/design-system", icon: Settings },
+      { id: "em-component-library", label: "Component Library", route: "/admin/experience-manager/component-library", icon: Layers },
       { id: "em-documentation", label: "Documentation", route: "/admin/documentation", icon: BookOpen },
     ],
   },
