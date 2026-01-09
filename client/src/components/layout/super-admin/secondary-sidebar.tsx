@@ -320,7 +320,7 @@ export function SecondarySidebar() {
 
   return (
     <div className="flex flex-col h-full w-48 border-r bg-sidebar shrink-0">
-      <div className="flex h-12 items-center gap-2 px-3 border-b">
+      <div className="flex h-10 items-center gap-2 px-3 border-b">
         <Button
           variant="ghost"
           size="icon"
