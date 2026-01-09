@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,22 +18,35 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Calendar } from "@/components/ui/calendar";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator, ContextMenuCheckboxItem, ContextMenuRadioGroup, ContextMenuRadioItem, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuLabel } from "@/components/ui/context-menu";
+import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
+import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarSeparator, MenubarTrigger, MenubarCheckboxItem, MenubarRadioGroup, MenubarRadioItem, MenubarSub, MenubarSubContent, MenubarSubTrigger } from "@/components/ui/menubar";
+import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { 
   Search, Copy, Check, Plus, Trash2, Edit, MoreHorizontal, 
   ChevronRight, Settings, User, Bell, LogOut, Layers, Terminal,
-  AlertCircle, ChevronDown, Bold, Italic, Underline, Home, ChevronsUpDown
+  AlertCircle, ChevronDown, Bold, Italic, Underline, Home, ChevronsUpDown,
+  Calculator, Calendar as CalendarIcon, CreditCard, Smile, Mail, MessageSquare,
+  PlusCircle, UserPlus, Cloud, Github, Keyboard, LifeBuoy, Settings2,
+  ChevronLeft, Menu, PanelLeft, Image
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -801,6 +814,449 @@ const componentExamples: ComponentExample[] = [
       </HoverCard>
     ),
   },
+  {
+    name: "AspectRatio",
+    description: "Maintains consistent width-to-height ratio for images and media.",
+    category: "layout",
+    code: `<AspectRatio ratio={16 / 9}>
+  <img src="..." alt="..." className="object-cover" />
+</AspectRatio>`,
+    preview: (
+      <div className="w-64">
+        <AspectRatio ratio={16 / 9} data-testid="preview-aspectratio">
+          <div className="flex items-center justify-center w-full h-full bg-muted rounded-md">
+            <Image className="h-8 w-8 text-muted-foreground" />
+          </div>
+        </AspectRatio>
+      </div>
+    ),
+  },
+  {
+    name: "Calendar",
+    description: "Date picker calendar component. Use with Popover for date selection.",
+    category: "inputs",
+    code: `<Calendar
+  mode="single"
+  selected={date}
+  onSelect={setDate}
+/>`,
+    preview: (
+      <Calendar
+        mode="single"
+        className="rounded-md border"
+        data-testid="preview-calendar"
+      />
+    ),
+  },
+  {
+    name: "Command",
+    description: "Command palette for search and actions. Great for keyboard navigation.",
+    category: "inputs",
+    code: `<Command>
+  <CommandInput placeholder="Search..." />
+  <CommandList>
+    <CommandEmpty>No results</CommandEmpty>
+    <CommandGroup heading="Suggestions">
+      <CommandItem>Calendar</CommandItem>
+    </CommandGroup>
+  </CommandList>
+</Command>`,
+    preview: (
+      <Command className="rounded-lg border shadow-md max-w-sm" data-testid="preview-command">
+        <CommandInput placeholder="Type a command..." data-testid="preview-command-input" />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Suggestions">
+            <CommandItem data-testid="preview-command-calendar"><CalendarIcon className="mr-2 h-4 w-4" /> Calendar</CommandItem>
+            <CommandItem data-testid="preview-command-search"><Search className="mr-2 h-4 w-4" /> Search</CommandItem>
+            <CommandItem data-testid="preview-command-settings"><Settings className="mr-2 h-4 w-4" /> Settings</CommandItem>
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Settings">
+            <CommandItem data-testid="preview-command-profile"><User className="mr-2 h-4 w-4" /> Profile</CommandItem>
+            <CommandItem data-testid="preview-command-mail"><Mail className="mr-2 h-4 w-4" /> Mail</CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    ),
+  },
+  {
+    name: "ContextMenu",
+    description: "Right-click menu for contextual actions.",
+    category: "navigation",
+    code: `<ContextMenu>
+  <ContextMenuTrigger>Right click here</ContextMenuTrigger>
+  <ContextMenuContent>
+    <ContextMenuItem>Edit</ContextMenuItem>
+    <ContextMenuItem>Delete</ContextMenuItem>
+  </ContextMenuContent>
+</ContextMenu>`,
+    preview: (
+      <ContextMenu>
+        <ContextMenuTrigger className="flex h-32 w-64 items-center justify-center rounded-md border border-dashed text-sm" data-testid="preview-contextmenu-trigger">
+          Right click here
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-64">
+          <ContextMenuItem data-testid="preview-contextmenu-back"><ChevronLeft className="mr-2 h-4 w-4" /> Back</ContextMenuItem>
+          <ContextMenuItem data-testid="preview-contextmenu-forward" disabled>Forward</ContextMenuItem>
+          <ContextMenuItem data-testid="preview-contextmenu-reload"><ChevronRight className="mr-2 h-4 w-4" /> Reload</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuCheckboxItem checked data-testid="preview-contextmenu-checkbox">Show Bookmarks</ContextMenuCheckboxItem>
+          <ContextMenuCheckboxItem data-testid="preview-contextmenu-checkbox2">Show Full URLs</ContextMenuCheckboxItem>
+          <ContextMenuSeparator />
+          <ContextMenuRadioGroup value="pedro">
+            <ContextMenuLabel>People</ContextMenuLabel>
+            <ContextMenuRadioItem value="pedro" data-testid="preview-contextmenu-radio1">Pedro</ContextMenuRadioItem>
+            <ContextMenuRadioItem value="colm" data-testid="preview-contextmenu-radio2">Colm</ContextMenuRadioItem>
+          </ContextMenuRadioGroup>
+        </ContextMenuContent>
+      </ContextMenu>
+    ),
+  },
+  {
+    name: "Drawer",
+    description: "Mobile-friendly bottom sheet. Slides up from bottom of screen.",
+    category: "overlay",
+    code: `<Drawer>
+  <DrawerTrigger asChild>
+    <Button>Open Drawer</Button>
+  </DrawerTrigger>
+  <DrawerContent>
+    <DrawerHeader>
+      <DrawerTitle>Title</DrawerTitle>
+    </DrawerHeader>
+  </DrawerContent>
+</Drawer>`,
+    preview: (
+      <Drawer>
+        <DrawerTrigger asChild>
+          <Button variant="outline" data-testid="preview-drawer-trigger">Open Drawer</Button>
+        </DrawerTrigger>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Move Goal</DrawerTitle>
+            <DrawerDescription>Set your daily activity goal.</DrawerDescription>
+          </DrawerHeader>
+          <div className="p-4">
+            <div className="flex items-center justify-center space-x-2">
+              <Button variant="outline" size="icon" data-testid="preview-drawer-minus">-</Button>
+              <div className="text-center">
+                <div className="text-5xl font-bold">350</div>
+                <div className="text-muted-foreground text-sm">Calories/day</div>
+              </div>
+              <Button variant="outline" size="icon" data-testid="preview-drawer-plus">+</Button>
+            </div>
+          </div>
+          <DrawerFooter>
+            <Button data-testid="preview-drawer-submit">Submit</Button>
+            <DrawerClose asChild>
+              <Button variant="outline" data-testid="preview-drawer-cancel">Cancel</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    ),
+  },
+  {
+    name: "Menubar",
+    description: "Desktop application-style menu bar with dropdowns.",
+    category: "navigation",
+    code: `<Menubar>
+  <MenubarMenu>
+    <MenubarTrigger>File</MenubarTrigger>
+    <MenubarContent>
+      <MenubarItem>New Tab</MenubarItem>
+    </MenubarContent>
+  </MenubarMenu>
+</Menubar>`,
+    preview: (
+      <Menubar data-testid="preview-menubar">
+        <MenubarMenu>
+          <MenubarTrigger data-testid="preview-menubar-file">File</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem data-testid="preview-menubar-newtab">New Tab</MenubarItem>
+            <MenubarItem data-testid="preview-menubar-newwindow">New Window</MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem data-testid="preview-menubar-share">Share</MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem data-testid="preview-menubar-print">Print</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger data-testid="preview-menubar-edit">Edit</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem data-testid="preview-menubar-undo">Undo</MenubarItem>
+            <MenubarItem data-testid="preview-menubar-redo">Redo</MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem data-testid="preview-menubar-cut">Cut</MenubarItem>
+            <MenubarItem data-testid="preview-menubar-copy">Copy</MenubarItem>
+            <MenubarItem data-testid="preview-menubar-paste">Paste</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger data-testid="preview-menubar-view">View</MenubarTrigger>
+          <MenubarContent>
+            <MenubarCheckboxItem data-testid="preview-menubar-toolbar" checked>Toolbar</MenubarCheckboxItem>
+            <MenubarCheckboxItem data-testid="preview-menubar-sidebar">Sidebar</MenubarCheckboxItem>
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
+    ),
+  },
+  {
+    name: "NavigationMenu",
+    description: "Website navigation with mega-menu support.",
+    category: "navigation",
+    code: `<NavigationMenu>
+  <NavigationMenuList>
+    <NavigationMenuItem>
+      <NavigationMenuTrigger>Item</NavigationMenuTrigger>
+      <NavigationMenuContent>Content</NavigationMenuContent>
+    </NavigationMenuItem>
+  </NavigationMenuList>
+</NavigationMenu>`,
+    preview: (
+      <NavigationMenu data-testid="preview-navmenu">
+        <NavigationMenuList>
+          <NavigationMenuItem>
+            <NavigationMenuTrigger data-testid="preview-navmenu-getting-started">Getting started</NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <div className="grid gap-3 p-4 w-64">
+                <NavigationMenuLink asChild>
+                  <a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground" data-testid="preview-navmenu-intro">
+                    <div className="text-sm font-medium leading-none">Introduction</div>
+                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">Get started with the platform</p>
+                  </a>
+                </NavigationMenuLink>
+              </div>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuTrigger data-testid="preview-navmenu-components">Components</NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <div className="grid gap-3 p-4 w-64">
+                <NavigationMenuLink asChild>
+                  <a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent" data-testid="preview-navmenu-alert">
+                    <div className="text-sm font-medium leading-none">Alert</div>
+                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">Displays important messages</p>
+                  </a>
+                </NavigationMenuLink>
+              </div>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+        </NavigationMenuList>
+      </NavigationMenu>
+    ),
+  },
+  {
+    name: "Pagination",
+    description: "Page navigation for lists and tables.",
+    category: "navigation",
+    code: `<Pagination>
+  <PaginationContent>
+    <PaginationItem>
+      <PaginationPrevious href="#" />
+    </PaginationItem>
+    <PaginationItem>
+      <PaginationLink href="#">1</PaginationLink>
+    </PaginationItem>
+    <PaginationItem>
+      <PaginationNext href="#" />
+    </PaginationItem>
+  </PaginationContent>
+</Pagination>`,
+    preview: (
+      <Pagination data-testid="preview-pagination">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious href="#" data-testid="preview-pagination-prev" />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink href="#" data-testid="preview-pagination-1">1</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink href="#" isActive data-testid="preview-pagination-2">2</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink href="#" data-testid="preview-pagination-3">3</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationEllipsis data-testid="preview-pagination-ellipsis" />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationNext href="#" data-testid="preview-pagination-next" />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    ),
+  },
+  {
+    name: "Resizable",
+    description: "Resizable panel groups for flexible layouts.",
+    category: "layout",
+    code: `<ResizablePanelGroup direction="horizontal">
+  <ResizablePanel>Left</ResizablePanel>
+  <ResizableHandle />
+  <ResizablePanel>Right</ResizablePanel>
+</ResizablePanelGroup>`,
+    preview: (
+      <ResizablePanelGroup direction="horizontal" className="min-h-[150px] max-w-md rounded-lg border" data-testid="preview-resizable">
+        <ResizablePanel defaultSize={50}>
+          <div className="flex h-full items-center justify-center p-4" data-testid="preview-resizable-left">
+            <span className="font-semibold">Left Panel</span>
+          </div>
+        </ResizablePanel>
+        <ResizableHandle data-testid="preview-resizable-handle" />
+        <ResizablePanel defaultSize={50}>
+          <div className="flex h-full items-center justify-center p-4" data-testid="preview-resizable-right">
+            <span className="font-semibold">Right Panel</span>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    ),
+  },
+  {
+    name: "DataTableFooter",
+    description: "CUSTOM: Standard pagination footer for all data tables in the platform.",
+    category: "data",
+    code: `const { currentPage, pageSize, totalPages, totalItems, paginatedItems, onPageChange, onPageSizeChange } = useDataTablePagination(data, 10);
+
+<DataTableFooter
+  currentPage={currentPage}
+  totalPages={totalPages}
+  pageSize={pageSize}
+  totalItems={totalItems}
+  onPageChange={onPageChange}
+  onPageSizeChange={onPageSizeChange}
+/>`,
+    preview: (
+      <div className="border rounded-md p-4 max-w-lg" data-testid="preview-datatablefooter">
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Rows per page:</span>
+            <Select defaultValue="10">
+              <SelectTrigger className="h-8 w-16" data-testid="preview-datatable-pagesize">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="text-muted-foreground" data-testid="preview-datatable-info">Showing 1-10 of 100</div>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" className="h-8 w-8" data-testid="preview-datatable-prev"><ChevronLeft className="h-4 w-4" /></Button>
+            <Input className="h-8 w-12 text-center" defaultValue="1" data-testid="preview-datatable-page" />
+            <Button variant="outline" size="icon" className="h-8 w-8" data-testid="preview-datatable-next"><ChevronRight className="h-4 w-4" /></Button>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    name: "CardFooter",
+    description: "Footer section for Card component with action buttons.",
+    category: "layout",
+    code: `<Card>
+  <CardHeader>
+    <CardTitle>Title</CardTitle>
+  </CardHeader>
+  <CardContent>Content</CardContent>
+  <CardFooter className="flex justify-between">
+    <Button variant="outline">Cancel</Button>
+    <Button>Save</Button>
+  </CardFooter>
+</Card>`,
+    preview: (
+      <Card className="max-w-sm" data-testid="preview-cardfooter">
+        <CardHeader>
+          <CardTitle data-testid="preview-cardfooter-title">Create Project</CardTitle>
+          <CardDescription>Deploy your new project in one-click.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="project-name">Name</Label>
+            <Input id="project-name" placeholder="My Project" data-testid="preview-cardfooter-input" />
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between gap-2">
+          <Button variant="outline" data-testid="preview-cardfooter-cancel">Cancel</Button>
+          <Button data-testid="preview-cardfooter-deploy">Deploy</Button>
+        </CardFooter>
+      </Card>
+    ),
+  },
+  {
+    name: "ScrollBar",
+    description: "Custom scrollbar styling for ScrollArea component.",
+    category: "layout",
+    code: `<ScrollArea className="w-48 whitespace-nowrap">
+  <div className="flex w-max space-x-4 p-4">
+    {items.map((item) => <div key={item}>{item}</div>)}
+  </div>
+  <ScrollBar orientation="horizontal" />
+</ScrollArea>`,
+    preview: (
+      <ScrollArea className="w-64 whitespace-nowrap rounded-md border" data-testid="preview-scrollbar">
+        <div className="flex w-max space-x-4 p-4">
+          {["Item 1", "Item 2", "Item 3", "Item 4", "Item 5", "Item 6", "Item 7"].map((item, i) => (
+            <div key={item} className="w-24 shrink-0 rounded-md border p-3 text-center" data-testid={`preview-scrollbar-item-${i}`}>
+              {item}
+            </div>
+          ))}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+    ),
+  },
+  {
+    name: "DropdownMenuAdvanced",
+    description: "Advanced dropdown with checkboxes, radio items, and submenus.",
+    category: "navigation",
+    code: `<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button>Open</Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent>
+    <DropdownMenuCheckboxItem>Show Panel</DropdownMenuCheckboxItem>
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger>More</DropdownMenuSubTrigger>
+      <DropdownMenuSubContent>
+        <DropdownMenuItem>Nested</DropdownMenuItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  </DropdownMenuContent>
+</DropdownMenu>`,
+    preview: (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" data-testid="preview-dropdown-adv-trigger">Open Advanced Menu</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem checked data-testid="preview-dropdown-adv-check1">Status Bar</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem data-testid="preview-dropdown-adv-check2">Activity Bar</DropdownMenuCheckboxItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuRadioGroup value="pedro">
+            <DropdownMenuLabel>Team</DropdownMenuLabel>
+            <DropdownMenuRadioItem value="pedro" data-testid="preview-dropdown-adv-radio1">Pedro</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="colm" data-testid="preview-dropdown-adv-radio2">Colm</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger data-testid="preview-dropdown-adv-sub">Invite users</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem data-testid="preview-dropdown-adv-email"><Mail className="mr-2 h-4 w-4" /> Email</DropdownMenuItem>
+              <DropdownMenuItem data-testid="preview-dropdown-adv-message"><MessageSquare className="mr-2 h-4 w-4" /> Message</DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
+  },
 ];
 
 const categories = [
@@ -811,6 +1267,7 @@ const categories = [
   { id: "navigation", label: "Navigation" },
   { id: "layout", label: "Layout" },
   { id: "overlay", label: "Overlay" },
+  { id: "data", label: "Data & Tables" },
 ] as const;
 
 export default function EMComponentLibraryPage() {
