@@ -1673,6 +1673,444 @@ export default function EMComponentLibraryPage() {
           )}
         </div>
 
+        <Separator className="my-6" />
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Terminal className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold">Behavioral Patterns</h2>
+            <Badge variant="secondary">Logic & Data</Badge>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Copy-paste patterns for data fetching, refresh buttons, forms, and mutations. These patterns ensure consistent behavior across the platform.
+          </p>
+        </div>
+
+        <div className="grid gap-6 mt-4">
+          <Card data-testid="card-pattern-refresh-button">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle className="text-lg">Refresh Button Pattern</CardTitle>
+                  <Badge variant="outline">Critical</Badge>
+                </div>
+                <CardDescription>Use refetch() directly and isFetching for spinner. Never use isLoading for refresh buttons.</CardDescription>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => copyCode(`// 1. Get refetch and isFetching from useQuery
+const { data, isFetching, refetch } = useQuery<DataType>({
+  queryKey: ["/api/endpoint"],
+});
+
+// 2. Refresh button uses refetch() directly
+<Button
+  variant="outline"
+  size="icon"
+  onClick={() => refetch()}
+  disabled={isFetching}
+  data-testid="button-refresh"
+>
+  <RefreshCw className={\`h-4 w-4 \${isFetching ? "animate-spin" : ""}\`} />
+</Button>`, "Refresh Button")}
+                data-testid="button-copy-refresh-pattern"
+                aria-label="Copy Refresh Button pattern code"
+              >
+                {copiedCode === "Refresh Button" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm">
+                <code>{`// 1. Get refetch and isFetching from useQuery
+const { data, isFetching, refetch } = useQuery<DataType>({
+  queryKey: ["/api/endpoint"],
+});
+
+// 2. Refresh button uses refetch() directly
+<Button
+  variant="outline"
+  size="icon"
+  onClick={() => refetch()}
+  disabled={isFetching}
+  data-testid="button-refresh"
+>
+  <RefreshCw className={\`h-4 w-4 \${isFetching ? "animate-spin" : ""}\`} />
+</Button>`}</code>
+              </pre>
+              <Alert className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Key Rule</AlertTitle>
+                <AlertDescription>
+                  Use <code className="bg-muted px-1 rounded">isFetching</code> (not <code className="bg-muted px-1 rounded">isLoading</code>) - isLoading is only true on first load, isFetching is true during any fetch.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-pattern-auto-refresh">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle className="text-lg">Auto-Refresh Pattern</CardTitle>
+                  <Badge variant="outline">Critical</Badge>
+                </div>
+                <CardDescription>Spinner only when fetching - NEVER based on autoRefresh toggle alone.</CardDescription>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => copyCode(`const [autoRefresh, setAutoRefresh] = useState(false);
+
+const { data, isFetching, refetch } = useQuery<DataType>({
+  queryKey: ["/api/endpoint"],
+  refetchInterval: autoRefresh ? 30000 : false, // 30s when enabled
+});
+
+// Spinner ONLY when actually fetching
+<Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
+  <RefreshCw className={\`h-4 w-4 \${isFetching ? "animate-spin" : ""}\`} />
+</Button>
+
+// Toggle switch
+<Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+<Label>Auto-refresh (30s)</Label>`, "Auto-Refresh")}
+                data-testid="button-copy-auto-refresh-pattern"
+                aria-label="Copy Auto-Refresh pattern code"
+              >
+                {copiedCode === "Auto-Refresh" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm">
+                <code>{`const [autoRefresh, setAutoRefresh] = useState(false);
+
+const { data, isFetching, refetch } = useQuery<DataType>({
+  queryKey: ["/api/endpoint"],
+  refetchInterval: autoRefresh ? 30000 : false, // 30s when enabled
+});
+
+// Spinner ONLY when actually fetching
+<Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
+  <RefreshCw className={\`h-4 w-4 \${isFetching ? "animate-spin" : ""}\`} />
+</Button>
+
+// Toggle switch
+<Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+<Label>Auto-refresh (30s)</Label>`}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-pattern-multiple-queries">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle className="text-lg">Multiple Queries Pattern</CardTitle>
+                  <Badge variant="outline">Common</Badge>
+                </div>
+                <CardDescription>Combine isFetching states for pages with multiple data sources.</CardDescription>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => copyCode(`// Track isFetching from all queries
+const { data: users, isFetching: usersFetching, refetch: refetchUsers } = useQuery({
+  queryKey: ["/api/users"],
+});
+const { data: orders, isFetching: ordersFetching, refetch: refetchOrders } = useQuery({
+  queryKey: ["/api/orders"],
+});
+
+// Combine all fetching states
+const isAnyFetching = usersFetching || ordersFetching;
+
+// Sync All button
+const handleSyncAll = async () => {
+  await Promise.all([refetchUsers(), refetchOrders()]);
+};
+
+<Button onClick={handleSyncAll} disabled={isAnyFetching}>
+  <RefreshCw className={\`h-4 w-4 mr-2 \${isAnyFetching ? "animate-spin" : ""}\`} />
+  Sync All
+</Button>`, "Multiple Queries")}
+                data-testid="button-copy-multiple-queries-pattern"
+                aria-label="Copy Multiple Queries pattern code"
+              >
+                {copiedCode === "Multiple Queries" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm">
+                <code>{`// Track isFetching from all queries
+const { data: users, isFetching: usersFetching, refetch: refetchUsers } = useQuery({
+  queryKey: ["/api/users"],
+});
+const { data: orders, isFetching: ordersFetching, refetch: refetchOrders } = useQuery({
+  queryKey: ["/api/orders"],
+});
+
+// Combine all fetching states
+const isAnyFetching = usersFetching || ordersFetching;
+
+// Sync All button
+const handleSyncAll = async () => {
+  await Promise.all([refetchUsers(), refetchOrders()]);
+};
+
+<Button onClick={handleSyncAll} disabled={isAnyFetching}>
+  <RefreshCw className={\`h-4 w-4 mr-2 \${isAnyFetching ? "animate-spin" : ""}\`} />
+  Sync All
+</Button>`}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-pattern-mutation">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle className="text-lg">Mutation with Cache Invalidation</CardTitle>
+                  <Badge variant="outline">Common</Badge>
+                </div>
+                <CardDescription>Create/Update/Delete with automatic cache refresh.</CardDescription>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => copyCode(`import { useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+
+const createMutation = useMutation({
+  mutationFn: (data: CreateType) => apiRequest("POST", "/api/items", data),
+  onSuccess: () => {
+    // Invalidate to refetch fresh data
+    queryClient.invalidateQueries({ queryKey: ["/api/items"] });
+    toast({ title: "Item created successfully" });
+  },
+  onError: (error: Error) => {
+    toast({ title: "Failed to create", description: error.message, variant: "destructive" });
+  },
+});
+
+// Use in form/button
+<Button onClick={() => createMutation.mutate(formData)} disabled={createMutation.isPending}>
+  {createMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+  Create
+</Button>`, "Mutation")}
+                data-testid="button-copy-mutation-pattern"
+                aria-label="Copy Mutation pattern code"
+              >
+                {copiedCode === "Mutation" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm">
+                <code>{`import { useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+
+const createMutation = useMutation({
+  mutationFn: (data: CreateType) => apiRequest("POST", "/api/items", data),
+  onSuccess: () => {
+    // Invalidate to refetch fresh data
+    queryClient.invalidateQueries({ queryKey: ["/api/items"] });
+    toast({ title: "Item created successfully" });
+  },
+  onError: (error: Error) => {
+    toast({ title: "Failed to create", description: error.message, variant: "destructive" });
+  },
+});
+
+// Use in form/button
+<Button onClick={() => createMutation.mutate(formData)} disabled={createMutation.isPending}>
+  {createMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+  Create
+</Button>`}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-pattern-form">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle className="text-lg">Form with Validation</CardTitle>
+                  <Badge variant="outline">Common</Badge>
+                </div>
+                <CardDescription>React Hook Form with Zod validation and shadcn Form components.</CardDescription>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => copyCode(`import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertItemSchema } from "@shared/schema";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
+const form = useForm<z.infer<typeof insertItemSchema>>({
+  resolver: zodResolver(insertItemSchema),
+  defaultValues: { name: "", email: "" },
+});
+
+const onSubmit = (data: z.infer<typeof insertItemSchema>) => {
+  createMutation.mutate(data);
+};
+
+<Form {...form}>
+  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <FormField
+      control={form.control}
+      name="name"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Name</FormLabel>
+          <FormControl>
+            <Input {...field} data-testid="input-name" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+    <Button type="submit" disabled={createMutation.isPending}>
+      {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+      Submit
+    </Button>
+  </form>
+</Form>`, "Form")}
+                data-testid="button-copy-form-pattern"
+                aria-label="Copy Form pattern code"
+              >
+                {copiedCode === "Form" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm max-h-80 overflow-y-auto">
+                <code>{`import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertItemSchema } from "@shared/schema";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
+const form = useForm<z.infer<typeof insertItemSchema>>({
+  resolver: zodResolver(insertItemSchema),
+  defaultValues: { name: "", email: "" },
+});
+
+const onSubmit = (data: z.infer<typeof insertItemSchema>) => {
+  createMutation.mutate(data);
+};
+
+<Form {...form}>
+  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <FormField
+      control={form.control}
+      name="name"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Name</FormLabel>
+          <FormControl>
+            <Input {...field} data-testid="input-name" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+    <Button type="submit" disabled={createMutation.isPending}>
+      {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+      Submit
+    </Button>
+  </form>
+</Form>`}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-pattern-loading-states">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle className="text-lg">Loading States</CardTitle>
+                  <Badge variant="outline">UX</Badge>
+                </div>
+                <CardDescription>Proper loading indicators for queries and mutations.</CardDescription>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => copyCode(`// Query loading - show skeleton on first load
+const { data, isLoading, isFetching } = useQuery({ queryKey: ["/api/items"] });
+
+if (isLoading) {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>
+  );
+}
+
+// Full-page spinner for initial load
+if (isLoading) {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+// Inline spinner for background refetch
+{isFetching && <Loader2 className="h-4 w-4 animate-spin" />}
+
+// Button spinner for mutations
+<Button disabled={mutation.isPending}>
+  {mutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+  Save
+</Button>`, "Loading States")}
+                data-testid="button-copy-loading-pattern"
+                aria-label="Copy Loading States pattern code"
+              >
+                {copiedCode === "Loading States" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm max-h-80 overflow-y-auto">
+                <code>{`// Query loading - show skeleton on first load
+const { data, isLoading, isFetching } = useQuery({ queryKey: ["/api/items"] });
+
+if (isLoading) {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>
+  );
+}
+
+// Full-page spinner for initial load
+if (isLoading) {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+// Inline spinner for background refetch
+{isFetching && <Loader2 className="h-4 w-4 animate-spin" />}
+
+// Button spinner for mutations
+<Button disabled={mutation.isPending}>
+  {mutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+  Save
+</Button>`}</code>
+              </pre>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Separator className="my-6" />
+
         <Card className="bg-muted/50">
           <CardHeader>
             <CardTitle className="text-base">Design System Rules</CardTitle>
@@ -1697,6 +2135,14 @@ export default function EMComponentLibraryPage() {
             <div className="flex items-start gap-2">
               <ChevronRight className="h-4 w-4 mt-0.5 text-primary" />
               <span>Add <code className="bg-muted px-1 rounded">aria-label</code> to icon buttons and interactive elements</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <ChevronRight className="h-4 w-4 mt-0.5 text-primary" />
+              <span>Use <code className="bg-muted px-1 rounded">isFetching</code> for refresh spinners, <code className="bg-muted px-1 rounded">isLoading</code> only for first load</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <ChevronRight className="h-4 w-4 mt-0.5 text-primary" />
+              <span>Always use <code className="bg-muted px-1 rounded">refetch()</code> for manual refresh buttons, not just invalidateQueries</span>
             </div>
           </CardContent>
         </Card>
