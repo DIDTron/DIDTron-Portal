@@ -2,6 +2,7 @@ import { useState, KeyboardEvent } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Bell, LogOut, Cloud, CloudOff, Loader2, Menu } from "lucide-react";
+import { useBrandingStore } from "@/stores/branding-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -34,6 +35,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
   const initials = userEmail?.substring(0, 2).toUpperCase() || "SA";
   const { openTab, toggleBothSidebars } = useSuperAdminTabs();
   const [searchQuery, setSearchQuery] = useState("");
+  const { headerLogo } = useBrandingStore();
 
   const { data: connexcsStatus, isLoading: statusLoading } = useQuery<ConnexCSStatus>({
     queryKey: ["/api/connexcs/status"],
@@ -64,10 +66,18 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
           <Menu className="h-5 w-5" />
         </Button>
         <div className="flex items-center" data-testid="header-logo">
-          <span className="text-2xl font-bold tracking-tight">
-            <span className="text-primary">DID</span>
-            <span className="text-foreground">Tron</span>
-          </span>
+          {headerLogo ? (
+            <img 
+              src={headerLogo} 
+              alt="DIDTron Logo" 
+              className="h-8 object-contain"
+            />
+          ) : (
+            <span className="text-2xl font-bold tracking-tight">
+              <span className="text-primary">DID</span>
+              <span className="text-foreground">Tron</span>
+            </span>
+          )}
         </div>
       </div>
       

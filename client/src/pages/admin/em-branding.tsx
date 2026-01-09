@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, RotateCcw, Upload } from "lucide-react";
+import { Save, RotateCcw, Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useBrandingStore } from "@/stores/branding-store";
 
 interface BrandingSettings {
   baseColor: string;
@@ -49,6 +50,32 @@ export default function EMBrandingPage() {
   const [settings, setSettings] = useState<BrandingSettings>(defaultSettings);
   const [activeTab, setActiveTab] = useState("general");
   const { toast } = useToast();
+  const { headerLogo, setHeaderLogo } = useBrandingStore();
+  const headerLogoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleHeaderLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setHeaderLogo(result);
+        toast({
+          title: "Header logo uploaded",
+          description: "The logo will appear in the header immediately.",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeHeaderLogo = () => {
+    setHeaderLogo(null);
+    toast({
+      title: "Header logo removed",
+      description: "The default text logo will be shown.",
+    });
+  };
 
   const handleSave = () => {
     toast({
@@ -253,25 +280,77 @@ export default function EMBrandingPage() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Header Logo</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-6 flex flex-col items-center justify-center min-h-[120px] bg-zinc-900 relative">
+                  {headerLogo ? (
+                    <>
+                      <img src={headerLogo} alt="Header Logo" className="h-8 object-contain" />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6"
+                        onClick={removeHeaderLogo}
+                        data-testid="button-remove-header-logo"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <span className="text-2xl font-bold tracking-tight">
+                        <span className="text-primary">DID</span>
+                        <span className="text-white">Tron</span>
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-2">Default text logo</p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Recommended size: 200x32 pixels or similar aspect ratio (PNG with transparency)
+                </p>
+                <input
+                  ref={headerLogoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleHeaderLogoUpload}
+                  data-testid="input-header-logo-file"
+                />
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => headerLogoInputRef.current?.click()}
+                  data-testid="button-upload-header-logo"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Header Logo
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Logo Size Reference</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg bg-muted/20">
+                <div className="space-y-3">
+                  <div className="p-3 border rounded-lg bg-muted/20">
                     <p className="font-medium text-sm mb-1">Header Logo</p>
-                    <p className="text-2xl font-bold text-primary">32 x 32 px</p>
-                    <p className="text-xs text-muted-foreground mt-1">Square icon shown in the global header</p>
+                    <p className="text-xl font-bold text-primary">200 x 32 px</p>
+                    <p className="text-xs text-muted-foreground mt-1">Shown in the global header (32px height)</p>
                   </div>
-                  <div className="p-4 border rounded-lg bg-muted/20">
+                  <div className="p-3 border rounded-lg bg-muted/20">
                     <p className="font-medium text-sm mb-1">Desktop Logo</p>
-                    <p className="text-2xl font-bold text-primary">200 x 60 px</p>
+                    <p className="text-xl font-bold text-primary">200 x 60 px</p>
                     <p className="text-xs text-muted-foreground mt-1">Horizontal logo for sidebar and login</p>
                   </div>
-                  <div className="p-4 border rounded-lg bg-muted/20">
+                  <div className="p-3 border rounded-lg bg-muted/20">
                     <p className="font-medium text-sm mb-1">Mobile Logo</p>
-                    <p className="text-2xl font-bold text-primary">60 x 60 px</p>
+                    <p className="text-xl font-bold text-primary">60 x 60 px</p>
                     <p className="text-xs text-muted-foreground mt-1">Square logo for mobile views</p>
                   </div>
                 </div>
