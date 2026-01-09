@@ -15,7 +15,46 @@ DIDTron Communications is developing a white-label wholesale VoIP platform for S
 ## System Architecture
 
 ### UI/UX Design
-The platform uses a VitalPBX-like layout with a double sidebar, two headers, a fixed action dock, and content tabs. The design is an "Enterprise SaaS Dashboard System," combining Stripe's polish with Linear's information density, featuring a native dark mode and DIDTron Blue (#2563EB) as the primary accent. The Experience Manager unifies control over the marketing website, portal themes, white-labeling, design system, and documentation, following a Draft/Preview/Publish workflow. All data tables in the Super Admin portal must include the `DataTableFooter` component for consistent pagination. The Component Library is the single source of truth for all UI components, requiring new components to be documented there before use.
+The platform uses a VitalPBX-like layout with a double sidebar, two headers, a fixed action dock, and content tabs. The design is an "Enterprise SaaS Dashboard System," combining Stripe's polish with Linear's information density, featuring a native dark mode and DIDTron Blue (#2563EB) as the primary accent. The Experience Manager unifies control over the marketing website, portal themes, white-labeling, design system, and documentation, following a Draft/Preview/Publish workflow. All data tables in the Super Admin portal must include the `DataTableFooter` component for consistent pagination.
+
+## CRITICAL: Component Library Workflow (MANDATORY FOR ALL VISUAL DEVELOPMENT)
+
+**The Component Library (`/admin/experience-manager/component-library`) is the ONLY source of truth for creating ANY visual element in the platform. This rule applies FOREVER to all development.**
+
+### Mandatory Workflow for Creating New Pages/Modules:
+
+1. **CHECK COMPONENT LIBRARY FIRST** - Before building anything visual, ALWAYS reference the Component Library to see what components are available (51+ components documented)
+
+2. **USE ONLY DOCUMENTED COMPONENTS** - Only use components that exist in the library (Button, Card, Table, Badge, Dialog, Select, Tabs, etc.) with their documented variants and patterns
+
+3. **IF A NEW COMPONENT IS NEEDED**:
+   - FIRST: Add it to `/client/src/pages/admin/em-component-library.tsx` with:
+     - Name and description
+     - Category (inputs, display, feedback, navigation, layout, overlay, data, custom)
+     - All variants and their use cases
+     - Code example showing proper usage
+     - Live preview with data-testid attributes
+   - THEN: Use it in the new page/module
+
+4. **FOLLOW PLATFORM STANDARDS**:
+   - Use `DataTableFooter` for ALL data tables
+   - Follow VitalPBX-style layout with double sidebars
+   - Apply proper `data-testid` attributes to ALL interactive elements
+   - Use existing color tokens and design system
+
+5. **IMPLEMENT AUDIT LOGGING** - All CRUD operations in new modules must be logged
+
+### Component Categories (51+ Components):
+- **Inputs**: Button, Input, Textarea, Select, Checkbox, Switch, RadioGroup, Slider, Calendar, Command, InputOTP, Form
+- **Display**: Badge, Avatar, Card, Table, Progress, Skeleton, Separator, Carousel
+- **Feedback**: Alert, AlertDialog, Toast, Toaster, Progress
+- **Navigation**: Tabs, Accordion, Breadcrumb, ContextMenu, DropdownMenu, Menubar, NavigationMenu, Pagination
+- **Layout**: Card, ScrollArea, AspectRatio, Resizable, Collapsible, Separator, CardFooter, ScrollBar
+- **Overlay**: Dialog, Sheet, Popover, Tooltip, HoverCard, Drawer
+- **Data**: DataTableFooter, Table with pagination, Chart
+- **Custom**: SidebarComponent, Form patterns
+
+**This ensures consistency across the entire platform and prevents UI fragmentation.**
 
 ### Technical Implementations
 Key features include billing, referral system, promo codes, email communications, AI-powered social media management, support tickets, webhooks, API, CMS, white-labeling, audit/compliance, and multi-currency support. VoIP products include Voice Termination, DIDs, Cloud PBX, AI Voice Agents, a Class 4 Softswitch, and a SIP Tester module with monitoring and alerts. An automated Testing Engine, a metadata-driven system, enables comprehensive testing of modules, pages, and features across various levels. All data modification operations must go through a job queue for auditing. All user actions in the Super Admin portal are logged, and deleted records are soft-deleted with configurable retention.
