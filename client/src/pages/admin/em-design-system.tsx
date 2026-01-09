@@ -1,11 +1,14 @@
 import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -27,7 +30,9 @@ import {
   History,
   ExternalLink,
   RefreshCw,
-  FileText
+  FileText,
+  Loader2,
+  Play
 } from "lucide-react";
 
 interface Component {
@@ -38,6 +43,7 @@ interface Component {
   usedIn: number;
   darkModeReady: boolean;
   accessible: boolean;
+  files?: string[];
 }
 
 interface DesignToken {
@@ -45,6 +51,20 @@ interface DesignToken {
   lightValue: string;
   darkValue: string;
   category: string;
+}
+
+interface ScanResults {
+  components: Component[];
+  tokens: DesignToken[];
+  healthScore: number;
+  adoptedCount: number;
+  totalCount: number;
+  migrateCount: number;
+  deprecatedCount: number;
+  scannedAt: string | null;
+  filesScanned: number;
+  totalUsages: number;
+  needsScan?: boolean;
 }
 
 interface PublishEntry {
@@ -55,29 +75,6 @@ interface PublishEntry {
   timestamp: string;
 }
 
-const mockComponents: Component[] = [
-  { id: "1", name: "Button", category: "Primitives", status: "adopted", usedIn: 60, darkModeReady: true, accessible: true },
-  { id: "2", name: "Card", category: "Primitives", status: "adopted", usedIn: 45, darkModeReady: true, accessible: true },
-  { id: "3", name: "Badge", category: "Primitives", status: "adopted", usedIn: 40, darkModeReady: true, accessible: true },
-  { id: "4", name: "DataTableFooter", category: "Patterns", status: "adopted", usedIn: 32, darkModeReady: true, accessible: true },
-  { id: "5", name: "Table", category: "Primitives", status: "adopted", usedIn: 30, darkModeReady: true, accessible: true },
-  { id: "6", name: "Dialog", category: "Primitives", status: "adopted", usedIn: 25, darkModeReady: true, accessible: true },
-  { id: "7", name: "Input", category: "Forms", status: "adopted", usedIn: 50, darkModeReady: true, accessible: true },
-  { id: "8", name: "Select", category: "Forms", status: "adopted", usedIn: 35, darkModeReady: true, accessible: true },
-  { id: "9", name: "CustomTable", category: "Legacy", status: "migrate", usedIn: 3, darkModeReady: false, accessible: false },
-  { id: "10", name: "OldModal", category: "Legacy", status: "deprecated", usedIn: 1, darkModeReady: false, accessible: true },
-];
-
-const mockTokens: DesignToken[] = [
-  { name: "--primary", lightValue: "217 91% 60%", darkValue: "217 91% 60%", category: "Color" },
-  { name: "--background", lightValue: "210 20% 98%", darkValue: "222 47% 5%", category: "Color" },
-  { name: "--foreground", lightValue: "222 47% 11%", darkValue: "210 20% 98%", category: "Color" },
-  { name: "--muted", lightValue: "210 20% 96%", darkValue: "217 33% 12%", category: "Color" },
-  { name: "--card", lightValue: "0 0% 100%", darkValue: "222 47% 8%", category: "Color" },
-  { name: "--radius", lightValue: "0.5rem", darkValue: "0.5rem", category: "Spacing" },
-  { name: "--font-sans", lightValue: "Inter, system-ui", darkValue: "Inter, system-ui", category: "Typography" },
-];
-
 const mockPublishHistory: PublishEntry[] = [
   { id: "1", section: "Portal Themes", action: "Published Customer Portal theme", user: "admin@didtron.com", timestamp: "2 hours ago" },
   { id: "2", section: "Marketing Website", action: "Updated Homepage hero", user: "admin@didtron.com", timestamp: "1 day ago" },
@@ -87,18 +84,55 @@ const mockPublishHistory: PublishEntry[] = [
 
 export default function EMDesignSystemPage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("inventory");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
+  const { data: scanResults, isLoading } = useQuery<ScanResults>({
+    queryKey: ["/api/em/scan-results"],
+  });
+
+  const scanMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/em/scan");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/em/scan-results"] });
+      toast({
+        title: "Scan Complete",
+        description: "Codebase scan finished successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Scan Failed",
+        description: error.message || "Failed to scan codebase",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const components = scanResults?.components || [];
+  const tokens = scanResults?.tokens || [];
+  const healthScore = scanResults?.healthScore || 0;
+  const adoptedCount = scanResults?.adoptedCount || 0;
+  const totalCount = scanResults?.totalCount || 0;
+  const migrateCount = scanResults?.migrateCount || 0;
+  const deprecatedCount = scanResults?.deprecatedCount || 0;
+  const filesScanned = scanResults?.filesScanned || 0;
+  const totalUsages = scanResults?.totalUsages || 0;
+  const scannedAt = scanResults?.scannedAt;
+  const needsScan = scanResults?.needsScan;
+
   const filteredComponents = useMemo(() => {
-    return mockComponents.filter(comp => {
+    return components.filter(comp => {
       const matchesSearch = comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         comp.category.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = filterStatus === "all" || comp.status === filterStatus;
       return matchesSearch && matchesStatus;
     });
-  }, [searchQuery, filterStatus]);
+  }, [components, searchQuery, filterStatus]);
 
   const {
     currentPage,
@@ -109,10 +143,6 @@ export default function EMDesignSystemPage() {
     onPageChange,
     onPageSizeChange,
   } = useDataTablePagination(filteredComponents);
-
-  const adoptedCount = mockComponents.filter(c => c.status === "adopted").length;
-  const totalCount = mockComponents.length;
-  const healthScore = Math.round((adoptedCount / totalCount) * 100);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -127,6 +157,12 @@ export default function EMDesignSystemPage() {
     }
   };
 
+  const formatScannedAt = (dateStr: string | null) => {
+    if (!dateStr) return "Never";
+    const date = new Date(dateStr);
+    return date.toLocaleString();
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between gap-4 p-6 border-b">
@@ -139,12 +175,34 @@ export default function EMDesignSystemPage() {
             <FileText className="h-4 w-4 mr-2" />
             View Documentation
           </Button>
-          <Button variant="outline" data-testid="button-refresh">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh Metrics
+          <Button 
+            onClick={() => scanMutation.mutate()} 
+            disabled={scanMutation.isPending}
+            data-testid="button-scan"
+          >
+            {scanMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4 mr-2" />
+            )}
+            {scanMutation.isPending ? "Scanning..." : "Run Scan"}
           </Button>
         </div>
       </div>
+
+      {needsScan && !isLoading && (
+        <div className="p-4 bg-muted/50 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <span>No scan data available. Run a scan to see real component usage metrics.</span>
+            </div>
+            <Button onClick={() => scanMutation.mutate()} disabled={scanMutation.isPending}>
+              {scanMutation.isPending ? "Scanning..." : "Scan Now"}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="p-6 border-b bg-muted/30">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -156,7 +214,11 @@ export default function EMDesignSystemPage() {
                   {healthScore >= 90 ? "Healthy" : healthScore >= 70 ? "Fair" : "Needs Work"}
                 </Badge>
               </div>
-              <div className="text-3xl font-bold text-chart-2">{healthScore}%</div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <div className="text-3xl font-bold text-chart-2">{healthScore}%</div>
+              )}
               <Progress value={healthScore} className="mt-2" />
             </CardContent>
           </Card>
@@ -164,87 +226,135 @@ export default function EMDesignSystemPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground mb-2">Components Adopted</div>
-              <div className="text-3xl font-bold">{adoptedCount}/{totalCount}</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {mockComponents.filter(c => c.status === "migrate").length} need migration
-              </div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-20" />
+              ) : (
+                <>
+                  <div className="text-3xl font-bold">{adoptedCount}/{totalCount}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {migrateCount} need migration, {deprecatedCount} deprecated
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="p-4">
-              <div className="text-sm text-muted-foreground mb-2">Dark Mode Coverage</div>
-              <div className="text-3xl font-bold">100%</div>
-              <div className="text-xs text-muted-foreground mt-1">All themes support dark mode</div>
+              <div className="text-sm text-muted-foreground mb-2">Files Scanned</div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-3xl font-bold">{filesScanned}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{totalUsages} total usages</div>
+                </>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="p-4">
-              <div className="text-sm text-muted-foreground mb-2">Accessibility Score</div>
-              <div className="text-3xl font-bold">92%</div>
-              <div className="text-xs text-muted-foreground mt-1">WCAG 2.1 AA compliant</div>
+              <div className="text-sm text-muted-foreground mb-2">Design Tokens</div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-3xl font-bold">{tokens.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Last scan: {formatScannedAt(scannedAt || null)}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="border-b px-6">
-          <TabsList className="h-auto p-0 bg-transparent">
-            <TabsTrigger value="inventory" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary" data-testid="tab-inventory">
+        <div className="border-b px-6 pt-4">
+          <TabsList>
+            <TabsTrigger value="inventory" data-testid="tab-inventory">
               <Box className="h-4 w-4 mr-2" />
               Component Inventory
             </TabsTrigger>
-            <TabsTrigger value="tokens" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary" data-testid="tab-tokens">
+            <TabsTrigger value="tokens" data-testid="tab-tokens">
               <Palette className="h-4 w-4 mr-2" />
               Design Tokens
             </TabsTrigger>
-            <TabsTrigger value="history" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary" data-testid="tab-history">
+            <TabsTrigger value="history" data-testid="tab-history">
               <History className="h-4 w-4 mr-2" />
               Publish History
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="inventory" className="flex-1 mt-0 overflow-auto">
-          <div className="p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search components..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                  data-testid="input-search-components"
-                />
-              </div>
-              <div className="flex gap-2">
-                {["all", "adopted", "migrate", "deprecated"].map((status) => (
-                  <Button
-                    key={status}
-                    variant={filterStatus === status ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setFilterStatus(status)}
-                    data-testid={`filter-${status}`}
-                  >
-                    {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
-                  </Button>
-                ))}
-              </div>
+        <TabsContent value="inventory" className="flex-1 p-6 overflow-auto">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search components..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                aria-label="Search components"
+                data-testid="input-search-components"
+              />
             </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant={filterStatus === "all" ? "default" : "outline"} 
+                size="sm"
+                onClick={() => setFilterStatus("all")}
+                data-testid="filter-all"
+              >
+                All
+              </Button>
+              <Button 
+                variant={filterStatus === "adopted" ? "default" : "outline"} 
+                size="sm"
+                onClick={() => setFilterStatus("adopted")}
+                data-testid="filter-adopted"
+              >
+                Adopted
+              </Button>
+              <Button 
+                variant={filterStatus === "migrate" ? "default" : "outline"} 
+                size="sm"
+                onClick={() => setFilterStatus("migrate")}
+                data-testid="filter-migrate"
+              >
+                Migrate
+              </Button>
+              <Button 
+                variant={filterStatus === "deprecated" ? "default" : "outline"} 
+                size="sm"
+                onClick={() => setFilterStatus("deprecated")}
+                data-testid="filter-deprecated"
+              >
+                Deprecated
+              </Button>
+            </div>
+          </div>
 
-            <Card>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : (
+            <>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Component</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Used In</TableHead>
-                    <TableHead>Dark Mode</TableHead>
-                    <TableHead>Accessible</TableHead>
+                    <TableHead className="text-right">Files Using</TableHead>
+                    <TableHead className="text-center">Dark Mode</TableHead>
+                    <TableHead className="text-center">Accessible</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -255,23 +365,30 @@ export default function EMDesignSystemPage() {
                         <Badge variant="outline">{component.category}</Badge>
                       </TableCell>
                       <TableCell>{getStatusBadge(component.status)}</TableCell>
-                      <TableCell>{component.usedIn} modules</TableCell>
-                      <TableCell>
+                      <TableCell className="text-right">{component.usedIn}</TableCell>
+                      <TableCell className="text-center">
                         {component.darkModeReady ? (
-                          <Check className="h-4 w-4 text-chart-2" />
+                          <Check className="h-4 w-4 text-green-500 mx-auto" />
                         ) : (
-                          <X className="h-4 w-4 text-destructive" />
+                          <X className="h-4 w-4 text-red-500 mx-auto" />
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         {component.accessible ? (
-                          <Check className="h-4 w-4 text-chart-2" />
+                          <Check className="h-4 w-4 text-green-500 mx-auto" />
                         ) : (
-                          <X className="h-4 w-4 text-destructive" />
+                          <X className="h-4 w-4 text-red-500 mx-auto" />
                         )}
                       </TableCell>
                     </TableRow>
                   ))}
+                  {paginatedItems.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        {needsScan ? "Run a scan to see component usage" : "No components found matching your search"}
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
               <DataTableFooter
@@ -282,72 +399,95 @@ export default function EMDesignSystemPage() {
                 onPageChange={onPageChange}
                 onPageSizeChange={onPageSizeChange}
               />
-            </Card>
-          </div>
+            </>
+          )}
         </TabsContent>
 
-        <TabsContent value="tokens" className="flex-1 mt-0 overflow-auto">
-          <div className="p-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Design Tokens</CardTitle>
-                <CardDescription>CSS custom properties used across the platform</CardDescription>
-              </CardHeader>
-              <CardContent>
+        <TabsContent value="tokens" className="flex-1 p-6 overflow-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Design Tokens from index.css
+              </CardTitle>
+              <CardDescription>CSS custom properties defining the design system</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Token Name</TableHead>
                       <TableHead>Category</TableHead>
-                      <TableHead>Light Mode</TableHead>
-                      <TableHead>Dark Mode</TableHead>
+                      <TableHead>Light Value</TableHead>
+                      <TableHead>Dark Value</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockTokens.map((token, index) => (
-                      <TableRow key={index}>
+                    {tokens.slice(0, 20).map((token, index) => (
+                      <TableRow key={index} data-testid={`row-token-${index}`}>
                         <TableCell className="font-mono text-sm">{token.name}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{token.category}</Badge>
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{token.lightValue}</TableCell>
-                        <TableCell className="font-mono text-xs">{token.darkValue}</TableCell>
+                        <TableCell className="font-mono text-sm">{token.lightValue}</TableCell>
+                        <TableCell className="font-mono text-sm">{token.darkValue}</TableCell>
                       </TableRow>
                     ))}
+                    {tokens.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          Run a scan to extract design tokens from index.css
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="history" className="flex-1 mt-0 overflow-auto">
-          <div className="p-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Publish History</CardTitle>
-                <CardDescription>Recent changes published to the platform</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+        <TabsContent value="history" className="flex-1 p-6 overflow-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Recent Publish History
+              </CardTitle>
+              <CardDescription>Track changes across all Experience Manager sections</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Section</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Timestamp</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {mockPublishHistory.map((entry) => (
-                    <div key={entry.id} className="flex items-center justify-between p-4 border rounded-md">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 rounded-md bg-muted">
-                          <History className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{entry.action}</p>
-                          <p className="text-sm text-muted-foreground">{entry.section} by {entry.user}</p>
-                        </div>
-                      </div>
-                      <span className="text-sm text-muted-foreground">{entry.timestamp}</span>
-                    </div>
+                    <TableRow key={entry.id} data-testid={`row-history-${entry.id}`}>
+                      <TableCell>
+                        <Badge variant="outline">{entry.section}</Badge>
+                      </TableCell>
+                      <TableCell>{entry.action}</TableCell>
+                      <TableCell className="text-muted-foreground">{entry.user}</TableCell>
+                      <TableCell className="text-muted-foreground">{entry.timestamp}</TableCell>
+                    </TableRow>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

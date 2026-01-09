@@ -7973,6 +7973,47 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== EXPERIENCE MANAGER SCANNER ====================
+  const { scanCodebase, getLastScanResults, setLastScanResults } = await import("./em-scanner");
+
+  app.post("/api/em/scan", async (req, res) => {
+    try {
+      console.log("[EM Scanner] Starting codebase scan...");
+      const results = await scanCodebase();
+      setLastScanResults(results);
+      console.log(`[EM Scanner] Scan complete - ${results.components.length} components, ${results.tokens.length} tokens`);
+      res.json(results);
+    } catch (error: any) {
+      console.error("[EM Scanner] Scan failed:", error);
+      res.status(500).json({ error: "Scan failed", details: error.message });
+    }
+  });
+
+  app.get("/api/em/scan-results", async (req, res) => {
+    try {
+      const results = getLastScanResults();
+      if (!results) {
+        return res.json({ 
+          components: [], 
+          tokens: [], 
+          healthScore: 0,
+          adoptedCount: 0,
+          totalCount: 0,
+          migrateCount: 0,
+          deprecatedCount: 0,
+          scannedAt: null,
+          filesScanned: 0,
+          totalUsages: 0,
+          needsScan: true
+        });
+      }
+      res.json(results);
+    } catch (error: any) {
+      console.error("[EM Scanner] Failed to get scan results:", error);
+      res.status(500).json({ error: "Failed to get scan results", details: error.message });
+    }
+  });
+
   // ==================== DEV TESTS (Database-backed for persistence) ====================
   const { devTestsRepository } = await import("./dev-tests-repository");
 
