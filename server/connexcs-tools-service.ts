@@ -385,13 +385,49 @@ class ConnexCSToolsService {
       return this.getMockCDRs();
     }
 
-    const result = await this.makeAuthenticatedRequest<ConnexCSCDR[]>(
-      storage,
-      "cdr",
-      "POST",
-      { sql }
-    );
-    return result;
+    // Add timeout to prevent hanging on CDR queries
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    try {
+      const accessToken = await this.getAccessToken(storage);
+      const url = `${CX_BASE_URL}cdr`;
+      
+      console.log(`[ConnexCS CDR] Executing SQL query to ${url}`);
+      
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ sql }),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`[ConnexCS CDR] API error ${response.status}: ${errorText.substring(0, 200)}`);
+        throw new Error(`API Error ${response.status}: ${errorText}`);
+      }
+      
+      const text = await response.text();
+      console.log(`[ConnexCS CDR] Response received: ${text.substring(0, 200)}...`);
+      
+      const result = text ? JSON.parse(text) : [];
+      return Array.isArray(result) ? result : [];
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        console.log(`[ConnexCS CDR] Query timed out after 30 seconds`);
+        return [];
+      }
+      console.log(`[ConnexCS CDR] Query error: ${error.message}`);
+      throw error;
+    }
   }
 
   async testAuth(storage: StorageInterface): Promise<{
@@ -657,6 +693,45 @@ class ConnexCSToolsService {
     return fullCarriers;
   }
 
+  // Cache for discovered archive column names
+  private archiveColumnsCache: { dateColumn?: string; discoveredAt?: Date } = {};
+  
+  async discoverArchiveSchema(storage: StorageInterface): Promise<string | null> {
+    // Check cache first (valid for 1 hour)
+    if (this.archiveColumnsCache.dateColumn && this.archiveColumnsCache.discoveredAt) {
+      const ageMs = Date.now() - this.archiveColumnsCache.discoveredAt.getTime();
+      if (ageMs < 60 * 60 * 1000) {
+        return this.archiveColumnsCache.dateColumn;
+      }
+    }
+    
+    // Query a single record from cdr_archive to discover column names
+    try {
+      console.log(`[ConnexCS CDR] Discovering cdr_archive schema...`);
+      const sql = `SELECT * FROM cdr_archive LIMIT 1`;
+      const result = await this.executeSQLQuery(storage, sql);
+      
+      if (Array.isArray(result) && result.length > 0) {
+        const columns = Object.keys(result[0]);
+        console.log(`[ConnexCS CDR] Archive columns: ${columns.join(', ')}`);
+        
+        // Find the date column - try common names
+        const dateColumnCandidates = ['datetime', 'date', 'call_date', 'start_time', 'created_at', 'timestamp', 'time'];
+        for (const candidate of dateColumnCandidates) {
+          if (columns.includes(candidate)) {
+            this.archiveColumnsCache = { dateColumn: candidate, discoveredAt: new Date() };
+            console.log(`[ConnexCS CDR] Found archive date column: ${candidate}`);
+            return candidate;
+          }
+        }
+        console.log(`[ConnexCS CDR] No known date column found in archive. Available: ${columns.join(', ')}`);
+      }
+    } catch (error: any) {
+      console.log(`[ConnexCS CDR] Archive schema discovery error: ${error.message?.substring(0, 100)}`);
+    }
+    return null;
+  }
+
   async getCDRsPaginated(storage: StorageInterface, params: ConnexCSCDRQueryParams): Promise<{
     cdrs: ConnexCSCDR[];
     hasMore: boolean;
@@ -668,38 +743,64 @@ class ConnexCSToolsService {
 
     const { startDate, endDate, customerId, limit = 1000, offset = 0 } = params;
     
-    // ConnexCS CDR API uses SQL queries via POST /api/cp/cdr
-    // Build a SQL query to fetch CDRs
-    let whereClause = `dt >= '${startDate}' AND dt <= '${endDate} 23:59:59'`;
+    // ConnexCS archives older CDRs into cdr_archive with different column names
+    const startDateObj = new Date(startDate);
+    const now = new Date();
+    const daysSinceStart = Math.floor((now.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24));
     
+    // For older data, try cdr_archive first with schema discovery
+    if (daysSinceStart > 90) {
+      const archiveDateColumn = await this.discoverArchiveSchema(storage);
+      
+      if (archiveDateColumn) {
+        let whereClause = `${archiveDateColumn} >= '${startDate}' AND ${archiveDateColumn} <= '${endDate} 23:59:59'`;
+        if (customerId) {
+          whereClause += ` AND customer_id = ${customerId}`;
+        }
+        
+        const sql = `SELECT * FROM cdr_archive WHERE ${whereClause} ORDER BY ${archiveDateColumn} ASC LIMIT ${limit + 1} OFFSET ${offset}`;
+        console.log(`[ConnexCS CDR] Querying cdr_archive: ${sql.substring(0, 120)}...`);
+        
+        try {
+          const cdrs = await this.executeSQLQuery(storage, sql);
+          if (Array.isArray(cdrs) && cdrs.length > 0) {
+            console.log(`[ConnexCS CDR] Found ${cdrs.length} CDRs in cdr_archive`);
+            const hasMore = cdrs.length > limit;
+            if (hasMore) cdrs.pop();
+            return { cdrs, hasMore };
+          }
+          console.log(`[ConnexCS CDR] cdr_archive returned 0 CDRs`);
+        } catch (error: any) {
+          console.log(`[ConnexCS CDR] cdr_archive query error: ${error.message?.substring(0, 100)}`);
+        }
+      }
+    }
+    
+    // Fallback to live cdr table
+    let whereClause = `dt >= '${startDate}' AND dt <= '${endDate} 23:59:59'`;
     if (customerId) {
       whereClause += ` AND customer_id = ${customerId}`;
     }
 
     const sql = `SELECT * FROM cdr WHERE ${whereClause} ORDER BY dt ASC LIMIT ${limit + 1} OFFSET ${offset}`;
-    
-    console.log(`[ConnexCS CDR] Fetching CDRs via SQL:`, sql.substring(0, 100) + '...');
+    console.log(`[ConnexCS CDR] Querying cdr: ${sql.substring(0, 100)}...`);
     
     try {
       const cdrs = await this.executeSQLQuery(storage, sql);
       
-      console.log(`[ConnexCS CDR] Received ${Array.isArray(cdrs) ? cdrs.length : 0} CDRs`);
-      
-      if (!Array.isArray(cdrs)) {
-        console.log(`[ConnexCS CDR] Response is not an array`);
-        return { cdrs: [], hasMore: false };
+      if (Array.isArray(cdrs) && cdrs.length > 0) {
+        console.log(`[ConnexCS CDR] Found ${cdrs.length} CDRs in cdr`);
+        const hasMore = cdrs.length > limit;
+        if (hasMore) cdrs.pop();
+        return { cdrs, hasMore };
       }
       
-      const hasMore = cdrs.length > limit;
-      if (hasMore) {
-        cdrs.pop();
-      }
-      
-      return { cdrs, hasMore };
+      console.log(`[ConnexCS CDR] cdr returned 0 CDRs`);
     } catch (error) {
-      console.log(`[ConnexCS CDR] Error fetching CDRs: ${error}`);
-      return { cdrs: [], hasMore: false };
+      console.log(`[ConnexCS CDR] cdr query error: ${error}`);
     }
+    
+    return { cdrs: [], hasMore: false };
   }
 
   async getCDRsByMonth(storage: StorageInterface, year: number, month: number): Promise<ConnexCSCDR[]> {
