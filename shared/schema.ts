@@ -2588,6 +2588,7 @@ export const insertCustomerCategorySchema = createInsertSchema(customerCategorie
 export const insertCustomerGroupSchema = createInsertSchema(customerGroups).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true }).partial({
+  accountNumber: true,
   balance: true,
   creditLimit: true,
   lowBalanceThreshold1: true,
@@ -2609,6 +2610,10 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({ id: tru
   connexcsCustomerId: true,
   categoryId: true,
   groupId: true,
+  billingTermId: true,
+  kycStatus: true,
+  status: true,
+  billingType: true,
 });
 export const insertCarrierSchema = createInsertSchema(carriers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierInterconnectSchema = createInsertSchema(carrierInterconnects).omit({ id: true, createdAt: true, updatedAt: true });
@@ -2894,3 +2899,178 @@ export type E2eResult = typeof e2eResults.$inferSelect;
 
 // Auth models (for Replit Auth sessions)
 export * from "./models/auth";
+
+// ==================== CONNEXCS SYNC TABLES ====================
+
+export const connexcsSyncStatusEnum = pgEnum("connexcs_sync_status", [
+  "pending",
+  "syncing",
+  "completed",
+  "failed",
+  "partial",
+]);
+
+export const connexcsEntityTypeEnum = pgEnum("connexcs_entity_type", [
+  "customer",
+  "carrier",
+  "ratecard",
+  "cdr",
+  "balance",
+]);
+
+export const connexcsSyncJobs = pgTable("connexcs_sync_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  entityType: connexcsEntityTypeEnum("entity_type").notNull(),
+  status: connexcsSyncStatusEnum("status").default("pending"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  totalRecords: integer("total_records").default(0),
+  importedRecords: integer("imported_records").default(0),
+  updatedRecords: integer("updated_records").default(0),
+  failedRecords: integer("failed_records").default(0),
+  errors: jsonb("errors"),
+  params: jsonb("params"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const connexcsEntityMap = pgTable("connexcs_entity_map", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  entityType: connexcsEntityTypeEnum("entity_type").notNull(),
+  connexcsId: text("connexcs_id").notNull(),
+  didtronId: varchar("didtron_id").notNull(),
+  connexcsData: jsonb("connexcs_data"),
+  lastSyncedAt: timestamp("last_synced_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const connexcsImportCustomers = pgTable("connexcs_import_customers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  syncJobId: varchar("sync_job_id").references(() => connexcsSyncJobs.id),
+  connexcsId: integer("connexcs_id").notNull(),
+  name: text("name").notNull(),
+  email: text("email"),
+  company: text("company"),
+  status: text("status"),
+  balance: decimal("balance", { precision: 14, scale: 4 }),
+  creditLimit: decimal("credit_limit", { precision: 14, scale: 4 }),
+  currency: text("currency"),
+  billingType: text("billing_type"),
+  rateCardId: integer("rate_card_id"),
+  rateCardName: text("rate_card_name"),
+  channels: integer("channels"),
+  cps: integer("cps"),
+  address: text("address"),
+  city: text("city"),
+  country: text("country"),
+  phone: text("phone"),
+  rawData: jsonb("raw_data"),
+  mappedToId: varchar("mapped_to_id").references(() => customers.id),
+  importStatus: text("import_status").default("pending"),
+  importError: text("import_error"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const connexcsImportCarriers = pgTable("connexcs_import_carriers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  syncJobId: varchar("sync_job_id").references(() => connexcsSyncJobs.id),
+  connexcsId: integer("connexcs_id").notNull(),
+  name: text("name").notNull(),
+  status: text("status"),
+  channels: integer("channels"),
+  cps: integer("cps"),
+  host: text("host"),
+  port: integer("port"),
+  ip: text("ip"),
+  protocol: text("protocol"),
+  currency: text("currency"),
+  rateCardId: integer("rate_card_id"),
+  rateCardName: text("rate_card_name"),
+  billingType: text("billing_type"),
+  balance: decimal("balance", { precision: 14, scale: 4 }),
+  creditLimit: decimal("credit_limit", { precision: 14, scale: 4 }),
+  rawData: jsonb("raw_data"),
+  mappedToId: varchar("mapped_to_id").references(() => carriers.id),
+  importStatus: text("import_status").default("pending"),
+  importError: text("import_error"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const connexcsImportRateCards = pgTable("connexcs_import_rate_cards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  syncJobId: varchar("sync_job_id").references(() => connexcsSyncJobs.id),
+  connexcsId: integer("connexcs_id").notNull(),
+  name: text("name").notNull(),
+  direction: text("direction"),
+  currency: text("currency"),
+  status: text("status"),
+  rateCount: integer("rate_count").default(0),
+  rawData: jsonb("raw_data"),
+  mappedToId: varchar("mapped_to_id").references(() => rateCards.id),
+  importStatus: text("import_status").default("pending"),
+  importError: text("import_error"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const connexcsImportCdrs = pgTable("connexcs_import_cdrs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  syncJobId: varchar("sync_job_id").references(() => connexcsSyncJobs.id),
+  connexcsId: text("connexcs_id").notNull(),
+  callId: text("call_id"),
+  src: text("src"),
+  dst: text("dst"),
+  duration: integer("duration"),
+  billsec: integer("billsec"),
+  callTime: timestamp("call_time"),
+  cost: decimal("cost", { precision: 12, scale: 6 }),
+  rate: decimal("rate", { precision: 10, scale: 6 }),
+  status: text("status"),
+  hangupCause: text("hangup_cause"),
+  direction: text("direction"),
+  customerId: integer("customer_id"),
+  customerName: text("customer_name"),
+  carrierId: integer("carrier_id"),
+  carrierName: text("carrier_name"),
+  prefix: text("prefix"),
+  destination: text("destination"),
+  currency: text("currency"),
+  rawData: jsonb("raw_data"),
+  mappedToId: varchar("mapped_to_id").references(() => cdrs.id),
+  importStatus: text("import_status").default("pending"),
+  importError: text("import_error"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const connexcsSyncLogs = pgTable("connexcs_sync_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  syncJobId: varchar("sync_job_id").references(() => connexcsSyncJobs.id),
+  level: text("level").default("info"),
+  message: text("message").notNull(),
+  details: jsonb("details"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Zod schemas for ConnexCS sync
+export const insertConnexcsSyncJobSchema = createInsertSchema(connexcsSyncJobs).omit({ id: true, createdAt: true });
+export const insertConnexcsEntityMapSchema = createInsertSchema(connexcsEntityMap).omit({ id: true, createdAt: true });
+export const insertConnexcsImportCustomerSchema = createInsertSchema(connexcsImportCustomers).omit({ id: true, createdAt: true });
+export const insertConnexcsImportCarrierSchema = createInsertSchema(connexcsImportCarriers).omit({ id: true, createdAt: true });
+export const insertConnexcsImportRateCardSchema = createInsertSchema(connexcsImportRateCards).omit({ id: true, createdAt: true });
+export const insertConnexcsImportCdrSchema = createInsertSchema(connexcsImportCdrs).omit({ id: true, createdAt: true });
+export const insertConnexcsSyncLogSchema = createInsertSchema(connexcsSyncLogs).omit({ id: true, createdAt: true });
+
+// ConnexCS sync types
+export type InsertConnexcsSyncJob = z.infer<typeof insertConnexcsSyncJobSchema>;
+export type ConnexcsSyncJob = typeof connexcsSyncJobs.$inferSelect;
+export type InsertConnexcsEntityMap = z.infer<typeof insertConnexcsEntityMapSchema>;
+export type ConnexcsEntityMap = typeof connexcsEntityMap.$inferSelect;
+export type InsertConnexcsImportCustomer = z.infer<typeof insertConnexcsImportCustomerSchema>;
+export type ConnexcsImportCustomer = typeof connexcsImportCustomers.$inferSelect;
+export type InsertConnexcsImportCarrier = z.infer<typeof insertConnexcsImportCarrierSchema>;
+export type ConnexcsImportCarrier = typeof connexcsImportCarriers.$inferSelect;
+export type InsertConnexcsImportRateCard = z.infer<typeof insertConnexcsImportRateCardSchema>;
+export type ConnexcsImportRateCard = typeof connexcsImportRateCards.$inferSelect;
+export type InsertConnexcsImportCdr = z.infer<typeof insertConnexcsImportCdrSchema>;
+export type ConnexcsImportCdr = typeof connexcsImportCdrs.$inferSelect;
+export type InsertConnexcsSyncLog = z.infer<typeof insertConnexcsSyncLogSchema>;
+export type ConnexcsSyncLog = typeof connexcsSyncLogs.$inferSelect;

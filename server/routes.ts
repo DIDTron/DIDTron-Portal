@@ -5095,6 +5095,182 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CONNEXCS SYNC ====================
+  
+  app.post("/api/admin/connexcs/sync/customers", async (req, res) => {
+    try {
+      const { syncCustomers } = await import("./services/connexcs-sync");
+      const result = await syncCustomers(req.session?.userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Sync failed" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/sync/carriers", async (req, res) => {
+    try {
+      const { syncCarriers } = await import("./services/connexcs-sync");
+      const result = await syncCarriers(req.session?.userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Sync failed" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/sync/ratecards", async (req, res) => {
+    try {
+      const { syncRateCards } = await import("./services/connexcs-sync");
+      const result = await syncRateCards(req.session?.userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Sync failed" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/sync/cdrs", async (req, res) => {
+    try {
+      const { year, month } = req.body;
+      if (!year || !month) {
+        return res.status(400).json({ error: "Year and month are required" });
+      }
+      const { syncCDRs } = await import("./services/connexcs-sync");
+      const result = await syncCDRs(year, month, req.session?.userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Sync failed" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/sync/all", async (req, res) => {
+    try {
+      const { syncCustomers, syncCarriers, syncRateCards } = await import("./services/connexcs-sync");
+      const userId = req.session?.userId;
+      
+      const [customersResult, carriersResult, rateCardsResult] = await Promise.all([
+        syncCustomers(userId),
+        syncCarriers(userId),
+        syncRateCards(userId),
+      ]);
+      
+      res.json({
+        success: true,
+        customers: customersResult,
+        carriers: carriersResult,
+        rateCards: rateCardsResult,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Sync failed" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/sync/jobs", async (req, res) => {
+    try {
+      const { getSyncJobs } = await import("./services/connexcs-sync");
+      const limit = parseInt(req.query.limit as string) || 50;
+      const jobs = await getSyncJobs(limit);
+      res.json(jobs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch sync jobs" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/sync/jobs/:id/logs", async (req, res) => {
+    try {
+      const { getSyncJobLogs } = await import("./services/connexcs-sync");
+      const logs = await getSyncJobLogs(req.params.id);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch sync logs" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/import/customers", async (req, res) => {
+    try {
+      const { getImportedCustomers } = await import("./services/connexcs-sync");
+      const limit = parseInt(req.query.limit as string) || 100;
+      const customers = await getImportedCustomers(limit);
+      res.json(customers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch imported customers" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/import/carriers", async (req, res) => {
+    try {
+      const { getImportedCarriers } = await import("./services/connexcs-sync");
+      const limit = parseInt(req.query.limit as string) || 100;
+      const carriers = await getImportedCarriers(limit);
+      res.json(carriers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch imported carriers" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/import/ratecards", async (req, res) => {
+    try {
+      const { getImportedRateCards } = await import("./services/connexcs-sync");
+      const limit = parseInt(req.query.limit as string) || 100;
+      const rateCards = await getImportedRateCards(limit);
+      res.json(rateCards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch imported rate cards" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/import/cdrs", async (req, res) => {
+    try {
+      const { getImportedCDRs } = await import("./services/connexcs-sync");
+      const jobId = req.query.jobId as string;
+      const limit = parseInt(req.query.limit as string) || 100;
+      const cdrs = await getImportedCDRs(jobId, limit);
+      res.json(cdrs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch imported CDRs" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/import/cdrs/stats", async (req, res) => {
+    try {
+      const { getCDRStats } = await import("./services/connexcs-sync");
+      const jobId = req.query.jobId as string;
+      const stats = await getCDRStats(jobId);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch CDR stats" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/map/customers", async (req, res) => {
+    try {
+      const { mapImportedCustomersToDIDTron } = await import("./services/connexcs-sync");
+      const result = await mapImportedCustomersToDIDTron();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Mapping failed" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/map/carriers", async (req, res) => {
+    try {
+      const { mapImportedCarriersToDIDTron } = await import("./services/connexcs-sync");
+      const result = await mapImportedCarriersToDIDTron();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Mapping failed" });
+    }
+  });
+
+  // ConnexCS Reconciliation Stats - compare ConnexCS vs DIDTron totals
+  app.get("/api/admin/connexcs/reconciliation", async (req, res) => {
+    try {
+      const { getReconciliationStats } = await import("./services/connexcs-sync");
+      const stats = await getReconciliationStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to get reconciliation stats" });
+    }
+  });
+
   // ==================== CARRIERS ====================
 
   app.get("/api/carriers", async (req, res) => {

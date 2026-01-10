@@ -33,6 +33,28 @@ interface ConnexCSCarrier {
   status: string;
   channels?: number;
   cps?: number;
+  host?: string;
+  port?: number;
+  ip?: string;
+  prefix?: string;
+  tech_prefix?: string;
+  strip?: number;
+  protocol?: string;
+  codecs?: string[];
+  currency?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface ConnexCSCarrierFull extends ConnexCSCarrier {
+  ratecard_id?: number;
+  ratecard_name?: string;
+  payment_type?: string;
+  billing_type?: string;
+  invoice_cycle?: string;
+  payment_terms?: number;
+  credit_limit?: number;
+  balance?: number;
 }
 
 interface ConnexCSCustomer {
@@ -40,12 +62,58 @@ interface ConnexCSCustomer {
   name: string;
   status: string;
   balance?: number;
+  credit_limit?: number;
+  currency?: string;
+  email?: string;
+  company?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  postcode?: string;
+  phone?: string;
+  payment_type?: string;
+  tax_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface ConnexCSCustomerFull extends ConnexCSCustomer {
+  ratecard_id?: number;
+  ratecard_name?: string;
+  did_ratecard_id?: number;
+  channels?: number;
+  cps?: number;
+  account_class?: string;
+  billing_type?: string;
+  invoice_cycle?: string;
+  payment_terms?: number;
+  tax_rate?: number;
 }
 
 interface ConnexCSRateCard {
   id: number;
   name: string;
   direction?: string;
+  currency?: string;
+  status?: string;
+  type?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface ConnexCSRateCardFull extends ConnexCSRateCard {
+  rates?: ConnexCSRate[];
+}
+
+interface ConnexCSRate {
+  id: number;
+  prefix: string;
+  destination: string;
+  rate: number;
+  connection_fee?: number;
+  billing_increment?: string;
+  min_duration?: number;
+  status?: string;
 }
 
 interface ConnexCSRoute {
@@ -66,6 +134,49 @@ interface ConnexCSCDR {
   status?: string;
   hangup_cause?: string;
   direction?: string;
+  customer_id?: number;
+  customer_name?: string;
+  carrier_id?: number;
+  carrier_name?: string;
+  ratecard_id?: number;
+  rate?: number;
+  prefix?: string;
+  destination?: string;
+  currency?: string;
+  pdd?: number;
+  codec?: string;
+  lnp?: boolean;
+  src_ip?: string;
+  dst_ip?: string;
+}
+
+interface ConnexCSBalance {
+  customer_id: number;
+  customer_name: string;
+  balance: number;
+  credit_limit: number;
+  currency: string;
+  available_credit: number;
+}
+
+interface ConnexCSSyncResult {
+  success: boolean;
+  entity: string;
+  imported: number;
+  updated: number;
+  failed: number;
+  errors: string[];
+  duration_ms: number;
+}
+
+interface ConnexCSCDRQueryParams {
+  startDate: string;
+  endDate: string;
+  customerId?: number;
+  carrierId?: number;
+  direction?: 'inbound' | 'outbound';
+  limit?: number;
+  offset?: number;
 }
 
 interface ConnexCSKVRecord {
@@ -458,6 +569,209 @@ class ConnexCSToolsService {
     await this.makeAuthenticatedRequest(storage, `data/${key}`, "PUT", { value });
   }
 
+  // Extended API methods for full sync
+  async getCustomerById(storage: StorageInterface, id: number): Promise<ConnexCSCustomerFull | null> {
+    if (this.mockMode) {
+      return null;
+    }
+    try {
+      return await this.makeAuthenticatedRequest<ConnexCSCustomerFull>(storage, `customer/${id}`);
+    } catch {
+      return null;
+    }
+  }
+
+  async getCarrierById(storage: StorageInterface, id: number): Promise<ConnexCSCarrierFull | null> {
+    if (this.mockMode) {
+      return null;
+    }
+    try {
+      return await this.makeAuthenticatedRequest<ConnexCSCarrierFull>(storage, `carrier/${id}`);
+    } catch {
+      return null;
+    }
+  }
+
+  async getRateCardById(storage: StorageInterface, id: number): Promise<ConnexCSRateCardFull | null> {
+    if (this.mockMode) {
+      return null;
+    }
+    try {
+      return await this.makeAuthenticatedRequest<ConnexCSRateCardFull>(storage, `ratecard/${id}`);
+    } catch {
+      return null;
+    }
+  }
+
+  async getRateCardRates(storage: StorageInterface, rateCardId: number): Promise<ConnexCSRate[]> {
+    if (this.mockMode) {
+      return [];
+    }
+    try {
+      return await this.makeAuthenticatedRequest<ConnexCSRate[]>(storage, `ratecard/${rateCardId}/rate`);
+    } catch {
+      return [];
+    }
+  }
+
+  async getAllCustomersFull(storage: StorageInterface): Promise<ConnexCSCustomerFull[]> {
+    if (this.mockMode) {
+      return this.getMockCustomers() as ConnexCSCustomerFull[];
+    }
+    
+    const customers = await this.getCustomers(storage);
+    const fullCustomers: ConnexCSCustomerFull[] = [];
+    
+    for (const customer of customers) {
+      const full = await this.getCustomerById(storage, customer.id);
+      if (full) {
+        fullCustomers.push(full);
+      } else {
+        fullCustomers.push(customer as ConnexCSCustomerFull);
+      }
+    }
+    
+    return fullCustomers;
+  }
+
+  async getAllCarriersFull(storage: StorageInterface): Promise<ConnexCSCarrierFull[]> {
+    if (this.mockMode) {
+      return this.getMockCarriers() as ConnexCSCarrierFull[];
+    }
+    
+    const carriers = await this.getCarriers(storage);
+    const fullCarriers: ConnexCSCarrierFull[] = [];
+    
+    for (const carrier of carriers) {
+      const full = await this.getCarrierById(storage, carrier.id);
+      if (full) {
+        fullCarriers.push(full);
+      } else {
+        fullCarriers.push(carrier as ConnexCSCarrierFull);
+      }
+    }
+    
+    return fullCarriers;
+  }
+
+  async getCDRsPaginated(storage: StorageInterface, params: ConnexCSCDRQueryParams): Promise<{
+    cdrs: ConnexCSCDR[];
+    hasMore: boolean;
+    total?: number;
+  }> {
+    if (this.mockMode) {
+      return { cdrs: this.getMockCDRs(), hasMore: false };
+    }
+
+    const { startDate, endDate, customerId, carrierId, direction, limit = 1000, offset = 0 } = params;
+    
+    let whereClause = `dt >= '${startDate}' AND dt <= '${endDate} 23:59:59'`;
+    
+    if (customerId) {
+      whereClause += ` AND customer_id = ${customerId}`;
+    }
+    if (carrierId) {
+      whereClause += ` AND carrier_id = ${carrierId}`;
+    }
+    if (direction) {
+      whereClause += ` AND direction = '${direction}'`;
+    }
+
+    const sql = `SELECT * FROM cdr WHERE ${whereClause} ORDER BY dt ASC LIMIT ${limit + 1} OFFSET ${offset}`;
+    const cdrs = await this.executeSQLQuery(storage, sql);
+    
+    const hasMore = cdrs.length > limit;
+    if (hasMore) {
+      cdrs.pop();
+    }
+
+    return { cdrs, hasMore };
+  }
+
+  async getCDRsByMonth(storage: StorageInterface, year: number, month: number): Promise<ConnexCSCDR[]> {
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+    
+    const allCDRs: ConnexCSCDR[] = [];
+    let offset = 0;
+    const batchSize = 5000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const result = await this.getCDRsPaginated(storage, {
+        startDate,
+        endDate,
+        limit: batchSize,
+        offset,
+      });
+      
+      allCDRs.push(...result.cdrs);
+      hasMore = result.hasMore;
+      offset += batchSize;
+      
+      if (allCDRs.length > 500000) {
+        console.log(`[ConnexCS] Warning: Large CDR dataset (${allCDRs.length}), stopping pagination`);
+        break;
+      }
+    }
+
+    return allCDRs;
+  }
+
+  async getCustomerBalances(storage: StorageInterface): Promise<ConnexCSBalance[]> {
+    if (this.mockMode) {
+      return [
+        { customer_id: 1, customer_name: "Acme Corp", balance: 1500, credit_limit: 5000, currency: "USD", available_credit: 3500 },
+        { customer_id: 2, customer_name: "TechStart Inc", balance: 750, credit_limit: 2000, currency: "USD", available_credit: 1250 },
+      ];
+    }
+
+    const customers = await this.getCustomers(storage);
+    return customers.map(c => ({
+      customer_id: c.id,
+      customer_name: c.name,
+      balance: c.balance || 0,
+      credit_limit: c.credit_limit || 0,
+      currency: c.currency || "USD",
+      available_credit: (c.credit_limit || 0) - (c.balance || 0),
+    }));
+  }
+
+  async getCDRStats(storage: StorageInterface, startDate: string, endDate: string): Promise<{
+    totalCalls: number;
+    totalMinutes: number;
+    totalCost: number;
+    answeredCalls: number;
+    failedCalls: number;
+  }> {
+    if (this.mockMode) {
+      return { totalCalls: 1000, totalMinutes: 5000, totalCost: 250.50, answeredCalls: 900, failedCalls: 100 };
+    }
+
+    const sql = `
+      SELECT 
+        COUNT(*) as total_calls,
+        SUM(billsec) / 60.0 as total_minutes,
+        SUM(cost) as total_cost,
+        SUM(CASE WHEN status = 'ANSWERED' THEN 1 ELSE 0 END) as answered_calls,
+        SUM(CASE WHEN status != 'ANSWERED' THEN 1 ELSE 0 END) as failed_calls
+      FROM cdr 
+      WHERE dt >= '${startDate}' AND dt <= '${endDate} 23:59:59'
+    `;
+    
+    const result = await this.executeSQLQuery(storage, sql);
+    const stats = result[0] as any;
+    
+    return {
+      totalCalls: parseInt(stats?.total_calls || '0'),
+      totalMinutes: parseFloat(stats?.total_minutes || '0'),
+      totalCost: parseFloat(stats?.total_cost || '0'),
+      answeredCalls: parseInt(stats?.answered_calls || '0'),
+      failedCalls: parseInt(stats?.failed_calls || '0'),
+    };
+  }
+
   private getMockCarriers(): ConnexCSCarrier[] {
     return [
       { id: 1, name: "Premium Voice US", status: "active", channels: 100, cps: 50 },
@@ -512,9 +826,16 @@ export const connexcsTools = new ConnexCSToolsService();
 export type {
   ConnexCSStatus,
   ConnexCSCarrier,
+  ConnexCSCarrierFull,
   ConnexCSCustomer,
+  ConnexCSCustomerFull,
   ConnexCSRateCard,
+  ConnexCSRateCardFull,
+  ConnexCSRate,
   ConnexCSRoute,
   ConnexCSCDR,
   ConnexCSKVRecord,
+  ConnexCSBalance,
+  ConnexCSSyncResult,
+  ConnexCSCDRQueryParams,
 };
