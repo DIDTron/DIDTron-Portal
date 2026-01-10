@@ -1,0 +1,34 @@
+the PDF is 1638 page and you need to store it as the main reference to our work until the softswitch module be working 100% correct and better forever
+
+i shared with you 4 links from tango
+
+https://app.tango.us/app/workflow/Configure-Carrier-Contacts-and-Alerts-in-Digitalk-b913adcf391d4e98939e0e7f9bff1cd8
+
+https://app.tango.us/app/workflow/Manage-Carriers-and-Services-in-Digitalk-Carrier-Cloud-7be3ed2772fa4a5fadb554bd48ebd7b4
+
+https://app.tango.us/app/workflow/Configure-Digitalk-Carrier-Cloud-Settings-7dc7bf616d1f43dcb2c4970be1005d6c
+
+https://app.tango.us/app/workflow/Configure-Privacy-and-Rating-in-Digitalk-a4dcd176c97f4e62ace6f888a9a13c4f
+
+both links include 198 + 32 + 32 screenshot showing each single detail and each single click within the whole carrier module and last link showing how the digitalk filter working
+
+please study all the 4 links and read all the carrier section in the 25 MB PDF and relate it to everything in the connexcs deeply and tell me how you will delete the 3 pages and create the 2nd and 3rd module from the 21 modules which is the carriers
+and offer me detailed plan only for this 2 modules which supposedly they are 1 module called carriers
+
+CARRIER MANAGER (Managing Carriers)
+• Create Carrier - Company info, account type (Customer/Supplier/Both)
+• Interconnects - SIP connection settings (IP, port, codecs, capacity)
+• Services - Link rating plans to routing plans
+• Customer vs Supplier direction settings
+WORKING WITH CARRIERS
+• Carriers list/search screen
+• Balance & Spend Summary - Real-time balance display
+• Maximum Balance Limits - Prepaid/postpaid credit control
+• Credit Alerts - Email notifications at thresholds
+• Carrier Contacts - Contact management
+• Blacklisting - Block numbers/prefixes
+• Trunk Groups - Group interconnects
+• Release Cause Mapping - SIP code translation
+
+study all again i added one more link,
+now you literally have each single click on the carrier module and it's branched details as explain in the carrier section in the PDF
