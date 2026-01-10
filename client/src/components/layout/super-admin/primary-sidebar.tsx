@@ -19,7 +19,6 @@ export interface NavSection {
 export const navSections: NavSection[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, defaultRoute: "/admin" },
   { id: "voip", label: "VoIP", icon: Phone, defaultRoute: "/admin/pops" },
-  { id: "wholesale-partners", label: "Wholesale", icon: Building2, defaultRoute: "/admin/carriers" },
   { id: "rate-cards", label: "Rate Cards", icon: Receipt, defaultRoute: "/admin/rate-cards/customer" },
   { id: "did", label: "DID", icon: Globe, defaultRoute: "/admin/did-countries" },
   { id: "customers", label: "Customers", icon: Users, defaultRoute: "/admin/customers" },
@@ -28,7 +27,7 @@ export const navSections: NavSection[] = [
   { id: "monitoring", label: "Monitoring", icon: BarChart3, defaultRoute: "/admin/metrics" },
   { id: "sip-tester", label: "SIP Tester", icon: Cpu, defaultRoute: "/admin/sip-tester/new" },
   { id: "ai-voice", label: "AI Voice", icon: Bot, defaultRoute: "/admin/ai-voice/dashboard" },
-  { id: "softswitch", label: "Softswitch", icon: Network, defaultRoute: "/admin/class4-customers" },
+  { id: "softswitch", label: "Softswitch", icon: Network, defaultRoute: "/admin/softswitch/carriers" },
   { id: "experience-manager", label: "Experience", icon: FileText, defaultRoute: "/admin/experience-manager" },
   { id: "admin", label: "Admin", icon: Shield, defaultRoute: "/admin/admin-users" },
   { id: "global-settings", label: "Global Settings", icon: Cog, defaultRoute: "/admin/global-settings/platform" },
@@ -280,12 +279,6 @@ const sectionDefaultItems: Record<string, { id: string; label: string; route: st
     { id: "codecs", label: "Codecs", route: "/admin/codecs" },
     { id: "channel-plans", label: "Channel Plans", route: "/admin/channel-plans" },
     { id: "routes", label: "Routes", route: "/admin/routes" },
-  ],
-  "wholesale-partners": [
-    { id: "wholesale-partners", label: "Partners", route: "/admin/carriers" },
-    { id: "wholesale-customers", label: "Customers", route: "/admin/wholesale/customers" },
-    { id: "wholesale-customer-rates", label: "Customer Rates", route: "/admin/wholesale/customer-rates" },
-    { id: "wholesale-did-countries", label: "DID Countries", route: "/admin/wholesale/did-countries" },
   ],
   "rate-cards": [
     { id: "customer-rates", label: "Customer Rates", route: "/admin/rate-cards/customer" },
