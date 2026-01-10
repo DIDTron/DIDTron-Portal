@@ -426,27 +426,31 @@ export async function syncCDRs(
       const batch = cdrs.slice(i, i + batchSize);
       
       try {
+        // Map ConnexCS CDR fields to our database schema
+        // ConnexCS actual columns: dt, callid, source_cli, dest_number, duration,
+        // customer_id, provider_id, customer_charge, customer_card_rate, sip_code, etc.
+        // NOTE: Duration can be decimal in ConnexCS, convert to integer for our schema
         const values = batch.map(cdr => ({
           syncJobId: job.id,
-          connexcsId: cdr.id,
-          callId: cdr.call_id,
-          src: cdr.src,
-          dst: cdr.dst,
-          duration: cdr.duration,
-          billsec: cdr.billsec,
+          connexcsId: cdr.callid || cdr.id || `${cdr.dt}-${cdr.customer_id}`,
+          callId: cdr.callid,
+          src: cdr.source_cli,
+          dst: cdr.dest_number,
+          duration: cdr.duration != null ? Math.round(Number(cdr.duration)) : (cdr.customer_duration != null ? Math.round(Number(cdr.customer_duration)) : null),
+          billsec: cdr.customer_duration != null ? Math.round(Number(cdr.customer_duration)) : (cdr.duration != null ? Math.round(Number(cdr.duration)) : null),
           callTime: cdr.dt ? new Date(cdr.dt) : null,
-          cost: cdr.cost?.toString(),
-          rate: cdr.rate?.toString(),
-          status: cdr.status,
-          hangupCause: cdr.hangup_cause,
+          cost: cdr.customer_charge?.toString() || cdr.customer_card_charge?.toString(),
+          rate: cdr.customer_card_rate?.toString(),
+          status: cdr.sip_code?.toString() === "200" ? "ANSWERED" : (cdr.sip_code ? "FAILED" : null),
+          hangupCause: cdr.release_reason || cdr.sip_reason,
           direction: cdr.direction,
-          customerId: cdr.customer_id,
-          customerName: cdr.customer_name,
-          carrierId: cdr.carrier_id,
-          carrierName: cdr.carrier_name,
-          prefix: cdr.prefix,
-          destination: cdr.destination,
-          currency: cdr.currency,
+          customerId: cdr.customer_id != null ? parseInt(String(cdr.customer_id), 10) : null,
+          customerName: cdr.cx_name,
+          carrierId: cdr.provider_id != null ? parseInt(String(cdr.provider_id), 10) : null,
+          carrierName: null,
+          prefix: cdr.customer_card_dest_code || cdr.tech_prefix,
+          destination: cdr.customer_card_dest_name,
+          currency: cdr.customer_currency,
           rawData: JSON.stringify(cdr),
           importStatus: "imported",
         }));
@@ -461,6 +465,10 @@ export async function syncCDRs(
         result.failed += batch.length;
         const errorMsg = err instanceof Error ? err.message : String(err);
         result.errors.push(`Batch ${i}-${i + batchSize}: ${errorMsg}`);
+        console.error(`[ConnexCS Sync] CDR batch insert error: ${errorMsg}`);
+        if (i === 0) {
+          console.error(`[ConnexCS Sync] First batch sample:`, JSON.stringify(values[0]).substring(0, 500));
+        }
         await log(job.id, "error", `Failed to import CDR batch`, { error: errorMsg, batchStart: i });
       }
     }

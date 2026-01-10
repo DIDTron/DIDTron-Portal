@@ -1039,54 +1039,60 @@ async function seedBillingTerms() {
         await connexcsTools.loadCredentialsFromStorage(storage);
         
         // Auto-sync ConnexCS data on startup (non-blocking)
+        // IMPORTANT: ConnexCS API has a 2-session limit - serialize ALL operations
         setTimeout(async () => {
+          const apiDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+          
           try {
             const status = await connexcsTools.getStatus(storage);
             if (status.connected && !status.mockMode) {
               log("Starting automatic ConnexCS data sync...", "connexcs-sync");
               const { syncCustomers, syncCarriers, syncRateCards, syncCDRs } = await import("./services/connexcs-sync");
               
-              // Sync entities first
-              const [customers, carriers, ratecards] = await Promise.all([
-                syncCustomers(),
-                syncCarriers(),
-                syncRateCards(),
-              ]);
+              // Sync entities ONE AT A TIME to avoid exhausting 2-session API limit
+              const customers = await syncCustomers();
+              log(`Customer sync: ${customers.imported + customers.updated} records`, "connexcs-sync");
+              await apiDelay(5000);
+              
+              const carriers = await syncCarriers();
+              log(`Carrier sync: ${carriers.imported + carriers.updated} records`, "connexcs-sync");
+              await apiDelay(5000);
+              
+              const ratecards = await syncRateCards();
+              log(`Rate card sync: ${ratecards.imported + ratecards.updated} records`, "connexcs-sync");
+              
               log(`Entity sync complete: ${customers.imported + customers.updated} customers, ${carriers.imported + carriers.updated} carriers, ${ratecards.imported + ratecards.updated} ratecards`, "connexcs-sync");
               
-              // Now sync all CDRs for 2025 (all months that have passed)
-              log("Starting automatic CDR sync for 2025...", "connexcs-sync");
+              // Wait 10 seconds for API sessions to fully close before CDR queries
+              log("Waiting for API sessions to reset before CDR sync...", "connexcs-sync");
+              await apiDelay(10000);
+              
+              // Test CDR access first with a simple recent data query
+              log("Testing CDR access with recent data query...", "connexcs-sync");
+              const cdrTestResult = await connexcsTools.testCDRAccess(storage);
+              
+              if (!cdrTestResult.success) {
+                log(`CDR access test failed: ${cdrTestResult.error}`, "connexcs-sync");
+                log("Entity sync complete, CDR sync skipped", "connexcs-sync");
+                return;
+              }
+              
+              log(`CDR access SUCCESS! Found ${cdrTestResult.recordCount} records. Columns: ${cdrTestResult.columns?.join(', ')}`, "connexcs-sync");
+              
+              // If CDR access works, sync current month only for now
               const currentDate = new Date();
               const currentYear = currentDate.getFullYear();
               const currentMonth = currentDate.getMonth() + 1;
               
-              let totalCdrs = 0;
-              // Sync all months of 2025 up to current month
-              for (let month = 1; month <= (currentYear === 2025 ? currentMonth : 12); month++) {
-                try {
-                  const cdrResult = await syncCDRs(2025, month);
-                  totalCdrs += cdrResult.imported + cdrResult.updated;
-                  log(`CDR sync 2025-${String(month).padStart(2, '0')}: ${cdrResult.imported + cdrResult.updated} records`, "connexcs-sync");
-                } catch (cdrErr) {
-                  log(`CDR sync 2025-${String(month).padStart(2, '0')} failed: ${cdrErr}`, "connexcs-sync");
-                }
+              await apiDelay(5000);
+              try {
+                const cdrResult = await syncCDRs(currentYear, currentMonth);
+                log(`CDR sync ${currentYear}-${String(currentMonth).padStart(2, '0')}: ${cdrResult.imported + cdrResult.updated} records`, "connexcs-sync");
+              } catch (cdrErr) {
+                log(`CDR sync failed: ${cdrErr}`, "connexcs-sync");
               }
               
-              // Also sync 2026 if we're in 2026
-              if (currentYear >= 2026) {
-                const maxMonth = currentYear === 2026 ? currentMonth : 12;
-                for (let month = 1; month <= maxMonth; month++) {
-                  try {
-                    const cdrResult = await syncCDRs(2026, month);
-                    totalCdrs += cdrResult.imported + cdrResult.updated;
-                    log(`CDR sync 2026-${String(month).padStart(2, '0')}: ${cdrResult.imported + cdrResult.updated} records`, "connexcs-sync");
-                  } catch (cdrErr) {
-                    log(`CDR sync 2026-${String(month).padStart(2, '0')} failed: ${cdrErr}`, "connexcs-sync");
-                  }
-                }
-              }
-              
-              log(`Auto-sync complete: entities + ${totalCdrs} CDRs`, "connexcs-sync");
+              log(`Auto-sync complete`, "connexcs-sync");
             }
           } catch (err) {
             log(`Auto-sync failed: ${err}`, "connexcs-sync");

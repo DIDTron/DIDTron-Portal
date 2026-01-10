@@ -757,7 +757,65 @@ class ConnexCSToolsService {
     return null;
   }
   
-  // Fetch CDRs using discovered schema
+  // Test CDR access with a simple recent data query
+  async testCDRAccess(storage: StorageInterface): Promise<{
+    success: boolean;
+    recordCount: number;
+    sample?: any;
+    columns?: string[];
+    error?: string;
+  }> {
+    console.log(`[ConnexCS CDR] Testing CDR access with recent data query...`);
+    
+    // Use exact syntax from connexcs-tools: DATE_SUB(NOW(), INTERVAL x DAY)
+    const sql = `SELECT * FROM cdr WHERE dt > DATE_SUB(NOW(), INTERVAL 7 DAY) LIMIT 5`;
+    
+    try {
+      const cdrs = await this.executeSQLQuery(storage, sql);
+      if (Array.isArray(cdrs) && cdrs.length > 0) {
+        const columns = Object.keys(cdrs[0]);
+        console.log(`[ConnexCS CDR] CDR access test SUCCESS - ${cdrs.length} records`);
+        console.log(`[ConnexCS CDR] Discovered columns: ${columns.join(', ')}`);
+        return {
+          success: true,
+          recordCount: cdrs.length,
+          sample: cdrs[0],
+          columns
+        };
+      }
+      
+      // Try with 30 days if 7 days returned empty
+      console.log(`[ConnexCS CDR] No records in last 7 days, trying 30 days...`);
+      const sql30 = `SELECT * FROM cdr WHERE dt > DATE_SUB(NOW(), INTERVAL 30 DAY) LIMIT 5`;
+      const cdrs30 = await this.executeSQLQuery(storage, sql30);
+      
+      if (Array.isArray(cdrs30) && cdrs30.length > 0) {
+        const columns = Object.keys(cdrs30[0]);
+        console.log(`[ConnexCS CDR] CDR access test SUCCESS (30d) - ${cdrs30.length} records`);
+        return {
+          success: true,
+          recordCount: cdrs30.length,
+          sample: cdrs30[0],
+          columns
+        };
+      }
+      
+      return {
+        success: false,
+        recordCount: 0,
+        error: "No CDR records found in last 30 days"
+      };
+    } catch (error: any) {
+      console.log(`[ConnexCS CDR] CDR access test FAILED: ${error.message}`);
+      return {
+        success: false,
+        recordCount: 0,
+        error: error.message
+      };
+    }
+  }
+  
+  // Fetch CDRs using discovered schema - uses connexcs-tools syntax
   async getCDRsViaSQL(
     storage: StorageInterface,
     startDate: string,
@@ -771,9 +829,10 @@ class ConnexCSToolsService {
       return [];
     }
     
-    // Build query with discovered schema
+    // Build query with discovered schema - use toDate() for ClickHouse compatibility
+    // ConnexCS uses ClickHouse which supports toDate() function for date comparisons
     const { table, dateColumn } = schema;
-    const sql = `SELECT * FROM ${table} WHERE ${dateColumn} >= '${startDate}' AND ${dateColumn} <= '${endDate} 23:59:59' ORDER BY ${dateColumn} ASC LIMIT 5000`;
+    const sql = `SELECT * FROM ${table} WHERE toDate(${dateColumn}) >= toDate('${startDate}') AND toDate(${dateColumn}) <= toDate('${endDate}') ORDER BY ${dateColumn} ASC LIMIT 5000`;
     
     console.log(`[ConnexCS CDR] Querying ${table}: ${sql.substring(0, 120)}...`);
     
