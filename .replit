@@ -46,6 +46,7 @@ integrations = ["javascript_database:1.0.0", "javascript_openai_ai_integrations:
 
 [userenv.shared]
 SUPER_ADMIN_EMAIL = "info@didtron.com"
+OPEN_EXCHANGE_RATES_APP_ID = "5e4a318c2d1c49a582db1a1af6a5785b"
 
 [userenv.development]
 TEST_ADMIN_EMAIL = "info@didtron.com"

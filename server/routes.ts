@@ -3190,33 +3190,60 @@ export async function registerRoutes(
 
   app.post("/api/admin/fx-rates/refresh", async (req, res) => {
     try {
-      // In production, this would call Open Exchange Rates API
-      // For now, we'll generate mock rates for enabled currencies
-      const currencies = await storage.getCurrencies();
-      const baseCurrency = "USD";
-      
-      const mockRates: Record<string, number> = {
+      const { syncExchangeRates } = await import("./services/open-exchange-rates");
+      const result = await syncExchangeRates();
+      res.json({ success: true, message: `Synced ${result.synced} exchange rates from Open Exchange Rates` });
+    } catch (error) {
+      console.error("FX refresh error:", error);
+      const fallbackRates: Record<string, number> = {
         EUR: 0.92, GBP: 0.79, CAD: 1.36, AUD: 1.53, JPY: 149.50,
         CHF: 0.88, CNY: 7.24, INR: 83.12, MXN: 17.15, BRL: 4.97,
         SGD: 1.34, HKD: 7.82, NZD: 1.64, SEK: 10.42, NOK: 10.58,
         DKK: 6.88, ZAR: 18.65, AED: 3.67, SAR: 3.75
       };
-      
+      const currencies = await storage.getCurrencies();
       for (const currency of currencies) {
-        if (currency.code !== baseCurrency && mockRates[currency.code]) {
+        if (currency.code !== "USD" && fallbackRates[currency.code]) {
           await storage.createFxRate({
-            baseCurrency,
+            baseCurrency: "USD",
             quoteCurrency: currency.code,
-            rate: mockRates[currency.code].toFixed(6),
-            source: "openexchangerates",
+            rate: fallbackRates[currency.code].toFixed(6),
+            source: "fallback",
           });
         }
       }
-      
-      res.json({ success: true, message: "FX rates refreshed" });
+      res.json({ success: true, message: "Used fallback rates (API unavailable)" });
+    }
+  });
+
+  app.post("/api/admin/currencies/sync", async (req, res) => {
+    try {
+      const { syncCurrencies } = await import("./services/open-exchange-rates");
+      const result = await syncCurrencies();
+      res.json({ success: true, ...result, message: `Synced ${result.total} currencies, added ${result.added} new` });
     } catch (error) {
-      console.error("FX refresh error:", error);
-      res.status(500).json({ error: "Failed to refresh FX rates" });
+      console.error("Currency sync error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to sync currencies" });
+    }
+  });
+
+  app.post("/api/admin/integrations/open-exchange-rates/test", async (req, res) => {
+    try {
+      const { testConnection } = await import("./services/open-exchange-rates");
+      const result = await testConnection();
+      
+      const integration = await storage.getIntegrationByProvider("open_exchange_rates");
+      if (integration) {
+        await storage.updateIntegration(integration.id, {
+          status: result.success ? "connected" : "error",
+          testResult: result.message,
+          lastTestedAt: new Date(),
+        });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Test failed" });
     }
   });
 
