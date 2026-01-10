@@ -1149,30 +1149,21 @@ function CarrierDetailsTab({
   };
 
   return (
-    <div className="grid grid-cols-3 gap-6" style={{ minWidth: "1100px" }}>
-      <div className="space-y-6 min-w-[320px]">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Carrier Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+    <div className="grid grid-cols-[220px_1fr_280px] gap-6" style={{ minWidth: "1000px" }}>
+      <div className="space-y-4">
+        <div>
+          <h3 className="font-semibold text-sm mb-2">Carrier Details</h3>
+          <div className="space-y-1 text-sm">
             {isEditingLeft ? (
               <>
-                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
-                  <Label className="text-muted-foreground text-xs">Carrier Name</Label>
-                  <Input 
-                    value={leftForm.name} 
-                    onChange={(e) => setLeftForm({...leftForm, name: e.target.value})}
-                    className="h-8"
-                    data-testid="input-carrier-name"
-                  />
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Carrier Name</span>
+                  <Input value={leftForm.name} onChange={(e) => setLeftForm({...leftForm, name: e.target.value})} className="h-7 text-xs" data-testid="input-carrier-name" />
                 </div>
-                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
-                  <Label className="text-muted-foreground text-xs">Type</Label>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Type</span>
                   <Select value={leftForm.partnerType} onValueChange={(v) => setLeftForm({...leftForm, partnerType: v as "customer" | "supplier" | "bilateral"})}>
-                    <SelectTrigger className="h-8" data-testid="select-partner-type-edit">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs" data-testid="select-partner-type-edit"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="bilateral">Bilateral</SelectItem>
                       <SelectItem value="customer">Customer</SelectItem>
@@ -1180,25 +1171,19 @@ function CarrierDetailsTab({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
-                  <Label className="text-muted-foreground text-xs">Time Zone</Label>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Time Zone</span>
                   <Select value={leftForm.timezone} onValueChange={(v) => setLeftForm({...leftForm, timezone: v})}>
-                    <SelectTrigger className="h-8" data-testid="select-timezone">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs" data-testid="select-timezone"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {timezones.map((tz) => (
-                        <SelectItem key={tz} value={tz}>{tz}</SelectItem>
-                      ))}
+                      {timezones.map((tz) => (<SelectItem key={tz} value={tz}>{tz}</SelectItem>))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
-                  <Label className="text-muted-foreground text-xs">Account Manager</Label>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Account Manager</span>
                   <Select value={leftForm.accountManager || "none"} onValueChange={(v) => setLeftForm({...leftForm, accountManager: v === "none" ? "" : v})}>
-                    <SelectTrigger className="h-8" data-testid="select-account-manager">
-                      <SelectValue placeholder="Select manager" />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs" data-testid="select-account-manager"><SelectValue placeholder="None" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
                       {users?.map((user) => (
@@ -1209,12 +1194,10 @@ function CarrierDetailsTab({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
-                  <Label className="text-muted-foreground text-xs">Customer Billing</Label>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Customer Billing</span>
                   <Select value={leftForm.customerBillingMode} onValueChange={(v) => setLeftForm({...leftForm, customerBillingMode: v})}>
-                    <SelectTrigger className="h-8" data-testid="select-billing-mode">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs" data-testid="select-billing-mode"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Automatic">Automatic</SelectItem>
                       <SelectItem value="Manual">Manual</SelectItem>
@@ -1224,120 +1207,75 @@ function CarrierDetailsTab({
               </>
             ) : (
               <>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Carrier Name</span>
-                  <span className="font-medium">{carrier.name}</span>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Carrier Name</span>
+                  <span className="text-xs font-medium">{carrier.name}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Type</span>
-                  <span className="capitalize">{carrier.partnerType}</span>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Type</span>
+                  <span className="text-xs capitalize">{carrier.partnerType}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Time Zone</span>
-                  <span>({carrier.timezone || "UTC"})</span>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Time Zone</span>
+                  <span className="text-xs">({carrier.timezone || "UTC"})</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Account Manager</span>
-                  <span>{carrier.accountManager || "-"}</span>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Account Manager</span>
+                  <span className="text-xs">{carrier.accountManager || "-"}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Customer Billing</span>
-                  <span>{carrier.customerBillingMode || "Automatic"}</span>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Customer Billing</span>
+                  <span className="text-xs">{carrier.customerBillingMode || "Automatic"}</span>
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Currency</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+        <div>
+          <h3 className="font-semibold text-sm mb-2">Currency</h3>
+          <div className="space-y-1 text-sm">
             {isEditingLeft ? (
-              <>
-                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
-                  <Label className="text-muted-foreground text-xs">Primary Currency</Label>
-                  <Select value={leftForm.currencyCode} onValueChange={(v) => setLeftForm({...leftForm, currencyCode: v})}>
-                    <SelectTrigger className="h-8" data-testid="select-currency">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currencies?.map((c) => (
-                        <SelectItem key={c.id} value={c.code}>{c.code}</SelectItem>
-                      ))}
-                      {(!currencies || currencies.length === 0) && (
-                        <>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
-                  <Label className="text-muted-foreground text-xs">Currency 2</Label>
-                  <span className="text-muted-foreground">-</span>
-                </div>
-                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
-                  <Label className="text-muted-foreground text-xs">Currency 3</Label>
-                  <span className="text-muted-foreground">-</span>
-                </div>
-              </>
+              <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                <span className="text-muted-foreground text-xs">Primary Currency</span>
+                <Select value={leftForm.currencyCode} onValueChange={(v) => setLeftForm({...leftForm, currencyCode: v})}>
+                  <SelectTrigger className="h-7 text-xs" data-testid="select-currency"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {currencies?.map((c) => (<SelectItem key={c.id} value={c.code}>{c.code}</SelectItem>))}
+                    {(!currencies || currencies.length === 0) && (
+                      <><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="GBP">GBP</SelectItem></>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             ) : (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Primary Currency</span>
-                  <span className="font-medium">{currency?.code || carrier.currencyCode || "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Currency 2</span>
-                  <span>-</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Currency 3</span>
-                  <span>-</span>
-                </div>
-              </>
+              <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                <span className="text-muted-foreground text-xs">Primary Currency</span>
+                <span className="text-xs font-medium">{currency?.code || carrier.currencyCode || "USD"}</span>
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Routing</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+        <div>
+          <h3 className="font-semibold text-sm mb-2">Routing</h3>
+          <div className="space-y-1 text-sm">
             {isEditingLeft ? (
               <>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground text-xs">Capacity (Channels)</Label>
-                  <div className="flex items-center gap-3">
-                    <Input 
-                      type="number"
-                      value={leftForm.capacityMode === "unrestricted" ? "" : leftForm.capacityLimit} 
-                      onChange={(e) => setLeftForm({...leftForm, capacityLimit: e.target.value, capacityMode: "capped"})}
-                      className="h-8 w-24"
-                      disabled={leftForm.capacityMode === "unrestricted"}
-                      data-testid="input-capacity"
-                    />
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        checked={leftForm.capacityMode === "unrestricted"}
-                        onCheckedChange={(checked) => setLeftForm({...leftForm, capacityMode: checked ? "unrestricted" : "capped"})}
-                        data-testid="checkbox-unrestricted"
-                      />
-                      <Label className="text-xs whitespace-nowrap">Unrestricted</Label>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Capacity</span>
+                  <div className="flex items-center gap-2">
+                    <Input type="number" value={leftForm.capacityMode === "unrestricted" ? "" : leftForm.capacityLimit} onChange={(e) => setLeftForm({...leftForm, capacityLimit: e.target.value, capacityMode: "capped"})} className="h-7 w-16 text-xs" disabled={leftForm.capacityMode === "unrestricted"} data-testid="input-capacity" />
+                    <div className="flex items-center gap-1">
+                      <Checkbox checked={leftForm.capacityMode === "unrestricted"} onCheckedChange={(checked) => setLeftForm({...leftForm, capacityMode: checked ? "unrestricted" : "capped"})} data-testid="checkbox-unrestricted" />
+                      <span className="text-xs">∞</span>
                     </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground text-xs">Circular Routing</Label>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Circular Routing</span>
                   <Select value={leftForm.circularRouting ? "enabled" : "disabled"} onValueChange={(v) => setLeftForm({...leftForm, circularRouting: v === "enabled"})}>
-                    <SelectTrigger className="h-8" data-testid="select-circular-routing">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs" data-testid="select-circular-routing"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="disabled">Disabled</SelectItem>
                       <SelectItem value="enabled">Enabled</SelectItem>
@@ -1347,27 +1285,27 @@ function CarrierDetailsTab({
               </>
             ) : (
               <>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Capacity</span>
-                  <span>{carrier.capacityMode === "unrestricted" ? "Unrestricted" : carrier.capacityLimit}</span>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Capacity</span>
+                  <span className="text-xs">{carrier.capacityMode === "unrestricted" ? "Unrestricted" : carrier.capacityLimit}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Circular Routing</span>
-                  <span>{carrier.circularRouting ? "Enabled" : "Disabled"}</span>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Circular Routing</span>
+                  <span className="text-xs">{carrier.circularRouting ? "Enabled" : "Disabled"}</span>
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <div className="flex justify-center gap-2">
+        <div className="pt-2">
           {isEditingLeft ? (
-            <>
-              <Button size="sm" onClick={handleSaveLeft} data-testid="button-save-left">Save</Button>
-              <Button size="sm" variant="outline" onClick={() => setIsEditingLeft(false)}>Cancel</Button>
-            </>
+            <div className="flex gap-2">
+              <Button size="sm" className="h-7 text-xs" onClick={handleSaveLeft} data-testid="button-save-left">Save</Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setIsEditingLeft(false)}>Cancel</Button>
+            </div>
           ) : (
-            <Button size="sm" variant="outline" onClick={() => setIsEditingLeft(true)} data-testid="button-edit-left">Edit</Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setIsEditingLeft(true)} data-testid="button-edit-left">Edit</Button>
           )}
         </div>
       </div>
@@ -1500,9 +1438,29 @@ function CarrierDetailsTab({
                     {currency?.code || "USD"} {parseFloat(carrier.customer24HrSpend || "0").toFixed(2)}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Limit</span>
-                  <span className="text-sm">-</span>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Limit</span>
+                  {isEditingCredit ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={creditForm.customer24HrSpendLimitUnlimited ? "" : creditForm.customer24HrSpendLimit}
+                        onChange={(e) => setCreditForm({...creditForm, customer24HrSpendLimit: e.target.value, customer24HrSpendLimitUnlimited: false})}
+                        className="h-7 w-24 text-right text-xs"
+                        disabled={creditForm.customer24HrSpendLimitUnlimited}
+                        data-testid="input-customer-24hr-limit"
+                      />
+                      <div className="flex items-center gap-1">
+                        <Checkbox 
+                          checked={creditForm.customer24HrSpendLimitUnlimited}
+                          onCheckedChange={(checked) => setCreditForm({...creditForm, customer24HrSpendLimitUnlimited: !!checked})}
+                        />
+                        <span className="text-xs">∞</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span>{carrier.customer24HrSpendLimitUnlimited ? "∞" : carrier.customer24HrSpendLimit || "-"}</span>
+                  )}
                 </div>
                 <Button variant="outline" size="sm" className="w-full h-7 text-xs" onClick={() => handleReset24HrSpend("customer")} data-testid="button-reset-customer-spend">
                   Reset Spend
@@ -1517,9 +1475,29 @@ function CarrierDetailsTab({
                     {currency?.code || "USD"} {parseFloat(carrier.supplier24HrSpend || "0").toFixed(2)}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Limit</span>
-                  <span className="text-sm">-</span>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Limit</span>
+                  {isEditingCredit ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={creditForm.supplier24HrSpendLimitUnlimited ? "" : creditForm.supplier24HrSpendLimit}
+                        onChange={(e) => setCreditForm({...creditForm, supplier24HrSpendLimit: e.target.value, supplier24HrSpendLimitUnlimited: false})}
+                        className="h-7 w-24 text-right text-xs"
+                        disabled={creditForm.supplier24HrSpendLimitUnlimited}
+                        data-testid="input-supplier-24hr-limit"
+                      />
+                      <div className="flex items-center gap-1">
+                        <Checkbox 
+                          checked={creditForm.supplier24HrSpendLimitUnlimited}
+                          onCheckedChange={(checked) => setCreditForm({...creditForm, supplier24HrSpendLimitUnlimited: !!checked})}
+                        />
+                        <span className="text-xs">∞</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span>{carrier.supplier24HrSpendLimitUnlimited ? "∞" : carrier.supplier24HrSpendLimit || "-"}</span>
+                  )}
                 </div>
                 <Button variant="outline" size="sm" className="w-full h-7 text-xs" onClick={() => handleReset24HrSpend("supplier")} data-testid="button-reset-supplier-spend">
                   Reset Spend
