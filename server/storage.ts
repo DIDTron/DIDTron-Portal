@@ -84,11 +84,13 @@ import {
   type DevTest, type InsertDevTest,
   type BillingTerm, type InsertBillingTerm,
   type CarrierInterconnect, type InsertCarrierInterconnect,
+  type CarrierService, type InsertCarrierService,
   type CarrierContact, type InsertCarrierContact,
   type CarrierCreditAlert, type InsertCarrierCreditAlert,
   customers as customersTable,
   carriers as carriersTable,
   carrierInterconnects as carrierInterconnectsTable,
+  carrierServices as carrierServicesTable,
   carrierContacts as carrierContactsTable,
   carrierCreditAlerts as carrierCreditAlertsTable,
   fileTemplates
@@ -182,11 +184,21 @@ export interface IStorage {
   upsertCarrierAssignment(assignment: InsertCarrierAssignment): Promise<CarrierAssignment>;
 
   // Carrier Interconnects
+  getAllCarrierInterconnects(): Promise<CarrierInterconnect[]>;
   getCarrierInterconnects(carrierId: string): Promise<CarrierInterconnect[]>;
   getCarrierInterconnect(id: string): Promise<CarrierInterconnect | undefined>;
   createCarrierInterconnect(interconnect: InsertCarrierInterconnect): Promise<CarrierInterconnect>;
   updateCarrierInterconnect(id: string, data: Partial<InsertCarrierInterconnect>): Promise<CarrierInterconnect | undefined>;
   deleteCarrierInterconnect(id: string): Promise<boolean>;
+
+  // Carrier Services (THE KEY LINKAGE: Interconnect → Rating Plan + Routing Plan)
+  getAllCarrierServices(): Promise<CarrierService[]>;
+  getCarrierServices(carrierId: string): Promise<CarrierService[]>;
+  getInterconnectServices(interconnectId: string): Promise<CarrierService[]>;
+  getCarrierService(id: string): Promise<CarrierService | undefined>;
+  createCarrierService(service: InsertCarrierService): Promise<CarrierService>;
+  updateCarrierService(id: string, data: Partial<InsertCarrierService>): Promise<CarrierService | undefined>;
+  deleteCarrierService(id: string): Promise<boolean>;
 
   // Carrier Contacts
   getCarrierContacts(carrierId: string): Promise<CarrierContact[]>;
@@ -1420,6 +1432,10 @@ export class MemStorage implements IStorage {
   }
 
   // Carrier Interconnects - Persisted to Database
+  async getAllCarrierInterconnects(): Promise<CarrierInterconnect[]> {
+    return await db.select().from(carrierInterconnectsTable);
+  }
+
   async getCarrierInterconnects(carrierId: string): Promise<CarrierInterconnect[]> {
     return await db.select().from(carrierInterconnectsTable).where(eq(carrierInterconnectsTable.carrierId, carrierId));
   }
@@ -1444,6 +1460,42 @@ export class MemStorage implements IStorage {
 
   async deleteCarrierInterconnect(id: string): Promise<boolean> {
     const results = await db.delete(carrierInterconnectsTable).where(eq(carrierInterconnectsTable.id, id)).returning();
+    return results.length > 0;
+  }
+
+  // Carrier Services - THE KEY LINKAGE: Interconnect → Rating Plan + Routing Plan
+  async getAllCarrierServices(): Promise<CarrierService[]> {
+    return await db.select().from(carrierServicesTable);
+  }
+
+  async getCarrierServices(carrierId: string): Promise<CarrierService[]> {
+    return await db.select().from(carrierServicesTable).where(eq(carrierServicesTable.carrierId, carrierId));
+  }
+
+  async getInterconnectServices(interconnectId: string): Promise<CarrierService[]> {
+    return await db.select().from(carrierServicesTable).where(eq(carrierServicesTable.interconnectId, interconnectId));
+  }
+
+  async getCarrierService(id: string): Promise<CarrierService | undefined> {
+    const results = await db.select().from(carrierServicesTable).where(eq(carrierServicesTable.id, id));
+    return results[0];
+  }
+
+  async createCarrierService(service: InsertCarrierService): Promise<CarrierService> {
+    const results = await db.insert(carrierServicesTable).values(service).returning();
+    return results[0];
+  }
+
+  async updateCarrierService(id: string, data: Partial<InsertCarrierService>): Promise<CarrierService | undefined> {
+    const results = await db.update(carrierServicesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(carrierServicesTable.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async deleteCarrierService(id: string): Promise<boolean> {
+    const results = await db.delete(carrierServicesTable).where(eq(carrierServicesTable.id, id)).returning();
     return results.length > 0;
   }
 

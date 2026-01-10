@@ -141,9 +141,11 @@ export const sectionConfigs: Record<string, SectionConfig> = {
   softswitch: {
     title: "Class 4 Softswitch",
     items: [
-      { id: "class4-customers", label: "Customers", route: "/admin/class4-customers", icon: Users },
-      { id: "class4-carriers", label: "Carriers", route: "/admin/class4-carriers", icon: Building2 },
-      { id: "class4-rate-cards", label: "Rate Cards", route: "/admin/class4-rate-cards", icon: CreditCard },
+      { id: "softswitch-carriers", label: "Carriers", route: "/admin/softswitch/carriers", icon: Building2 },
+      { id: "softswitch-interconnects", label: "Interconnects", route: "/admin/softswitch/interconnects", icon: Network },
+      { id: "softswitch-services", label: "Services", route: "/admin/softswitch/services", icon: Link2 },
+      { id: "softswitch-balance", label: "Balance & Spend", route: "/admin/softswitch/balance", icon: DollarSign },
+      { id: "softswitch-trunk-groups", label: "Trunk Groups", route: "/admin/softswitch/trunk-groups", icon: Layers },
     ],
   },
   "experience-manager": {

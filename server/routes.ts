@@ -25,6 +25,7 @@ import {
   insertCarrierSchema,
   insertCarrierAssignmentSchema,
   insertCarrierInterconnectSchema,
+  insertCarrierServiceSchema,
   insertCarrierContactSchema,
   insertCarrierCreditAlertSchema,
   insertRouteSchema,
@@ -5563,6 +5564,15 @@ export async function registerRoutes(
   });
 
   // Carrier Interconnects
+  app.get("/api/carrier-interconnects", async (req, res) => {
+    try {
+      const interconnects = await storage.getAllCarrierInterconnects();
+      res.json(interconnects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all carrier interconnects" });
+    }
+  });
+
   app.get("/api/carriers/:id/interconnects", async (req, res) => {
     try {
       const interconnects = await storage.getCarrierInterconnects(req.params.id);
@@ -5636,6 +5646,144 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete carrier interconnect" });
+    }
+  });
+
+  // Carrier Services - THE KEY LINKAGE: Interconnect → Rating Plan + Routing Plan
+  app.get("/api/carrier-services", async (req, res) => {
+    try {
+      const services = await storage.getAllCarrierServices();
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all carrier services" });
+    }
+  });
+
+  app.get("/api/carriers/:id/services", async (req, res) => {
+    try {
+      const services = await storage.getCarrierServices(req.params.id);
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch carrier services" });
+    }
+  });
+
+  app.get("/api/interconnects/:id/services", async (req, res) => {
+    try {
+      const services = await storage.getInterconnectServices(req.params.id);
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch interconnect services" });
+    }
+  });
+
+  app.post("/api/carriers/:carrierId/services", async (req, res) => {
+    try {
+      const parsed = insertCarrierServiceSchema.safeParse({ ...req.body, carrierId: req.params.carrierId });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      
+      // DIGITALK HIERARCHY VALIDATION: Verify interconnect belongs to this carrier
+      if (parsed.data.interconnectId) {
+        const interconnect = await storage.getCarrierInterconnect(parsed.data.interconnectId);
+        if (!interconnect) {
+          return res.status(400).json({ error: "Interconnect not found" });
+        }
+        if (interconnect.carrierId !== req.params.carrierId) {
+          return res.status(400).json({ error: "Interconnect does not belong to this carrier - violates Carrier → Interconnect → Service hierarchy" });
+        }
+        // Validate direction compatibility: Service direction should align with interconnect
+        const serviceDirection = parsed.data.direction || "ingress";
+        const interconnectDirection = interconnect.direction || "both";
+        if (interconnectDirection !== "both" && interconnectDirection !== serviceDirection) {
+          return res.status(400).json({ 
+            error: `Service direction '${serviceDirection}' incompatible with interconnect direction '${interconnectDirection}'` 
+          });
+        }
+      }
+      
+      const service = await storage.createCarrierService(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "carrier_services",
+        recordId: service.id,
+        newValues: service,
+      });
+      res.status(201).json(service);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create carrier service" });
+    }
+  });
+
+  app.get("/api/services/:id", async (req, res) => {
+    try {
+      const service = await storage.getCarrierService(req.params.id);
+      if (!service) return res.status(404).json({ error: "Service not found" });
+      res.json(service);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch service" });
+    }
+  });
+
+  app.put("/api/services/:id", async (req, res) => {
+    try {
+      const oldService = await storage.getCarrierService(req.params.id);
+      if (!oldService) return res.status(404).json({ error: "Service not found" });
+      const parsed = insertCarrierServiceSchema.partial().safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      
+      // DIGITALK HIERARCHY VALIDATION: If changing interconnect, verify it belongs to the carrier
+      const interconnectId = parsed.data.interconnectId || oldService.interconnectId;
+      const carrierId = parsed.data.carrierId || oldService.carrierId;
+      
+      if (interconnectId) {
+        const interconnect = await storage.getCarrierInterconnect(interconnectId);
+        if (!interconnect) {
+          return res.status(400).json({ error: "Interconnect not found" });
+        }
+        if (interconnect.carrierId !== carrierId) {
+          return res.status(400).json({ error: "Interconnect does not belong to this carrier - violates Carrier → Interconnect → Service hierarchy" });
+        }
+        // Validate direction compatibility
+        const serviceDirection = parsed.data.direction || oldService.direction || "ingress";
+        const interconnectDirection = interconnect.direction || "both";
+        if (interconnectDirection !== "both" && interconnectDirection !== serviceDirection) {
+          return res.status(400).json({ 
+            error: `Service direction '${serviceDirection}' incompatible with interconnect direction '${interconnectDirection}'` 
+          });
+        }
+      }
+      
+      const service = await storage.updateCarrierService(req.params.id, parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "carrier_services",
+        recordId: req.params.id,
+        oldValues: oldService,
+        newValues: service,
+      });
+      res.json(service);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update carrier service" });
+    }
+  });
+
+  app.delete("/api/services/:id", async (req, res) => {
+    try {
+      const oldService = await storage.getCarrierService(req.params.id);
+      if (!oldService) return res.status(404).json({ error: "Service not found" });
+      await storage.deleteCarrierService(req.params.id);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "carrier_services",
+        recordId: req.params.id,
+        oldValues: oldService,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete carrier service" });
     }
   });
 

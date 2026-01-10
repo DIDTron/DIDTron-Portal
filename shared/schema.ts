@@ -375,6 +375,28 @@ export const carrierInterconnects = pgTable("carrier_interconnects", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Carrier Services - THE KEY LINKAGE: Interconnect → Rating Plan + Routing Plan
+export const carrierServices = pgTable("carrier_services", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  carrierId: varchar("carrier_id").references(() => carriers.id).notNull(),
+  interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull(),
+  name: text("name").notNull(),
+  direction: text("direction").default("ingress"),
+  status: routeStatusEnum("status").default("active"),
+  ratingPlanId: varchar("rating_plan_id").references(() => rateCards.id),
+  routingPlanId: varchar("routing_plan_id"),
+  techPrefix: text("tech_prefix"),
+  priority: integer("priority").default(1),
+  weight: integer("weight").default(100),
+  capacityMode: capacityModeEnum("capacity_mode").default("unrestricted"),
+  capacityLimit: integer("capacity_limit"),
+  enforcementPolicy: text("enforcement_policy"),
+  scriptForgeId: text("script_forge_id"),
+  connexcsServiceId: text("connexcs_service_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const carrierContacts = pgTable("carrier_contacts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   carrierId: varchar("carrier_id").references(() => carriers.id).notNull(),
@@ -2617,6 +2639,7 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({ id: tru
 });
 export const insertCarrierSchema = createInsertSchema(carriers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierInterconnectSchema = createInsertSchema(carrierInterconnects).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCarrierServiceSchema = createInsertSchema(carrierServices).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierContactSchema = createInsertSchema(carrierContacts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierCreditAlertSchema = createInsertSchema(carrierCreditAlerts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierAssignmentSchema = createInsertSchema(carrierAssignments).omit({ id: true, createdAt: true });
@@ -2669,6 +2692,8 @@ export type InsertCarrierAssignment = z.infer<typeof insertCarrierAssignmentSche
 export type CarrierAssignment = typeof carrierAssignments.$inferSelect;
 export type InsertCarrierInterconnect = z.infer<typeof insertCarrierInterconnectSchema>;
 export type CarrierInterconnect = typeof carrierInterconnects.$inferSelect;
+export type InsertCarrierService = z.infer<typeof insertCarrierServiceSchema>;
+export type CarrierService = typeof carrierServices.$inferSelect;
 export type InsertCarrierContact = z.infer<typeof insertCarrierContactSchema>;
 export type CarrierContact = typeof carrierContacts.$inferSelect;
 export type InsertCarrierCreditAlert = z.infer<typeof insertCarrierCreditAlertSchema>;

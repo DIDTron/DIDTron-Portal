@@ -67,3 +67,36 @@ ConnexCS servers have feature flags that indicate enabled capabilities:
 
 ### Rate Limiting
 ConnexCS enforces a strict 2-session concurrent limit. All DIDTron sync operations are serialized with 5-second delays between entity types to avoid session overflow errors.
+
+## Digitalk Carrier Hierarchy (Core Concept)
+
+The Class 4 Softswitch module implements the Digitalk Carrier Cloud Manager hierarchy:
+
+### Entity Hierarchy
+1. **Carrier** - Commercial entity (type: Customer/Supplier/Bilateral) with balance, credit limits
+2. **Interconnect** - SIP trunk (direction: Ingress/Egress, tech prefix, IP auth, codecs, capacity)
+3. **Service** - THE KEY LINKAGE connecting Interconnect → Rating Plan + Routing Plan
+
+### Key Concepts
+- **Tech Prefix (#55)**: Ingestion tag prepended to dialed number to identify which carrier sent the call
+- **Rate Selection**: Happens at SERVICE level (not carrier or interconnect level)
+- **Bilateral Carriers**: Single commercial entity with BOTH customer (ingress) and supplier (egress) interconnects, shared balance/contacts
+- **Direction**: Ingress (customer terminating to us) vs Egress (supplier terminating from us)
+
+### Schema: carrier_services Table
+- `carrierId` - Parent carrier (Digitalk: Customer/Carrier)
+- `interconnectId` - Parent interconnect (SIP trunk)
+- `ratingPlanId` - Links to rate card for pricing
+- `routingPlanId` - Links to routing plan for call routing
+- `direction` - ingress/egress
+- `techPrefix` - Tech prefix for call identification
+- `priority` / `weight` - For LCR and load balancing
+- `capacityMode` / `capacityLimit` - CPS controls
+- `enforcementPolicy` - Policy hooks
+- `scriptForgeId` - ScriptForge integration
+
+### Backend Validation
+The API enforces Digitalk hierarchy rules:
+1. Interconnect must belong to the same carrier
+2. Service direction must be compatible with interconnect direction
+3. Prevents cross-carrier service linkage

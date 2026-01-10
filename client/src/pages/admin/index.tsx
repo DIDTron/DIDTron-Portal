@@ -62,7 +62,7 @@ import AiVoiceCallLogsPage from "./ai-voice-call-logs";
 import AiVoiceAnalyticsPage from "./ai-voice-analytics";
 import AiVoiceSettingsPage from "./ai-voice-settings";
 import AiVoiceAssignmentsPage from "./ai-voice-assignments";
-import { Class4CustomersPage, Class4CarriersPage, Class4RateCardsPage } from "./class4-softswitch";
+import { SoftswitchCarriersPage, SoftswitchInterconnectsPage, SoftswitchServicesPage, SoftswitchBalancePage, SoftswitchTrunkGroupsPage } from "./softswitch";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
 import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization, GlobalSettingsAZDatabase } from "./global-settings";
@@ -145,9 +145,11 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/ai-voice/billing": { section: "ai-voice", subItem: "ai-voice-billing" },
   "/admin/ai-voice/settings": { section: "ai-voice", subItem: "ai-voice-settings" },
   "/admin/ai-voice/assignments": { section: "ai-voice", subItem: "ai-voice-assignments" },
-  "/admin/class4-customers": { section: "softswitch", subItem: "class4-customers" },
-  "/admin/class4-carriers": { section: "softswitch", subItem: "class4-carriers" },
-  "/admin/class4-rate-cards": { section: "softswitch", subItem: "class4-rate-cards" },
+  "/admin/softswitch/carriers": { section: "softswitch", subItem: "softswitch-carriers" },
+  "/admin/softswitch/interconnects": { section: "softswitch", subItem: "softswitch-interconnects" },
+  "/admin/softswitch/services": { section: "softswitch", subItem: "softswitch-services" },
+  "/admin/softswitch/balance": { section: "softswitch", subItem: "softswitch-balance" },
+  "/admin/softswitch/trunk-groups": { section: "softswitch", subItem: "softswitch-trunk-groups" },
   "/admin/experience-manager": { section: "experience-manager", subItem: "em-dashboard" },
   "/admin/experience-manager/marketing": { section: "experience-manager", subItem: "em-marketing" },
   "/admin/experience-manager/portal-themes": { section: "experience-manager", subItem: "em-portal-themes" },
@@ -290,9 +292,11 @@ export default function AdminLayout() {
                 <Route path="/admin/ai-voice/billing" component={AiVoiceBillingPage} />
                 <Route path="/admin/ai-voice/settings" component={AiVoiceSettingsPage} />
                 <Route path="/admin/ai-voice/assignments" component={AiVoiceAssignmentsPage} />
-                <Route path="/admin/class4-customers" component={Class4CustomersPage} />
-                <Route path="/admin/class4-carriers" component={Class4CarriersPage} />
-                <Route path="/admin/class4-rate-cards" component={Class4RateCardsPage} />
+                <Route path="/admin/softswitch/carriers" component={SoftswitchCarriersPage} />
+                <Route path="/admin/softswitch/interconnects" component={SoftswitchInterconnectsPage} />
+                <Route path="/admin/softswitch/services" component={SoftswitchServicesPage} />
+                <Route path="/admin/softswitch/balance" component={SoftswitchBalancePage} />
+                <Route path="/admin/softswitch/trunk-groups" component={SoftswitchTrunkGroupsPage} />
                 <Route path="/admin/experience-manager" component={ExperienceManagerPage} />
                 <Route path="/admin/experience-manager/marketing" component={EMMarketingPage} />
                 <Route path="/admin/experience-manager/portal-themes" component={EMPortalThemesPage} />
