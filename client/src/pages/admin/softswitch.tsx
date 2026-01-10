@@ -3,20 +3,12 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import {
   Select,
   SelectContent,
@@ -32,834 +24,573 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Plus, Pencil, Trash2, Building2, Network, Link2, DollarSign, 
-  MoreVertical, Search, Filter, RefreshCw, ChevronDown, 
-  ArrowUpDown, Phone, PhoneIncoming, PhoneOutgoing, Users,
-  AlertCircle, CheckCircle2, XCircle, Clock, Layers, Eye
-} from "lucide-react";
-import type { Carrier, CarrierInterconnect, CarrierService, RateCard } from "@shared/schema";
+import { Plus, Building2, Pencil, Trash2, ChevronLeft, Lightbulb, X, Save } from "lucide-react";
+import { Link } from "wouter";
+import type { Carrier, Currency } from "@shared/schema";
 
-type CarrierType = "customer" | "supplier" | "bilateral";
-type CarrierStatus = "active" | "inactive" | "suspended";
-
-interface CarrierFormData {
-  name: string;
-  code: string;
-  partnerType: CarrierType;
-  description: string;
-  status: CarrierStatus;
-  billingEmail: string;
-  technicalEmail: string;
-  currencyCode: string;
-  customerCreditType: "prepaid" | "postpaid";
-  customerCreditLimit: string;
-  supplierCreditType: "prepaid" | "postpaid";
-  supplierCreditLimit: string;
-}
-
-const defaultCarrierForm: CarrierFormData = {
-  name: "",
-  code: "",
-  partnerType: "bilateral",
-  description: "",
-  status: "active",
-  billingEmail: "",
-  technicalEmail: "",
-  currencyCode: "USD",
-  customerCreditType: "postpaid",
-  customerCreditLimit: "0",
-  supplierCreditType: "postpaid",
-  supplierCreditLimit: "0",
-};
-
-function CarrierTypeIcon({ type }: { type: string }) {
-  switch (type) {
-    case "customer":
-      return <PhoneIncoming className="h-4 w-4 text-green-500" />;
-    case "supplier":
-      return <PhoneOutgoing className="h-4 w-4 text-blue-500" />;
-    case "bilateral":
-      return <Phone className="h-4 w-4 text-purple-500" />;
-    default:
-      return <Building2 className="h-4 w-4 text-muted-foreground" />;
-  }
-}
-
-function StatusBadge({ status }: { status: string }) {
-  switch (status) {
-    case "active":
-      return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Active</Badge>;
-    case "inactive":
-      return <Badge variant="secondary">Inactive</Badge>;
-    case "suspended":
-      return <Badge variant="destructive">Suspended</Badge>;
-    default:
-      return <Badge variant="outline">{status}</Badge>;
-  }
-}
-
-function DirectionBadge({ direction }: { direction: string }) {
-  switch (direction?.toLowerCase()) {
-    case "ingress":
-      return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Ingress</Badge>;
-    case "egress":
-      return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Egress</Badge>;
-    case "both":
-      return <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">Both</Badge>;
-    default:
-      return <Badge variant="outline">{direction || "N/A"}</Badge>;
-  }
-}
-
-type ViewMode = "carriers" | "interconnects" | "services";
+type ViewMode = "list" | "add";
 
 export function SoftswitchCarriersPage() {
   const { toast } = useToast();
-  const [currentView, setCurrentView] = useState<ViewMode>("carriers");
-  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
-  const [form, setForm] = useState<CarrierFormData>(defaultCarrierForm);
-  const [filterType, setFilterType] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    partnerType: "customer" as "customer" | "supplier" | "bilateral",
+    primaryCurrencyId: "",
+    capacityLimit: "0",
+    capacityUnrestricted: true,
+    customerCreditType: "postpaid" as "prepaid" | "postpaid",
+    customerCreditLimit: "0.00",
+    customerCreditUnlimited: false,
+    customerBalance: "0.00",
+    supplierCreditType: "postpaid" as "prepaid" | "postpaid",
+    supplierCreditLimit: "0.00",
+    supplierCreditUnlimited: false,
+    supplierBalance: "0.00",
+  });
 
-  const { data: carriers = [], isLoading, refetch, isFetching } = useQuery<Carrier[]>({
+  const { data: carriers, isLoading } = useQuery<Carrier[]>({
     queryKey: ["/api/carriers"],
   });
 
-  const { data: allInterconnects = [], isLoading: loadingInterconnects } = useQuery<CarrierInterconnect[]>({
-    queryKey: ["/api/interconnects"],
+  const { data: currencies } = useQuery<Currency[]>({
+    queryKey: ["/api/currencies"],
   });
 
-  const { data: allServices = [], isLoading: loadingServices } = useQuery<CarrierService[]>({
-    queryKey: ["/api/services"],
-  });
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems: paginatedCarriers,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(carriers || []);
 
   const createMutation = useMutation({
-    mutationFn: async (data: CarrierFormData) => {
-      const res = await apiRequest("POST", "/api/carriers", data);
+    mutationFn: async (data: typeof formData) => {
+      const res = await apiRequest("POST", "/api/carriers", {
+        name: data.name,
+        code: data.name.toUpperCase().replace(/\s+/g, "_").slice(0, 10),
+        partnerType: data.partnerType,
+        primaryCurrencyId: data.primaryCurrencyId || null,
+        capacityMode: data.capacityUnrestricted ? "unrestricted" : "capped",
+        capacityLimit: data.capacityUnrestricted ? null : parseInt(data.capacityLimit),
+        customerCreditType: data.customerCreditType,
+        customerCreditLimit: data.customerCreditUnlimited ? "999999999" : data.customerCreditLimit,
+        customerCreditLimitUnlimited: data.customerCreditUnlimited,
+        customerBalance: data.customerBalance,
+        supplierCreditType: data.supplierCreditType,
+        supplierCreditLimit: data.supplierCreditUnlimited ? "999999999" : data.supplierCreditLimit,
+        supplierCreditLimitUnlimited: data.supplierCreditUnlimited,
+        supplierBalance: data.supplierBalance,
+        status: "active",
+      });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/carriers"] });
       toast({ title: "Carrier created successfully" });
       resetForm();
+      setViewMode("list");
     },
-    onError: (error: Error) => {
-      toast({ title: "Failed to create carrier", description: error.message, variant: "destructive" });
+    onError: () => {
+      toast({ title: "Failed to create carrier", variant: "destructive" });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<CarrierFormData> }) => {
-      const res = await apiRequest("PATCH", `/api/carriers/${id}`, data);
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      const res = await apiRequest("PUT", `/api/carriers/${id}`, {
+        name: data.name,
+        partnerType: data.partnerType,
+        primaryCurrencyId: data.primaryCurrencyId || null,
+        capacityMode: data.capacityUnrestricted ? "unrestricted" : "capped",
+        capacityLimit: data.capacityUnrestricted ? null : parseInt(data.capacityLimit),
+        customerCreditType: data.customerCreditType,
+        customerCreditLimit: data.customerCreditUnlimited ? "999999999" : data.customerCreditLimit,
+        customerCreditLimitUnlimited: data.customerCreditUnlimited,
+        customerBalance: data.customerBalance,
+        supplierCreditType: data.supplierCreditType,
+        supplierCreditLimit: data.supplierCreditUnlimited ? "999999999" : data.supplierCreditLimit,
+        supplierCreditLimitUnlimited: data.supplierCreditUnlimited,
+        supplierBalance: data.supplierBalance,
+      });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/carriers"] });
       toast({ title: "Carrier updated successfully" });
       resetForm();
+      setViewMode("list");
     },
-    onError: (error: Error) => {
-      toast({ title: "Failed to update carrier", description: error.message, variant: "destructive" });
+    onError: () => {
+      toast({ title: "Failed to update carrier", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/carriers/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/carriers"] });
+      toast({ title: "Carrier deleted" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete carrier", variant: "destructive" });
     },
   });
 
   const resetForm = () => {
-    setForm(defaultCarrierForm);
+    setFormData({
+      name: "",
+      partnerType: "customer",
+      primaryCurrencyId: "",
+      capacityLimit: "0",
+      capacityUnrestricted: true,
+      customerCreditType: "postpaid",
+      customerCreditLimit: "0.00",
+      customerCreditUnlimited: false,
+      customerBalance: "0.00",
+      supplierCreditType: "postpaid",
+      supplierCreditLimit: "0.00",
+      supplierCreditUnlimited: false,
+      supplierBalance: "0.00",
+    });
     setEditingCarrier(null);
-    setIsAddOpen(false);
+  };
+
+  const handleAdd = () => {
+    resetForm();
+    setViewMode("add");
   };
 
   const handleEdit = (carrier: Carrier) => {
     setEditingCarrier(carrier);
-    setForm({
+    setFormData({
       name: carrier.name,
-      code: carrier.code,
-      partnerType: (carrier.partnerType as CarrierType) || "bilateral",
-      description: carrier.description || "",
-      status: (carrier.status as CarrierStatus) || "active",
-      billingEmail: carrier.billingEmail || "",
-      technicalEmail: carrier.technicalEmail || "",
-      currencyCode: carrier.currencyCode || "USD",
-      customerCreditType: (carrier.customerCreditType as "prepaid" | "postpaid") || "postpaid",
-      customerCreditLimit: carrier.customerCreditLimit || "0",
-      supplierCreditType: (carrier.supplierCreditType as "prepaid" | "postpaid") || "postpaid",
-      supplierCreditLimit: carrier.supplierCreditLimit || "0",
+      partnerType: (carrier.partnerType || "customer") as "customer" | "supplier" | "bilateral",
+      primaryCurrencyId: carrier.primaryCurrencyId || "",
+      capacityLimit: carrier.capacityLimit ? String(carrier.capacityLimit) : "0",
+      capacityUnrestricted: carrier.capacityMode === "unrestricted",
+      customerCreditType: (carrier.customerCreditType || "postpaid") as "prepaid" | "postpaid",
+      customerCreditLimit: carrier.customerCreditLimit || "0.00",
+      customerCreditUnlimited: carrier.customerCreditLimitUnlimited || false,
+      customerBalance: carrier.customerBalance || "0.00",
+      supplierCreditType: (carrier.supplierCreditType || "postpaid") as "prepaid" | "postpaid",
+      supplierCreditLimit: carrier.supplierCreditLimit || "0.00",
+      supplierCreditUnlimited: carrier.supplierCreditLimitUnlimited || false,
+      supplierBalance: carrier.supplierBalance || "0.00",
     });
-    setIsAddOpen(true);
+    setViewMode("add");
   };
 
-  const handleSubmit = () => {
-    if (!form.name || !form.code) {
-      toast({ title: "Name and code are required", variant: "destructive" });
-      return;
-    }
+  const handleCancel = () => {
+    resetForm();
+    setViewMode("list");
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (editingCarrier) {
-      updateMutation.mutate({ id: editingCarrier.id, data: form });
+      updateMutation.mutate({ id: editingCarrier.id, data: formData });
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate(formData);
     }
   };
 
-  const filteredCarriers = carriers.filter(carrier => {
-    if (filterType !== "all" && carrier.partnerType !== filterType) return false;
-    if (filterStatus !== "all" && carrier.status !== filterStatus) return false;
-    if (searchQuery) {
-      const search = searchQuery.toLowerCase();
-      return carrier.name.toLowerCase().includes(search) || 
-             carrier.code.toLowerCase().includes(search) ||
-             (carrier.billingEmail || "").toLowerCase().includes(search);
-    }
-    return true;
-  });
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const stats = {
-    total: carriers.length,
-    customers: carriers.filter(c => c.partnerType === "customer").length,
-    suppliers: carriers.filter(c => c.partnerType === "supplier").length,
-    bilateral: carriers.filter(c => c.partnerType === "bilateral").length,
-    active: carriers.filter(c => c.status === "active").length,
-  };
-
-  if (isLoading) {
+  // Add/Edit Form View
+  if (viewMode === "add") {
+    const selectedCurrency = currencies?.find(c => c.id === formData.primaryCurrencyId);
+    
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading carriers...</div>
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-4 p-4 border-b bg-muted/30">
+          <Button variant="ghost" size="icon" onClick={handleCancel} data-testid="button-back">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold" data-testid="text-form-title">
+              {editingCarrier ? "Edit Carrier" : "Add New Carrier"}
+            </h1>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex-1 overflow-auto p-6">
+          <div className="grid grid-cols-3 gap-6">
+            {/* Left Column - Form Fields */}
+            <div className="col-span-2 space-y-6">
+              {/* Carrier Details Section */}
+              <div className="space-y-4">
+                <h2 className="text-base font-semibold">Carrier Details</h2>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Enter carrier name"
+                      required
+                      data-testid="input-carrier-name"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select 
+                      value={formData.partnerType} 
+                      onValueChange={(v: "customer" | "supplier" | "bilateral") => setFormData({ ...formData, partnerType: v })}
+                    >
+                      <SelectTrigger data-testid="select-partner-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="customer">Customer</SelectItem>
+                        <SelectItem value="supplier">Supplier</SelectItem>
+                        <SelectItem value="bilateral">Bilateral</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Primary Currency</Label>
+                    <Select 
+                      value={formData.primaryCurrencyId} 
+                      onValueChange={(v) => setFormData({ ...formData, primaryCurrencyId: v })}
+                    >
+                      <SelectTrigger data-testid="select-currency">
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies?.map((currency) => (
+                          <SelectItem key={currency.id} value={currency.id}>
+                            {currency.code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Capacity</Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="number"
+                        value={formData.capacityLimit}
+                        onChange={(e) => setFormData({ ...formData, capacityLimit: e.target.value })}
+                        disabled={formData.capacityUnrestricted}
+                        className="w-32"
+                        data-testid="input-capacity"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="capacityUnrestricted"
+                          checked={formData.capacityUnrestricted}
+                          onCheckedChange={(checked) => setFormData({ ...formData, capacityUnrestricted: !!checked })}
+                          data-testid="checkbox-capacity-unrestricted"
+                        />
+                        <Label htmlFor="capacityUnrestricted" className="text-sm font-normal">Unrestricted</Label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Financial Details - shown for customer and bilateral */}
+              {(formData.partnerType === "customer" || formData.partnerType === "bilateral") && (
+                <div className="space-y-4">
+                  <h2 className="text-base font-semibold">Customer Financial Details</h2>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Credit Type</Label>
+                      <Select 
+                        value={formData.customerCreditType} 
+                        onValueChange={(v: "prepaid" | "postpaid") => setFormData({ ...formData, customerCreditType: v })}
+                      >
+                        <SelectTrigger data-testid="select-customer-credit-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="prepaid">Prepaid</SelectItem>
+                          <SelectItem value="postpaid">Postpaid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>{formData.customerCreditType === "postpaid" ? "Postpaid" : "Prepaid"} Credit Limit</Label>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={formData.customerCreditLimit}
+                          onChange={(e) => setFormData({ ...formData, customerCreditLimit: e.target.value })}
+                          disabled={formData.customerCreditUnlimited}
+                          className="w-32"
+                          data-testid="input-customer-credit-limit"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="customerCreditUnlimited"
+                            checked={formData.customerCreditUnlimited}
+                            onCheckedChange={(checked) => setFormData({ ...formData, customerCreditUnlimited: !!checked })}
+                            data-testid="checkbox-customer-unlimited"
+                          />
+                          <Label htmlFor="customerCreditUnlimited" className="text-sm font-normal">Unlimited</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Balance</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.customerBalance}
+                        onChange={(e) => setFormData({ ...formData, customerBalance: e.target.value })}
+                        className="w-32"
+                        data-testid="input-customer-balance"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Supplier Financial Details - shown for supplier and bilateral */}
+              {(formData.partnerType === "supplier" || formData.partnerType === "bilateral") && (
+                <div className="space-y-4">
+                  <h2 className="text-base font-semibold">Supplier Financial Details</h2>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Credit Type</Label>
+                      <Select 
+                        value={formData.supplierCreditType} 
+                        onValueChange={(v: "prepaid" | "postpaid") => setFormData({ ...formData, supplierCreditType: v })}
+                      >
+                        <SelectTrigger data-testid="select-supplier-credit-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="prepaid">Prepaid</SelectItem>
+                          <SelectItem value="postpaid">Postpaid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>{formData.supplierCreditType === "postpaid" ? "Postpaid" : "Prepaid"} Credit Limit</Label>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={formData.supplierCreditLimit}
+                          onChange={(e) => setFormData({ ...formData, supplierCreditLimit: e.target.value })}
+                          disabled={formData.supplierCreditUnlimited}
+                          className="w-32"
+                          data-testid="input-supplier-credit-limit"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="supplierCreditUnlimited"
+                            checked={formData.supplierCreditUnlimited}
+                            onCheckedChange={(checked) => setFormData({ ...formData, supplierCreditUnlimited: !!checked })}
+                            data-testid="checkbox-supplier-unlimited"
+                          />
+                          <Label htmlFor="supplierCreditUnlimited" className="text-sm font-normal">Unlimited</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Balance</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.supplierBalance}
+                        onChange={(e) => setFormData({ ...formData, supplierBalance: e.target.value })}
+                        className="w-32"
+                        data-testid="input-supplier-balance"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column - Info Box */}
+            <div>
+              <Card className="bg-muted/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-yellow-500" />
+                    Assigned Currency
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-3">
+                  <p>Assigning currency on creation of a new Carrier is mandatory.</p>
+                  <div className="text-destructive font-medium">Important:</div>
+                  <p className="text-destructive text-xs">
+                    It is not possible to change currency once the Carrier has been created. 
+                    You would need to delete the Carrier and then add a new entry with the correct currency assigned.
+                  </p>
+                  {selectedCurrency && (
+                    <div className="pt-2 border-t">
+                      <span className="text-muted-foreground">Selected: </span>
+                      <Badge variant="outline">{selectedCurrency.code}</Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Footer Buttons */}
+          <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={handleCancel} data-testid="button-cancel">
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending || !formData.name} data-testid="button-save">
+              <Save className="h-4 w-4 mr-2" />
+              {isPending ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </form>
       </div>
     );
   }
 
-  const viewTitles: Record<ViewMode, { title: string; description: string }> = {
-    carriers: { title: "Carriers", description: "Manage wholesale carrier partners (Customers, Suppliers, Bilateral)" },
-    interconnects: { title: "Interconnects", description: "All SIP trunk connections across carriers" },
-    services: { title: "Services", description: "All services with rating plan assignments" },
-  };
-
+  // List View
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-4">
-          <Select value={currentView} onValueChange={(v) => setCurrentView(v as ViewMode)}>
-            <SelectTrigger className="w-44" data-testid="select-view-mode">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="carriers">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Carriers
-                </div>
-              </SelectItem>
-              <SelectItem value="interconnects">
-                <div className="flex items-center gap-2">
-                  <Network className="h-4 w-4" />
-                  Interconnects
-                </div>
-              </SelectItem>
-              <SelectItem value="services">
-                <div className="flex items-center gap-2">
-                  <Link2 className="h-4 w-4" />
-                  Services
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <div>
-            <h1 className="text-2xl font-semibold">{viewTitles[currentView].title}</h1>
-            <p className="text-muted-foreground">{viewTitles[currentView].description}</p>
-          </div>
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-carriers-title">Carriers</h1>
+          <p className="text-muted-foreground">Manage carrier connections for the Class 4 Softswitch</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            data-testid="button-refresh-carriers"
-          >
-            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-          </Button>
-          {currentView === "carriers" && (
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-add-carrier" onClick={resetForm}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Carrier
-                </Button>
-              </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editingCarrier ? "Edit Carrier" : "Add Carrier"}</DialogTitle>
-                <DialogDescription>Configure a carrier partner for voice termination</DialogDescription>
-              </DialogHeader>
-              
-              <Tabs defaultValue="general" className="mt-4">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="general">General</TabsTrigger>
-                  <TabsTrigger value="billing">Billing</TabsTrigger>
-                  <TabsTrigger value="credit">Credit Limits</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="general" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Carrier Name *</Label>
-                      <Input
-                        id="name"
-                        data-testid="input-carrier-name"
-                        value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
-                        placeholder="ACME Telecom"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="code">Carrier Code *</Label>
-                      <Input
-                        id="code"
-                        data-testid="input-carrier-code"
-                        value={form.code}
-                        onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                        placeholder="ACME01"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="partnerType">Partner Type</Label>
-                      <Select value={form.partnerType} onValueChange={(v) => setForm({ ...form, partnerType: v as CarrierType })}>
-                        <SelectTrigger data-testid="select-partner-type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="customer">Customer (Ingress)</SelectItem>
-                          <SelectItem value="supplier">Supplier (Egress)</SelectItem>
-                          <SelectItem value="bilateral">Bilateral (Both)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        {form.partnerType === "customer" && "Sends calls TO you (ingress traffic)"}
-                        {form.partnerType === "supplier" && "Receives calls FROM you (egress traffic)"}
-                        {form.partnerType === "bilateral" && "Both sends and receives calls"}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as CarrierStatus })}>
-                        <SelectTrigger data-testid="select-status">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="suspended">Suspended</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Input
-                      id="description"
-                      data-testid="input-description"
-                      value={form.description}
-                      onChange={(e) => setForm({ ...form, description: e.target.value })}
-                      placeholder="Premium tier voice carrier for US/CA destinations"
-                    />
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="billing" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="billingEmail">Billing Email</Label>
-                      <Input
-                        id="billingEmail"
-                        type="email"
-                        data-testid="input-billing-email"
-                        value={form.billingEmail}
-                        onChange={(e) => setForm({ ...form, billingEmail: e.target.value })}
-                        placeholder="billing@carrier.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="technicalEmail">Technical Email</Label>
-                      <Input
-                        id="technicalEmail"
-                        type="email"
-                        data-testid="input-technical-email"
-                        value={form.technicalEmail}
-                        onChange={(e) => setForm({ ...form, technicalEmail: e.target.value })}
-                        placeholder="noc@carrier.com"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="currencyCode">Currency</Label>
-                    <Select value={form.currencyCode} onValueChange={(v) => setForm({ ...form, currencyCode: v })}>
-                      <SelectTrigger data-testid="select-currency">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="credit" className="space-y-4 mt-4">
-                  {(form.partnerType === "customer" || form.partnerType === "bilateral") && (
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <PhoneIncoming className="h-4 w-4 text-green-500" />
-                          Customer Credit (Ingress)
-                        </CardTitle>
-                        <CardDescription className="text-xs">Credit settings when this carrier sends calls to you</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Credit Type</Label>
-                            <Select value={form.customerCreditType} onValueChange={(v) => setForm({ ...form, customerCreditType: v as "prepaid" | "postpaid" })}>
-                              <SelectTrigger data-testid="select-customer-credit-type">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="prepaid">Prepaid</SelectItem>
-                                <SelectItem value="postpaid">Postpaid</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Credit Limit</Label>
-                            <Input
-                              type="number"
-                              data-testid="input-customer-credit-limit"
-                              value={form.customerCreditLimit}
-                              onChange={(e) => setForm({ ...form, customerCreditLimit: e.target.value })}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {(form.partnerType === "supplier" || form.partnerType === "bilateral") && (
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <PhoneOutgoing className="h-4 w-4 text-blue-500" />
-                          Supplier Credit (Egress)
-                        </CardTitle>
-                        <CardDescription className="text-xs">Credit settings when you send calls to this carrier</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Credit Type</Label>
-                            <Select value={form.supplierCreditType} onValueChange={(v) => setForm({ ...form, supplierCreditType: v as "prepaid" | "postpaid" })}>
-                              <SelectTrigger data-testid="select-supplier-credit-type">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="prepaid">Prepaid</SelectItem>
-                                <SelectItem value="postpaid">Postpaid</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Credit Limit</Label>
-                            <Input
-                              type="number"
-                              data-testid="input-supplier-credit-limit"
-                              value={form.supplierCreditLimit}
-                              onChange={(e) => setForm({ ...form, supplierCreditLimit: e.target.value })}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-              </Tabs>
-              
-              <DialogFooter className="mt-6">
-                <Button variant="outline" onClick={resetForm}>Cancel</Button>
-                <Button
-                  data-testid="button-save-carrier"
-                  onClick={handleSubmit}
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                >
-                  {createMutation.isPending || updateMutation.isPending ? "Saving..." : "Save Carrier"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          )}
-        </div>
-      </div>
-
-      {currentView === "carriers" && (
-        <>
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Total Carriers</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-total-carriers">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Customers</CardTitle>
-            <PhoneIncoming className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-customers">{stats.customers}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Suppliers</CardTitle>
-            <PhoneOutgoing className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-suppliers">{stats.suppliers}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Bilateral</CardTitle>
-            <Phone className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-bilateral">{stats.bilateral}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-active">{stats.active}</div>
-          </CardContent>
-        </Card>
+        <Button onClick={handleAdd} data-testid="button-add-carrier">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Carrier
+        </Button>
       </div>
 
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <CardTitle>Carrier Partners</CardTitle>
-              <CardDescription>All carriers configured in the softswitch</CardDescription>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search carriers..." 
-                  className="pl-8 w-64"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  data-testid="input-search-carriers"
-                />
-              </div>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-36" data-testid="select-filter-type">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="customer">Customer</SelectItem>
-                  <SelectItem value="supplier">Supplier</SelectItem>
-                  <SelectItem value="bilateral">Bilateral</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-32" data-testid="select-filter-status">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {filteredCarriers.length === 0 ? (
-            <div className="text-center py-12">
-              <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium mb-2">No Carriers Found</h3>
-              <p className="text-muted-foreground mb-4">
-                {carriers.length === 0 ? "Add your first carrier partner" : "No carriers match your filters"}
-              </p>
-              {carriers.length === 0 && (
-                <Button data-testid="button-create-first" onClick={() => setIsAddOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Carrier
-                </Button>
-              )}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10"></TableHead>
-                  <TableHead>Carrier</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Interconnects</TableHead>
-                  <TableHead>Balance</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-24">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCarriers.map(carrier => (
-                  <TableRow key={carrier.id} data-testid={`row-carrier-${carrier.id}`}>
-                    <TableCell>
-                      <CarrierTypeIcon type={carrier.partnerType || "bilateral"} />
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{carrier.name}</div>
-                        <div className="text-sm text-muted-foreground">{carrier.code}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {carrier.partnerType || "bilateral"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Network className="h-4 w-4 text-muted-foreground" />
-                        <span>0</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {carrier.partnerType === "customer" || carrier.partnerType === "bilateral" ? (
-                          <div className="flex items-center gap-1">
-                            <span className="text-green-600">${carrier.customerBalance || "0.00"}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <span className="text-blue-600">${carrier.supplierBalance || "0.00"}</span>
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={carrier.status || "active"} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost" data-testid={`button-actions-${carrier.id}`}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => window.location.href = `/admin/carriers/${carrier.id}`}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(carrier)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-8 text-center text-muted-foreground">Loading...</div>
+          ) : carriers && carriers.length > 0 ? (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Currency</TableHead>
+                    <TableHead className="text-right">Customer Balance</TableHead>
+                    <TableHead className="text-right">Supplier Balance</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-24">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedCarriers.map((carrier) => (
+                    <TableRow 
+                      key={carrier.id} 
+                      data-testid={`row-carrier-${carrier.id}`}
+                    >
+                      <TableCell className="font-medium">
+                        <Link href={`/admin/carriers/${carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                          {carrier.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          carrier.partnerType === "bilateral" ? "default" :
+                          carrier.partnerType === "supplier" ? "secondary" : "outline"
+                        }>
+                          {carrier.partnerType === "bilateral" ? "Bilateral" :
+                           carrier.partnerType === "supplier" ? "Supplier" : "Customer"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {currencies?.find(c => c.id === carrier.primaryCurrencyId)?.code || "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") ? (
+                          <span className={parseFloat(carrier.customerBalance || "0") >= 0 ? "text-green-600" : "text-red-600"}>
+                            {parseFloat(carrier.customerBalance || "0").toFixed(2)}
+                          </span>
+                        ) : "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") ? (
+                          <span className={parseFloat(carrier.supplierBalance || "0") <= 0 ? "text-green-600" : "text-red-600"}>
+                            {parseFloat(carrier.supplierBalance || "0").toFixed(2)}
+                          </span>
+                        ) : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={carrier.status === "active" ? "default" : "secondary"}>
+                          {carrier.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => handleEdit(carrier)} data-testid={`button-edit-${carrier.id}`}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(carrier.id)} data-testid={`button-delete-${carrier.id}`}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </>
+          ) : (
+            <div className="p-8 text-center">
+              <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-medium mb-1">No carriers configured</h3>
+              <p className="text-sm text-muted-foreground mb-4">Add carrier connections for the Class 4 Softswitch</p>
+              <Button onClick={handleAdd} data-testid="button-add-first-carrier">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Carrier
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
-        </>
-      )}
-
-      {currentView === "interconnects" && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <CardTitle>All Interconnects</CardTitle>
-                <CardDescription>SIP trunk connections across all carriers</CardDescription>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search interconnects..." 
-                    className="pl-8 w-64"
-                    data-testid="input-search-interconnects"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loadingInterconnects ? (
-              <div className="text-center py-12">
-                <div className="text-muted-foreground">Loading interconnects...</div>
-              </div>
-            ) : allInterconnects.length === 0 ? (
-              <div className="text-center py-12">
-                <Network className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">No Interconnects Found</h3>
-                <p className="text-muted-foreground mb-4">
-                  Add interconnects from the Carrier Detail page
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Carrier</TableHead>
-                    <TableHead>Interconnect Name</TableHead>
-                    <TableHead>Direction</TableHead>
-                    <TableHead>Tech Prefix</TableHead>
-                    <TableHead>Capacity</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allInterconnects.map(ic => {
-                    const carrier = carriers.find(c => c.id === ic.carrierId);
-                    return (
-                      <TableRow key={ic.id} data-testid={`row-interconnect-${ic.id}`}>
-                        <TableCell>
-                          <div className="font-medium">{carrier?.name || "Unknown"}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">{ic.name}</div>
-                        </TableCell>
-                        <TableCell>
-                          <DirectionBadge direction={ic.direction || "ingress"} />
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-sm bg-muted px-1.5 py-0.5 rounded">{ic.techPrefix || "-"}</code>
-                        </TableCell>
-                        <TableCell>{ic.capacity || "Unlimited"}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={ic.status || "active"} />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {currentView === "services" && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <CardTitle>All Services</CardTitle>
-                <CardDescription>Rating and routing plan assignments across all interconnects</CardDescription>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search services..." 
-                    className="pl-8 w-64"
-                    data-testid="input-search-services"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loadingServices ? (
-              <div className="text-center py-12">
-                <div className="text-muted-foreground">Loading services...</div>
-              </div>
-            ) : allServices.length === 0 ? (
-              <div className="text-center py-12">
-                <Link2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">No Services Found</h3>
-                <p className="text-muted-foreground mb-4">
-                  Add services from the Interconnect Detail page
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Service Name</TableHead>
-                    <TableHead>Interconnect</TableHead>
-                    <TableHead>Carrier</TableHead>
-                    <TableHead>Rating Plan</TableHead>
-                    <TableHead>Routing Plan</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allServices.map(svc => {
-                    const interconnect = allInterconnects.find(ic => ic.id === svc.interconnectId);
-                    const carrier = carriers.find(c => c.id === svc.carrierId);
-                    return (
-                      <TableRow key={svc.id} data-testid={`row-service-${svc.id}`}>
-                        <TableCell>
-                          <div className="font-medium">{svc.name}</div>
-                        </TableCell>
-                        <TableCell>{interconnect?.name || "Unknown"}</TableCell>
-                        <TableCell>{carrier?.name || "Unknown"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{svc.ratingPlanId ? `Plan #${svc.ratingPlanId}` : "None"}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{svc.routingPlanId ? `Plan #${svc.routingPlanId}` : "None"}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={svc.status || "active"} />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
