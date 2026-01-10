@@ -281,7 +281,12 @@ const sectionDefaultItems: Record<string, { id: string; label: string; route: st
     { id: "channel-plans", label: "Channel Plans", route: "/admin/channel-plans" },
     { id: "routes", label: "Routes", route: "/admin/routes" },
   ],
-  "wholesale-partners": [{ id: "wholesale-partners", label: "Partners", route: "/admin/carriers" }],
+  "wholesale-partners": [
+    { id: "wholesale-partners", label: "Partners", route: "/admin/carriers" },
+    { id: "wholesale-customers", label: "Customers", route: "/admin/wholesale/customers" },
+    { id: "wholesale-customer-rates", label: "Customer Rates", route: "/admin/wholesale/customer-rates" },
+    { id: "wholesale-did-countries", label: "DID Countries", route: "/admin/wholesale/did-countries" },
+  ],
   "rate-cards": [
     { id: "customer-rates", label: "Customer Rates", route: "/admin/rate-cards/customer" },
     { id: "carrier-rates", label: "Carrier Rates", route: "/admin/rate-cards/carrier" },
