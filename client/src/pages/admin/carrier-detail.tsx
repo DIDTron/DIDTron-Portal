@@ -1310,229 +1310,197 @@ function CarrierDetailsTab({
         </div>
       </div>
 
-      <div className="space-y-6 min-w-[320px]">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Credit Control</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
-              <div className="space-y-2 p-3 rounded-md bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Customer</span>
-                  <Badge variant={parseFloat(carrier.customerBalance || "0") < 0 ? "destructive" : "default"} className="text-xs">
-                    {currency?.code || "USD"} {parseFloat(carrier.customerBalance || "0").toFixed(2)}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Limit</span>
-                  {isEditingCredit ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={creditForm.customerCreditLimitUnlimited ? "" : creditForm.customerCreditLimit}
-                        onChange={(e) => setCreditForm({...creditForm, customerCreditLimit: e.target.value, customerCreditLimitUnlimited: false})}
-                        className="h-7 w-24 text-right text-xs"
-                        disabled={creditForm.customerCreditLimitUnlimited}
-                        data-testid="input-customer-credit-limit"
-                      />
-                      <div className="flex items-center gap-1">
-                        <Checkbox 
-                          checked={creditForm.customerCreditLimitUnlimited}
-                          onCheckedChange={(checked) => setCreditForm({...creditForm, customerCreditLimitUnlimited: !!checked})}
-                        />
-                        <span className="text-xs">∞</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span>{carrier.customerCreditLimitUnlimited ? "∞" : parseFloat(carrier.customerCreditLimit || "0").toFixed(0)}</span>
+      <div className="space-y-6">
+        <div>
+          <h3 className="font-semibold text-sm mb-3">Credit Control</h3>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-primary text-primary-foreground">
+                <TableHead className="text-xs text-primary-foreground">Direction</TableHead>
+                <TableHead className="text-xs text-primary-foreground">$/€</TableHead>
+                <TableHead className="text-xs text-primary-foreground text-right">Credit</TableHead>
+                <TableHead className="text-xs text-primary-foreground text-right">Remaining</TableHead>
+                <TableHead className="text-xs text-primary-foreground text-right">Limit</TableHead>
+                {isEditingCredit && <TableHead className="text-xs text-primary-foreground">None</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
+                <TableRow>
+                  <TableCell className="text-sm py-2">Customer</TableCell>
+                  <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                  <TableCell className="text-right py-2">
+                    <Badge variant={parseFloat(carrier.customerBalance || "0") < 0 ? "destructive" : "default"} className="text-xs">
+                      {parseFloat(carrier.customerBalance || "0").toFixed(2)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-sm py-2">
+                    {carrier.customerCreditLimitUnlimited ? "-" : (parseFloat(creditForm.customerCreditLimit || "0") - Math.abs(parseFloat(carrier.customerBalance || "0"))).toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right py-2">
+                    {isEditingCredit ? (
+                      <Input type="number" value={creditForm.customerCreditLimitUnlimited ? "" : creditForm.customerCreditLimit} onChange={(e) => setCreditForm({...creditForm, customerCreditLimit: e.target.value, customerCreditLimitUnlimited: false})} className="h-7 w-20 text-right text-xs" disabled={creditForm.customerCreditLimitUnlimited} data-testid="input-customer-credit-limit" />
+                    ) : (
+                      <span className="text-sm">{carrier.customerCreditLimitUnlimited ? "-" : parseFloat(carrier.customerCreditLimit || "0").toFixed(0)}</span>
+                    )}
+                  </TableCell>
+                  {isEditingCredit && (
+                    <TableCell className="py-2">
+                      <Checkbox checked={creditForm.customerCreditLimitUnlimited} onCheckedChange={(checked) => setCreditForm({...creditForm, customerCreditLimitUnlimited: !!checked})} />
+                    </TableCell>
                   )}
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Remaining</span>
-                  <span>{(parseFloat(creditForm.customerCreditLimit || "0") - Math.abs(parseFloat(carrier.customerBalance || "0"))).toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-            {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
-              <div className="space-y-2 p-3 rounded-md bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Supplier</span>
-                  <Badge variant="default" className="text-xs">
-                    {currency?.code || "USD"} {parseFloat(carrier.supplierBalance || "0").toFixed(2)}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Limit</span>
-                  {isEditingCredit ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={creditForm.supplierCreditLimitUnlimited ? "" : creditForm.supplierCreditLimit}
-                        onChange={(e) => setCreditForm({...creditForm, supplierCreditLimit: e.target.value, supplierCreditLimitUnlimited: false})}
-                        className="h-7 w-24 text-right text-xs"
-                        disabled={creditForm.supplierCreditLimitUnlimited}
-                        data-testid="input-supplier-credit-limit"
-                      />
-                      <div className="flex items-center gap-1">
-                        <Checkbox 
-                          checked={creditForm.supplierCreditLimitUnlimited}
-                          onCheckedChange={(checked) => setCreditForm({...creditForm, supplierCreditLimitUnlimited: !!checked})}
-                        />
-                        <span className="text-xs">∞</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span>{carrier.supplierCreditLimitUnlimited ? "∞" : parseFloat(carrier.supplierCreditLimit || "0").toFixed(0)}</span>
+                </TableRow>
+              )}
+              {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
+                <TableRow>
+                  <TableCell className="text-sm py-2">Supplier</TableCell>
+                  <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                  <TableCell className="text-right py-2">
+                    <Badge variant="default" className="text-xs">
+                      {parseFloat(carrier.supplierBalance || "0").toFixed(2)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-sm py-2">-</TableCell>
+                  <TableCell className="text-right py-2">
+                    {isEditingCredit ? (
+                      <Input type="number" value={creditForm.supplierCreditLimitUnlimited ? "" : creditForm.supplierCreditLimit} onChange={(e) => setCreditForm({...creditForm, supplierCreditLimit: e.target.value, supplierCreditLimitUnlimited: false})} className="h-7 w-20 text-right text-xs" disabled={creditForm.supplierCreditLimitUnlimited} data-testid="input-supplier-credit-limit" />
+                    ) : (
+                      <span className="text-sm">{carrier.supplierCreditLimitUnlimited ? "-" : parseFloat(carrier.supplierCreditLimit || "0").toFixed(0)}</span>
+                    )}
+                  </TableCell>
+                  {isEditingCredit && (
+                    <TableCell className="py-2">
+                      <Checkbox checked={creditForm.supplierCreditLimitUnlimited} onCheckedChange={(checked) => setCreditForm({...creditForm, supplierCreditLimitUnlimited: !!checked})} />
+                    </TableCell>
                   )}
-                </div>
-              </div>
-            )}
-            {carrier.partnerType === "bilateral" && (
-              <div className="space-y-2 p-3 rounded-md bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Bilateral</span>
-                  <Badge variant={parseFloat(carrier.bilateralBalance || "0") < 0 ? "destructive" : "default"} className="text-xs">
-                    {currency?.code || "USD"} {parseFloat(carrier.bilateralBalance || "0").toFixed(2)}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Limit</span>
-                  {isEditingCredit ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={creditForm.bilateralCreditLimitUnlimited ? "" : creditForm.bilateralCreditLimit}
-                        onChange={(e) => setCreditForm({...creditForm, bilateralCreditLimit: e.target.value, bilateralCreditLimitUnlimited: false})}
-                        className="h-7 w-24 text-right text-xs"
-                        disabled={creditForm.bilateralCreditLimitUnlimited}
-                        data-testid="input-bilateral-credit-limit"
-                      />
-                      <div className="flex items-center gap-1">
-                        <Checkbox 
-                          checked={creditForm.bilateralCreditLimitUnlimited}
-                          onCheckedChange={(checked) => setCreditForm({...creditForm, bilateralCreditLimitUnlimited: !!checked})}
-                        />
-                        <span className="text-xs">∞</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span>{carrier.bilateralCreditLimitUnlimited ? "∞" : "-"}</span>
+                </TableRow>
+              )}
+              {carrier.partnerType === "bilateral" && (
+                <TableRow>
+                  <TableCell className="text-sm py-2">Bilateral</TableCell>
+                  <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                  <TableCell className="text-right py-2">
+                    <Badge variant={parseFloat(carrier.bilateralBalance || "0") < 0 ? "destructive" : "default"} className="text-xs">
+                      {parseFloat(carrier.bilateralBalance || "0").toFixed(2)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-sm py-2">
+                    {carrier.bilateralCreditLimitUnlimited ? "-" : (parseFloat(creditForm.bilateralCreditLimit || "0") - Math.abs(parseFloat(carrier.bilateralBalance || "0"))).toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right py-2">
+                    {isEditingCredit ? (
+                      <Input type="number" value={creditForm.bilateralCreditLimitUnlimited ? "" : creditForm.bilateralCreditLimit} onChange={(e) => setCreditForm({...creditForm, bilateralCreditLimit: e.target.value, bilateralCreditLimitUnlimited: false})} className="h-7 w-20 text-right text-xs" disabled={creditForm.bilateralCreditLimitUnlimited} data-testid="input-bilateral-credit-limit" />
+                    ) : (
+                      <span className="text-sm">{carrier.bilateralCreditLimitUnlimited ? "-" : parseFloat(carrier.bilateralCreditLimit || "0").toFixed(0)}</span>
+                    )}
+                  </TableCell>
+                  {isEditingCredit && (
+                    <TableCell className="py-2">
+                      <Checkbox checked={creditForm.bilateralCreditLimitUnlimited} onCheckedChange={(checked) => setCreditForm({...creditForm, bilateralCreditLimitUnlimited: !!checked})} />
+                    </TableCell>
                   )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">24 Hour Spend Limit</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
-              <div className="space-y-2 p-3 rounded-md bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Customer</span>
-                  <Badge variant="default" className="text-xs">
-                    {currency?.code || "USD"} {parseFloat(carrier.customer24HrSpend || "0").toFixed(2)}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Limit</span>
-                  {isEditingCredit ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={creditForm.customer24HrSpendLimitUnlimited ? "" : creditForm.customer24HrSpendLimit}
-                        onChange={(e) => setCreditForm({...creditForm, customer24HrSpendLimit: e.target.value, customer24HrSpendLimitUnlimited: false})}
-                        className="h-7 w-24 text-right text-xs"
-                        disabled={creditForm.customer24HrSpendLimitUnlimited}
-                        data-testid="input-customer-24hr-limit"
-                      />
-                      <div className="flex items-center gap-1">
-                        <Checkbox 
-                          checked={creditForm.customer24HrSpendLimitUnlimited}
-                          onCheckedChange={(checked) => setCreditForm({...creditForm, customer24HrSpendLimitUnlimited: !!checked})}
-                        />
-                        <span className="text-xs">∞</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span>{carrier.customer24HrSpendLimitUnlimited ? "∞" : carrier.customer24HrSpendLimit || "-"}</span>
+        <div>
+          <h3 className="font-semibold text-sm mb-3">24 Hour Spend Limit</h3>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-primary text-primary-foreground">
+                <TableHead className="text-xs text-primary-foreground">Direction</TableHead>
+                <TableHead className="text-xs text-primary-foreground">$/€</TableHead>
+                <TableHead className="text-xs text-primary-foreground text-right">24 Hr Spend</TableHead>
+                <TableHead className="text-xs text-primary-foreground text-right">Remaining</TableHead>
+                <TableHead className="text-xs text-primary-foreground text-right">Limit</TableHead>
+                {isEditingCredit && <TableHead className="text-xs text-primary-foreground">None</TableHead>}
+                <TableHead className="text-xs text-primary-foreground"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
+                <TableRow>
+                  <TableCell className="text-sm py-2">Customer</TableCell>
+                  <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                  <TableCell className="text-right py-2">
+                    <Badge variant="default" className="text-xs">
+                      {parseFloat(carrier.customer24HrSpend || "0").toFixed(2)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-sm py-2">-</TableCell>
+                  <TableCell className="text-right py-2">
+                    {isEditingCredit ? (
+                      <Input type="number" value={creditForm.customer24HrSpendLimitUnlimited ? "" : creditForm.customer24HrSpendLimit} onChange={(e) => setCreditForm({...creditForm, customer24HrSpendLimit: e.target.value, customer24HrSpendLimitUnlimited: false})} className="h-7 w-20 text-right text-xs" disabled={creditForm.customer24HrSpendLimitUnlimited} data-testid="input-customer-24hr-limit" />
+                    ) : (
+                      <span className="text-sm">{carrier.customer24HrSpendLimitUnlimited ? "-" : carrier.customer24HrSpendLimit || "-"}</span>
+                    )}
+                  </TableCell>
+                  {isEditingCredit && (
+                    <TableCell className="py-2">
+                      <Checkbox checked={creditForm.customer24HrSpendLimitUnlimited} onCheckedChange={(checked) => setCreditForm({...creditForm, customer24HrSpendLimitUnlimited: !!checked})} />
+                    </TableCell>
                   )}
-                </div>
-                <Button variant="outline" size="sm" className="w-full h-7 text-xs" onClick={() => handleReset24HrSpend("customer")} data-testid="button-reset-customer-spend">
-                  Reset Spend
-                </Button>
-              </div>
-            )}
-            {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
-              <div className="space-y-2 p-3 rounded-md bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Supplier</span>
-                  <Badge variant="default" className="text-xs">
-                    {currency?.code || "USD"} {parseFloat(carrier.supplier24HrSpend || "0").toFixed(2)}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Limit</span>
-                  {isEditingCredit ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={creditForm.supplier24HrSpendLimitUnlimited ? "" : creditForm.supplier24HrSpendLimit}
-                        onChange={(e) => setCreditForm({...creditForm, supplier24HrSpendLimit: e.target.value, supplier24HrSpendLimitUnlimited: false})}
-                        className="h-7 w-24 text-right text-xs"
-                        disabled={creditForm.supplier24HrSpendLimitUnlimited}
-                        data-testid="input-supplier-24hr-limit"
-                      />
-                      <div className="flex items-center gap-1">
-                        <Checkbox 
-                          checked={creditForm.supplier24HrSpendLimitUnlimited}
-                          onCheckedChange={(checked) => setCreditForm({...creditForm, supplier24HrSpendLimitUnlimited: !!checked})}
-                        />
-                        <span className="text-xs">∞</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span>{carrier.supplier24HrSpendLimitUnlimited ? "∞" : carrier.supplier24HrSpendLimit || "-"}</span>
+                  <TableCell className="py-2">
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => handleReset24HrSpend("customer")} data-testid="button-reset-customer-spend">Reset</Button>
+                  </TableCell>
+                </TableRow>
+              )}
+              {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
+                <TableRow>
+                  <TableCell className="text-sm py-2">Supplier</TableCell>
+                  <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                  <TableCell className="text-right py-2">
+                    <Badge variant="default" className="text-xs">
+                      {parseFloat(carrier.supplier24HrSpend || "0").toFixed(2)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-sm py-2">-</TableCell>
+                  <TableCell className="text-right py-2">
+                    {isEditingCredit ? (
+                      <Input type="number" value={creditForm.supplier24HrSpendLimitUnlimited ? "" : creditForm.supplier24HrSpendLimit} onChange={(e) => setCreditForm({...creditForm, supplier24HrSpendLimit: e.target.value, supplier24HrSpendLimitUnlimited: false})} className="h-7 w-20 text-right text-xs" disabled={creditForm.supplier24HrSpendLimitUnlimited} data-testid="input-supplier-24hr-limit" />
+                    ) : (
+                      <span className="text-sm">{carrier.supplier24HrSpendLimitUnlimited ? "-" : carrier.supplier24HrSpendLimit || "-"}</span>
+                    )}
+                  </TableCell>
+                  {isEditingCredit && (
+                    <TableCell className="py-2">
+                      <Checkbox checked={creditForm.supplier24HrSpendLimitUnlimited} onCheckedChange={(checked) => setCreditForm({...creditForm, supplier24HrSpendLimitUnlimited: !!checked})} />
+                    </TableCell>
                   )}
-                </div>
-                <Button variant="outline" size="sm" className="w-full h-7 text-xs" onClick={() => handleReset24HrSpend("supplier")} data-testid="button-reset-supplier-spend">
-                  Reset Spend
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <TableCell className="py-2">
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => handleReset24HrSpend("supplier")} data-testid="button-reset-supplier-spend">Reset</Button>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-        {isEditingCredit && (
-          <div className="flex justify-center gap-2">
-            <Button size="sm" onClick={handleSaveCredit} data-testid="button-save-credit">Save</Button>
-            <Button size="sm" variant="outline" onClick={() => setIsEditingCredit(false)}>Cancel</Button>
-          </div>
-        )}
-        {!isEditingCredit && (
-          <div className="flex justify-center">
+        <div className="flex justify-center pt-4">
+          {isEditingCredit ? (
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSaveCredit} data-testid="button-save-credit">Save</Button>
+              <Button size="sm" variant="outline" onClick={() => setIsEditingCredit(false)}>Cancel</Button>
+            </div>
+          ) : (
             <Button size="sm" variant="outline" onClick={() => setIsEditingCredit(true)} data-testid="button-edit-credit">Edit</Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <div className="space-y-6 min-w-[340px]">
+      <div className="space-y-6 min-w-[220px]">
         {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Customer Credit Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm">Customer Credit Settings</h3>
+            <div className="space-y-2 text-sm">
               {isEditingCreditSettings ? (
                 <>
-                  <div className="grid grid-cols-[160px_1fr] items-center gap-3">
-                    <Label className="text-muted-foreground text-xs">Credit Type</Label>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-muted-foreground text-xs">Credit Type</span>
                     <Select value={settingsForm.customerCreditType} onValueChange={(v) => setSettingsForm({...settingsForm, customerCreditType: v as "prepaid" | "postpaid"})}>
-                      <SelectTrigger className="h-8" data-testid="select-customer-credit-type">
+                      <SelectTrigger className="h-7 text-xs" data-testid="select-customer-credit-type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1541,10 +1509,10 @@ function CarrierDetailsTab({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-[160px_1fr] items-center gap-3">
-                    <Label className="text-muted-foreground text-xs">Bilateral Limit Breach</Label>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-muted-foreground text-xs">Bilateral Limit Breach</span>
                     <Select value={settingsForm.customerBilateralLimitBreach} onValueChange={(v) => setSettingsForm({...settingsForm, customerBilateralLimitBreach: v})}>
-                      <SelectTrigger className="h-8" data-testid="select-bilateral-limit-breach">
+                      <SelectTrigger className="h-7 text-xs" data-testid="select-bilateral-limit-breach">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1554,10 +1522,10 @@ function CarrierDetailsTab({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-[160px_1fr] items-center gap-3">
-                    <Label className="text-muted-foreground text-xs">24 Hr Spend Limit Breach</Label>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-muted-foreground text-xs">24 Hr Spend Limit Breach</span>
                     <Select value={settingsForm.customer24HrSpendLimitBreach} onValueChange={(v) => setSettingsForm({...settingsForm, customer24HrSpendLimitBreach: v})}>
-                      <SelectTrigger className="h-8" data-testid="select-24hr-breach">
+                      <SelectTrigger className="h-7 text-xs" data-testid="select-24hr-breach">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1567,10 +1535,10 @@ function CarrierDetailsTab({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-[160px_1fr] items-center gap-3">
-                    <Label className="text-muted-foreground text-xs">24 Hr Spend Mode</Label>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-muted-foreground text-xs">24 Hr Spend Mode</span>
                     <Select value={settingsForm.customer24HrSpendMode} onValueChange={(v) => setSettingsForm({...settingsForm, customer24HrSpendMode: v})}>
-                      <SelectTrigger className="h-8" data-testid="select-24hr-mode">
+                      <SelectTrigger className="h-7 text-xs" data-testid="select-24hr-mode">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1582,39 +1550,37 @@ function CarrierDetailsTab({
                 </>
               ) : (
                 <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Credit Type</span>
-                    <span className="capitalize">{carrier.customerCreditType}</span>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-muted-foreground text-xs">Credit Type</span>
+                    <span className="text-xs capitalize">{carrier.customerCreditType}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Bilateral Limit Breach</span>
-                    <span>{carrier.customerBilateralLimitBreach || "Alert Only"}</span>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-muted-foreground text-xs">Bilateral Limit Breach</span>
+                    <span className="text-xs">{carrier.customerBilateralLimitBreach || "Alert Only"}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">24 Hr Spend Limit Breach</span>
-                    <span>{carrier.customer24HrSpendLimitBreach || "Alert Only"}</span>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-muted-foreground text-xs">24 Hr Spend Limit Breach</span>
+                    <span className="text-xs">{carrier.customer24HrSpendLimitBreach || "Alert Only"}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">24 Hr Spend Mode</span>
-                    <span>{carrier.customer24HrSpendMode || "Rolling 24 Hours"}</span>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-muted-foreground text-xs">24 Hr Spend Mode</span>
+                    <span className="text-xs">{carrier.customer24HrSpendMode || "Rolling 24 Hours"}</span>
                   </div>
                 </>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Supplier Credit Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm">Supplier Credit Settings</h3>
+            <div className="space-y-2 text-sm">
               {isEditingCreditSettings ? (
-                <div className="grid grid-cols-[160px_1fr] items-center gap-3">
-                  <Label className="text-muted-foreground text-xs">Credit Type</Label>
+                <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Credit Type</span>
                   <Select value={settingsForm.supplierCreditType} onValueChange={(v) => setSettingsForm({...settingsForm, supplierCreditType: v as "prepaid" | "postpaid"})}>
-                    <SelectTrigger className="h-8" data-testid="select-supplier-credit-type">
+                    <SelectTrigger className="h-7 text-xs" data-testid="select-supplier-credit-type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1624,23 +1590,23 @@ function CarrierDetailsTab({
                   </Select>
                 </div>
               ) : (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Credit Type</span>
-                  <span className="capitalize">{carrier.supplierCreditType}</span>
+                <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Credit Type</span>
+                  <span className="text-xs capitalize">{carrier.supplierCreditType}</span>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
-        <div className="flex justify-end gap-2">
+        <div className="pt-2">
           {isEditingCreditSettings ? (
-            <>
-              <Button size="sm" onClick={handleSaveCreditSettings} data-testid="button-save-credit-settings">Save</Button>
-              <Button size="sm" variant="outline" onClick={() => setIsEditingCreditSettings(false)}>Cancel</Button>
-            </>
+            <div className="flex gap-2">
+              <Button size="sm" className="h-7 text-xs" onClick={handleSaveCreditSettings} data-testid="button-save-credit-settings">Save</Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setIsEditingCreditSettings(false)}>Cancel</Button>
+            </div>
           ) : (
-            <Button size="sm" variant="outline" onClick={() => setIsEditingCreditSettings(true)} data-testid="button-edit-credit-settings">Edit</Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setIsEditingCreditSettings(true)} data-testid="button-edit-credit-settings">Edit</Button>
           )}
         </div>
       </div>
