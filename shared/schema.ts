@@ -2999,7 +2999,7 @@ export const connexcsImportCarriers = pgTable("connexcs_import_carriers", {
 export const connexcsImportRateCards = pgTable("connexcs_import_rate_cards", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   syncJobId: varchar("sync_job_id").references(() => connexcsSyncJobs.id),
-  connexcsId: integer("connexcs_id").notNull(),
+  connexcsId: text("connexcs_id").notNull(), // ConnexCS rate cards have string IDs like "6IAK-MhWJ"
   name: text("name").notNull(),
   direction: text("direction"),
   currency: text("currency"),

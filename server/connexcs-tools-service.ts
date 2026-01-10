@@ -91,7 +91,7 @@ interface ConnexCSCustomerFull extends ConnexCSCustomer {
 }
 
 interface ConnexCSRateCard {
-  id: number;
+  id: string | number; // ConnexCS rate cards can have string IDs like "6IAK-MhWJ"
   name: string;
   direction?: string;
   currency?: string;
@@ -517,7 +517,8 @@ class ConnexCSToolsService {
     if (this.mockMode) {
       return this.getMockRateCards();
     }
-    return this.makeAuthenticatedRequest<ConnexCSRateCard[]>(storage, "ratecard");
+    // ConnexCS uses "card" endpoint for rate cards, not "ratecard"
+    return this.makeAuthenticatedRequest<ConnexCSRateCard[]>(storage, "card");
   }
 
   async getRoutes(storage: StorageInterface): Promise<ConnexCSRoute[]> {
@@ -592,23 +593,25 @@ class ConnexCSToolsService {
     }
   }
 
-  async getRateCardById(storage: StorageInterface, id: number): Promise<ConnexCSRateCardFull | null> {
+  async getRateCardById(storage: StorageInterface, id: string | number): Promise<ConnexCSRateCardFull | null> {
     if (this.mockMode) {
       return null;
     }
     try {
-      return await this.makeAuthenticatedRequest<ConnexCSRateCardFull>(storage, `ratecard/${id}`);
+      // ConnexCS uses "card" endpoint for rate cards
+      return await this.makeAuthenticatedRequest<ConnexCSRateCardFull>(storage, `card/${id}`);
     } catch {
       return null;
     }
   }
 
-  async getRateCardRates(storage: StorageInterface, rateCardId: number): Promise<ConnexCSRate[]> {
+  async getRateCardRates(storage: StorageInterface, rateCardId: string | number): Promise<ConnexCSRate[]> {
     if (this.mockMode) {
       return [];
     }
     try {
-      return await this.makeAuthenticatedRequest<ConnexCSRate[]>(storage, `ratecard/${rateCardId}/rate`);
+      // ConnexCS uses "card" endpoint for rate cards - rates are under card/{id}/rate
+      return await this.makeAuthenticatedRequest<ConnexCSRate[]>(storage, `card/${rateCardId}/rate`);
     } catch {
       return [];
     }

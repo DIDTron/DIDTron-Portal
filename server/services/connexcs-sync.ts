@@ -308,11 +308,13 @@ export async function syncRateCards(userId?: string): Promise<SyncJobResult> {
 
     for (const cxRateCard of cxRateCards) {
       try {
+        // Convert ID to string since ConnexCS rate cards have string IDs
+        const rateCardId = String(cxRateCard.id);
         const rates = await connexcsTools.getRateCardRates(storage, cxRateCard.id);
         
         const [existing] = await db.select()
           .from(connexcsImportRateCards)
-          .where(eq(connexcsImportRateCards.connexcsId, cxRateCard.id))
+          .where(eq(connexcsImportRateCards.connexcsId, rateCardId))
           .limit(1);
 
         if (existing) {
@@ -333,7 +335,7 @@ export async function syncRateCards(userId?: string): Promise<SyncJobResult> {
         } else {
           await db.insert(connexcsImportRateCards).values({
             syncJobId: job.id,
-            connexcsId: cxRateCard.id,
+            connexcsId: rateCardId,
             name: cxRateCard.name,
             direction: cxRateCard.direction,
             currency: cxRateCard.currency,
