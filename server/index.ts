@@ -1025,6 +1025,14 @@ async function seedBillingTerms() {
       } catch (error) {
         log(`Job worker auto-start failed: ${error}`, "job-queue");
       }
+
+      // Start Open Exchange Rates hourly sync scheduler
+      try {
+        const { startScheduler } = await import("./services/open-exchange-rates");
+        startScheduler();
+      } catch (error) {
+        log(`OpenExchange scheduler failed to start: ${error}`, "scheduler");
+      }
     },
   );
 })();

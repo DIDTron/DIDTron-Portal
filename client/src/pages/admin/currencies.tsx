@@ -111,6 +111,19 @@ export default function CurrenciesPage() {
     },
   });
 
+  const syncCurrencies = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/admin/currencies/sync");
+    },
+    onSuccess: (data: { added: number; total: number; message: string }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/currencies"] });
+      toast({ title: "Currencies synced", description: data.message || `Synced ${data.total} currencies` });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const selectQuickCurrency = (currency: typeof COMMON_CURRENCIES[0]) => {
     setNewCurrency({
       code: currency.code,
@@ -154,6 +167,19 @@ export default function CurrenciesPage() {
           <p className="text-muted-foreground">Manage currencies and exchange rates for global pricing</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => syncCurrencies.mutate()}
+            disabled={syncCurrencies.isPending}
+            data-testid="button-sync-currencies"
+          >
+            {syncCurrencies.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Globe className="h-4 w-4 mr-2" />
+            )}
+            Sync Currencies
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => refreshRates.mutate()}

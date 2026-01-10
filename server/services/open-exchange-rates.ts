@@ -1,4 +1,5 @@
 import { storage } from "../storage";
+import { brevoService } from "../brevo";
 
 interface OpenExchangeCurrencies {
   [code: string]: string;
@@ -13,6 +14,11 @@ interface OpenExchangeRates {
 }
 
 const OPEN_EXCHANGE_API_BASE = "https://openexchangerates.org/api";
+const SYNC_INTERVAL_MS = 60 * 60 * 1000;
+
+let schedulerStarted = false;
+let lastSyncTime: Date | null = null;
+let lastSyncError: string | null = null;
 
 async function getAppId(): Promise<string | null> {
   if (process.env.OPEN_EXCHANGE_RATES_APP_ID) {
@@ -25,6 +31,31 @@ async function getAppId(): Promise<string | null> {
   }
   const credentials = integration.credentials as { appId?: string };
   return credentials.appId || null;
+}
+
+async function sendErrorNotification(error: string): Promise<void> {
+  try {
+    await brevoService.loadCredentialsFromStorage(storage);
+    const adminEmail = process.env.SUPER_ADMIN_EMAIL || "info@didtron.com";
+    await brevoService.sendEmail({
+      to: adminEmail,
+      subject: "[DIDTron] Open Exchange Rates Sync Failed",
+      htmlContent: `
+        <h2>Currency Sync Error</h2>
+        <p>The automatic currency sync from Open Exchange Rates failed.</p>
+        <p><strong>Error:</strong> ${error}</p>
+        <p><strong>Time:</strong> ${new Date().toISOString()}</p>
+        <p>Please check the Open Exchange Rates API configuration in Admin > Settings > Integrations.</p>
+      `,
+    });
+    console.log("[OpenExchange] Error notification sent to", adminEmail);
+  } catch (emailError) {
+    console.error("[OpenExchange] Failed to send error notification:", emailError);
+  }
+}
+
+export function getLastSyncStatus(): { lastSyncTime: Date | null; lastSyncError: string | null; schedulerActive: boolean } {
+  return { lastSyncTime, lastSyncError, schedulerActive: schedulerStarted };
 }
 
 export async function fetchCurrenciesFromOpenExchange(): Promise<{ code: string; name: string }[]> {
@@ -93,21 +124,32 @@ export async function syncCurrencies(): Promise<{ added: number; updated: number
 }
 
 export async function syncExchangeRates(): Promise<{ synced: number }> {
-  const rates = await fetchExchangeRates("USD");
-  
-  let synced = 0;
-  for (const { quoteCurrency, rate } of rates) {
-    await storage.createFxRate({
-      baseCurrency: "USD",
-      quoteCurrency,
-      rate: rate.toString(),
-      source: "openexchangerates",
-      effectiveAt: new Date(),
-    });
-    synced++;
-  }
+  try {
+    const rates = await fetchExchangeRates("USD");
+    
+    let synced = 0;
+    for (const { quoteCurrency, rate } of rates) {
+      await storage.createFxRate({
+        baseCurrency: "USD",
+        quoteCurrency,
+        rate: rate.toString(),
+        source: "openexchangerates",
+        effectiveAt: new Date(),
+      });
+      synced++;
+    }
 
-  return { synced };
+    lastSyncTime = new Date();
+    lastSyncError = null;
+    console.log(`[OpenExchange] Synced ${synced} exchange rates`);
+    return { synced };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    lastSyncError = errorMessage;
+    console.error("[OpenExchange] Exchange rate sync failed:", errorMessage);
+    await sendErrorNotification(errorMessage);
+    throw error;
+  }
 }
 
 export async function testConnection(): Promise<{ success: boolean; message: string }> {
@@ -128,4 +170,39 @@ export async function testConnection(): Promise<{ success: boolean; message: str
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
   }
+}
+
+async function runScheduledSync(): Promise<void> {
+  console.log("[OpenExchange] Running scheduled currency/rates sync...");
+  try {
+    const appId = await getAppId();
+    if (!appId) {
+      console.log("[OpenExchange] No API key configured, skipping sync");
+      return;
+    }
+
+    await syncCurrencies();
+    await syncExchangeRates();
+    console.log("[OpenExchange] Scheduled sync completed successfully");
+  } catch (error) {
+    console.error("[OpenExchange] Scheduled sync failed:", error);
+  }
+}
+
+export function startScheduler(): void {
+  if (schedulerStarted) {
+    console.log("[OpenExchange] Scheduler already running");
+    return;
+  }
+
+  console.log("[OpenExchange] Starting hourly currency sync scheduler (every 60 minutes)");
+  schedulerStarted = true;
+
+  setTimeout(() => {
+    runScheduledSync();
+  }, 5000);
+
+  setInterval(() => {
+    runScheduledSync();
+  }, SYNC_INTERVAL_MS);
 }
