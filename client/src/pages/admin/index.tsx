@@ -62,7 +62,7 @@ import AiVoiceCallLogsPage from "./ai-voice-call-logs";
 import AiVoiceAnalyticsPage from "./ai-voice-analytics";
 import AiVoiceSettingsPage from "./ai-voice-settings";
 import AiVoiceAssignmentsPage from "./ai-voice-assignments";
-import { SoftswitchCarriersPage, SoftswitchInterconnectsPage, SoftswitchServicesPage, SoftswitchBalancePage, SoftswitchTrunkGroupsPage } from "./softswitch";
+import { SoftswitchCarriersPage } from "./softswitch";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
 import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization, GlobalSettingsAZDatabase } from "./global-settings";
@@ -146,10 +146,6 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/ai-voice/settings": { section: "ai-voice", subItem: "ai-voice-settings" },
   "/admin/ai-voice/assignments": { section: "ai-voice", subItem: "ai-voice-assignments" },
   "/admin/softswitch/carriers": { section: "softswitch", subItem: "softswitch-carriers" },
-  "/admin/softswitch/interconnects": { section: "softswitch", subItem: "softswitch-interconnects" },
-  "/admin/softswitch/services": { section: "softswitch", subItem: "softswitch-services" },
-  "/admin/softswitch/balance": { section: "softswitch", subItem: "softswitch-balance" },
-  "/admin/softswitch/trunk-groups": { section: "softswitch", subItem: "softswitch-trunk-groups" },
   "/admin/experience-manager": { section: "experience-manager", subItem: "em-dashboard" },
   "/admin/experience-manager/marketing": { section: "experience-manager", subItem: "em-marketing" },
   "/admin/experience-manager/portal-themes": { section: "experience-manager", subItem: "em-portal-themes" },
@@ -293,10 +289,6 @@ export default function AdminLayout() {
                 <Route path="/admin/ai-voice/settings" component={AiVoiceSettingsPage} />
                 <Route path="/admin/ai-voice/assignments" component={AiVoiceAssignmentsPage} />
                 <Route path="/admin/softswitch/carriers" component={SoftswitchCarriersPage} />
-                <Route path="/admin/softswitch/interconnects" component={SoftswitchInterconnectsPage} />
-                <Route path="/admin/softswitch/services" component={SoftswitchServicesPage} />
-                <Route path="/admin/softswitch/balance" component={SoftswitchBalancePage} />
-                <Route path="/admin/softswitch/trunk-groups" component={SoftswitchTrunkGroupsPage} />
                 <Route path="/admin/experience-manager" component={ExperienceManagerPage} />
                 <Route path="/admin/experience-manager/marketing" component={EMMarketingPage} />
                 <Route path="/admin/experience-manager/portal-themes" component={EMPortalThemesPage} />

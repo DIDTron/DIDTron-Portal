@@ -122,8 +122,11 @@ function DirectionBadge({ direction }: { direction: string }) {
   }
 }
 
+type ViewMode = "carriers" | "interconnects" | "services";
+
 export function SoftswitchCarriersPage() {
   const { toast } = useToast();
+  const [currentView, setCurrentView] = useState<ViewMode>("carriers");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   const [form, setForm] = useState<CarrierFormData>(defaultCarrierForm);
@@ -133,6 +136,14 @@ export function SoftswitchCarriersPage() {
 
   const { data: carriers = [], isLoading, refetch, isFetching } = useQuery<Carrier[]>({
     queryKey: ["/api/carriers"],
+  });
+
+  const { data: allInterconnects = [], isLoading: loadingInterconnects } = useQuery<CarrierInterconnect[]>({
+    queryKey: ["/api/interconnects"],
+  });
+
+  const { data: allServices = [], isLoading: loadingServices } = useQuery<CarrierService[]>({
+    queryKey: ["/api/services"],
   });
 
   const createMutation = useMutation({
@@ -230,12 +241,45 @@ export function SoftswitchCarriersPage() {
     );
   }
 
+  const viewTitles: Record<ViewMode, { title: string; description: string }> = {
+    carriers: { title: "Carriers", description: "Manage wholesale carrier partners (Customers, Suppliers, Bilateral)" },
+    interconnects: { title: "Interconnects", description: "All SIP trunk connections across carriers" },
+    services: { title: "Services", description: "All services with rating plan assignments" },
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold">Carriers</h1>
-          <p className="text-muted-foreground">Manage wholesale carrier partners (Customers, Suppliers, Bilateral)</p>
+        <div className="flex items-center gap-4">
+          <Select value={currentView} onValueChange={(v) => setCurrentView(v as ViewMode)}>
+            <SelectTrigger className="w-44" data-testid="select-view-mode">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="carriers">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Carriers
+                </div>
+              </SelectItem>
+              <SelectItem value="interconnects">
+                <div className="flex items-center gap-2">
+                  <Network className="h-4 w-4" />
+                  Interconnects
+                </div>
+              </SelectItem>
+              <SelectItem value="services">
+                <div className="flex items-center gap-2">
+                  <Link2 className="h-4 w-4" />
+                  Services
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <div>
+            <h1 className="text-2xl font-semibold">{viewTitles[currentView].title}</h1>
+            <p className="text-muted-foreground">{viewTitles[currentView].description}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button 
@@ -247,13 +291,14 @@ export function SoftswitchCarriersPage() {
           >
             <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
           </Button>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button data-testid="button-add-carrier" onClick={resetForm}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Carrier
-              </Button>
-            </DialogTrigger>
+          {currentView === "carriers" && (
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-add-carrier" onClick={resetForm}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Carrier
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingCarrier ? "Edit Carrier" : "Add Carrier"}</DialogTitle>
@@ -467,9 +512,12 @@ export function SoftswitchCarriersPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
+      {currentView === "carriers" && (
+        <>
       <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
@@ -659,576 +707,159 @@ export function SoftswitchCarriersPage() {
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
+        </>
+      )}
 
-export function SoftswitchInterconnectsPage() {
-  const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterDirection, setFilterDirection] = useState<string>("all");
-
-  const { data: carriers = [], isLoading: carriersLoading } = useQuery<Carrier[]>({
-    queryKey: ["/api/carriers"],
-  });
-
-  const { data: interconnects = [], isLoading, refetch, isFetching } = useQuery<CarrierInterconnect[]>({
-    queryKey: ["/api/carrier-interconnects"],
-  });
-
-  const filteredInterconnects = interconnects.filter(ic => {
-    if (filterDirection !== "all" && ic.direction !== filterDirection) return false;
-    if (searchQuery) {
-      const search = searchQuery.toLowerCase();
-      return ic.name.toLowerCase().includes(search) || 
-             (ic.ipAddress || "").toLowerCase().includes(search) ||
-             (ic.techPrefix || "").toLowerCase().includes(search);
-    }
-    return true;
-  });
-
-  const getCarrierName = (carrierId: string) => {
-    return carriers.find(c => c.id === carrierId)?.name || "Unknown";
-  };
-
-  if (isLoading || carriersLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading interconnects...</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold">Interconnects</h1>
-          <p className="text-muted-foreground">View all SIP trunks across all carriers</p>
-        </div>
-        <Button 
-          variant="outline" 
-          size="icon"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          data-testid="button-refresh-interconnects"
-        >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-        </Button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-4">
+      {currentView === "interconnects" && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Total Interconnects</CardTitle>
-            <Network className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-total-interconnects">{interconnects.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Ingress</CardTitle>
-            <PhoneIncoming className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{interconnects.filter(i => i.direction === "ingress").length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Egress</CardTitle>
-            <PhoneOutgoing className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{interconnects.filter(i => i.direction === "egress").length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{interconnects.filter(i => i.isActive).length}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <CardTitle>All Interconnects</CardTitle>
-              <CardDescription>SIP trunks configured across all carrier partners</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search interconnects..." 
-                  className="pl-8 w-64"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  data-testid="input-search-interconnects"
-                />
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <CardTitle>All Interconnects</CardTitle>
+                <CardDescription>SIP trunk connections across all carriers</CardDescription>
               </div>
-              <Select value={filterDirection} onValueChange={setFilterDirection}>
-                <SelectTrigger className="w-36" data-testid="select-filter-direction">
-                  <SelectValue placeholder="Direction" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Directions</SelectItem>
-                  <SelectItem value="ingress">Ingress</SelectItem>
-                  <SelectItem value="egress">Egress</SelectItem>
-                  <SelectItem value="both">Both</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {filteredInterconnects.length === 0 ? (
-            <div className="text-center py-12">
-              <Network className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium mb-2">No Interconnects Found</h3>
-              <p className="text-muted-foreground">
-                {interconnects.length === 0 ? "Create interconnects from the Carrier detail page" : "No interconnects match your filters"}
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Interconnect</TableHead>
-                  <TableHead>Carrier</TableHead>
-                  <TableHead>Direction</TableHead>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead>Tech Prefix</TableHead>
-                  <TableHead>Capacity</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredInterconnects.map(ic => (
-                  <TableRow key={ic.id} data-testid={`row-interconnect-${ic.id}`}>
-                    <TableCell>
-                      <div className="font-medium">{ic.name}</div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground">{getCarrierName(ic.carrierId)}</span>
-                    </TableCell>
-                    <TableCell>
-                      <DirectionBadge direction={ic.direction || "both"} />
-                    </TableCell>
-                    <TableCell>
-                      <code className="px-2 py-1 bg-muted rounded text-sm">{ic.ipAddress || "N/A"}</code>
-                    </TableCell>
-                    <TableCell>
-                      {ic.techPrefix ? (
-                        <code className="px-2 py-1 bg-muted rounded text-sm">#{ic.techPrefix}</code>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {ic.capacityMode === "unrestricted" ? (
-                        <span className="text-muted-foreground">Unlimited</span>
-                      ) : (
-                        <span>{ic.capacityLimit} ch</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {ic.isActive ? (
-                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Active</Badge>
-                      ) : (
-                        <Badge variant="secondary">Inactive</Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-export function SoftswitchServicesPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterDirection, setFilterDirection] = useState<string>("all");
-
-  const { data: services = [], isLoading, refetch, isFetching } = useQuery<CarrierService[]>({
-    queryKey: ["/api/carrier-services"],
-  });
-
-  const { data: carriers = [] } = useQuery<Carrier[]>({
-    queryKey: ["/api/carriers"],
-  });
-
-  const { data: interconnects = [] } = useQuery<CarrierInterconnect[]>({
-    queryKey: ["/api/carrier-interconnects"],
-  });
-
-  const { data: rateCards = [] } = useQuery<RateCard[]>({
-    queryKey: ["/api/rate-cards"],
-  });
-
-  const filteredServices = services.filter(svc => {
-    if (filterDirection !== "all" && svc.direction !== filterDirection) return false;
-    if (searchQuery) {
-      const search = searchQuery.toLowerCase();
-      return svc.name.toLowerCase().includes(search) || 
-             (svc.techPrefix || "").toLowerCase().includes(search);
-    }
-    return true;
-  });
-
-  const getCarrierName = (carrierId: string) => {
-    return carriers.find(c => c.id === carrierId)?.name || "Unknown";
-  };
-
-  const getInterconnectName = (interconnectId: string) => {
-    return interconnects.find(ic => ic.id === interconnectId)?.name || "Unknown";
-  };
-
-  const getRateCardName = (rateCardId: string | null) => {
-    if (!rateCardId) return "—";
-    return rateCards.find(rc => rc.id === rateCardId)?.name || "Unknown";
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading services...</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold">Services</h1>
-          <p className="text-muted-foreground">Rate plan assignments linking interconnects to rating and routing</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            data-testid="button-refresh-services"
-          >
-            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <CardTitle>Service Assignments</CardTitle>
-              <CardDescription>
-                Services define the link between Interconnects and their Rating Plans + Routing Plans.
-                This is THE KEY LINKAGE in the Digitalk hierarchy.
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search services..."
-                  className="pl-9 w-[200px]"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  data-testid="input-search-services"
-                />
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search interconnects..." 
+                    className="pl-8 w-64"
+                    data-testid="input-search-interconnects"
+                  />
+                </div>
               </div>
-              <Select value={filterDirection} onValueChange={setFilterDirection}>
-                <SelectTrigger className="w-[140px]" data-testid="select-filter-direction">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Directions</SelectItem>
-                  <SelectItem value="ingress">Ingress</SelectItem>
-                  <SelectItem value="egress">Egress</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {filteredServices.length === 0 ? (
-            <div className="text-center py-12">
-              <Link2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium mb-2">No Services Found</h3>
-              <p className="text-muted-foreground mb-4">
-                Configure services from within each Carrier's detail page under the Services tab.
-                Services link an Interconnect to its Customer Rating Plan and Routing Plan.
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10"></TableHead>
-                  <TableHead>Service Name</TableHead>
-                  <TableHead>Carrier</TableHead>
-                  <TableHead>Interconnect</TableHead>
-                  <TableHead>Direction</TableHead>
-                  <TableHead>Rating Plan</TableHead>
-                  <TableHead>Routing Plan</TableHead>
-                  <TableHead>Tech Prefix</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-24">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredServices.map(svc => (
-                  <TableRow key={svc.id} data-testid={`row-service-${svc.id}`}>
-                    <TableCell>
-                      {svc.direction === "ingress" ? (
-                        <PhoneIncoming className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <PhoneOutgoing className="h-4 w-4 text-blue-500" />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{svc.name}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-muted-foreground">{getCarrierName(svc.carrierId)}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{getInterconnectName(svc.interconnectId)}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={svc.direction === "ingress" ? "default" : "secondary"} className="capitalize">
-                        {svc.direction || "ingress"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{getRateCardName(svc.ratingPlanId)}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-muted-foreground">{svc.routingPlanId || "—"}</div>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-sm bg-muted px-1 py-0.5 rounded">{svc.techPrefix || "—"}</code>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={svc.status || "active"} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost" data-testid={`button-actions-${svc.id}`}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => window.location.href = `/admin/carriers/${svc.carrierId}`}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Carrier
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          </CardHeader>
+          <CardContent>
+            {loadingInterconnects ? (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground">Loading interconnects...</div>
+              </div>
+            ) : allInterconnects.length === 0 ? (
+              <div className="text-center py-12">
+                <Network className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">No Interconnects Found</h3>
+                <p className="text-muted-foreground mb-4">
+                  Add interconnects from the Carrier Detail page
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Carrier</TableHead>
+                    <TableHead>Interconnect Name</TableHead>
+                    <TableHead>Direction</TableHead>
+                    <TableHead>Tech Prefix</TableHead>
+                    <TableHead>Capacity</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-export function SoftswitchBalancePage() {
-  const { data: carriers = [], isLoading, refetch, isFetching } = useQuery<Carrier[]>({
-    queryKey: ["/api/carriers"],
-  });
-
-  const totalCustomerBalance = carriers.reduce((sum, c) => sum + parseFloat(c.customerBalance || "0"), 0);
-  const totalSupplierBalance = carriers.reduce((sum, c) => sum + parseFloat(c.supplierBalance || "0"), 0);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading balances...</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold">Balance & Spend</h1>
-          <p className="text-muted-foreground">Monitor carrier balances and spending limits</p>
-        </div>
-        <Button 
-          variant="outline" 
-          size="icon"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          data-testid="button-refresh-balances"
-        >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-        </Button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customer Balance</CardTitle>
-            <PhoneIncoming className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600" data-testid="text-customer-balance">
-              ${totalCustomerBalance.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">Owed to you by customers</p>
+                </TableHeader>
+                <TableBody>
+                  {allInterconnects.map(ic => {
+                    const carrier = carriers.find(c => c.id === ic.carrierId);
+                    return (
+                      <TableRow key={ic.id} data-testid={`row-interconnect-${ic.id}`}>
+                        <TableCell>
+                          <div className="font-medium">{carrier?.name || "Unknown"}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{ic.name}</div>
+                        </TableCell>
+                        <TableCell>
+                          <DirectionBadge direction={ic.direction || "ingress"} />
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-sm bg-muted px-1.5 py-0.5 rounded">{ic.techPrefix || "-"}</code>
+                        </TableCell>
+                        <TableCell>{ic.capacity || "Unlimited"}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={ic.status || "active"} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
+      )}
+
+      {currentView === "services" && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Total Supplier Balance</CardTitle>
-            <PhoneOutgoing className="h-4 w-4 text-blue-500" />
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <CardTitle>All Services</CardTitle>
+                <CardDescription>Rating and routing plan assignments across all interconnects</CardDescription>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search services..." 
+                    className="pl-8 w-64"
+                    data-testid="input-search-services"
+                  />
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600" data-testid="text-supplier-balance">
-              ${totalSupplierBalance.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">Owed by you to suppliers</p>
+            {loadingServices ? (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground">Loading services...</div>
+              </div>
+            ) : allServices.length === 0 ? (
+              <div className="text-center py-12">
+                <Link2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">No Services Found</h3>
+                <p className="text-muted-foreground mb-4">
+                  Add services from the Interconnect Detail page
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Service Name</TableHead>
+                    <TableHead>Interconnect</TableHead>
+                    <TableHead>Carrier</TableHead>
+                    <TableHead>Rating Plan</TableHead>
+                    <TableHead>Routing Plan</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allServices.map(svc => {
+                    const interconnect = allInterconnects.find(ic => ic.id === svc.interconnectId);
+                    const carrier = carriers.find(c => c.id === svc.carrierId);
+                    return (
+                      <TableRow key={svc.id} data-testid={`row-service-${svc.id}`}>
+                        <TableCell>
+                          <div className="font-medium">{svc.name}</div>
+                        </TableCell>
+                        <TableCell>{interconnect?.name || "Unknown"}</TableCell>
+                        <TableCell>{carrier?.name || "Unknown"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{svc.ratingPlanId ? `Plan #${svc.ratingPlanId}` : "None"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{svc.routingPlanId ? `Plan #${svc.routingPlanId}` : "None"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={svc.status || "active"} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-            <CardTitle className="text-sm font-medium">Net Position</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${(totalCustomerBalance - totalSupplierBalance) >= 0 ? "text-green-600" : "text-red-600"}`}>
-              ${(totalCustomerBalance - totalSupplierBalance).toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">Customer - Supplier balance</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Carrier Balances</CardTitle>
-          <CardDescription>Current balance and credit status for all carriers</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Carrier</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Customer Balance</TableHead>
-                <TableHead>Customer Credit Limit</TableHead>
-                <TableHead>Supplier Balance</TableHead>
-                <TableHead>Supplier Credit Limit</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {carriers.map(carrier => (
-                <TableRow key={carrier.id}>
-                  <TableCell>
-                    <div className="font-medium">{carrier.name}</div>
-                    <div className="text-sm text-muted-foreground">{carrier.code}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="capitalize">{carrier.partnerType || "bilateral"}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {carrier.partnerType !== "supplier" ? (
-                      <span className="text-green-600">${carrier.customerBalance || "0.00"}</span>
-                    ) : (
-                      <span className="text-muted-foreground">N/A</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {carrier.partnerType !== "supplier" ? (
-                      <span>${carrier.customerCreditLimit || "0.00"}</span>
-                    ) : (
-                      <span className="text-muted-foreground">N/A</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {carrier.partnerType !== "customer" ? (
-                      <span className="text-blue-600">${carrier.supplierBalance || "0.00"}</span>
-                    ) : (
-                      <span className="text-muted-foreground">N/A</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {carrier.partnerType !== "customer" ? (
-                      <span>${carrier.supplierCreditLimit || "0.00"}</span>
-                    ) : (
-                      <span className="text-muted-foreground">N/A</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-export function SoftswitchTrunkGroupsPage() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold">Trunk Groups</h1>
-          <p className="text-muted-foreground">Logical grouping of interconnects for load balancing and failover</p>
-        </div>
-        <Button data-testid="button-add-trunk-group">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Trunk Group
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Trunk Groups</CardTitle>
-          <CardDescription>
-            Group multiple interconnects together for redundancy and load distribution.
-            Traffic can be distributed using round-robin, weighted, or priority-based routing.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <Layers className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">No Trunk Groups</h3>
-            <p className="text-muted-foreground mb-4">
-              Create trunk groups to combine multiple interconnects for load balancing and failover
-            </p>
-            <Button data-testid="button-create-first-trunk-group">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Trunk Group
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      )}
     </div>
   );
 }
