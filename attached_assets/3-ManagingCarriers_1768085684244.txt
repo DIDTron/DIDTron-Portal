@@ -1,0 +1,1992 @@
+3-ManagingCarriers
+TheCarrierssectionisusedtocreateandconfiguretheconnectionsbetweentheCarrierCloudSBCandother
+VoIPswitchingsystems. Mostcommonly,theseconnectionswillbewithothertelephonyorganisationswithwhich
+thePlatformOperatorhasarelationship,butconnectionsmayalsobemadetootherinternalVoIPPlatformswithin
+anorganisation.
+TypesofCarriers
+CarrierCloudManagerdividesCarriersintothreecategories:
+Carrier
+Type Description
+Customer
+A“Customer”isaningressonlyconnectiontoatelecommunicationscompanywhowillbesend
+ingVoIPtraffictotheCarrierCloudPlatformtoberoutedandrated.
+ACustomerwillhavea“CustomerRatingPlan”attachedtoit,determininghowmuchtheCus
+tomerwillbechargedforthecallsthatareprocessedthroughthePlatform,anda“CarrierBal
+ance”whichwillrecordinreal-timetheamountthattheyspend/owe.
+Supplier
+A“Supplier”isanegressonlyconnectiontoatelecommunicationscompanytowhichthePlat
+formwillberoutingtraffic.
+ASupplierwillhavea“SupplierRatingPlan”attachedtoit,specifyinghowmuchthecallsthat
+aresenttotheSuppliercostthePlatformOperator,anda“SupplierBalance”whichwillrecord
+theamountofmoneythathasbeenspentwiththatSupplier.
+Bilateral
+A“Bilateral”CarrierisatelecommunicationscompanytowhichCarrierCloudsendscalls,and
+fromwhichitreceivescalls. 
+InthiscasetheBilateralCarrierisconnectedtobotha“CustomerRatingPlan”anda“Supplier
+RatingPlan”,sobothCustomerandSuppliercostswillbespecifiedforthem.
+52 of 1635
+Confidential
+CarrierComponents
+ACarriercomprisesthreeseparatecomponentswhichmusteachbeconfiguredbeforetheCarrierisreadyfor
+use;theyare:
+Component Description
+Carrier
+The“Carrier”itselfdoesnotholdanytechnicalinformationabouttheconnectiontotheout
+sideworld;thisissetattheInterconnectlevel.
+TheCarrierisamanagementobjectthatdeterminesthetypeofCarrierconnectionthatistak
+ingplace(Customer/Supplier/Bilateral)andwithwhich,oneormoreInterconnectsmaybe
+associated. 
+TheCarrieralsoholdstheCustomerBalanceforCustomers,theSupplierBalancetheSup
+pliers,orbothforBilateralCarriers.
+Reference: SeethefollowingSectionforfurtherinformationonthedifferencebetweenCus
+tomerandSupplierBalances.
+Interconnect
+The“Interconnect”iswherethetechnicalconfigurationoftheconnectionbetweenTheCar
+rierCloudPlatformandtheexternalswitchthatisbeingconnectedtoisconfigured.
+Each(working)CarrierhasaminimumofoneInterconnectthatcontainsthetechnicaldetails
+oftheconnection;theseinclude:
+n Ingress/EgressIPAddresses
+n TechnicalPrefixesused
+n Codecssupported
+n DTMFtransitmethod,and
+n Monitoringinformation.
+Service
+The“Service”iswheretheRatingandRoutingdetailsforeachInterconnectareconfigured.
+Tip: TheServiceisonlyrequiredforCustomerInterconnections,neverforSup
+plierInterconnections.
+WhileitiscommonpracticetohaveasingleServiceperInterconnect,itispossibletohave
+multipleServiceswherecallsaredistinguishedbydifferentingressmatchingsettings.
+CarrierComponentsDiagram
+ThediagrambelowsummarisestherelationshipbetweenthedifferentcomponentsofaCustomerandSupplier
+Carrier.
+l
+l
+l
+Carriers provide top-level financial &partner management
+Interconnects provide technicalconnectivity
+Services providecommercialdecision-making-i.e.(Rating&Routing)
+C onfid entia l
+5 3 of 1635
+Understanding Customerand SupplierBalances
+TheDigitalk Carrier CloudPlatform willreal-time rate both thecostof thecalls totheCustomer andusingtheSup
+plier Rates that havebeenprovidedbytheSupplier itwillrecordthepricethatwillbechargedtous bytheSupplier.
+Customer Balance
+Carrier Cloudupdates theCustomer Balanceafter everycall,anditwillenforceeither prepaymentor a postpaid
+credit limit for the Customer. For Customers thecreditcontrolis managedbyCarrier Cloudanditwillpreventa
+Customer makinganyfurther calls whenthatlimitis reached,evencuttingcalls offif thelimitis reachedwhen calls
+arein progress.
+E-Mail Alerts can begeneratedandsenttoa Customer representativewhena definedthresholdis reachedto
+warnthemofthis.
+Supplier Balance
+TheSupplier Balanceis differenttotheCustomer Balance. WhiletheCustomer Balancerelates directlytocredit
+information that is enforcedby Carrier CloudtheSupplier Balancerecords how muchmoneythePlatform Oper
+ator has spentwitha specificSupplier basedontheSupplier Rates thattheyhaveprovidedus.
+Thereforethepreor postpaidlimits arenotenforcedbyCarrier Cloud,in thesensethatCarrier Cloudwillnotstop
+calls if they are reached. Although ofcoursetheSupplier mightwellrefuseadditionalcalls from thePlatform. 
+Thelimits areusedbyCarrier CloudtogenerateE-MailAlerts thatcannotifyAccountManagers thatthecreditlimit
+with theparticular Supplier is close tobeingreached.
+NotethattheSupplier Balancecannotbereliedonbeing100% accurate,as thecreditcontrolfor thecharges being
+appliedis outside of theCarrier CloudPlatform. Itshouldhowever providea closeindication ofthecosts incurred.
+Net Exposure
+TheNetExposuredisplays thedifferencebetweentheCustomer andSupplier balance.This figurecannotbedir
+ectly editedor controlled, insteadit is automatically calculatedby subtractingthe Supplier Balance from theCus
+tomer Balance.
+NetExposureAlerts canbeusedtonotifythePlatform Manager whentheexposurepasses a specifiedthreshold.
+TwotypesofNetExposureAlerts canbeconfigured:
+l
+l
+Customer NetExposureAlerts canalertwhentheNetExposureThresholdis breachedbytheCustomer bal
+ancedroppingbelow a certainthreshold,meaningthattheCustomer owes enoughmoneytowarrantan
+alert.
+Supplier NetExposureAlerts alertwhentheNetExposureThresholdis breachedbytheSupplier balance
+droppingbelow a certainthreshold,meaningthatweowetheSupplier enoughmoneytowarrantanalert.
+Multi Currency Balances
+Carrier CloudManager supports theabilitytoassign uptothreeseparatecurrencies for both Customer andSup
+plier balances.
+Reference:"Multi-Currency Carrier Support" on page 190
+C onfid entia l
+5 4 of 1635
+WhatNext?
+Follow thelinks below for information of creatingCarrier,Interconnects,andServices:
+"Creatinga Carrier" on thenextpage
+"Creatingan Interconnect" on page 71
+"Creatinga Service" on page 122
+C onfid entia l
+5 5 of 1635
+3.1 Creating a Carrier
+Thefirst stepin theCarrier creation process is tocreatetheCarrier objectitself.
+TheCarrier acts as themanagementobjectfor Interconnects andServices andalsocontains informationsuchas:
+l
+l
+l
+l
+l
+Currency
+Customer Balance
+Supplier Balance
+NetExposure(ThedifferencebetweentheCustomer andSupplier balance)
+Customer Contacts
+C onfid entia l
+5 6 of 1635
+3.1.1 Procedure for Creating and Configuring a Carrier
+Follow thesteps below tocreateandconfigurea Carrier.
+1. Select“Carriers” from thenavigation bar,or from theManagementLinks sectionontheHomescreen.
+Result: TheCarriers screen is displayed.
+2. Select“AddCarrier” from the“Actions” drop-downlistbox.
+Result: The“AddNewCarrier” dialogboxis displayed.
+C onfid entia l
+5 7 of 1635
+3. Usethetablebelow tocompletethis step.
+Note:
+n Carrier Details andCurrencymustbecompletedfor allCarrier types.
+n CustomerFinancialDetails mustbecompletedfor Customer andBilateralCarriers.
+n Supplier FinancialDetails mustbecompletedfor Supplier andBilateralCarriers.
+C onfid entia l
+5 8 of 1635
+59 of 1635
+Confidential
+Field Description Action
+CarrierDetails
+Name
+DeterminesthenamebywhichthisCarrierwillbeknown.
+Caution:Carriersmustbenamedusingalphanumericchar
+actersonly,avoidusingspecialcharacters.
+Enterthe
+requiredname
+inthe“Name”
+field.
+Type
+DeterminesthetypeofCarrierbeingcreated.
+Selectfrom:
+n Customer
+n Supplier,and
+n Bilateral.
+Reference: SeeSection"ManagingCarriers"onpage 51inthisUserGuide
+forfurtherinformationonCarrierTypes.
+Selectthe
+requiredCarrier
+typefromthe
+drop-downlist
+box.
+Capacity
+Thisoptionalsettingisusedtodeterminehowmanysimultaneousvoiceses
+sionsthisCarriercansupport.
+ThisoptionissometimesusedwhenbandwidthtoaparticularCarrierislim
+ited.
+Note:WithBilateralCarriers,thislimitappliestothetotalof
+inboundandoutboundsessions.
+Ifrequired,seta
+capacitylimitfor
+thisCarrier.
+Currency
+Primary
+Currency DeterminesthePrimaryCurrencyfortheCarrierbeingcreated.
+Selectthe
+requiredCur
+rencyforthis
+Carrier.
+60 of 1635
+Confidential
+Note:
+EveryCarriermustbeconfiguredwithatleastoneCurrency.
+Thisinitialcurrencyisregardedasthe“PrimaryCurrency”and
+isusedwhendisplayingoverallfinancialinformationaboutthe
+Carrier.
+Ifrequired,additionalCurrenciescanbeaddedtotheCarrier
+(uptoamaximumofthreeintotal).
+Whenmultiplecurrencieshavebeenconfigured,itispossible
+toredefinethePrimaryCurrencyissodefined.
+Caution:However,duetoreferentialdata
+requirementswhenacurrencyhasbeenadded
+totheCarrieritisnotpossibletoremoveit.
+CustomerFinancialDetails
+Credit
+Type
+DeterminesifthisCustomerwillbe:
+n Prepaid-callswillstopfunctioningat0.00credit.
+n Postpaid-callswillcontinuebelow0.00,andonlystopifapostpaid
+creditlimitisreached.
+Selectthe
+requiredCredit
+Typefromthe
+drop-downlist
+box.
+Postpaid
+Credit
+Limit
+ThissettingisonlyapplicablewhentheCreditTypeofPostpaidhasbeen
+selected.
+ItdeterminesalimitofhowfarbelowzeroaCustomercangobeforetheir
+callsarestopped,thereforeprovidingsomeelementofliabilityprotection
+withpostpaidcalling.
+Ifrequired,
+entertherel
+evantPostpaid
+CreditLimit.
+Balance
+ThisfielddisplaysthecurrentbalanceforaCustomer.
+DuringinitialCarriercreationabalancecanbemanuallyenteredintothis
+field,howeveraftertheCarrierhasbeencreatedthebalancecanonlybe
+alteredusinganauditedcredit/debitprocess.
+Ifrequired,set
+anopeningbal
+anceforthis
+Customer.
+SupplierFinancialDetails
+61 of 1635
+Confidential
+Credit
+Type
+DeterminesifthisSupplierisPrepaidorPostpaid
+Note:
+Thislimitisprovidedforreferenceandforalertingpurposes
+only.TheCarrierCloudPlatformwillnotstopSuppliercallsata
+preorpostpaidlimitasthisisnotCreditControlledbythisPlat
+form.(AlthoughaSuppliermightbeenforcingalimitontheir
+Platform.)
+Selectthe
+requiredCredit
+Typefromthe
+drop-downlist
+box.
+Postpaid
+Credit
+Limit
+ThissettingisonlyapplicablewhentheCreditTypeofPostpaidhasbeen
+selectedandrecordsthecreditlimitthathasbeenagreedwiththeSupplier.
+Ifrequired,
+entertherel
+evantPostpaid
+CreditLimit.
+Balance
+ThisfielddisplaystheSupplierBalance.
+DuringinitialCarriercreationabalancecanbemanuallyenteredintothis
+field,howeveraftertheCarrierhasbeencreatedthebalancecanonlybe
+alteredusinganauditedcredit/debitprocess.
+Ifrequired,set
+thestartingbal
+anceforthis
+Supplier.
+4. Click“Save”.
+Result: TheCarrieriscreated,andwillbedisplayedonscreen.
+5. Ifrequired,clicktheleft-hand"Edit"buttontoconfiguretheoptionalcarriersettings.
+Result: TheoptionalCarrierDetailsbecomeconfigurable.
+Technical Note:
+Regarding Permissions.
+BeawarethattherearetwoEditbuttons onthescreen.TheEditbuttonontheright-handsideasso
+ciatedwith theCreditControlsection controls access totheconfiguration of CreditSettingandis con
+trolled by a specific permission named“Carrier >CreditLimit”.
+All of the other Carrier settings arecontrolledby the“Carrier >Carriers” permission.
+6. Usethetablebelow tocompletetheCarrier Details andRoutingsections.
+Field
+Description
+Carrier
+Name
+This field defines the nameoftheCarrier.Itwillbepopulatedwith the
+information configuredon the“carrier creation” dialogbox thatcan be
+editedas andwhenrequired.
+C onfid entia l
+Action
+Noactionrequired.
+6 2 of 1635
+63 of 1635
+Confidential
+Caution:Carriersmustbenamedusingacombinationof
+alphanumericcharacters,avoidusingspecialcharacters.
+Type
+The“Type”drop-downlistboxdisplaysthetypeofcarrierthatwas
+selectedonthe“carriercreation”dialogbox.ThisTypecanbechanged
+atanytime,meaningthatacarrierthatwascreatedasaCustomeror
+SuppliercanbeconvertedtoaBilateralPartner.
+Noactionrequired.
+Billing ThisisanotificationastowhetherornotBillinghasbeenscheduledfor
+thisPartner. Noactionrequired.
+Time
+Zone
+TheCarrierTimeZonesettingisanoptionalfeaturewhichcanbeused
+to"mark"aparticularCarrierisoperatinginadifferentTimeZonetothe
+Platformdefault.
+Whilethismaybeconfiguredforpurelyinformationalpurposes,italso
+meansthat"timesensitive"platformfeaturessuchasCustomerRating,
+Reporting,andBillingcanbemanagedintheCarrier'sLocalTime.
+Example:
+Withoutusingthisfeature-ifaplatformisoperatingin
+UTC,butaparticularSupplierisinvoicinginUTC-5then
+therewillbeamismatchbetweentheSupplierInvoice
+generatedontheDigitalkplatformandthe"real"Invoice
+receivedfromtheSupplier.Thisislikelytoleadtoanextra
+discrepancyinthebuildamounts.
+ByconfiguringtheSupplierwithaCarrierTimeZoneof-5,
+andsettingthe"UseLocalCarrierTimeZone"optionon
+theSupplierBillingSettingstheSupplierInvoiceproduced
+ontheDigitalkwillmorecloselymatchtheinvoice
+receivedfromtheSupplier.
+Ifrequired,configure
+therequiredTime
+Zoneusingthedrop
+downlistbox.
+64 of 1635
+Confidential
+Account
+Manager
+ThisoptionalfieldmarkstheAccountManagerforthisCarrier.
+AccountManagersareCarrierCloudUsers.
+TheAccountManagerrelationshipisusedforcertainreportsand
+accesstotheCarrierPortal.
+Reference: See“UG-025-4xx-CarrierCloudCarrierPortal”forfurther
+informationonworkingwithAccountManagers.
+Ifrequired,selectan
+AccountManager
+fromthedrop-down
+listbox.
+Capacity
+Thisdefinesthemaximumnumberofchannels(circuits)availabletoall
+InterconnectsunderthisCarrier.Thissettingcanalsobeconfiguredat
+theInterconnectlevel.
+IfaCarrierlevel
+channelrestrictions
+isrequired,thencon
+figuretheappro
+priatenumberof
+channels.
+Circular
+Routing
+Thisoptionwillenable/disabletheabilitytosendcallsreceivedfroma
+CustomerInterconnecttoaSupplierInterconnectthatisassignedto
+thesameCarrier.
+Thedefaultbehaviouris“Disabled”whichmeansthattheSupplierWILL
+NOTbeusedforRouting,butitmaybenecessaryto“Enable”thisfunc
+tioninTestscenarios.
+Leavethisoptionat
+“Disabled”unless
+CircularRoutingis
+specificallyrequired.
+Suspend
+customer
+ThisfeaturedeterminesthebehaviouroftheplatformifaCreditLimitis
+configuredontheNetExposure,andthenbreached.
+Ifrequired,enable
+the“Suspendcus
+Bydefaultthis option is unselected. Which means intheeventofa
+breachcalls will still be acceptedandroutedfrom theCustomer Inter
+connect(s).
+traffic on
+net
+exposure
+breach
+Whenusedinthis modeAlerts canstillberaisedfor breaches oftheNet
+Exposure,butroutingcontinues.
+Byenablingthis option thePlatform willsuspendingress trafficif a
+breachoftheNetExposureCreditLimitoccurs. As showninthe
+examplebelow wherethecustomeris suspended:
+tomer traffic on net
+exposurebreach”
+feature.
+Note:
+OnlytheCustomer trafficis suspended,andnottheSup
+plier traffic.
+This meansiftraffic is senttotheSupplier Interconnect
+the Customer Interconnectis likely tobere-enabledauto
+matically.
+7. Ifrequired,click the right-hand"Edit" button toconfigure Carrier creditsettings.(See below for moredetails.)
+Note:
+Thereasonthattherearetwoseparate"Edit" buttons for this screen is becausethereis a separate
+Permission "Carrier >CreditLimits" thatcontrols whether a CCM User whohas access tomanage
+other aspects oftheCarrier alsohas permissions tochangefinancialinformation such as CreditLim
+its.
+Reference:See"IntroducingUser andRoleManagement"onpage 1552 for further information.
+Technical Note:
+Understanding Credit Control
+C onfid entia l
+6 5 of 1635
+TheCreditControlsettings allow a Carrier Manager todeterminecreditbehaviour ofthis Carrier Part
+ner.
+Note: Theinformationbelow is writtenin referencetoBilateralCarriers,unilateralCar
+riers will only display the Customer/Supplier information as appropriate.
+Managing Credit Limits
+Credit Limits are usedtodeterminethemaximum amountofexposurethatyou,as thePlatform Oper
+ator, are preparedtoacceptin relation totheCustomer Balance,Supplier Balance,andBilateralBal
+ancefor this Carrier.
+Credit Limits are only usedwith PostpaidBalances,as thecreditlimitfor a prepaidbalanceis auto
+matically “0”, with noliability extended.
+Setting a Customer creditlimitof 5,000,means thatthecustomer balancecanbereducedto-5000
+beforethecreditlimit is reachedandcalls willbesuspended. As moneyis spent,the“Remaining” fig
+urewill show how muchcreditis leftbeforethecreditlimitis reached,as showninthescreenshot
+below.
+Setting a Supplier creditlimit of 5000,means thattheSupplier balancecan bereducedto-5000
+beforethis limit is reached. However,with theSupplier creditlimitcalls willnotbesuspendedbythe
+Platform, (although traffic may be suspendedbytheSupplier Partner).
+C onfid entia l
+6 6 of 1635
+Asseeninthescreenshotabove,theBilateralbalanceis a figurederivedfrom theCustomer andSup
+plier Balance, it equals the (customer balance)– (supplier balance).
+TheBilateral Balance(alsoknownas theNetExposure) displays your currentcreditexposurein rela
+tion to this Carrier Partner.
+Anegativebalance(as above) means thatthecustomer owes 'you' morethanyouowe'them',anda
+positive balance means thatyouowethem morethantheyoweyou.
+TheBilateral balancecreditlimit can beusedtoensurethattheCustomer andSupplier balances
+remainwithin a particular rangeof each other. Ifthebilateralcreditlimitis reachedby Customer bal
+ancebecomingtoolow (a negativebalance) thenanoptionexists toblock customer trafficatthat
+point in time.
+This option is setbythe“BilateralLimitBreach” settingwhich determines if when this limitis reached
+traffic is blocked, or allowedtocontinue-with thepossibility of alerts beinggeneratedif configured.
+C onfid entia l
+6 7 of 1635
+Tip:
+Clarifying Traffic Blocking
+Theflexibility offered by the CC Platform means thattherearemanyoptions available
+for Credit Managementthatcanseeminitiallydaunting.
+Totrytoclarify this the first rule to be awareof is thatfrom a commercialperspective
+the Carrier CloudPlatform is in controlof theratingfor theCustomer traffic. Customer
+calls are beingratedbythePlatform meaningthattheresponsibilityfor creditcon
+trolling those calls is heldby Digitalk. That is why Customer trafficwillbesuspended,
+eventotheextentofendingcalls in progress,if theCustomer CreditLimitis reached
+andwhytheoptionexists inrelation toCustomer traffictodosoiftheBilateralCredit
+Limit is reached.
+Thesecondruleis thatSupplier RatingonthePlatform is basedupontheinformation
+wehavereceivedfromSuppliers,andtheplatform records Supplier costs toensurerev
+enueassuranceandaccuratereconciliation. However,in this casetheresponsibility
+for credit control lays with the Supplier Platform. MeaningthatwhiletheSupplier Plat
+form maysuspendtraffic,Digitalk willnotsuspendon this Platform.
+Credit Alerting
+WhileTraffic Blockingoccurs only with Customer trafficwhen a creditthresholdis fully reached,itis
+possible tosendCreditAlertemails. Thesecanbesentinrelation tobotha low Customer or Supplier
+balanceandinrelation toeither theCustomer or Supplier bilateralnetexposure.
+If required, it is possible to create multiple alerts for each situation. 
+Example: Forexample,ifasupplierbalancelimitwasconfiguredto-5000,alertscould
+begeneratedat-4000,-4500and-5000.
+Reference: For information on configuringCreditAlerts seehere: "CreditAlerts" on page 217
+C onfid entia l
+6 8 of 1635
+69 of 1635
+Confidential
+8. Configurethecreditsettingsusingthetablebelow.
+Field Description Action
+Customer
+CreditType DeterminesiftheCustomerbalanceispostpaidorprepaid. EnsurethecorrectCredit
+Typeisselected.
+Bilateral
+LimitBreach
+DeterminesPlatformbehaviourwhentheCustomerbilat
+eralbalancecreditlimitisreached.
+Theoptionsavailableare:
+n AlertOnly-Customertrafficwillcontinuebutanycon
+figuredtogetCreditAlertswillbesent.
+n BlockCustomer–Customertrafficwillbeblocked;any
+configuredalertswillalsobesent.
+Selecttherequired
+option.
+SpendLimit
+Breach/
+SpendLimit
+Mode
+DeterminesPlatformbehaviourwhentheCustomer24
+HourSpendLimitthresholdisreached.
+See:"Understandingthe24HourSpendLimitFeature"on
+page 188formoreinformation.
+Selecttherequired
+options.
+Supplier
+CreditType DeterminesiftheSupplierbalanceispostpaidorprepaid. EnsurethecorrectCredit
+Typeisselected.
+9. Ifrequired,configure24-HourSpendLimitsettings.
+See:"Understandingthe24HourSpendLimitFeature"onpage 188formoreinformation.
+10. Click “Save”.
+Theoptionalsettings for theCarrier havebeen configured.
+C onfid entia l
+7 0 of 1635
+3.2 Creating an Interconnect
+After the Carrier has beencreatedthesecondstepintheCarrier creationprocess is tocreateoneor moreInter
+connects “underneath” theCarrier.
+It is possible tocreate as manyInterconnects as arenecessary,for examplefor a BilateralPartner therewouldbe
+at least twoInterconnects oneinboundandoneoutbound.
+TheInterconnectcontains thetechnicalconnection details which allows thePlatform tovalidateinboundtraffic,
+apply anynumberorcodecmanipulations as neededandthensends thecallontotheselectedoutboundCarrier.
+Caution:
+WhileCarriers can,andcommonlyare,bilateral,servingboth ingress andegress (Customer andSup
+plier) connections.
+Anindividual Interconnectmustonlybeconfiguredas unilateral,or unidirectional,either Customer or
+Supplier.
+Follow theProcedures below tocreateaninterconnect,andthenconfigureitfor Customer or Supplier.
+C onfid entia l
+7 1 o f 16 35
+Creating a New Interconnect
+Follow thesteps below tocreateannew Interconnect.
+1. NavigatetotheInterconnects tab.
+Result: TheInterconnects pagewillbedisplayed,anyexistinginterconnects willbevisiblehereandcan be
+reorderedwhennecessary.
+2. Select“AddInterconnect” from the“Actions” menu.
+Result: The“AddInterconnect” dialogboxis displayed.
+C onfid entia l
+7 2 of 1635
+2. Enter thenamebywhichthisInterconnectwillbeknowninthe“Name” field.
+3. Selecttherequiredprotocoltype,SIP or H.323,from the“ProtocolType” drop-downlistbox.
+4. Ifrequired,selecttheCurrencythatthis Interconnectwillfunction in.
+5.
+Note: TheCurrencyselectionavailableis drawnfrom thecurrencies configuredfor theCarrier,
+C onfid entia l
+7 3 of 1635
+therefore if the Carrier has been configuredwith onlya singlecurrencythatcurrencywillbeauto
+populated.
+Technical Note:
+WhenofferingCustomer services inmultiplecurrencies,differentInterconnects willneedtobecon
+figured for each of thecurrencies beingoffered.
+This meansthatonlyratingplans (customer/supplier as appropriate) in thematchingcurrencywillbe
+available for usagewith this Interconnectandalltraffic passingthrough this interconnectwillbe billed
+in thecurrencyofchoice.
+Caution: Beawarethatitis notpossibletore-ratetrafficfrom onecurrencytoanother
+currency.
+5. SelectthedirectoftheInterconnectbeingcreated,theoptions are“Customer” for an inbound/egress inter
+connect,or "Supplier" for an outbound/egress interconnect.
+Caution:
+Interconnects mustalways beeither Customer or Supplier.
+Never usetheBilateraloption in a liveenvironmentitexists only for legacysupport.
+6. Ifthis Interconnectis goingtocopythesettings from an existingInterconnect,selecttherelevantentry from the
+“Interconnect” drop-down listbox.
+C onfid entia l
+7 4 of 1635
+Note:
+This feature allows a new interconnecttobeaddedthis thatincludes theselectedsettings from exist
+inginterconnect.
+This feature is often usefulwhen creatingmultipleInterconnects underneath thesameCarrier where
+the majority of thesettings arethesame,andonlya take-prefixmaydiffer.
+Technical Note: NotethattheSBCIP address is copiedbyselectingthe"Egress Rout
+ing" checkbox.
+Caution: BeawarethatwhenanInterconnectis createdusingthis copymethoditwill
+becreatedbydefaultas “inactive” toavoidconflicts with theexistingentry.Itwilledits
+havebeenmade.
+7. Click “Save”.
+Result: TheInterconnectis created,andis readytobeconfigured.
+C onfid entia l
+7 5 of 1635
+Next:
+Note:
+H.323
+Thescreenshotanddocumentedexamplesinthis sectionallutilisetheSIP signallingprotocol.
+BeawarethattheCarrier Clouddoes supportthelegacyH.323protocolandInterconnects canbe
+createdthatwill usetheH.323terminologyinsteadofSIP usageandterminology.
+"Configuringa Customer Interconnect" on thenextpage
+"Configuringan Supplier Interconnect" on page 98
+C onfid entia l
+7 6 of 1635
+3.3 Configuring a Customer Interconnect
+ACustomerInterconnectthis providethetechnicalconfiguration for thecommunication between theCarrier Cloud
+andCustomerPartners.
+Technical Note:
+Renaming Interconnects
+Pleasebeawarethatafter anInterconnecthas beencreateditis notpossiblefor ittoberenamed.
+Thereasonfor this is relatedtoensuringcontinueddata integrity in theCDRs over thelongterm.
+If an interconnecthas beennamedincorrectly,then itcan bedeletedandrecreated;or ifithas
+already beenconfiguredthenitcanbecopiedwitha new nameandtheoriginalthendeleted.
+Follow thesteps below toconfigurea SIP Interconnecttovalidateandrouteingress traffic.
+1. Click onthenameoftheInterconnecttobeconfigured.
+Result: The“InterconnectManagement” screenis showndisplayinga summaryoftheinformationregardingthe
+Carrier Interconnect.
+C onfid entia l
+7 7 of 1635
+2. Click “Edit”.
+Result: The“Details” screen can now beconfigured.
+TheDetails Tab
+3. Ifrequired,deselect"unrestricted" andenter a ChannelCapacitylimitin the“Capacity” field.
+C onfid entia l
+7 8 of 1635
+Note:
+Whenconfiguredthis settingrestricts the number of simultaneous calls thatwillbepermittedintothe
+Platform on this Interconnectatanyonetime.
+If this limit is reached, then additional calls will be rejectedwithout a CDR beingwritten.
+Theserejectedcalls can beviewedonthe"ViewingCalls RejectedbytheSBC (FailedInboundCalls)"
+onpage 1539screen.
+5. Ensurethe"Status"drop-downlistboxes settoActive.
+Setting this field to Disabledwill suspendtheInterconnectuntilit is manually changedback toActive.
+6. SelecttheSignallingIP address(es) on whichthis Interconnectwillbereceivingor sendingtraffic.
+7. Click “Save”.
+Result: TheDetails screen has now beenconfigured.
+TheIngress Validation Tab
+1. Click the“Ingress Validation” tab.(LeavetheServices Tabuntilthenextstep.)
+Result: The“Ingress Configuration” screen is displayed.
+2. Click “Edit”.
+Result: The“Ingress Details” settings can now beconfigured.
+C onfid entia l
+7 9 of 1635
+3. Click "AddIP"toaddanIP Address,andconfiguretheother Ingress validationsettings. 
+C onfid entia l
+8 0 of 1635
+Caution:
+Important Security Note Concerning Ingress Validation
+It is important tounderstandthattheseingress validation settings providethesecurity toensurethat
+the Platform only passes trafficfrom agreed-upon Partner organisations.
+This meansthatingress validation criteria mustbeas tightly definedas possiblefor each inter
+connecttopreventexploitopportunities for fraudsters.Additionally,it is goodpractice tolimit the per
+mission toconfigureInterconnects toa few trustedpersonnel.
+Whilefrom a purelytechnicalperspectiveitis possibleon theCarrier Cloudtovalidatetrafficwithout
+usinganoriginatingIP Address,this methodis normallyapplicableonlyin somenicheroutingscen
+arios whenthePlatform is workingas partofa larger WideArea Network.
+Therefore,toensuresecurity,the defaultbehaviour of theplatform is torequirethatan IP address is
+configuredas partofingress validation.
+If your organisation needs tosupportvalidation withoutusingIP addresses,pleasecontactDigitalk
+Supporttospecifically enable this functionality on your Platform.
+Furthermore.Whenthesesettings havebeenconfigured,theywillprovidesecurityon whatwould
+otherwisebea publicIP address providingtransitfor signallingandmedia.Theymustthereforebe
+consideredandmanagedina mannersimilar topasswordsecurityfor network or databaseaccess.
+Thereis nowaytosecureanIP Carrier groupifthesesettings becomeknownandarespoofable.
+Warning Message
+If noIP address rangehas beendefinedfor this InboundInterconnectwhenendeavouringto"Save"
+this page,thefollowingwarningmessagewillbedisplayed.
+This warningmessagemustbeactivelyacknowledgedbyselectingthe"I havereadandunderstood
+the warning" messageinorder tosaveanInterconnectinthis state.
+C onfid entia l
+8 1 o f 16 35
+82 of 1635
+Confidential
+Thisistoensurethatinterconnectsarenotaccidentallyconfiguredinthisway.
+Seethetablebelowforfurtherinformationonvalidationoptions.
+Method Description
+Tech
+Prefix
+ThisvalidationmethodchecksthattheINVITEmessagebeginswithapre-arrangedprefix(often
+referredtoasaTech-Prefix)thathasbeenaddedasanauthentication/identificationmethodby
+theswitchsendingthetraffic.
+Whentheprefixhasbeenmatched,itisimmediatelyremovedbytheCarrierCloudPlatformsoas
+nottoconfuseroutinglogic.
+Example:1234441908425000@address.com
+Inthisexamplethetech-prefixis:1234
+Tip: ItisstronglyrecommendedtousetheTech-Prefixwhenvalidatinginbound
+traffic.
+Trunk
+Group
+ThisvalidationmethodsupportsvalidationusingTrunkGroup,in
+accordancewithRFC4904andisdesignedforinternetworking
+“CoreRoutingEngine”environments,ratherthandirectcom
+municationwithCustomersandSuppliers.
+Reference:SeeSection"UnderstandingTrunkGroups"on
+page 238forfurtherinformation.
+TovalidatebaseduponTrunkGroupfirstselectthe“Validate”checkboxforthe(read-only)Call
+Validation>TrunkGroupfield.
+Thenenterthe“TrunkGroup”and“TrunkContext”inthe“TrunkGroup”section(asdocumented
+below);doingthiswillautomaticallypopulatetheread-only“TrunkGroup”fieldintheCallVal
+idationsection.
+83 of 1635
+Confidential
+Note:
+Itisnotpossibletotypedirectlyinthe“CallValidation>TrunkGroup”. Theonlyway
+topopulatethisinformationisthroughthe“TrunkGroup”section.
+ItisexpectedthatTrunkGroupValidationiscombinedwithIPAddressvalidation,as
+thisismandatorybydefaultontheDigitalkCarrierCloud. ContactDigitalksupportif
+youneedTrunkGrouponlyvalidation.
+From
+URI
+ThisvalidationmethodchecksthedomainelementoftheFromAddressintheSIPheader.
+Thisfieldvalidatesonthestringentered,andthe%symbolcanbeusedasawildCardifrequired.
+Example:
+123@sip.mydomain.com-wouldmatchcallspresentedfromthataddress.
+%sip.mydomain.com-wouldmatchanycallspresentedfromthatdomain.
+Contact
+URI
+ThisvalidationmethodchecksthedomainelementoftheContactAddressintheSIPheader. It
+usesthesamevalidationlogicas“FromURI”above.
+IP
+address
+ThisvalidationmethodcheckstheoriginatingIPaddressintheSIPheader.
+IPvalidationisthemostcommonvalidationmethodandmustbeusedinallnormalproduction
+environments.
+BydefaultvalidationisconfiguredtosingleIPaddresses-asshowninthescreenshotbelow:
+If,inexceptionalcircumstances,itisnecessarytovalidatefromarangeofIPaddresses,the
+"Range"checkboxcanbeselected.Asshownbelow.
+Tip:
+Asaplatformsecuritymeasure,asinglerangeofIPaddressescancontainamax
+imumof10individualIPaddresses.
+Ifabsolutelynecessary,additionalconsecutiverangescanbedefined.
+However,suchaconfigurationcanimpactonplatformsecurity,andDigitalkrecom
+mendconsultingwithDigitalkSupporttoseeifalternativesolutionscanbecon
+figured.
+Address Type
+WhenusingIP addressvalidation,itis alsonecessarytosetthe“Address Type” setting. Theset
+ting offers twochoices:
+l
+l
+Via Address-validation willusethelistof Via IP addresses in theSIP Header,includingor
+omitting the last Via address dependingonthesettingofthe“IncludeLastVia” checkbox.
+TransportAddress-validation willusetheSourceIP address in theInternetProtocol
+packet.
+Tip:
+In normaloperation Carrier Cloudwillbesendingandreceivingcalls directlyfrom
+Customers andSuppliers over thepublicInternet.
+ThereforetheTransportAddress settingmustbeconfigured.
+Technical Note:
+Duplicate IP Addresses
+It is commonpracticetoutilisethesameIP address(s) within a singleCarrier on mul
+tiple interconnects by addingtech-prefixes tothe validation toallow the Customer to
+select a 'service level/product'.
+However,itis extremelyunusualin normaloperations for twoseparateCustomers
+to sharethesameoriginatingIP address.(Theremaybeexceptions tothis in
+"internal networkingenvironments" butin normal"business tobusiness" operation
+this wouldnotbeexpectedtooccur.)
+Thereforetoavoidmanualerror (accidentally inputtingthewrongIP address on the
+wronginterconnect) a warningis displayedwhenaddinganIP address ifithas
+already beenconfiguredonanInterconnectunder analternativeCarrier.
+C onfid entia l
+8 4 of 1635
+85 of 1635
+Confidential
+4. Ifaningresscallratelimitationisrequired;selectthe“MaxCallsPerSecond”checkbox,andsettherequired
+limit.
+TechnicalNote:
+BeawarethatthislimitappliestoanindividualSBCcluster.
+Iftheinterconnectisassignedtomultipleclusters,thesamelimitationwillbesetoneach.
+5. Ensurethatthe"TestSystem Control"drop-downlistboxis setto"Don'tAllow".
+Tip:
+Test System Control
+The“TestSystemControl” optionmustnotbeselectedinnormaloperation.
+This feature is designedfor usewith automaticor manualtesting,andenablingiton a standard
+Customer Interconnectcouldresultin alltraffic beingroutedwithoutratingor creditcontrol
+applied.
+Reference: For further information on InterconnectTestingseetheSection "TestCallingInteg
+ration" on page 223
+6. Thissectionidentifies theTrunk GroupandTrunk Contextheaders for this Customer Interconnect.
+Whenusedforvalidation,as describedabove,theseheaders willneedtobepresentinthereceivedInviteto
+successfully validate to this Customer Interconnect.
+Alternatively, if the “Trunk Group>Validate” checkbox is notenabledthen settingtheTrunk GroupandTrunk
+Contextfields will set a Trunk Group/Trunk Contextfor alltrafficvalidatingtothis Customer Interconnectusing
+analternative method(such as IP address andtech-prefix).TheTrunk GroupandTrunk Contextheaders can
+then (dependinguponconfiguration) bepassedontoa Supplier throughtherelevantEgress Interconnect.
+TheIngress Translation Tab
+C onfid entia l
+8 6 of 1635
+Technical Note:
+TheIngress Translation Tabserves four functions for theAdministrator.
+l
+l
+l
+l
+Determines whichOrigination Header (PAI /From) willbepreferred.
+Determines if thepresentedOrigination is considered“valid”.
+Determines if andwhenthePAI (andFromAddress) willbegeneratedfor calls ingressingon
+this Interconnect.
+Provides Number Translationoptions thatallow theAdministrator tochangethepresentation
+of both theOriginatingAddress andDestination Address (remove“+”,leadingzeros,etc)
+Tip:
+Therearea numberofparametersinvolvedinconfiguringtheseoptions;follow the
+links below toview dedicateddocumentationoneachsubject.
+l
+l
+l
+l
+l
+l
+"Origination Address Identification andPAI Management/Generation" on
+page 154
+"SupportingAsymmetricReliableProvisionalResponses (100rel)" on page 175
+"UnderstandingTrunk Groups "onpage 238
+"NumberTranslation Options" onpage 1600
+"Global Ingress Number Translation" on page 210
+"CheckingandEditingNumber Translations Strings" on page 140
+1. EnsurethattherequiredOrigination Preferenceis setusingthe“Origination Preference” drop-down listbox.
+Theoptions availableare:
+• FromthenPAI-WhentheFromAddressisofgreaterorequalvaliditytothePAI itwillbeusedas theOri
+ginating Address within Digitalk Carrier Cloud.
+• PAI thenfrom (DefaultOption)-WhenthePAI is ofgreater or equalvaliditytotheFrom Address itwillbeused
+as theOriginatingAddress within Digitalk Carrier Cloud.
+• From-TheFromAddresswillbeusedastheOriginatingAddress withinDigitalk Carrier Cloudregardless of
+the contents or status of thePAI.
+• PAI-ThePAI willbeusedastheOriginatingAddress withinDigitalk Carrier Cloudregardless ofthecontents
+or status of theFrom Address.
+For further information see:"Origination Address Identification andPAI Management/Generation" on page 154
+C onfid entia l
+8 7 of 1635
+2. Ifrequired,determinewhichform ofOrigination Validation willbeemployedbythis Customer Interconnect.
+For further information see:"UnderstandingInvalid/MissingOrigins" on page 400 and"Origination Address
+Identification and PAI Management/Generation" on page 154
+Technical Note:
+WhatCanI DowithThisSetting?
+Moreinformation onthis settingis providedin thedocumentation linkedabove.
+However,insummarythis settingcanbeusedtodeterminethevalidityoftheincomingOriginating
+Address.
+Theresultof this check sets a "flag" on thecallwhich is recordedin theCDR andcanbereportedon
+usingReportBuilder.Thepossibleresults of thecheck areas follows:
+l
+l
+l
+l
+CLI validity- not checked
+CLI validity checked– valid
+CLI validity checked– invalid
+CLI validity checked-address missing
+C onfid entia l
+8 8 of 1635
+Tip:
+It is important tounderstandhowever thattheresultoftheofthevaliditycheckeddoes
+nothingatthis pointin thecallflow.
+Insteadthevalidity status can beusedbya number offeatures withinCarrier Cloudto
+block/allow calls, or to rate androutedifferently.
+For example,aninvalidcallcan beblockedor rateddifferentlyon a Customer Rating
+Plan, blockedor routeddifferently on a RoutingPlan,or blockedfrom usinga particular
+Supplier Interconnect.
+However,a callidentifiedas "invalid" by this check willberoutedthrough thePlatform
+without problem if nofurther settings relatingtothis functionality are applied.
+3. IfthePAI (or From) Header requires generatingselecttherequiredoptionfrom the"SetPAI Header"drop
+downbox.
+For further information see:"Origination Address Identification andPAI Management/Generation" on page 154
+4. IfanymanipulationoftheOriginatingor Destination Addresses is requiredatthis pointconfigurethe“Ingress
+Parameter Manipulation” settings.
+Technical Note:
+Thenumbertranslation options providea methodbywhichoriginationanddestination(To)
+addresses canbemodified,themostcommonusageforthis is tonormalisethem toa singleformat,
+suchasE.164(withouta +).
+It is possible toapply a previously configured“global” translation settingusingthe “GlobalTrans
+lation” drop-down list box,or toenter specific translation stringfor this interconnect.
+C onfid entia l
+8 9 of 1635
+Note: BeawarethatwhenusingtheGlobalTranslationsettingitis possibletodeterm
+ine whichaddresses (origination and/or destination) itapplies.
+For further information see:
+l
+l
+l
+"NumberTranslation Options" onpage 1600
+"CheckingandEditingNumber Translations Strings" on page 140
+Caution:
+OnCorrecting Origin Addresses
+It is important tobeawarethatfor allorigin-basedfeatures on theplatform tofunction correctly (such
+as Origin BasedRatingandRouting) Origination Addresses mustbecorrectlyformattedsothatthey
+matchwithboththecentralisedOrigin Codes andSets for Customer RatingandRoutingandtheindi
+vidual Supplier Origin Codes andSets.
+This means,inthesamewaythatDestinationAddresses needtobenormalisedtoremoveany
+extraneous prefixes,such as “+” or “00” thesamemustbedonewithOriginatingAddresses to
+ensurethesekeyfunctions work correctly.
+5. Click “Save”,tosavethechanges onthis screen.
+1. Click the“Media” tab.
+TheMedia Tab
+Result: The“Media Configuration” screen is displayed.
+2. Click “Edit”.
+Result: The“Media Configuration” settings areavailablefor editing.
+C onfid entia l
+9 0 of 1635
+3. ConfiguretheCodecsupportrequiredfor this Interconnect.
+Technical Note:
+Codec Management.
+C onfid entia l
+9 1 o f 16 35
+TheCodecManagementscreenprovidesa listofthemostcommonCodectypesthattheCarrier
+CloudPlatform is likely toencounter.
+Codecsaredividedintotwocategories “supported” and“relayonly”.
+With “relay only” Codecs (shownonthescreenmarkedwiththegreyRelayOnlytext),packets
+encodedusingthis CodeccanbepassedthroughthePlatform,butthereis nocapacitytomanipulate
+or transcodeto/from them.this
+Supported Codecscanbemanipulated and transcoded to/from, (iftranscodingis enabledfor the
+call anda transcodinglicenceis available).
+The“Allow” checkboxmeansthatthis Codec(or groupofCodecs inthecaseofthe“Allother
+Codecs” setting) will bepermittedtoconnecttotheCarrier CloudPlatform.Tostopa Codecbeing
+presentedtotheSupplier Interconnectas an availableoption uncheck the“Allow” option.
+Theorder oftheCodeclistdetermines theorder inwhichtheCodecs arepresentedtotheSupplier
+Interconnect.
+Tip:
+AdviceonCodecManagement
+Digitalk advise that in mostoperationalscenarios itis notnecessary torestrictCodecs. Bynot
+restricting Codecs you allow thePlatform tohavethebestchanceofsuccessfullyconnectinga call
+andgettingthehighestpossibleperformancefrom thePlatform.
+However,inveryspecificscenarios whereitis requiredtorestrictCodecs theOperator mustbe
+awarethatremovingCodecs from thelistwillmeanthatCustomers cannever routetrafficutilising
+thesecodecs.
+C onfid entia l
+9 2 of 1635
+Note:
+Manipulating Supported Codecs
+Clicking on thedetails of a supportedCodecwillpresentthe“EditSettings” option for thatCodec.If
+requiredthesecanthenbeedited.
+Caution:
+Thesesettings shouldbeleftattheir defaults in thevastmajority of normaloperating
+scenarios, andmustonlybealteredinconsultation with Digitalk Support.
+VAD(Voice Activity Detection)
+In G.729 andG.723.1the“VAD” settingintheSDP is directlypassedthroughfrom theCustomer to
+the Supplier, the settinghereis NOTused.However ifneither theCustomer nor theSupplier has
+stateda preferencefor VADthenwewilladdthepreferenceconfiguredhere.
+In addition if a Customer’s SDP didnotincludeG.729 or G.723.1,andCarrier Cloudis addingthese
+Codecstotheofferedlistfor theSupplier (which willrequireTranscodingif used) theVADcon
+figuration from Carrier CloudManager is used.
+In G.711 the“VAD” settingis notsetin theSDP,thereforetheVoIP Platform willalways follow pref
+erences configuredontheCustomer andSupplier settings.
+PacketDuration
+The“PackageDuration” settingsets the“ptime” (packettime) in theSDP.Interconnects canthen
+supportthatpacketsizeor choosea differentoption.Calls on thesameCodecbutwithdifferent
+packetsizes canbesupportedbyCarrier Cloudwithouttheneedfor Transcoding.
+Modes
+C onfid entia l
+9 3 of 1635
+Modeshavebeenprovidedtomeetspecificinteroperabilityscenarios.TheModesettingmust
+ALWAYSbeleftatMode1,unlessspecificinstructions havebeenreceivedfrom Digitalk Support.
+4. Takenoactionwiththe“DTMFDetection” setting.
+Technical Note:
+This settingonly has an effectif media is beingrelayedbytheCarrier CloudPlatform andis onlyused
+ontheSupplier Interconnect.
+5. DeterminetheMedia Relaypropertyfor this Interconnect.
+Thedefaultsettingis “Always” which provides topologyhidingfor customers andsupplier networks,however
+other scenarios,such as OpenRTP,mayrequireother settings.
+SeetheTechnicalNote-RelayMedia for moreinformation.
+6. EnsurethattheMedia Network drop-downlistboxremains setto"Sameas Signalling".
+Note:
+This settingmustonlybechangedinconsultation with Digitalk Support.
+7. Selectwhether anRTP InactivityTimeoutwillberequired.
+C onfid entia l
+9 4 of 1635
+Note:
+TheRelayedRTP InactivityTimeoutcanbeusedtocancela callinprogress ifnoRTP packets are
+receivedwithin thedesignatedtimeperiodfrom either thecallingor calledparty.
+Notethatmanydevices maynottransmitaudioduringperiods ofsilenceonthecall,sosettingthis
+Inactivity Timeout toa shorttimeperiodmayresultin calls in thedroppingof calls wherenooneis
+speaking.
+Digitalk recommendinnormaloperationthatthis settingis leftblank.
+8. Click “Save”
+Result: Thechanges tothescreenaresaved.
+TheSignalling Tab
+1. Click the“Signalling” heading.
+Result: The“SignallingConfiguration” screen is displayed.
+2. Click “Edit”.
+Result: The“SignallingConfiguration” settings are available for editing.
+3. Selecttherequiredprivacymethodfor this Interconnect. Choosefrom:
+n RFC3261
+n RemotePartyID,and
+n RFC3325P-AssertedIdentity.
+4. EnsuretheSessionTimer settingis enabled.
+C onfid entia l
+9 5 of 1635
+Note:
+Session Timers ensurethatcalls cannever belefthangingfor extendedperiods intheeventofan
+exceptional error from theremoteCarrier or an SBC failover.
+Reference: http://www.ietf.org/rfc/rfc4028.txt
+Technical Note:
+Session Timers- Further Information
+AsdescribedintheRFCreferencedabove,SessionTimers area standardpartoftheprotocolfunc
+tioning as a “keepalive” mechanism.
+Session Timers function bysendingoccasionalUPDATEor additionalINVITE(sometimes calleda re
+INVITE) messages duringthecalltoensurethatbothsides remainconfidentthata signallingpath is
+beingmaintained.
+Theresponsibility for sendingthesemessages is negotiatedduringcallsetup,sothis can bethe
+Digitalk SBC or theCarrier’s switchingdevice.
+Minimum Session Timer
+If the Carrier has negotiatedresponsibility tosendthekeepaliverequests,theMinimum session
+timer applies. TheDigitalk SBC willwaitfor half of the90 seconds for a keepaliverequest.Ifafter 45
+seconds (90/2 =45 seconds) a requesthas notbeenreceived,wewillgeneratea keepalivemes
+sageandsendittotheCarrier.Ifafter another 45 seconds a responsehas notbeenreceivedback
+from theCarrier wewillassumethatthecallis completeandwillenditgracefully.90 seconds is the
+shortest periodof timethatcan bedefinedfor theMinimum sessiontimer intheSIP specification.
+Default Session Timer
+Thedefaultsession timer applies whentheDigitalk SBC has negotiatedresponsibilityfor sending
+keepaliverequests.Our defaultfor this settingis 1800 seconds.
+This meansthatwewillsenda keepaliverequestevery900(1800/2) seconds.IftheCarrier does
+notreceivea keepaliverequestafter 900 seconds theywillsenda keepaliverequesttotheDigitalk.
+If after another 900 seconds theydonotreceivea responsefrom theDigitalk theywillendthecall.
+5. Ifandalternative(asymmetric) ReliableProvisionalResponsehandlingis neededfor this Interconnect,select
+the requiredoption.
+C onfid entia l
+9 6 of 1635
+6. Ifa “MaximumCallDuration” needs configuringfor this Interconnection,unselectthe“NoLimit” checkboxand
+set therequiredcallduration.
+6. If“CallProgress Timers” arerequiredfor this Interconnection,unselectthe“Default” checkbox andsetthe
+requiredtimeouts.
+Note:
+Thesetimers aredesignedtodealwitha scenariowherea Carrier Interconnectionsends aninitial
+Tryingor Ringingmessage,butthendoes notcontinuebysendinga further messagetoconnector
+cancelthecall.
+Whenthis occurs thedefaultSIP timer waits 2 minutes beforecancellingthecall,andpotentiallymov
+ingontothenextchoiceina RoutingPlan.
+In a live telephonyenvironmenta two-minutewaitis almostcertain toresultin thecaller hangingup. 
+This settingmakes itpossibletoseta lower timeout,in milliseconds,wherebyif thespecifiedmes
+sageis notreceivedCarrier Cloudwillcontinuetothenextroutingchoicein theRoutingPlan and
+potentially still connect the call.
+7. IfanyReleaseCausemappingisrequired,thenconfiguretherequiredMappingGroup.
+Reference: SeeSection“"ReleaseCauseMapping"onpage 226“ for further information.
+8. Click “Save”.
+Result: TheInterconnecthas beenconfigured.this
+C onfid entia l
+9 7 of 1635
+3.4 Configuring an Supplier Interconnect
+ASupplier Interconnectthis providethetechnicalconfiguration for thecommunication between theCarrier Cloud
+andSupplier Partners.
+Technical Note:
+Renaming Interconnects is not Possible
+Pleasebeawarethatafter anInterconnecthas beencreateditis NOTpossiblefor ittoberenamed.
+Thereasonfor this is relatedtoensuringcontinueddata integrity in theCDRs over thelongterm.
+If an interconnecthas beennamedincorrectly,then itcan bedeletedandrecreated;or ifithas
+already beenconfiguredthenitcanbecopiedwitha new nameandtheoriginalthendeleted.
+Follow thesteps below toconfigurea SIP Interconnecttorouteegress traffictoSupplier Partners.
+1. Click onthenameoftheInterconnecttobeconfigured.
+Result: The“InterconnectManagement” screenis showndisplayinga summaryoftheinformationregardingthe
+Carrier Interconnect.
+2. Click “Edit”.
+Result: The“Details” screen can now beconfigured.
+C onfid entia l
+9 8 of 1635
+3. Ifrequired,deselect"unrestricted" andenter a ChannelCapacitylimitin the“Capacity” field.
+Note:
+Whenconfiguredthis settingrestricts the number of simultaneous calls thatwillbesenttothis Inter
+connectatanyonetime.
+If this limit is reached, then the Interconnectwill not be usedon a RoutingPlan anda subsequent
+Routingchoicewillbetaken if soavailable
+4. SelecttheappropriateSupplier RatingPlan for this Interconnectusingthe“Supplier BuyRates” drop-down list
+box.
+C onfid entia l
+9 9 of 1635
+Note:
+Whileit is notnecessarytoconfigurea Supplier RatingPlan for a Supplier Interconnect(itmaybe
+desirable in test scenarios) failure todosowillmean thatcalls thataresenttotheSupplier Inter
+connectwill notberated.
+AwarningmessagewillbedisplayedifyoutrytoSavethis a Supplier Interconnectwithoutcon
+figuring this setting.
+Technical Note:
+Supplier Interconnects with no Rating Plan Applied
+ThePlatform Operator has a choicedeterminingwhatoccurs inthis scenariowhena callis routedto
+a Supplier Interconnectthatcurrently does nothavea Supplier RatingPlan enabledwhenMargin
+Enforcementhas beenenabledonCustomerRating.
+FromCarrier CloudRelease6.1 MarginEnforcementwillblock calls beingsenttosucha Supplier
+Interconnect whereitdoes nothavea Supplier RatingPlanconfigured.This is a changeofbehaviour
+from previous versions ofthesoftware.
+If your organisation requires the original behaviour wherebycalls wouldbepassedin this scenario,a
+system settingis available tore-enablethat.
+PleasecontactDigitalk Supporttoenablethatoption if required.
+5. SelecttheSignallingIP address from whichthis Interconnectwillbesendingtraffic.
+6. Click “Save”.
+Result: TheDetails screen has now beenconfigured.
+7. Click the“Egress Routing” tab.
+Result: The“Egress Routing” screenis displayed.
+C onfid entia l
+1 0 0 of 1635
+Egress Routing
+1. Click “Edit”.
+Result: The“Egress Routing” settings areavailablefor editing.
+2. Usethetablebelow tocompletetheEgress Routingconfiguration.
+Field
+Tip: Description
+C onfid entia l
+Action
+1 0 1 o f 16 35
+102 of 1635
+Confidential
+Tech-Pre
+fix
+Determinesifatech-prefixwillbeaddedtotheDestinationAddress
+whenthecallissentoutoftheCarrierCloudPlatform.
+Ifrequired,select
+the“InsertRequest
+URIPrefix”check
+boxandenterthe
+requiredprefix.
+SendTo
+DeterminestheIPaddress(es),andwherenecessarytheNetwork,
+thattheegresstrafficusingthisSupplierInterconnectwillbesent.
+TechnicalNote:
+EgressIPTechnicalNotes
+FallbackIP(s)
+WhenaddingmultipleIPaddresses,itispossibletomark
+anIPaddressas“Fallback”.
+IPaddressesthatarenotconfiguredas“Fallback”are
+referredtoas“Primary”IPaddresses.
+ThisfeatureisdesignedtoallowIPAddressestobe
+addedthatwillonlybeused“inanemergency”,this
+meaningwhenallofthe“Primary”IPaddressesare
+unavailable.
+CallswillonlybesenttoFallbackIPswhereallPrimary
+IPshavebeenautomaticallydisabledthroughtheCall
+Monitoringfeature.
+DistributionbetweenmultipleIPaddressesonthe
+sameNetwork
+Ifmultiple(non-fallback)IPaddressesareassignedfor
+thesamenetworkthenSBCwillautomaticallydivide
+trafficbetweenthembyusingeachaddressinturn
+(sometimesknownasa“round-robin”distribution).
+Ifitisnecessarytocontrolthedistributionbetweentwo
+IPaddressesbelongingtothesameSupplier-thendo
+notaddthemtoasingleinterconnectinsteadcreatetwo
+Click“Add”and
+entertherequired
+IPaddress(es).
+(or more) interconnects with thespecifiedIP addresses
+andtherequireddistribution can becreatedon theRout
+ingPlan.
+Network Selection (Geographic Redundancy Scen
+arios Only)
+WhenaddinganIP addressthe“Network” drop-down
+list box will also becomeavailable.
+This feature is designedtoprovideIP controlfor Cus
+tomers operatingusingGeographicRedundancyover
+multiple networks.
+For Platforms operating with onlya singleNetwork and
+onasinglePointofPresenceno additionalselectionis
+possibleand thedefaultsetting of“Any” cannotbe
+changed.
+However,for Platform Operators operatingGeographic
+RedundancywherethesameSupplieris connectedon
+differing Networks,representingdifferent Points of Pres
+ence,this feature allows a Network Administrator to
+identify if an IP address is presenton allnetworks,or
+only ona singlenetwork.
+Asshowninthescreenshotbelow:
+This meansthatwhentheSupplier Interconnect,with
+multiple IP’s on specific networks,is usedtosendtraffic
+onaRoutingPlanonlytheappropriateIP address(es) for
+C onfid entia l
+1 0 3 o f 1635
+104 of 1635
+Confidential
+thenetworkbeingusedbytheCallwillbeselected.
+Egress
+Transport
+Preference
+Determineswhattransportprotocolwillbeused.
+Selectfrom:
+n UDP(thedefaultandmostcommonlyused.)
+n TCP,and
+n TLS
+Selecttherequired
+transportprotocol.
+External
+Routing
+Provider
+ThissettingisusedwhentheDigitalkCarrierCloudPlatformisbeing
+usedinconjunctionwithathirdpartyroutingprovider.
+Caution: Thissettingisonlytobeusedifspecifically
+agreedwithyourDigitalkAccountManagementTeam.
+Leavethissettingat
+“No”,unlessspe
+cificallyinstructed
+otherwisebecause
+anadditionalrout
+ingPlatformisbeing
+utilised.
+Externally
+Routed
+Media
+ThissettingisonlyrelevantinPlatformsthathavemultiplephysical
+pointsofpresence.
+Insuchinstallationsselectingthisoptionwillminimisethedistancetrav
+elledovertheinternalnetworkbytheRTP.
+Caution: Thissettingshouldonlybeusedifspecifically
+agreedwithyourDigitalkAccountManagementTeam.
+Leavethissettingat
+“DoNotFavour”,
+unlessspecifically
+instructedbyyour
+TechnicalMan
+ager/DigitalkSup
+port.
+MaxCalls
+Per
+Second
+Thissettingdeterminesthemaximumrateofcalls(CallsperSecond)
+thattheCarrierCloudPlatformwillsendthroughtotheSupplier.
+Ifrequired,select
+thecheckboxand
+entertherequired
+callspersecond
+limit.
+Trunk
+Group
+ThisRoutingmethodsupportsvalidationusingTrunkGroup,inaccord
+ancewithRFC4904andisdesignedforinternetworking“CoreRout
+ingEngine”environments,ratherthandirectcommunicationwith
+CustomersandSuppliers.
+105 of 1635
+Confidential
+Reference:SeeSection"UnderstandingTrunkGroups"onpage 238
+forfurtherinformation.
+Send
+Trunk
+Group
+Ifenabled,thissettingwillpassthroughtotheSupplierthe“tgrp”and
+“trunk-context”headerfromaninboundcall(wherepresent).
+Reference:See“"UnderstandingTrunkGroups"onpage 238”forfur
+therinformationonTrunkGroups
+Blacklists
+ThissettingwillapplyaOriginationand/orDestinationBlacklist,and
+optionallyacorrespondingBlacklistExceptionList,tothisInterconnect.
+Whenappliedcallstonumbers/numberrangesincludedontheBlack
+listwillnotberoutedtothisInterconnect.Unlessspecificallypermitted
+bytheExceptionList.
+Reference:See"Blacklisting"onpage 234forfurtherinformation.
+Ifrequired,selectan
+Blacklist/Exception
+ListforthisSupplier
+Interconnect.
+Default
+CarrierPri
+orityRule
+ThissettingdeterminesthedefaultpriorityforthisSupplierInter
+connectviaa“RoutingPlanCarrierPriorityRule”.
+Important: ChangingthissettingforanexistingSupplierInterconnect
+willupdatethepriorityforallRoutingPlanswhereaspecificCarrier
+Rulehasnotalreadybeenconfigured.
+TechnicalNote:
+Whatdoesthisfeaturedo?
+"CarrierandZonePriorityRules"onpage 870allowthe
+AdministratortodetermineifanInterconnectwillbe
+includedonaparticularRoutingPlan,andiftheyare
+included,toprioritise/de-prioritisetheInterconnectinrela
+tiontoothersontheplanwhenbuildingtheroutingorder.
+ThisfeaturedeterminesthedefaultCarrierpriorityfora
+newInterconnectbeingcreatedonallexisting,and
+future,RoutingPlans. 
+Caution: Bydefault,thissettingiscon
+figuredto“Exclude”-meaningthatwhere
+CarrierPriorityRulesarebeingusedthe
+Interconnectwillbeexcluded.
+Ifrequired,setthe
+"DefaultCarrierPri
+orityRule.
+Example:
+Example Usage: Automatically
+Exclude until Tested
+This feature is sometimes usedtoauto
+matically exclude a new Interconnectfrom
+useonanyliveRoutingPlanuntilithas com
+pletedquality testing.
+Todothis ensuretheDefaultCarrier Pri
+ority Rule is set to“Exclude” (thedefaultset
+ting) until testing has been completed.
+Theneither manuallyenabletheInter
+connectoneachroutingplanrequired,or
+edit this setting here tochangetheglobal
+priority for the Interconnect. (See below.)
+Reference: See"Carrier andZonePriorityRules" on
+page 870forfurther information onthis feature.
+Editing this Setting on an Existing Interconnect
+If this setting is changedon an existingInterconnect,
+then thePlatform willautomatically updatethepriority
+setting for this Interconnect on all of the RoutingPlans
+that havebeencreatedonthePlatform,unless a specific
+rule for this Interconnect has already been createdon a
+RoutingPlan.
+Example:
+Thescreenshotbelow shows anexample
+of this:
+1 0 6 of 1635
+C onfid entia l
+HeretheDefaultCarrier Priority Ruleis
+beingchangedtoExcludefor allRouting
+Plans apartfrom theRoutingPlancalled
+“Doc–ItalyRouting”,becausea rule
+already exists for the Interconnecton that
+plan.
+Scope of Setting
+Beawarethatchangingthis settingonlyupdates theCar
+rier Priority Rule for this Interconnect on the relevant
+RoutingPlans-as withindividualrulechanges-chan
+gingtheruledoes notimmediatelyhaveanoperational
+effect on theRoutingPlan. Toapplytherevisedpriority
+(priorities) it is necessary to update the plan by running
+C onfid entia l
+1 0 7 o f 16 35
+the “Edit RoutingOrder UsingPriority Rules” wizard.
+3. Click “Save”.
+Result: TheEgress Routingscreenhas now beenconfigured.
+Egress Translations
+4. Click the“Egress Translations” tab.
+Result: The“Egress Translations” screen is displayed.
+1. If thereis a requirementtomanipulate/generatetheOriginatingAddress for this callconfiguretheOriginating
+Address Validation andPAI Generationfields as required.
+Reference: See"Origination Address Identification andPAI Management/Generation" on page 154for further
+information.
+2. Determineifthis Egress Interconnectwillpermittraffictobepassedthrough itthathas a Missingor InvalidOri
+gination Address.
+Note: Thedrop-downlistboxprovides twooptions;thedefaultoption of"DoNotBlock" whichwill
+pass missing/invalidtraffic, andthe alternative option "Block" which when setwillnotallow miss
+ing/invalid traffic to use this Interconnect.
+Reference: See"UnderstandingInvalid/MissingOrigins" on page 400 for further information.
+3. IfanymanipulationoftheOriginating(Itis possibletotranslateeither both theFrom andPAI together usingthe
+samesetting,or separately) or Destination Addresses is requiredatthis pointthen configurethe“DefaultNum
+ber Translation” settings.
+C onfid entia l
+1 0 8 of 1635
+Reference: See"NumberTranslationOptions" onpage 1600andCheckingandEditingtheNumber Translation
+String for further information.
+4. Ifthetraffic beingsenttothis Supplier Interconnectrequires the‘Display Name’tobestrippedfrom thesig
+nalling (to/from or both) select the requiredoption from the“RemoveDisplayName” drop-downlistbox.
+5. Ifthetraffic beingsenttothis Supplier Interconnectrequires the‘ContactUser’fieldin thesignallingtobesetto
+the samevalueasthe‘FromUser’thensetthe“SetContactUser As from User” drop-downlistboxto“Yes”.
+6. Click “Save”
+Result: Thechanges aresaved.
+5. Click the“Media” tab.
+Result: The“Media Configuration” screen is displayed.
+Media Configuration
+1. Click “Edit”.
+Result: The“Media Configuration” settings areavailablefor editing.
+C onfid entia l
+1 0 9 of 1635
+2. ConfiguretheCodecsupportrequiredfor this Supplier Interconnect.
+Technical Note:
+Codec Management.
+C onfid entia l
+1 10 o f 16 35
+TheCodecManagementscreenprovidesa listofthemostcommonCodectypesthattheCarrier
+CloudPlatform is likely toencounter.
+Codecsaredividedintotwocategories “supported” and“relayonly”.
+With “relay only” Codecs (shownonthescreenmarkedwiththegreyRelayOnlytext),packets
+encodedusingthis CodeccanbepassedthroughthePlatform,butthereis nocapacitytomanipulate
+or transcodeto/from them.
+SupportedCodecs canbemanipulatedandtranscodedto/from,(iftranscodingis enabledfor thecall
+andatranscodinglicenceis available).
+The“Allow” checkboxmeansthatthis Codec(or groupofCodecs inthecaseofthe“Allother
+Codecs” setting) will bepermittedtopass through theCarrier CloudPlatform.Tostopa Codecbeing
+presentedtotheSupplier Interconnectas an availableoption uncheck the“Allow” option.
+Theorder oftheCodeclistdetermines theorder inwhichtheCodecs arepresentedtotheSupplier
+Interconnect.
+Tip:
+AdviceonCodecManagement
+Digitalk advise that in mostoperationalscenarios itis notnecessary torestrictCodecs. Bynot
+restricting Codecs you allow thePlatform tohavethebestchanceofsuccessfullyconnectinga call
+andgettingthehighestpossibleperformancefrom thePlatform.
+However,ina scenariowherethis itis desirabletosendonlya specificcodec(or tonever senda spe
+cific codec) to a Supplier theCodecManagementfeatures supportthis flexibility.
+C onfid entia l
+1 11 o f 16 35
+Note:
+Manipulating Supported Codecs
+Clicking on thedetails of a supportedCodecwillpresentthe“EditSettings” option for thatCodec.If
+requiredthesecanthenbeedited.
+CAUTION: Thesesettings should beleftattheir defaults inthevastmajorityofnormaloperating
+scenarios, and mustonlybealtered inconsultationwithDigitalk Support.
+VAD(Voice Activity Detection)
+In G.729 andG.723.1the“VAD” settingintheSDP is directlypassedthroughfrom theCustomer to
+the Supplier, the settinghereis NOTused.However ifneither theCustomer nor theSupplier has
+stateda preferencefor VADthenwewilladdthepreferenceconfiguredhere.
+In addition if a Customer’s SDP didnotincludeG.729 or G.723.1,andCarrier Cloudis addingthese
+Codecstotheofferedlistfor theSupplier (which willrequireTranscodingif used) theVADcon
+figuration from Carrier CloudManager is used.
+In G.711 the“VAD” settingis notsetin theSDP,thereforetheVoIP Platform willalways follow pref
+erences configuredontheCustomer andSupplier settings.
+PacketDuration
+The“PackageDuration” settingsets the“ptime” (packettime) in theSDP.Interconnects canthen
+supportthatpacketsizeor choosea differentoption.Calls on thesameCodecbutwithdifferent
+packetsizes canbesupportedbyCarrier Cloudwithouttheneedfor Transcoding.
+Modes
+Modeshavebeenprovidedtomeetspecificinteroperabilityscenarios.TheModesettingmust
+ALWAYSbeleftatMotthisde1,unless specificinstructions havebeen receivedfrom Digitalk Support.
+26. Selecttherequired“DTMFDetection” setting;choosefrom:
+n RFC2833
+n Inband(this settingshouldonlybeselectediftheG.711 Codecis beingused.)
+n SIPInfo
+Technical Note:
+This settingonly has an effectif media is beingrelayedbytheCarrier CloudPlatform.
+Whenthis occurs thesettingmustbeconfiguredtotheDTMFtransitmethodusedbytheSupplier,if
+this is set incorrectly DTMF willnotberelayed;or mayberelayedincorrectly.
+TheInbandsettingworks onlywithG.7-11 or G.726 (32 or 40bitvariants). IfonlyoneInterconnect
+beingusedfor a callis usingInbandthena transcodinglicencewillbeusedtoconverttheDTMF.
+C onfid entia l
+1 12 o f 16 35
+27. DeterminetheMedia Relaypropertyfor this Interconnect.
+Thedefaultsettingis “Always” which provides topologyhidingfor customers andsupplier networks,however
+other scenarios,such as OpenRTP,mayrequireother settings.
+SeetheTechnicalNote-RelayMedia for moreinformation.
+28. MediaNetwork drop-downlistboxremains setto"SameasSignalling".
+Note:
+This settingmustonlybechangedinconsultation with Digitalk Support.
+29. Selectwhether anRTP InactivityTimeoutwillberequired.
+Note:
+TheRelayedRTP InactivityTimeoutcanbeusedtocancela callinprogress ifnoRTP packets are
+receivedwithin thedesignatedtimeperiodfrom either thecallingor calledparty.
+Notethatmanydevices maynottransmitaudioduringperiods ofsilenceonthecall,sosettingthis
+Inactivity Timeout toa shorttimeperiodmayresultin calls in thedroppingof calls wherenooneis
+speaking.
+Digitalk recommendinnormaloperationthatthis settingis leftblank.
+7. Click “Save”
+Result: Thechanges tothescreenaresaved.
+C onfid entia l
+1 13 o f 16 35
+Monitoring
+1. Click onthe“Monitoring” screen.
+Result: The“Monitoring” screen is displayed. 
+Note:
+TheMonitoringscreenis onlyrelevanttoSupplier Carriers,as its roleis tomonitor theperformance
+of Egress calls madebya Carrier Interconnect.
+ThereforetheMonitoringheadingwillonlyappear whena destinationIP address has beensavedon
+the “Egress” configuration page.
+This feature differs toQuality of Service Monitoringas this function does notdistinguish between dif
+ferent dialling destinations, it is monitoring if the messages beingsenttothis Supplier Carrier are
+beingacknowledged.
+Technical Note:
+WhatDoesMonitoring DoandHowDoesitWork?
+TheMonitoringsettings allow thePlatform toautomatically disabletheInterconnect/IP of non
+responsiveSuppliers.
+This function works either bymonitoringtheresponses toegress calls and/or bysendinga SIP
+Options messageandmonitoringtheresponse. 
+Thesefeatures canbeusedindependentlyor together andexplainedbelow.
+Call Response
+TheCallResponseoptionworks bymonitoringthestatus codes receivedas a resultofanegress call
+andreacting(either by disablingtheinterconnectandsendinga notification or by onlysendinga noti
+fication) when the“ConsecutiveFailures” counter is reached.
+C onfid entia l
+1 14 o f 16 35
+Bydefault, the only call responsecodeincludedin this check is ‘408’– “requesttimeout”. This code
+is generatedwhennoresponseis receivedtoanINVITEmessagesentbytheCarrier Cloudtoa Sup
+plier Interconnect within 32 seconds of itbeingsent.
+Monitoring Additional Responses- Central Response Codes List
+In somecircumstances Platform Administrators maywishtoincludeadditionalcallresponsecodes in
+this Monitoring.
+This canbeachievedbyselectingthe“CentralResponseCodes List” whichmusthavebeenpre-con
+figured toinclude therequiredresponsecodes.
+ConfiguringtheCentralResponseCodes List
+TheCentralResponseCodeListis accessedthroughtheAdmin>System Settings >Supplier Mon
+itoring menu. (Or alternatively,by clickingthe “ManageList” link on this screen.)
+C onfid entia l
+1 15 o f 16 35
+Screenshotofthe“Supplier MonitoringResponseCodes” screen.
+This screen provides a listof allavailable SIP ResponseCodes (408 is ALWAYS monitored). Addi
+tional Codes canbemonitoredbyaddingthem tothelist,as showninthescreenshotbelow where
+“503ServiceUnavailable” has beenadded.
+SIP OPTIONS
+SIP OPTIONSmonitoringdoesnotrelyoncalls,insteadconfiguringthis featuremeans thattheplat
+form will regularly sendan OPTIONS messagetotheSupplier Interconnecttoelicitanacknow
+ledgementof“200OK”.
+C onfid entia l
+1 16 o f 16 35
+This acts as a “PING” or “Keep-Alive” messagecheckingiftheendpointis stillrespondingandfunc
+tioning.
+Configuring SIP OPTIONS
+In mostcircumstances itis notnecessarytomakeanyconfigurations changes inorder touseSIP
+OPTIONSastheplatformdefaults aresufficient. However,theMonitoringscreendoes allow thePlat
+form Administrator tooverridethedefaultsettings andconfigurea specificTo/From Username
+whererequired.
+Multiple IP Addresses on a Single Interconnect
+If an Interconnectis configuredwith multipleIP addresses andoneofthem is foundtobenon
+responsive,then only theindividualIP address willbeblocked.
+This meansthatas longas thealternativeaddress/es arefunctioningtheInterconnectwillremain
+available for use.
+If all IP addresses arenon-responsive,then theentireinterconnectwillbesuspended.
+Re-enabling
+WhenanInterconnect/IP is disabledbySupplier Monitoringthemonitoringmethods todetermine
+howitwill bere-enabled.
+WhenusingSIP OPTIONS,theOPTIONSmessageswillcontinuetobesentandtheInterconnectre
+enabledwhena200OKisagainreceived.
+WhenjustusingCallResponsethis methodis notavailable,anda timer is thereforeconfigured(the
+default is 60 minutes) atwhichpointtheInterconnectwillbere-enabled.
+Alternatively, it is also possible to manually re-enable an Interconnect/IP disabledby Monitoringby
+disabling the monitoringfeature.
+C onfid entia l
+1 17 o f 16 35
+118 of 1635
+Confidential
+Completethe“Monitoring”sectionusingthetablebelow.
+Field Description Action
+Monitoring
+Enabled
+Thisoptiondeterminesifmonitoringisenabled. Thedrop-down
+listboxselectsfrom:
+n None-monitoringisoff
+n SIPOptions
+n CallResponse-monitoringisenabledbutSIPOptionsare
+notbeingsent.
+n SIPOptions&CallResponse-monitoringisenabledand
+SIPOptionswillbeused.
+Selecttherequired
+optionfromthedrop
+downlistbox.
+Alarm
+Severity
+Thisoptiondeterminesthelevelofthealarmthatwillbegen
+eratedwhenthereisamonitoringbreach.
+ThesealarmsaremonitoredintheAlarmDashboard.
+Selecttherequired
+severitylevelfromthe
+drop-downlistbox.
+Recipients
+Thisoptiondeterminestherecipientswhowillreceiveanemail
+whenamonitoringalarmisraised.
+Leavingthisblankmeansthatnoemailwillbesent.
+Multipleemailscanbeincludedbyseparatingthemwitha
+comma“,”.
+Addtherecipient(s)
+emailaddress(es),as
+required.
+SendNoti
+ficationon
+Thisoptiondeterminesifemailswillbesentonlywhenaprob
+lemisdetected,oradditionallywhentheInterconnectisre
+enabledandtheproblemiscleared.
+Selecttherequiredset
+tingfromthedrop
+downlistbox.
+2. Clickthe“Signalling”heading.
+Result: The“SignallingConfiguration”screenisdisplayed.
+Signalling
+1. Click“Edit”.
+Result: The“SignallingConfiguration”settingsareavailableforediting.
+2. Selecttherequiredprivacymethodfor this Interconnect. Choosefrom:
+n RFC3261
+n RemotePartyID,and
+n RFC3325P-AssertedIdentity.
+3. EnsuretheSessionTimer settingis enabled.
+C onfid entia l
+1 19 o f 16 35
+Note:
+Session Timers ensurethatcalls cannever belefthangingfor extendedperiods intheeventofan
+exceptional error from theremoteCarrier or an SBC failover.
+Reference: http://www.ietf.org/rfc/rfc4028.txt
+Technical Note:
+Session Timers- Further Information
+AsdescribedintheRFCreferencedabove,SessionTimers area standardpartoftheprotocolfunc
+tioning as a “keepalive” mechanism.
+Session Timers function bysendingoccasionalUPDATEor additionalINVITE(sometimes calleda re
+INVITE) messages duringthecalltoensurethatbothsides remainconfidentthata signallingpath is
+beingmaintained.
+Theresponsibility for sendingthesemessages is negotiatedduringcallsetup,sothis can bethe
+Digitalk SBC or theCarrier’s switchingdevice.
+Minimum Session Timer
+If the Carrier has negotiatedresponsibility tosendthekeepaliverequests,theMinimum session
+timer applies. TheDigitalk SBC willwaitfor half of the90 seconds for a keepaliverequest.Ifafter 45
+seconds (90/2 =45 seconds) a requesthas notbeenreceived,wewillgeneratea keepalivemes
+sageandsendittotheCarrier.Ifafter another 45 seconds a responsehas notbeenreceivedback
+from theCarrier wewillassumethatthecallis completeandwillenditgracefully.90 seconds is the
+shortest periodof timethatcan bedefinedfor theMinimum sessiontimer intheSIP specification.
+Default Session Timer
+Thedefaultsession timer applies whentheDigitalk SBC has negotiatedresponsibilityfor sending
+keepaliverequests.Our defaultfor this settingis 1800 seconds.
+This meansthatwewillsenda keepaliverequestevery900(1800/2) seconds.IftheCarrier does
+notreceivea keepaliverequestafter 900 seconds theywillsenda keepaliverequesttotheDigitalk.
+If after another 900 seconds theydonotreceivea responsefrom theDigitalk theywillendthecall.
+4. Ifa “MaximumCallDuration” needs configuringfor this Interconnection,unselectthe“NoLimit” checkboxand
+set therequiredcallduration.
+5. If“CallProgress Timers” arerequiredfor this Interconnection,unselectthe“Default” checkbox andsetthe
+requiredtimeouts.
+C onfid entia l
+1 2 0 of 1635
+Note:
+Thesetimers aredesignedtodealwitha scenariowherea Carrier Interconnectionsends aninitial
+Tryingor Ringingmessage,butthendoes notcontinuebysendinga further messagetoconnector
+cancelthecall.
+Whenthis occurs thedefaultSIP timer waits 2 minutes beforecancellingthecall,andpotentiallymov
+ingontothenextchoiceina RoutingPlan.
+In a live telephonyenvironmenta two-minutewaitis almostcertain toresultin thecaller hangingup. 
+This settingmakes itpossibletoseta lower timeout,in milliseconds,wherebyif thespecifiedmes
+sageis notreceivedCarrier Cloudwillcontinuetothenextroutingchoicein theRoutingPlan and
+potentially still connect the call.
+38. IfanyReleaseCausemappingisrequired,thenconfiguretherequiredMappingGroup.
+Reference: SeeSection“"ReleaseCauseMapping"onpage 226“ for further information.
+39. Ifthis Egress Interconnectshouldpass theSTIR/SHAKENidentityheader thensettheStir ShakenAttestation
+drop-downlistbox toPass
+Reference: SeeStir Shakenfor further information.
+39. Click “Save”.
+Result: TheInterconnecthas beenconfigured.this
+C onfid entia l
+1 2 1 o f 16 35
+3.5 Creating a Service
+Whencreatinga CustomerCarrier thethirdstepinthecarrier creation process is tocreateatleastoneServicefor
+eachCarrier Interconnection.
+ThepurposeoftheServiceis todeterminetheCustomer RatingPlanandRoutingPlanthatwillbeappliedtothe
+calls that havebeenvalidatedtothespecifiedCustomer Interconnection.
+Services allow theRatingAdministrator to:
+l
+l
+l
+l
+SetandchangeRatingPlans andRoutingPlans for theCustomer
+Setdifferent RatingandRoutingPlans basedontimeofday,origination number,destination number and
+digit length.
+EnableTranscoding
+EnableNumberPortability
+Tip: Supplier Carrier Interconnections donotneeda Service.
+Technical Note:
+For further information on usingCentralisedServiceMatchinglists see:"UnderstandingService
+Matching" onpage 178
+Technical Note:
+Maximum Numberof Services
+Beawarethatthereis a maximumlimitof3000Services thatcanbecreatedunder anInterconnect.
+However,innormaloperationthereshouldbenoreasonfor havingextremelyhighvolumes ofser
+vices such as this.If it is possible that a high number scenariosuch as this is potentiallynecessary,
+pleasecontactDigitalk todiscuss operationalefficiency andrationalisation.
+C onfid entia l
+1 2 2 of 1635
+3.5.1 Procedure for Creating and Configuring a Service
+After the Interconnecthas beenconfigured,a Servicemustbeaddedtoittofinalisetheconfiguration oftheCar
+rier.
+Follow thesteps below toconfigurea Servicefor anInterconnect.
+1. Click onthenameoftheInterconnectwhichis tohavea Serviceaddedtoit.
+Result: The“InterconnectManagement” screenis displayed.
+2. Click the"Service" Tabheader
+3. Select“AddService” from the“Actions” menu.
+Result: The“AddService” screenis displayed.
+C onfid entia l
+1 2 3 o f 1635
+124 of 1635
+Confidential
+3. UsethetablebelowtocompletethesettingsfortheService.
+Field Description Action
+Name DeterminesthenamebywhichthisServicewillbeknown.
+Entertherequired
+nameinthe“Name”
+field.
+Customer
+RatingPlan
+DeterminestheCustomerRatingPlanthatwillbeusedtocharge
+forcallsusingthisService.
+Note:OnlyRatingPlansconfiguredwiththesame
+CurrencyastheInterconnectwillbedisplayedinthe
+drop-downlistbox.
+Caution:
+BeawarethatwhileitispossibletoleavetheCus
+tomerRatingPlanfieldblankthiswillmeanthatthe
+ratingengineisnotengagedforcallspassing
+throughthisService. Theresultofthisisthatallcalls
+usingtheservicewillberoutedfree.
+Thisisbydesignandcanbeusefulinatestphase,
+butcareshouldbetakentoensurethatthisisnever
+setinalivecallingenvironment.
+Selecttherequired
+CustomerRatingPlan
+fromthedrop-downlist
+box.
+125 of 1635
+Confidential
+Currency
+Thisisareadonlyfieldthatrecordsthecurrencythatthisservice
+willbeworkingin.ThecurrencywillbeinheritedfromtheInter
+connect,asServicescannotbeinadifferentcurrencytotheInter
+connectthattheyarecreatedunder.
+Noactionrequired.
+TimeClass
+DetermineswhentheServicewillbeused.
+TohavetheServiceworkingallofthetime,selectthe“Anyday”
+TimeClass.
+Note:DonotleavethisentryblankortheService
+willnotwork.
+Selecttherequired
+TimeClassfromthe
+drop-downlistbox.
+Capacity
+Thisoptionalsetting,determinesthecapacityofthisService.
+Enablingthisfeatureprovidestheoptiontorestrictthetotalnum
+berofcallscanusethisServiceatanyonetime.
+Note:
+Ifthislimitisreached,thenadditionalcallswillbe
+rejectedwithoutaCDRbeingwritten.
+Theserejectedcallscanbeviewedonthe"Viewing
+CallsRejectedbytheSBC(FailedInboundCalls)"on
+page 1539screen.
+Ifrequired,deselected
+the"unrestricted"
+checkboxandsetthe
+appropriatenumberof
+channels.
+Allow
+Transcoding DeterminesiftranscodingwillbeallowedwhenusingthisService.
+Select“Yes”or“No”
+fromthe“Allow
+Transcoding”drop
+downlistboxas
+required.
+Routing
+Method
+DetermineswhichRoutingmethodwillbeused. Choosefrom:
+n RoutetoInterconnect-whichwillroutecallsusingthis
+ServicetoasingleInterconnectwithoutusingaRout
+ingPlan. Thismethodprovidesnoredundancy.
+Note:IfthisoptionisselectedtheEgressNumber
+Translationtab(seebelow)isdisplayedallowingthe
+optionofconfiguringaspecificTranslationforthisSer
+vice.
+Selecttherequired
+RoutingMethodfrom
+thedrop-downlistbox.
+126 of 1635
+Confidential
+n RoutingPlan-whichwillroutethecallsusingthisSer
+vicetoaRoutingPlan.
+Routing
+Plan DeterminesthespecificRoutingPlanthattheServicewilluse.
+Selecttherequired
+RoutingPlanfromthe
+drop-downlistbox.
+Origination
+Blacklist
+Thisoptionalsetting,appliesanOriginationBlacklisttothisSer
+vice.
+ThiswillpreventcallsfromapredefinedlistofOriginating
+Addressesfrombeingrouted.
+Reference: "Blacklisting"onpage 234
+Ifrequired,selecta
+Blacklist. 
+Origination
+Exceptions
+Thisoptionalsetting,appliesanOriginationExceptionstoaBlack
+listtothisService.
+Destination
+Blacklist
+Thisoptionalsetting,appliesaDestinationBlacklisttothisService.
+ThiswillpreventcallstoalistofpredefinedDestinationAddresses
+frombeingrouted.
+Reference: "Blacklisting"onpage 234
+Ifrequired,selecta
+Blacklist. 
+Destination
+Exceptions
+Thisoptionalsetting,appliesaDestinationExceptionstoaBlack
+listtothisService.
+NPStatus DeterminesiftheNumberPortabilitylookupwillbecarriedoutfor
+callsusingthisservice.
+Select“Enabled”or
+“Disabled”fromthe
+drop-downlistboxas
+required.
+NPPlan
+IfNumberPortabilityhasbeenenabled,andisrequired,thisdrop
+downlistboxwilldeterminetheNumberPortabilityplanthatwill
+beappliedtothecallsthatusethisService.
+Ifrequired,selectthe
+relevantNumberPort
+abilityplan.
+Origination
+Matching/
+Destination
+Matching
+Origination/DestinationAddressMatchingisafeaturebywhicha
+PlatformAdministratorcanrestricttheusageofaServicebyref
+erencetotheoriginationprefixoraddress,and/orthedestination
+prefixoraddress.
+Ifrequired,configure
+origination/destination
+matchingasneeded.
+127 of 1635
+Confidential
+AServicecanberestrictedsothatitisonlyaccessiblebycallsthat
+matchaparticularOriginationand/orDestinationaddress/prefix,
+orconverselycallfromaparticularOriginationand/orDestination
+address/prefixmaybeexcludedfromaspecificService.
+Twooptionsareavailablewhenconfiguringthisfeature:
+n DefineMatches-whichallowstheAdministratortocreate
+aspecificmatchinglistuniquetoanindividualservice,and
+n AssignList-Themorepowerfulandflexibleoptionwhich
+allowsthecreationofaServiceMatchingListthatcanbe
+assignedtomultipleServices.
+Reference: See"UnderstandingServiceMatching"onpage 178
+formoreinformationoncreatingaServiceMatchingList.
+EgressNumberTranslation
+IftheRoutingMethod“RoutetoInterconnect”isselected,thenwhentheServiceissavedanadditionalTab
+“EgressNumberTranslation”willappear.Asshownbelow.
+Whenselectedthefollowingscreenis displayed:
+This Taballows theAdministrator tooverridethedefaultOrigination andDestination Address Translation con
+figured on theServicewith a specificEgress Translation thatwillbeappliedtothetrafficutilisingthis Service.
+Follow thesteps below toconfigureServiceSpecificEgress Number Translation.
+1. Click “Edit”.
+Result: Thepageis readyfor configuration.
+C onfid entia l
+1 2 8 of 1635
+2. Select“No” usingthe“UseTranslationfrom Supplier” drop-downlistbox.
+3. ConfiguretherequiredFrom andToAddress Translation.
+Reference:"Number Translation Options" on page 1600
+4. Click “Save”.
+Result: Therequiredtranslation has been configured.
+C onfid entia l
+1 2 9 of 1635
+3.6 Understanding Service Matching
+Caution: Thetotalnumber ofcodesupportableacross allServiceMatchingLists is 100,000.
+Introduction
+Animportantconceptinthearchitecturalcallflow of theDigitalk Carrier Cloudis tounderstandthattheServiceis
+the pointatwhichtheRatingandRoutingis determinedfor thecall.
+WhileeveryCustomer Interconnectrequires atleastoneService,itis possibletocreatemultipleServices under
+the sameInterconnect. This canbedonetoapplydifferentratingand/or routingfor calls basedon oneofthree
+factors:
+l
+l
+l
+time of day
+origination of the call
+destination of the call
+This meansthatdifferent“choices” can bemadefor thecallflow basedonwherethecallcomes from,wherethe
+call is going, or the combination of thetwo.
+Whileit is possible todirectly set origination/destination matchingon a single Service,this feature is designedfor
+“simple” usageas thesettings mustbemanuallyconfiguredfor eachindividualService.
+Theservicematchingfeatureis designedtocentralisethis functionality by configuringone,or more,ServiceMatch
+ingLists that can beassignedtoone,or more,Services.
+This means,for example,anOrigination ServiceMatchingListcontainingallof theprefixes for countries in the
+EuropeanEconomicArea couldbeusedtoidentifyEuropeanoriginationtrafficacross manyServices assignedto
+manydifferentCustomer Carriers.
+Tip:
+WhileServiceMatchingLists always havethecapabilityofbeingappliedtomultipleServices,theydo
+nothavetobe. Itis possibletocreatea ServiceMatchingListandapplyittoonlya singleCustomer
+Interconnect-takingadvantageof theeaseofnumber managementthroughtheuploadofCSVs.
+Digitalk recommends a clear namingconventionis usedinthesescenarios toavoidfutureconfusion.
+Prefixes/Whole Numbers
+It is important tounderstandthatServiceMatchingLists can beconfiguredtomatcheither prefixes or wholenum
+bers (or evena combinationofthetwo).
+This meansthatServiceMatchingLists canbeusedtoprovidewholenumber “DID” or “Whitelist” matchingondes
+tination and/or origination numbers,as longas thetotalentries in allServiceMatchingLists remains below
+100,000.
+Seeherefor moreinformationhereonDIDservices.
+C onfid entia l
+1 3 0 o f 1635
+Technical Note:
+For technical clarity, when werefer to"wholenumber matching",ServiceMatchingalways assumes
+that the number beingmatchedmaybeaprefix,evenifitis longer thanthe“standardnumber length”
+for the DIDinquestion.
+Whatthis meansis ifa “wholenumber” suchas: 15551234567 is includedina ServiceMatchingList
+anynumberlonger thanthis wouldalsobematched. For example,thenumber 15551234567999
+wouldalsomatchthatentry.
+It is therefore recommendedthatservicematchingfor wholenumbers is supportedbyconfiguring
+the “MaxDigits” settingon theServiceMatchingListand,whereapplicable,configuringappropriate
+Origination Number Validation-preferably theDatabaseLookup-ontherelevantinboundInter
+connect.
+Illustration
+Thescreenshotbelow provides anillustration of how ServiceMatchingLists can beconfiguredandassignedto
+single or multiple Services.
+C onfid entia l
+1 3 1 o f 16 35
+C onfid entia l
+1 3 2 o f 1635
+133 of 1635
+Confidential
+Explanation:
+ThediagramaboveshowsanextractfromaCarrierCloudPlatform.
+Twocustomersareshown,CustomerA,whoseCustomerInterconnectisconfiguredwithfourServices,andCus
+tomerB,whoseCustomerInterconnectisconfiguredwithasingleService.
+ThePlatformhasbeenconfiguredwiththreedestinationServiceMatchingLists:
+l CustomerADDIs-alistofwholenumberDDIswhichhavebeenassignedtothespecificCustomer.
+l USAPrefixes–alistallofthe1xxxprefixesfortheUSA,excludingtheother1xxxdestinations.
+l EuropeanEconomicAreaPrefixes-alistofalloftheprefixesfortheEEA
+And,twooriginationServiceMatchingLists.
+l USAprefixes-asabovebutmatchingcallorigination
+l SpecificCountriesPrefixList-thisisalistofprefixesbelongingtoaseriesofspecificcountries.
+Theresultingconfigurationisasfollows:
+Customer Service Destination Origination Matchescalls…
+A 1 CustomerA
+DIDs
+toonlythespecificwholenumberDIDsincludedon
+thislist,fromanyoriginationnumber.
+ThislistisnotsharedwithanyotherServices.
+A 2 USAprefixes USApre
+fixes fromandtotheUSA.
+A 3
+European
+Economic
+AreaPre
+fixes-toacountrywithintheEuropeanEconomicArea,
+fromanyoriginationnumber.
+A 4-- toandfromanydestinationandoriginationthathas
+notbeenmatchedbyoneofthepreviousServices.
+B 1
+European
+Economic
+AreaPre
+fixes
+Specific
+Countries
+PrefixList
+toacountrywithintheEuropeanEconomicArea,
+fromacountryonthe“specificcountriesprefixlist”.
+AsthisistheonlyserviceforCustomerB,callswill
+onlyberoutediftheyarefromacountryonthelist
+andgoingtotheEEA. 
+All other calls will be rejected(with the status code
+503).
+Procedures:
+C onfid entia l
+1 3 4 o f 16 35
+Creating a Service Matching List
+Service MatchingLists areconfiguredindependentlyof individualServices,andcan then beassignedtomultiple
+Services as required. 
+Follow thesteps below tocreatea ServiceMatchingList.
+1. NavigatetoCarriers >ServiceMatching.
+Result: The“ServiceMatching” screenis displayed.
+2. Select“AddServiceMatching” from the“Actions” drop-downlistbox.
+Result: The“New ServiceMatchingDetails” dialogboxis displayed.
+3. Enter theNamebywhichthisServiceMatchingListwillbeknown.
+4. Ifrequired,adda description of theServiceMatchingList.
+5. Selectif thematchinglistwillappliedtoOrigination or Destination addresses,by selectingas appropriatefrom
+the “Matcher Type” drop-downlistbox.
+Note: AlthoughOrigination andDestination lists areconfiguredseparately-as determinedbyselect
+ingthis option-all other aspects of their creation andmanagementareidentical. 
+C onfid entia l
+1 3 5 o f 1635
+136 of 1635
+Confidential
+6. Click“Save”.
+Result: The“Origination/DestinationListScreen”isdisplayed.
+7. Usethetablebelowtocompletethisstep.
+Field Description Action
+Name DeterminesthenamebywhichthisServiceMatch
+ingListisknown. Ifrequired,editthenameofthelist.
+Description ThisoptionalfieldaddsadescriptionoftheService
+MatchingListforreferencepurposes.
+Ifrequired,addadescription,oredit
+theexistingdescription.
+Type
+The“Type”drop-downlistboxselectsfrom“Includ
+ing”and“Excluding”.
+ThisisusedtodetermineiftheServiceMatching
+Listwillonlyacceptcallsfromthelistedprefixes,or
+alternatively,rejectcallsfromthelistedprefixes.
+Thedefaultsettingis“Including”.
+EnsuretheappropriateTypeselection
+ismade.
+MinDigits
+TheMinimumandMaximumdigitssettingscanbe
+usedtorejectdestinationororiginatingaddresses,
+whichareunderoroveraspecifiednumberof
+digits.
+Thiscanbeusedtoautomaticallyrejectincomplete
+numberstringsthatwilllowerperformancemetrics
+iftheyareroutedontoaSupplier.
+Ifrequired,configuretheappropriate
+minimumandmaximumnumberof
+digitsthatwillmatchthisServiceMatch
+ingList.
+MaxDigits
+8. Click “Save”.
+Result: TheServiceMatchingListis createdandreadytohaveaddresses added.
+Adding Addresses to a Centralised Service Matching List
+After the ServiceMatchingListhas beencreatedoneor moreprefixes,and/or fulladdresses canbeaddedtoitto
+begin filtering.
+Thereare2 methodsavailabletoaddaddresses,describedbelow:
+Method 1: Adding aSingle Prefix or Address
+Follow thesteps below toadda singleaddress toa CentralisedServiceMatchingList.
+1. Typetheprefixor address intothefieldtotheleftof the“Add” button.
+2. Click the“Add” button.
+Result: Theentryhas beenaddedtotheServiceMatchingList.
+C onfid entia l
+1 3 7 o f 16 35
+Method 2: Importing a ListofNumbers
+If a large list of numbers needs to be added to the Service Matching List, this can be imported in a
+.CSV file.
+Follow thesteps below toimporta listofnumbers intoa ServiceMatchingList.
+1. Select“ImportAddresses” from the“Actions” drop-downlistbox.
+Result: The“ImportOptions” dialogboxis displayed.
+2. Click “Browse” andselectthe.CSV filecontainingthelistofaddresses ofprefixes tobeimported.
+Note:
+Thefile mustbein.CSV format,containinga singleColumnofnumbers inthefirstrow.
+Noheaderrowisrequired.
+3. Select“InsertOnly” toaddthesenumbers totheexistinglist,or “InsertandUpdate” toreplacetheexistinglist
+with thelist beinguploaded.
+4. Click “Import”.
+Result: Thefile is importedintothePlatform,andthedialogupdatedwhen theimporthas completed.
+C onfid entia l
+1 3 8 o f 1635
+5. Click “Done”. 
+Result: TheCentralisedServiceMatchingListhas beenupdated.
+Tip: Whentheaddressesand/or prefixes havebeenaddedtotheCentralisedServiceMatchingList,
+the list can beassignedtoa Service(s).
+C onfid entia l
+1 3 9 o f 1635
+3.7 Checking and Editing NumberTranslations Strings
+The“Check andEdit” functionalityis availablewhen configuringorigination/destination address translation on both
+the ingress andegress Interconnect.
+Thesyntaxfor NumberTranslationis necessarilysomewhatcomplicated,anditis thereforepossiblefor human
+error tooccur whenconfiguringthis setting. However,as errors in thesefields can preventcalls from beingcon
+nected,or stopthem from beingratedcorrectly,itis importanttogetthesesettings correct!
+This feature has beenprovidedtoenableanAdministrator tocheck how a Number TranslationStringthatthey
+haveconfiguredwillbehavewhenpresentedwitha series ofdifferentnumbers,andwherenecessaryeditthat
+string andseetheresult.
+Follow thesteps below from theIngress/Egress Translation pagetocheck andedita Number TranslationString. 
+Note: Onlyonestringcanbeparsedatonetime(originatingor destination).
+1. Click “Check andEdit” besidethestringtobechecked.
+Result: The“Destination/Origination Address Translation Editor” dialogbox is displayed.
+Anystringthathas alreadybeenconfiguredwillbedisplayedin the“Translation” field,as shown on thescreen
+shots aboveandbelow.
+C onfid entia l
+1 4 0 o f 1635
+2. Click (if required) “Show Examples”
+Clicking “Show Examples” willpopulatethetests with 5 commonnumber presentations tobetested.This is
+providedtoavoidhavingtotypeoutcommontests repeatedly.
+3. Ifrequired,enter anyadditionaltestnumbers in theDestination/Origination Address fields tobetested.
+C onfid entia l
+1 4 1 o f 16 35
+4. Noticethatthe“Translatedto” columnwillshow theresultofthedefinedTranslation on a callwith thatdes
+tination address.
+5. Ifnecessary,editthetranslation stringtoseealternative results.
+C onfid entia l
+1 4 2 o f 1
