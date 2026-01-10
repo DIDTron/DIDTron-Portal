@@ -5095,6 +5095,39 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/connexcs/servers", async (req, res) => {
+    try {
+      const servers = await connexcsTools.getServers(storage);
+      res.json({
+        success: true,
+        data: servers,
+        count: servers.length,
+        mockMode: connexcsTools.isMockMode(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch servers",
+      });
+    }
+  });
+
+  app.get("/api/connexcs/account", async (req, res) => {
+    try {
+      const account = await connexcsTools.getAccountInfo(storage);
+      res.json({
+        success: true,
+        data: account,
+        mockMode: connexcsTools.isMockMode(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch account info",
+      });
+    }
+  });
+
   // ==================== CONNEXCS SYNC ====================
   
   // Helper to get valid userId (validates user exists in database)

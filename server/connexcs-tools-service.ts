@@ -1207,6 +1207,68 @@ class ConnexCSToolsService {
       { id: 3, name: "EU Route", prefix: "49", tech_prefix: "", customer_id: 3, customer_name: "Global Telecom", carrier_id: 2, carrier_name: "Global Transit EU", routing_type: "lcr", status: "active", priority: 2, weight: 50, channels: 20, cps: 10 },
     ];
   }
+
+  async getServers(storage: StorageInterface): Promise<ConnexCSServer[]> {
+    if (this.mockMode) {
+      return this.getMockServers();
+    }
+    try {
+      const servers = await this.makeAuthenticatedRequest<ConnexCSServer[]>(storage, "server");
+      return servers || [];
+    } catch (error) {
+      console.error("[ConnexCS Tools] Failed to fetch servers:", error);
+      return [];
+    }
+  }
+
+  async getAccountInfo(storage: StorageInterface): Promise<ConnexCSAccountInfo | null> {
+    if (this.mockMode) {
+      return this.getMockAccountInfo();
+    }
+    try {
+      const account = await this.makeAuthenticatedRequest<ConnexCSAccountInfo>(storage, "account");
+      return account || null;
+    } catch (error) {
+      console.error("[ConnexCS Tools] Failed to fetch account info:", error);
+      return null;
+    }
+  }
+
+  private getMockServers(): ConnexCSServer[] {
+    return [
+      { id: 1, ip: "192.168.1.100", hostname: "switch1.mock.connexcs.com", type: "switch", cluster: "US-East", channels: 1000, cps: 100, status: "active" },
+      { id: 2, ip: "192.168.1.101", hostname: "dispatcher1.mock.connexcs.com", type: "dispatcher", cluster: "US-East", channels: 5000, cps: 500, status: "active" },
+    ];
+  }
+
+  private getMockAccountInfo(): ConnexCSAccountInfo {
+    return {
+      id: 1,
+      name: "Mock Account",
+      email: "mock@connexcs.com",
+      company: "Mock Company",
+      status: "active",
+    };
+  }
+}
+
+interface ConnexCSServer {
+  id: number;
+  ip?: string;
+  hostname?: string;
+  type?: string;
+  cluster?: string;
+  channels?: number;
+  cps?: number;
+  status?: string;
+}
+
+interface ConnexCSAccountInfo {
+  id?: number;
+  name?: string;
+  email?: string;
+  company?: string;
+  status?: string;
 }
 
 export const connexcsTools = new ConnexCSToolsService();
