@@ -40,3 +40,148 @@ The Class 4 Softswitch module implements the Digitalk Carrier Cloud Manager hier
 -   **OpenAI GPT-4o**: All AI features, integrated via Replit AI.
 -   **Twilio, SignalWire, Spearline**: SIP testing functionalities.
 -   **ConnexCS**: Class 4 Softswitch for call routing, CDR generation, and real-time balance management.
+
+---
+
+## DIGITALK CARRIER CLOUD MANAGER - COMPLETE IMPLEMENTATION REFERENCE
+
+### Reference Documentation (MUST STUDY BEFORE CODING)
+1. **PDF Documentation**: `attached_assets/UG-025-274_-_Carrier_Cloud_Manager_1768072023661.pdf` (1638 pages)
+2. **Managing Carriers Section**: `attached_assets/3-ManagingCarriers_1768085684244.txt` (complete text extract)
+
+**Tango Workflow Screenshots (361 total screenshots showing exact UI):**
+1. **Manage Carriers and Services** (99 steps): https://app.tango.us/app/workflow/Manage-Carriers-and-Services-in-Digitalk-Carrier-Cloud-7be3ed2772fa4a5fadb554bd48ebd7b4
+2. **Configure Carrier Contacts and Alerts** (32 steps): https://app.tango.us/app/workflow/Configure-Carrier-Contacts-and-Alerts-in-Digitalk-b913adcf391d4e98939e0e7f9bff1cd8
+3. **Configure Digitalk Carrier Cloud Settings** (99 steps): https://app.tango.us/app/workflow/Configure-Digitalk-Carrier-Cloud-Settings-7dc7bf616d1f43dcb2c4970be1005d6c
+4. **Configure Privacy and Rating** (32 steps): https://app.tango.us/app/workflow/Configure-Privacy-and-Rating-in-Digitalk-a4dcd176c97f4e62ace6f888a9a13c4f
+
+---
+
+### DIGITALK THREE CARRIER TYPES
+
+| Carrier Type | Description | Balance | Credit Control |
+|--------------|-------------|---------|----------------|
+| **Customer** | Ingress only - sends VoIP traffic TO the platform | Customer Balance (enforced, stops calls at limit) | Platform enforces prepaid/postpaid limits |
+| **Supplier** | Egress only - receives VoIP traffic FROM the platform | Supplier Balance (informational only) | Not enforced by platform (supplier controls) |
+| **Bilateral** | Both ingress AND egress | Both Customer & Supplier balances | Customer balance enforced, supplier informational |
+
+**Net Exposure** = Customer Balance - Supplier Balance
+
+---
+
+### DIGITALK CARRIER DETAIL PAGE - EXACT 5 TABS (from screenshot)
+
+**Page Header:** `Carrier Management / {Carrier Name}` with Actions dropdown
+
+#### Tab 1: Carrier Details (Three-Column Layout)
+
+**LEFT COLUMN - Carrier Details:**
+- Carrier Name
+- Type (Customer/Supplier/Bilateral)
+- Time Zone
+- Account Manager
+- Customer Billing (Automatic/Manual)
+- **Currency Section:** Primary Currency, Currency 2, Currency 3
+- **Routing Section:** Capacity (Unrestricted or number), Circular Routing (Enabled/Disabled)
+- [Edit] button
+
+**MIDDLE COLUMN - Credit Control:**
+
+Credit Control Table:
+| Direction | $/£ | Credit | Remaining | Limit |
+|-----------|-----|--------|-----------|-------|
+| Customer | USD | -4,658.60 (green badge) | - | - |
+| Supplier | USD | -2,925.54 (green badge) | - | - |
+| Bilateral | USD | -1,733.07 (green badge) | 1,266.93 | -3,000 |
+
+24 Hour Spend Limit Table:
+| Direction | $/£ | 24 Hr Spend | Remaining | Limit | Action |
+|-----------|-----|-------------|-----------|-------|--------|
+| Customer | USD | 57.64 (green badge) | - | - | [Reset] |
+| Supplier | USD | 2.28 (green badge) | - | - | [Reset] |
+
+**RIGHT COLUMN - Credit Settings:**
+- **Customer Credit Settings:** Credit Type, Bilateral Limit Breach, 24 Hr Spend Limit Breach, 24 Hr Spend Mode
+- **Supplier Credit Settings:** Credit Type
+- [Edit] button
+
+#### Tab 2: Interconnects
+- List of all interconnects under this carrier
+- Actions: Add Interconnect
+- Columns: Name, Direction, Currency, Status, Capacity
+- Click row → Interconnect Detail page
+
+#### Tab 3: Contact Details
+- Add Contact button
+- Contact list: Name, Role, Email, Phone
+- Edit/Delete actions per contact
+
+#### Tab 4: Accounting Details
+- Customer Account Number, Supplier Account Number, Tax Code, Bill To, Ship To
+
+#### Tab 5: Credit Alerts
+- Add Alert button
+- Alert list: Type, Threshold, Template, Recipients
+- Alert Types: Low Balance, High Balance, 24-Hour Spend Breach
+
+---
+
+### DIGITALK INTERCONNECT DETAIL - TABS BY DIRECTION
+
+**Customer Interconnect (Ingress) - 5 Tabs:**
+1. Details - Capacity, Status, Signalling IPs
+2. Ingress Validation - IP validation, Tech Prefix, From URI, Contact URI, Trunk Group, Max CPS
+3. Ingress Translation - Origination Preference, PAI Generation, Number Translation
+4. Media - Codecs, VAD, ptime, DTMF Detection, Media Relay, RTP Timeout
+5. Signalling - Privacy Method, Session Timer, 100rel, Max Call Duration, Release Cause Mapping
+
+**Supplier Interconnect (Egress) - 6 Tabs:**
+1. Details - Capacity, Status, Supplier Rating Plan, Signalling IPs
+2. Egress Routing - Tech Prefix, Send To IPs, Transport, Max CPS, Trunk Group, Blacklists
+3. Egress Translations - PAI Generation, Block Invalid Origins, Number Translation
+4. Media - Codecs, VAD, ptime, DTMF Detection, Media Relay
+5. Signalling - Privacy Method, Session Timer, Max Call Duration, Release Cause Mapping
+6. Monitoring - SIP OPTIONS ping, Call Response monitoring, Auto-disable/re-enable
+
+---
+
+### DIGITALK SERVICE - THE KEY RATING/ROUTING LINKAGE
+
+**Where Services Live:** Under Interconnect Detail → Services Tab (for Customer Interconnects only)
+
+**Add Service Dialog Fields:**
+- Name
+- **Customer Rating Plan** (THE KEY LINKAGE - how much customer pays)
+- **Routing Plan** (THE KEY LINKAGE - where calls go)
+- Currency (inherited from Interconnect)
+- Time Class (when service is active)
+- Capacity (channel limits)
+- Allow Transcoding: Yes/No
+- Routing Method: Route to Interconnect / Routing Plan
+- NP Status, NP Plan
+- Origination/Destination Blacklist + Exceptions
+- Origination/Destination Matching
+
+---
+
+### SEPARATE PAGES (NOT in Carrier Detail)
+
+- **Services:** Main view in navigation showing all services across all carriers
+- **Trunk Groups:** Separate page for logical grouping of interconnects
+- **Balance & Spend:** Views for 24 Hour Spend, Carrier Balances, Balance And Totals
+- **Blacklisting:** Separate configuration page
+- **Release Cause Mapping:** Separate configuration page
+
+---
+
+### IMPLEMENTATION TASK LIST
+
+1. ❌ Build Carrier Detail Page with exact 5 tabs + 3-column layout for Tab 1
+2. ❌ Build Customer Interconnect Detail with 5 tabs
+3. ❌ Build Supplier Interconnect Detail with 6 tabs
+4. ❌ Build Add/Edit Service Dialog with rating/routing assignment
+5. ❌ Build Main Carriers page with View dropdown (Carriers/Interconnects/Services)
+6. ❌ Build Balance & Spend views
+7. ❌ Build Credit Alerts management
+8. ❌ Build Contacts management
+9. ❌ Schema updates for all Digitalk fields
