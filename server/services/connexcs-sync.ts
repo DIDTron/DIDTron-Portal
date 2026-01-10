@@ -42,7 +42,7 @@ export async function syncCustomers(userId?: string): Promise<SyncJobResult> {
     entityType: "customer",
     status: "syncing",
     startedAt: new Date(),
-    createdBy: userId,
+    ...(userId ? { createdBy: userId } : {}),
   }).returning();
 
   const result: SyncJobResult = {
@@ -164,7 +164,7 @@ export async function syncCarriers(userId?: string): Promise<SyncJobResult> {
     entityType: "carrier",
     status: "syncing",
     startedAt: new Date(),
-    createdBy: userId,
+    ...(userId ? { createdBy: userId } : {}),
   }).returning();
 
   const result: SyncJobResult = {
@@ -282,7 +282,7 @@ export async function syncRateCards(userId?: string): Promise<SyncJobResult> {
     entityType: "ratecard",
     status: "syncing",
     startedAt: new Date(),
-    createdBy: userId,
+    ...(userId ? { createdBy: userId } : {}),
   }).returning();
 
   const result: SyncJobResult = {
@@ -389,7 +389,7 @@ export async function syncCDRs(
     status: "syncing",
     startedAt: new Date(),
     params: JSON.stringify({ year, month }),
-    createdBy: userId,
+    ...(userId ? { createdBy: userId } : {}),
   }).returning();
 
   const result: SyncJobResult = {
