@@ -12,6 +12,11 @@ DIDTron Communications is developing an AI-first, white-label wholesale VoIP pla
 - Platform sync for all carrier/route operations
 - Assignment system for feature visibility control
 
+## Navigation Rules
+- When clicking a module in the primary sidebar, navigate directly to the first page in that module's secondary sidebar
+- Do NOT create standalone "overview" or placeholder pages for modules - the module's defaultRoute should point to the first actual page
+- Each module's defaultRoute in `navSections` (primary-sidebar.tsx) must match the first item's route in `sectionDefaultItems`
+
 ## System Architecture
 
 ### UI/UX Design

@@ -28,7 +28,7 @@ export const navSections: NavSection[] = [
   { id: "monitoring", label: "Monitoring", icon: BarChart3, defaultRoute: "/admin/metrics" },
   { id: "sip-tester", label: "SIP Tester", icon: Cpu, defaultRoute: "/admin/sip-tester/new" },
   { id: "ai-voice", label: "AI Voice", icon: Bot, defaultRoute: "/admin/ai-voice/dashboard" },
-  { id: "softswitch", label: "Softswitch", icon: Network, defaultRoute: "/admin/class4-customers" },
+  { id: "softswitch", label: "Softswitch", icon: Network, defaultRoute: "/admin/softswitch/carriers" },
   { id: "experience-manager", label: "Experience", icon: FileText, defaultRoute: "/admin/experience-manager" },
   { id: "admin", label: "Admin", icon: Shield, defaultRoute: "/admin/admin-users" },
   { id: "global-settings", label: "Global Settings", icon: Cog, defaultRoute: "/admin/global-settings/platform" },
@@ -336,9 +336,7 @@ const sectionDefaultItems: Record<string, { id: string; label: string; route: st
     { id: "ai-voice-settings", label: "Settings", route: "/admin/ai-voice/settings" },
   ],
   softswitch: [
-    { id: "class4-customers", label: "Class 4 Customers", route: "/admin/class4-customers" },
-    { id: "class4-carriers", label: "Carriers", route: "/admin/class4-carriers" },
-    { id: "class4-rate-cards", label: "Rate Cards", route: "/admin/class4-rate-cards" },
+    { id: "softswitch-carriers", label: "Carriers", route: "/admin/softswitch/carriers" },
   ],
   cms: [
     { id: "pages", label: "Pages", route: "/admin/pages" },
