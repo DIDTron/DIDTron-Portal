@@ -85,6 +85,24 @@ export default function InterconnectDetailPage() {
     enabled: !!interconnectId,
   });
 
+  // Fetch ConnexCS servers for Session Border Controller section
+  interface ConnexCSServer {
+    id: number;
+    type: string;
+    ip: string;
+    alias: string;
+    fqdn: string | null;
+    status: string;
+    channels: number;
+    cps: number;
+    rtp_capacity: number;
+    flags: string[];
+  }
+  
+  const { data: serversData } = useQuery<{ success: boolean; data: ConnexCSServer[]; count: number; mockMode: boolean }>({
+    queryKey: ["/api/connexcs/servers"],
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     direction: "both",
@@ -389,14 +407,16 @@ export default function InterconnectDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {interconnect.ipAddress ? (
-                        <TableRow>
-                          <TableCell>WAN-LDN-2</TableCell>
-                          <TableCell>{interconnect.ipAddress}</TableCell>
-                          <TableCell className="text-center">
-                            <Checkbox checked={true} disabled />
-                          </TableCell>
-                        </TableRow>
+                      {serversData?.data && serversData.data.length > 0 ? (
+                        serversData.data.map((server) => (
+                          <TableRow key={server.id}>
+                            <TableCell>{server.alias || `Server-${server.id}`}</TableCell>
+                            <TableCell className="font-mono text-sm">{server.ip}</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox checked={server.status === "Active"} disabled />
+                            </TableCell>
+                          </TableRow>
+                        ))
                       ) : (
                         <TableRow>
                           <TableCell colSpan={3} className="text-center text-muted-foreground">
