@@ -24,6 +24,7 @@ function Router() {
       <Route path="/docs/:category" component={Docs} />
       <Route path="/docs/:category/:article" component={Docs} />
       <Route path="/admin" component={AdminLayout} />
+      <Route path="/admin/carriers/:carrierId/interconnects/:interconnectId" component={AdminLayout} />
       <Route path="/admin/:section" component={AdminLayout} />
       <Route path="/admin/:section/:subsection" component={AdminLayout} />
       <Route path="/portal" component={PortalLayout} />

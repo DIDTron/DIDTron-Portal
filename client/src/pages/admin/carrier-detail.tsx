@@ -142,6 +142,17 @@ export default function CarrierDetailPage() {
     isActive: true,
     techPrefix: "",
     ipAddress: "",
+    copyFromId: "",
+    copySettings: {
+      ingressValidation: false,
+      ingressParameterManipulation: false,
+      egressRouting: false,
+      egressTranslation: false,
+      media: false,
+      signalling: false,
+      monitoring: false,
+      supplierRatingPlan: false,
+    },
   });
 
   const [contactForm, setContactForm] = useState({
@@ -198,8 +209,10 @@ export default function CarrierDetailPage() {
 
   const createInterconnectMutation = useMutation({
     mutationFn: async (data: typeof interconnectForm) => {
+      // Exclude copySettings and copyFromId since copy feature is not yet implemented
+      const { copySettings, copyFromId, ...interconnectData } = data;
       const res = await apiRequest("POST", `/api/carriers/${carrierId}/interconnects`, {
-        ...data,
+        ...interconnectData,
         capacityLimit: data.capacityMode === "unrestricted" ? null : parseInt(data.capacityLimit) || null,
       });
       return res.json();
@@ -306,6 +319,17 @@ export default function CarrierDetailPage() {
       isActive: true,
       techPrefix: "",
       ipAddress: "",
+      copyFromId: "",
+      copySettings: {
+        ingressValidation: false,
+        ingressParameterManipulation: false,
+        egressRouting: false,
+        egressTranslation: false,
+        media: false,
+        signalling: false,
+        monitoring: false,
+        supplierRatingPlan: false,
+      },
     });
     setEditingInterconnect(null);
   };
@@ -470,6 +494,7 @@ export default function CarrierDetailPage() {
           <TabsContent value="interconnects" className="mt-0">
             <InterconnectsTab
               interconnects={interconnects || []}
+              carrierId={carrierId || ""}
               onDelete={(id) => deleteInterconnectMutation.mutate(id)}
               onAdd={() => setShowInterconnectDialog(true)}
             />
@@ -513,80 +538,237 @@ export default function CarrierDetailPage() {
       </Tabs>
 
       <Dialog open={showInterconnectDialog} onOpenChange={setShowInterconnectDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Add Interconnect</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Interconnect Name</Label>
-              <Input
-                value={interconnectForm.name}
-                onChange={(e) => setInterconnectForm({ ...interconnectForm, name: e.target.value })}
-                placeholder="e.g., Primary SIP"
-                data-testid="input-interconnect-name"
-              />
+          <div className="space-y-6 py-4 max-h-[70vh] overflow-auto">
+            <div>
+              <h4 className="text-sm font-medium mb-3">Details</h4>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={interconnectForm.name}
+                    onChange={(e) => setInterconnectForm({ ...interconnectForm, name: e.target.value })}
+                    placeholder="Enter interconnect name"
+                    data-testid="input-interconnect-name"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Protocol Type</Label>
+                    <Select
+                      value={interconnectForm.protocol}
+                      onValueChange={(v) => setInterconnectForm({ ...interconnectForm, protocol: v })}
+                    >
+                      <SelectTrigger data-testid="select-protocol">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SIP">SIP</SelectItem>
+                        <SelectItem value="H.323">H.323</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Currency</Label>
+                    <Select
+                      value={interconnectForm.currencyCode}
+                      onValueChange={(v) => setInterconnectForm({ ...interconnectForm, currencyCode: v })}
+                    >
+                      <SelectTrigger data-testid="select-currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies?.map((c) => (
+                          <SelectItem key={c.id} value={c.code}>{c.code}</SelectItem>
+                        ))}
+                        {(!currencies || currencies.length === 0) && (
+                          <>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="GBP">GBP</SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Direction</Label>
+                  <Select
+                    value={interconnectForm.direction}
+                    onValueChange={(v) => setInterconnectForm({ 
+                      ...interconnectForm, 
+                      direction: v,
+                      copySettings: {
+                        ingressValidation: false,
+                        ingressParameterManipulation: false,
+                        egressRouting: false,
+                        egressTranslation: false,
+                        media: false,
+                        signalling: false,
+                        monitoring: false,
+                        supplierRatingPlan: false,
+                      }
+                    })}
+                  >
+                    <SelectTrigger data-testid="select-direction">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="supplier">Supplier</SelectItem>
+                      <SelectItem value="both">Bilateral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Direction</Label>
-                <Select
-                  value={interconnectForm.direction}
-                  onValueChange={(v) => setInterconnectForm({ ...interconnectForm, direction: v })}
-                >
-                  <SelectTrigger data-testid="select-direction">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="customer">Customer (C)</SelectItem>
-                    <SelectItem value="supplier">Supplier (S)</SelectItem>
-                    <SelectItem value="both">Both</SelectItem>
-                  </SelectContent>
-                </Select>
+
+            <div>
+              <h4 className="text-sm font-medium mb-3">Copy existing interconnect setting</h4>
+              <p className="text-xs text-muted-foreground mb-3">Copy settings feature is planned for a future release. Currently these selections are UI-only and do not affect interconnect creation.</p>
+              <div className="space-y-4 opacity-50">
+                <div className="space-y-2">
+                  <Label>Interconnect</Label>
+                  <Select
+                    value={interconnectForm.copyFromId || "none"}
+                    onValueChange={(v) => setInterconnectForm({ ...interconnectForm, copyFromId: v === "none" ? "" : v })}
+                    disabled
+                  >
+                    <SelectTrigger data-testid="select-copy-from">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {interconnects?.map((ic) => (
+                        <SelectItem key={ic.id} value={ic.id}>
+                          {carrier?.name} ({ic.name})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  {!interconnectForm.copyFromId && (
+                    <p className="text-xs text-muted-foreground mb-2">Select an interconnect above to copy settings from.</p>
+                  )}
+                  {(interconnectForm.direction === "customer" || interconnectForm.direction === "both") && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="copy-ingress-validation"
+                          checked={interconnectForm.copySettings.ingressValidation}
+                          onCheckedChange={(c) => setInterconnectForm({
+                            ...interconnectForm,
+                            copySettings: { ...interconnectForm.copySettings, ingressValidation: c === true }
+                          })}
+                          disabled={!interconnectForm.copyFromId}
+                        />
+                        <Label htmlFor="copy-ingress-validation" className="text-sm font-normal">Ingress Validation</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="copy-ingress-param"
+                          checked={interconnectForm.copySettings.ingressParameterManipulation}
+                          onCheckedChange={(c) => setInterconnectForm({
+                            ...interconnectForm,
+                            copySettings: { ...interconnectForm.copySettings, ingressParameterManipulation: c === true }
+                          })}
+                          disabled={!interconnectForm.copyFromId}
+                        />
+                        <Label htmlFor="copy-ingress-param" className="text-sm font-normal">Ingress Parameter Manipulation</Label>
+                      </div>
+                    </>
+                  )}
+                  
+                  {(interconnectForm.direction === "supplier" || interconnectForm.direction === "both") && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="copy-egress-routing"
+                          checked={interconnectForm.copySettings.egressRouting}
+                          onCheckedChange={(c) => setInterconnectForm({
+                            ...interconnectForm,
+                            copySettings: { ...interconnectForm.copySettings, egressRouting: c === true }
+                          })}
+                          disabled={!interconnectForm.copyFromId}
+                        />
+                        <Label htmlFor="copy-egress-routing" className="text-sm font-normal">Egress Routing</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="copy-egress-translation"
+                          checked={interconnectForm.copySettings.egressTranslation}
+                          onCheckedChange={(c) => setInterconnectForm({
+                            ...interconnectForm,
+                            copySettings: { ...interconnectForm.copySettings, egressTranslation: c === true }
+                          })}
+                          disabled={!interconnectForm.copyFromId}
+                        />
+                        <Label htmlFor="copy-egress-translation" className="text-sm font-normal">Egress Translation</Label>
+                      </div>
+                    </>
+                  )}
+                  
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="copy-media"
+                      checked={interconnectForm.copySettings.media}
+                      onCheckedChange={(c) => setInterconnectForm({
+                        ...interconnectForm,
+                        copySettings: { ...interconnectForm.copySettings, media: c === true }
+                      })}
+                      disabled={!interconnectForm.copyFromId}
+                    />
+                    <Label htmlFor="copy-media" className="text-sm font-normal">Media</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="copy-signalling"
+                      checked={interconnectForm.copySettings.signalling}
+                      onCheckedChange={(c) => setInterconnectForm({
+                        ...interconnectForm,
+                        copySettings: { ...interconnectForm.copySettings, signalling: c === true }
+                      })}
+                      disabled={!interconnectForm.copyFromId}
+                    />
+                    <Label htmlFor="copy-signalling" className="text-sm font-normal">Signalling</Label>
+                  </div>
+                  
+                  {(interconnectForm.direction === "supplier" || interconnectForm.direction === "both") && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="copy-monitoring"
+                          checked={interconnectForm.copySettings.monitoring}
+                          onCheckedChange={(c) => setInterconnectForm({
+                            ...interconnectForm,
+                            copySettings: { ...interconnectForm.copySettings, monitoring: c === true }
+                          })}
+                          disabled={!interconnectForm.copyFromId}
+                        />
+                        <Label htmlFor="copy-monitoring" className="text-sm font-normal">Monitoring</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="copy-supplier-rating"
+                          checked={interconnectForm.copySettings.supplierRatingPlan}
+                          onCheckedChange={(c) => setInterconnectForm({
+                            ...interconnectForm,
+                            copySettings: { ...interconnectForm.copySettings, supplierRatingPlan: c === true }
+                          })}
+                          disabled={!interconnectForm.copyFromId}
+                        />
+                        <Label htmlFor="copy-supplier-rating" className="text-sm font-normal">Supplier Rating Plan</Label>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Protocol</Label>
-                <Select
-                  value={interconnectForm.protocol}
-                  onValueChange={(v) => setInterconnectForm({ ...interconnectForm, protocol: v })}
-                >
-                  <SelectTrigger data-testid="select-protocol">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SIP">SIP</SelectItem>
-                    <SelectItem value="TDM">TDM</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tech Prefix</Label>
-                <Input
-                  value={interconnectForm.techPrefix}
-                  onChange={(e) => setInterconnectForm({ ...interconnectForm, techPrefix: e.target.value })}
-                  placeholder="e.g., 55#"
-                  data-testid="input-tech-prefix"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>IP Address</Label>
-                <Input
-                  value={interconnectForm.ipAddress}
-                  onChange={(e) => setInterconnectForm({ ...interconnectForm, ipAddress: e.target.value })}
-                  placeholder="e.g., 192.168.1.1"
-                  data-testid="input-ip-address"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="interconnect-active"
-                checked={interconnectForm.isActive}
-                onCheckedChange={(c) => setInterconnectForm({ ...interconnectForm, isActive: c === true })}
-              />
-              <Label htmlFor="interconnect-active">Enabled</Label>
             </div>
           </div>
           <DialogFooter>
@@ -1616,13 +1798,30 @@ function CarrierDetailsTab({
 
 function InterconnectsTab({
   interconnects,
+  carrierId,
   onDelete,
   onAdd,
 }: {
   interconnects: CarrierInterconnect[];
+  carrierId: string;
   onDelete: (id: string) => void;
   onAdd: () => void;
 }) {
+  const [, setLocation] = useLocation();
+  
+  const getDirectionBadge = (direction: string) => {
+    switch (direction) {
+      case "customer":
+        return <Badge className="bg-blue-500 hover:bg-blue-600 text-white">C</Badge>;
+      case "supplier":
+        return <Badge className="bg-purple-500 hover:bg-purple-600 text-white">S</Badge>;
+      case "both":
+        return <Badge className="bg-gray-500 hover:bg-gray-600 text-white">B</Badge>;
+      default:
+        return <Badge className="bg-gray-500 hover:bg-gray-600 text-white">B</Badge>;
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -1639,7 +1838,7 @@ function InterconnectsTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead></TableHead>
+                  <TableHead className="w-8"></TableHead>
                   <TableHead>Interconnect</TableHead>
                   <TableHead>Direction</TableHead>
                   <TableHead>$/€</TableHead>
@@ -1657,25 +1856,35 @@ function InterconnectsTab({
                 {interconnects.map((ic) => (
                   <TableRow key={ic.id} data-testid={`row-interconnect-${ic.id}`}>
                     <TableCell className="w-8">
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <div className={`w-2 h-2 rounded-full ${ic.isActive ? "bg-green-500" : "bg-gray-400"}`} />
                     </TableCell>
-                    <TableCell className="font-medium text-primary cursor-pointer hover:underline">{ic.name}</TableCell>
                     <TableCell>
-                      <Badge variant={ic.direction === "customer" ? "default" : ic.direction === "supplier" ? "secondary" : "outline"}>
-                        {ic.direction === "customer" ? "C" : ic.direction === "supplier" ? "S" : "B"}
-                      </Badge>
+                      <span 
+                        className="font-medium text-primary cursor-pointer hover:underline"
+                        onClick={() => setLocation(`/admin/carriers/${carrierId}/interconnects/${ic.id}`)}
+                        data-testid={`link-interconnect-${ic.id}`}
+                      >
+                        {ic.name}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {getDirectionBadge(ic.direction || "bilateral")}
                     </TableCell>
                     <TableCell>{ic.currencyCode || "USD"}</TableCell>
                     <TableCell>{ic.protocol || "SIP"}</TableCell>
                     <TableCell>{ic.capacityMode === "unrestricted" ? "Unrestricted" : ic.capacityLimit}</TableCell>
                     <TableCell>
-                      <Badge variant={ic.isActive ? "default" : "destructive"}>
+                      <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white">
                         {ic.isActive ? "Yes" : "No"}
                       </Badge>
                     </TableCell>
                     <TableCell>{ic.techPrefix || "-"}</TableCell>
                     <TableCell>{ic.ipAddress || "-"}</TableCell>
-                    <TableCell>{ic.supplierBuyRates || "-"}</TableCell>
+                    <TableCell>
+                      {ic.supplierBuyRates ? (
+                        <span className="text-primary cursor-pointer hover:underline">{ic.supplierBuyRates}</span>
+                      ) : "-"}
+                    </TableCell>
                     <TableCell>{ic.servicesCount || 0}</TableCell>
                     <TableCell>
                       <Button size="sm" variant="outline" onClick={() => onDelete(ic.id)} data-testid={`button-delete-interconnect-${ic.id}`}>
@@ -1697,6 +1906,7 @@ function InterconnectsTab({
           )}
         </CardContent>
       </Card>
+      <p className="text-sm text-muted-foreground text-right">Drag-and-drop to re-order the interconnects</p>
     </div>
   );
 }

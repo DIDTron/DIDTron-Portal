@@ -5557,6 +5557,16 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/interconnects/:id", async (req, res) => {
+    try {
+      const interconnect = await storage.getCarrierInterconnect(req.params.id);
+      if (!interconnect) return res.status(404).json({ error: "Interconnect not found" });
+      res.json(interconnect);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch interconnect" });
+    }
+  });
+
   app.put("/api/interconnects/:id", async (req, res) => {
     try {
       const oldInterconnect = await storage.getCarrierInterconnect(req.params.id);
