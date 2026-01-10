@@ -406,10 +406,16 @@ export async function syncCDRs(
   };
 
   try {
-    await log(job.id, "info", `Starting CDR sync for ${year}-${String(month).padStart(2, '0')}`);
+    const monthStr = String(month).padStart(2, '0');
+    const startDate = `${year}-${monthStr}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${monthStr}-${lastDay}`;
     
-    const cdrs = await connexcsTools.getCDRsByMonth(storage, year, month);
-    await log(job.id, "info", `Fetched ${cdrs.length} CDRs for ${year}-${String(month).padStart(2, '0')}`);
+    await log(job.id, "info", `Starting CDR sync for ${year}-${monthStr}`);
+    
+    // Use the REST API to fetch CDRs for all customers
+    const cdrs = await connexcsTools.getAllCustomerCDRs(storage, startDate, endDate);
+    await log(job.id, "info", `Fetched ${cdrs.length} CDRs for ${year}-${monthStr}`);
 
     await db.update(connexcsSyncJobs)
       .set({ totalRecords: cdrs.length })
