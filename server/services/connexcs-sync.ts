@@ -1,4 +1,4 @@
-import { connexcsTools, type ConnexCSCustomerFull, type ConnexCSCarrierFull, type ConnexCSRateCard, type ConnexCSCDR } from "../connexcs-tools-service";
+import { connexcsTools, type ConnexCSCustomerFull, type ConnexCSCarrierFull, type ConnexCSRateCard, type ConnexCSCDR, type ConnexCSRoute, type ConnexCSScript } from "../connexcs-tools-service";
 import { storage } from "../storage";
 import { db } from "../db";
 import { 
@@ -7,12 +7,16 @@ import {
   connexcsImportCarriers,
   connexcsImportRateCards,
   connexcsImportCdrs,
+  connexcsImportRoutes,
+  connexcsImportBalances,
+  connexcsImportScripts,
+  connexcsCdrStats,
   connexcsSyncLogs,
   connexcsEntityMap,
   customers,
   carriers,
 } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 
 interface SyncJobResult {
   jobId: string;
@@ -466,8 +470,8 @@ export async function syncCDRs(
         const errorMsg = err instanceof Error ? err.message : String(err);
         result.errors.push(`Batch ${i}-${i + batchSize}: ${errorMsg}`);
         console.error(`[ConnexCS Sync] CDR batch insert error: ${errorMsg}`);
-        if (i === 0) {
-          console.error(`[ConnexCS Sync] First batch sample:`, JSON.stringify(values[0]).substring(0, 500));
+        if (i === 0 && batch.length > 0) {
+          console.error(`[ConnexCS Sync] First batch sample:`, JSON.stringify(batch[0]).substring(0, 500));
         }
         await log(job.id, "error", `Failed to import CDR batch`, { error: errorMsg, batchStart: i });
       }
@@ -807,4 +811,486 @@ export async function getReconciliationStats() {
       margin: Number(m.sellAmount || 0) - Number(m.buyAmount || 0),
     })),
   };
+}
+
+// ==================== BALANCE SYNC ====================
+
+export async function syncBalances(userId?: string): Promise<SyncJobResult> {
+  const startTime = Date.now();
+  
+  const [job] = await db.insert(connexcsSyncJobs).values({
+    entityType: "balance",
+    status: "syncing",
+    startedAt: new Date(),
+    ...(userId ? { createdBy: userId } : {}),
+  }).returning();
+
+  const result: SyncJobResult = {
+    jobId: job.id,
+    entityType: "balance",
+    status: "completed",
+    imported: 0,
+    updated: 0,
+    failed: 0,
+    errors: [],
+    durationMs: 0,
+  };
+
+  try {
+    await log(job.id, "info", "Starting balance sync from ConnexCS");
+    
+    // Get balances from the already-synced customers
+    const cxCustomers = await connexcsTools.getAllCustomersFull(storage);
+    await log(job.id, "info", `Fetched ${cxCustomers.length} customer balances from ConnexCS`);
+
+    for (const customer of cxCustomers) {
+      try {
+        const [existing] = await db.select()
+          .from(connexcsImportBalances)
+          .where(eq(connexcsImportBalances.connexcsCustomerId, customer.id))
+          .limit(1);
+
+        const balanceData = {
+          syncJobId: job.id,
+          connexcsCustomerId: customer.id,
+          customerName: customer.name,
+          balance: customer.balance?.toString(),
+          creditLimit: customer.credit_limit?.toString(),
+          availableCredit: customer.credit_limit != null && customer.balance != null 
+            ? (customer.credit_limit + customer.balance).toString() 
+            : null,
+          currency: customer.currency,
+          billingType: customer.billing_type || customer.payment_type,
+          lastUpdated: new Date(),
+          rawData: JSON.stringify(customer),
+        };
+
+        if (existing) {
+          await db.update(connexcsImportBalances)
+            .set(balanceData)
+            .where(eq(connexcsImportBalances.id, existing.id));
+          result.updated++;
+        } else {
+          await db.insert(connexcsImportBalances).values(balanceData);
+          result.imported++;
+        }
+      } catch (err) {
+        result.failed++;
+        result.errors.push(`Customer ${customer.id}: ${err}`);
+      }
+    }
+
+    await log(job.id, "info", `Balance sync completed: ${result.imported} imported, ${result.updated} updated, ${result.failed} failed`);
+  } catch (err) {
+    result.status = "failed";
+    result.errors.push(String(err));
+    await log(job.id, "error", "Balance sync failed", { error: String(err) });
+  }
+
+  result.durationMs = Date.now() - startTime;
+
+  await db.update(connexcsSyncJobs)
+    .set({
+      status: result.status,
+      completedAt: new Date(),
+      importedRecords: result.imported,
+      updatedRecords: result.updated,
+      failedRecords: result.failed,
+      errors: result.errors.length > 0 ? JSON.stringify(result.errors) : null,
+    })
+    .where(eq(connexcsSyncJobs.id, job.id));
+
+  return result;
+}
+
+// ==================== ROUTES SYNC ====================
+
+export async function syncRoutes(userId?: string): Promise<SyncJobResult> {
+  const startTime = Date.now();
+  
+  const [job] = await db.insert(connexcsSyncJobs).values({
+    entityType: "route",
+    status: "syncing",
+    startedAt: new Date(),
+    ...(userId ? { createdBy: userId } : {}),
+  }).returning();
+
+  const result: SyncJobResult = {
+    jobId: job.id,
+    entityType: "route",
+    status: "completed",
+    imported: 0,
+    updated: 0,
+    failed: 0,
+    errors: [],
+    durationMs: 0,
+  };
+
+  try {
+    await log(job.id, "info", "Starting route sync from ConnexCS");
+    
+    const routes = await connexcsTools.getRoutesFull(storage);
+    await log(job.id, "info", `Fetched ${routes.length} routes from ConnexCS`);
+
+    await db.update(connexcsSyncJobs)
+      .set({ totalRecords: routes.length })
+      .where(eq(connexcsSyncJobs.id, job.id));
+
+    for (const route of routes) {
+      try {
+        const [existing] = await db.select()
+          .from(connexcsImportRoutes)
+          .where(eq(connexcsImportRoutes.connexcsId, route.id))
+          .limit(1);
+
+        const routeData = {
+          syncJobId: job.id,
+          connexcsId: route.id,
+          name: route.name,
+          customerId: route.customer_id,
+          customerName: route.customer_name,
+          prefix: route.prefix,
+          techPrefix: route.tech_prefix,
+          routingType: route.routing_type,
+          status: route.status,
+          priority: route.priority,
+          weight: route.weight,
+          rateCardId: route.rate_card_id,
+          carrierId: route.carrier_id,
+          carrierName: route.carrier_name,
+          channels: route.channels,
+          cps: route.cps,
+          rawData: JSON.stringify(route),
+          importStatus: "imported",
+        };
+
+        if (existing) {
+          await db.update(connexcsImportRoutes)
+            .set(routeData)
+            .where(eq(connexcsImportRoutes.id, existing.id));
+          result.updated++;
+        } else {
+          await db.insert(connexcsImportRoutes).values(routeData);
+          result.imported++;
+        }
+      } catch (err) {
+        result.failed++;
+        result.errors.push(`Route ${route.id}: ${err}`);
+      }
+    }
+
+    await log(job.id, "info", `Route sync completed: ${result.imported} imported, ${result.updated} updated, ${result.failed} failed`);
+  } catch (err) {
+    result.status = "failed";
+    result.errors.push(String(err));
+    await log(job.id, "error", "Route sync failed", { error: String(err) });
+  }
+
+  result.durationMs = Date.now() - startTime;
+
+  await db.update(connexcsSyncJobs)
+    .set({
+      status: result.status,
+      completedAt: new Date(),
+      importedRecords: result.imported,
+      updatedRecords: result.updated,
+      failedRecords: result.failed,
+      errors: result.errors.length > 0 ? JSON.stringify(result.errors) : null,
+    })
+    .where(eq(connexcsSyncJobs.id, job.id));
+
+  return result;
+}
+
+// ==================== SCRIPTFORGE SYNC ====================
+
+export async function syncScripts(userId?: string): Promise<SyncJobResult> {
+  const startTime = Date.now();
+  
+  const [job] = await db.insert(connexcsSyncJobs).values({
+    entityType: "script",
+    status: "syncing",
+    startedAt: new Date(),
+    ...(userId ? { createdBy: userId } : {}),
+  }).returning();
+
+  const result: SyncJobResult = {
+    jobId: job.id,
+    entityType: "script",
+    status: "completed",
+    imported: 0,
+    updated: 0,
+    failed: 0,
+    errors: [],
+    durationMs: 0,
+  };
+
+  try {
+    await log(job.id, "info", "Starting ScriptForge sync from ConnexCS");
+    
+    const scripts = await connexcsTools.getScripts(storage);
+    await log(job.id, "info", `Fetched ${scripts.length} scripts from ConnexCS`);
+
+    await db.update(connexcsSyncJobs)
+      .set({ totalRecords: scripts.length })
+      .where(eq(connexcsSyncJobs.id, job.id));
+
+    for (const script of scripts) {
+      try {
+        const [existing] = await db.select()
+          .from(connexcsImportScripts)
+          .where(eq(connexcsImportScripts.connexcsId, script.id))
+          .limit(1);
+
+        const scriptData = {
+          syncJobId: job.id,
+          connexcsId: script.id,
+          name: script.name,
+          description: script.description,
+          scriptType: script.script_type,
+          language: script.language,
+          code: script.code,
+          enabled: script.enabled,
+          version: script.version,
+          lastModified: script.last_modified ? new Date(script.last_modified) : null,
+          rawData: JSON.stringify(script),
+          importStatus: "imported",
+        };
+
+        if (existing) {
+          await db.update(connexcsImportScripts)
+            .set(scriptData)
+            .where(eq(connexcsImportScripts.id, existing.id));
+          result.updated++;
+        } else {
+          await db.insert(connexcsImportScripts).values(scriptData);
+          result.imported++;
+        }
+      } catch (err) {
+        result.failed++;
+        result.errors.push(`Script ${script.id}: ${err}`);
+      }
+    }
+
+    await log(job.id, "info", `ScriptForge sync completed: ${result.imported} imported, ${result.updated} updated, ${result.failed} failed`);
+  } catch (err) {
+    result.status = "failed";
+    result.errors.push(String(err));
+    await log(job.id, "error", "ScriptForge sync failed", { error: String(err) });
+  }
+
+  result.durationMs = Date.now() - startTime;
+
+  await db.update(connexcsSyncJobs)
+    .set({
+      status: result.status,
+      completedAt: new Date(),
+      importedRecords: result.imported,
+      updatedRecords: result.updated,
+      failedRecords: result.failed,
+      errors: result.errors.length > 0 ? JSON.stringify(result.errors) : null,
+    })
+    .where(eq(connexcsSyncJobs.id, job.id));
+
+  return result;
+}
+
+// ==================== HISTORICAL CDR SYNC ====================
+
+export async function syncHistoricalCDRs(year: number, months: number[] = [1,2,3,4,5,6,7,8,9,10,11,12], userId?: string): Promise<{year: number; months: {month: number; result: SyncJobResult}[]}> {
+  console.log(`[ConnexCS Sync] Starting historical CDR sync for ${year}, months: ${months.join(', ')}`);
+  
+  const results: {month: number; result: SyncJobResult}[] = [];
+  
+  for (const month of months) {
+    console.log(`[ConnexCS Sync] Syncing ${year}-${String(month).padStart(2, '0')}...`);
+    
+    // Add delay between months to respect rate limits
+    if (results.length > 0) {
+      console.log(`[ConnexCS Sync] Waiting 15 seconds before next month...`);
+      await new Promise(resolve => setTimeout(resolve, 15000));
+    }
+    
+    try {
+      const result = await syncCDRs(year, month, userId);
+      results.push({ month, result });
+      console.log(`[ConnexCS Sync] ${year}-${String(month).padStart(2, '0')}: ${result.imported} CDRs imported`);
+    } catch (err) {
+      console.error(`[ConnexCS Sync] Failed to sync ${year}-${month}:`, err);
+      results.push({ 
+        month, 
+        result: { 
+          jobId: '', 
+          entityType: 'cdr', 
+          status: 'failed', 
+          imported: 0, 
+          updated: 0, 
+          failed: 0, 
+          errors: [String(err)], 
+          durationMs: 0 
+        } 
+      });
+    }
+  }
+  
+  return { year, months: results };
+}
+
+// ==================== CDR STATISTICS ====================
+
+export async function calculateCDRStats(periodType: 'daily' | 'monthly' | 'yearly', startDate: Date, endDate: Date): Promise<void> {
+  const cdrs = await db.select()
+    .from(connexcsImportCdrs)
+    .where(
+      and(
+        gte(connexcsImportCdrs.callTime, startDate),
+        lte(connexcsImportCdrs.callTime, endDate)
+      )
+    );
+
+  let totalCalls = cdrs.length;
+  let answeredCalls = 0;
+  let failedCalls = 0;
+  let totalDuration = 0;
+  let totalCost = 0;
+  let totalRevenue = 0;
+  let totalPdd = 0;
+  let pddCount = 0;
+
+  const destinationCounts: Record<string, {count: number; minutes: number}> = {};
+  const customerCounts: Record<string, {id: number | null; name: string | null; count: number; minutes: number}> = {};
+  const carrierCounts: Record<string, {id: number | null; name: string | null; count: number; minutes: number}> = {};
+  const hourlyDist: Record<number, number> = {};
+
+  for (const cdr of cdrs) {
+    if (cdr.status === "ANSWERED") {
+      answeredCalls++;
+    } else {
+      failedCalls++;
+    }
+
+    if (cdr.duration) totalDuration += cdr.duration;
+    if (cdr.cost) totalCost += parseFloat(cdr.cost);
+    if (cdr.sellAmount) totalRevenue += parseFloat(cdr.sellAmount);
+
+    // Destination stats
+    const dest = cdr.destination || cdr.prefix || 'Unknown';
+    if (!destinationCounts[dest]) destinationCounts[dest] = { count: 0, minutes: 0 };
+    destinationCounts[dest].count++;
+    destinationCounts[dest].minutes += (cdr.duration || 0) / 60;
+
+    // Customer stats
+    const custKey = cdr.customerId?.toString() || 'unknown';
+    if (!customerCounts[custKey]) customerCounts[custKey] = { id: cdr.customerId, name: cdr.customerName, count: 0, minutes: 0 };
+    customerCounts[custKey].count++;
+    customerCounts[custKey].minutes += (cdr.duration || 0) / 60;
+
+    // Carrier stats
+    const carrKey = cdr.carrierId?.toString() || 'unknown';
+    if (!carrierCounts[carrKey]) carrierCounts[carrKey] = { id: cdr.carrierId, name: cdr.carrierName, count: 0, minutes: 0 };
+    carrierCounts[carrKey].count++;
+    carrierCounts[carrKey].minutes += (cdr.duration || 0) / 60;
+
+    // Hourly distribution
+    if (cdr.callTime) {
+      const hour = new Date(cdr.callTime).getHours();
+      hourlyDist[hour] = (hourlyDist[hour] || 0) + 1;
+    }
+  }
+
+  const asr = totalCalls > 0 ? (answeredCalls / totalCalls) * 100 : 0;
+  const acd = answeredCalls > 0 ? totalDuration / answeredCalls : 0;
+  const ner = totalCalls > 0 ? ((answeredCalls + failedCalls) / totalCalls) * 100 : 0;
+
+  const topDestinations = Object.entries(destinationCounts)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10)
+    .map(([dest, data]) => ({ destination: dest, ...data }));
+
+  const topCustomers = Object.entries(customerCounts)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10)
+    .map(([_, data]) => data);
+
+  const topCarriers = Object.entries(carrierCounts)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10)
+    .map(([_, data]) => data);
+
+  // Check if stats exist for this period
+  const [existing] = await db.select()
+    .from(connexcsCdrStats)
+    .where(
+      and(
+        eq(connexcsCdrStats.periodType, periodType),
+        eq(connexcsCdrStats.periodStart, startDate),
+        eq(connexcsCdrStats.periodEnd, endDate)
+      )
+    )
+    .limit(1);
+
+  const statsData = {
+    periodType,
+    periodStart: startDate,
+    periodEnd: endDate,
+    totalCalls,
+    answeredCalls,
+    failedCalls,
+    totalDuration,
+    totalMinutes: (totalDuration / 60).toFixed(2),
+    totalCost: totalCost.toFixed(4),
+    totalRevenue: totalRevenue.toFixed(4),
+    asr: asr.toFixed(2),
+    acd: acd.toFixed(2),
+    pdd: pddCount > 0 ? (totalPdd / pddCount).toFixed(2) : '0',
+    ner: ner.toFixed(2),
+    topDestinations: JSON.stringify(topDestinations),
+    topCustomers: JSON.stringify(topCustomers),
+    topCarriers: JSON.stringify(topCarriers),
+    hourlyDistribution: JSON.stringify(hourlyDist),
+    updatedAt: new Date(),
+  };
+
+  if (existing) {
+    await db.update(connexcsCdrStats)
+      .set(statsData)
+      .where(eq(connexcsCdrStats.id, existing.id));
+  } else {
+    await db.insert(connexcsCdrStats).values(statsData);
+  }
+}
+
+// ==================== GET FUNCTIONS ====================
+
+export async function getImportedRoutes(limit = 100) {
+  return db.select()
+    .from(connexcsImportRoutes)
+    .orderBy(desc(connexcsImportRoutes.createdAt))
+    .limit(limit);
+}
+
+export async function getImportedBalances(limit = 100) {
+  return db.select()
+    .from(connexcsImportBalances)
+    .orderBy(desc(connexcsImportBalances.createdAt))
+    .limit(limit);
+}
+
+export async function getImportedScripts(limit = 100) {
+  return db.select()
+    .from(connexcsImportScripts)
+    .orderBy(desc(connexcsImportScripts.createdAt))
+    .limit(limit);
+}
+
+export async function getCachedCDRStats(periodType?: string) {
+  if (periodType) {
+    return db.select()
+      .from(connexcsCdrStats)
+      .where(eq(connexcsCdrStats.periodType, periodType))
+      .orderBy(desc(connexcsCdrStats.periodStart));
+  }
+  return db.select()
+    .from(connexcsCdrStats)
+    .orderBy(desc(connexcsCdrStats.periodStart));
 }

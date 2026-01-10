@@ -147,7 +147,53 @@ export default function SyncStatusPage() {
     },
   });
 
-  const isSyncing = syncAllMutation.isPending || syncCustomersMutation.isPending || syncCarriersMutation.isPending || syncRateCardsMutation.isPending || syncCDRsMutation.isPending;
+  // New sync mutations for balances, routes, scripts
+  const syncBalancesMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/connexcs/sync/balances"),
+    onSuccess: () => {
+      toast({ title: "Balance sync started" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/connexcs/sync/jobs"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const syncRoutesMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/connexcs/sync/routes"),
+    onSuccess: () => {
+      toast({ title: "Route sync started" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/connexcs/sync/jobs"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const syncScriptsMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/connexcs/sync/scripts"),
+    onSuccess: () => {
+      toast({ title: "ScriptForge sync started" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/connexcs/sync/jobs"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const syncHistoricalCDRsMutation = useMutation({
+    mutationFn: (params: { year: number; months?: number[] }) => 
+      apiRequest("POST", "/api/admin/connexcs/sync/historical-cdrs", params),
+    onSuccess: () => {
+      toast({ title: "Historical CDR sync started", description: "This may take several minutes" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/connexcs/sync/jobs"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const isSyncing = syncAllMutation.isPending || syncCustomersMutation.isPending || syncCarriersMutation.isPending || syncRateCardsMutation.isPending || syncCDRsMutation.isPending || syncBalancesMutation.isPending || syncRoutesMutation.isPending || syncScriptsMutation.isPending || syncHistoricalCDRsMutation.isPending;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -185,6 +231,12 @@ export default function SyncStatusPage() {
         return <CreditCard className="h-4 w-4" />;
       case "cdr":
         return <FileText className="h-4 w-4" />;
+      case "balance":
+        return <DollarSign className="h-4 w-4" />;
+      case "route":
+        return <ArrowUpRight className="h-4 w-4" />;
+      case "script":
+        return <Activity className="h-4 w-4" />;
       default:
         return <Database className="h-4 w-4" />;
     }

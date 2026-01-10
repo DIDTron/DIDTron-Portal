@@ -5296,6 +5296,115 @@ export async function registerRoutes(
     }
   });
 
+  // === NEW SYNC ROUTES: Balances, Routes, Scripts, Historical CDRs ===
+
+  app.post("/api/admin/connexcs/sync/balances", async (req, res) => {
+    try {
+      const { syncBalances } = await import("./services/connexcs-sync");
+      const userId = await getValidUserId(req.session?.userId);
+      const result = await syncBalances(userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Balance sync failed" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/sync/routes", async (req, res) => {
+    try {
+      const { syncRoutes } = await import("./services/connexcs-sync");
+      const userId = await getValidUserId(req.session?.userId);
+      const result = await syncRoutes(userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Route sync failed" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/sync/scripts", async (req, res) => {
+    try {
+      const { syncScripts } = await import("./services/connexcs-sync");
+      const userId = await getValidUserId(req.session?.userId);
+      const result = await syncScripts(userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Script sync failed" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/sync/historical-cdrs", async (req, res) => {
+    try {
+      const { year, months } = req.body;
+      if (!year) {
+        return res.status(400).json({ error: "Year is required" });
+      }
+      const { syncHistoricalCDRs } = await import("./services/connexcs-sync");
+      const userId = await getValidUserId(req.session?.userId);
+      const result = await syncHistoricalCDRs(year, months || [1,2,3,4,5,6,7,8,9,10,11,12], userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Historical CDR sync failed" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/import/balances", async (req, res) => {
+    try {
+      const { getImportedBalances } = await import("./services/connexcs-sync");
+      const limit = parseInt(req.query.limit as string) || 100;
+      const balances = await getImportedBalances(limit);
+      res.json(balances);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch balances" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/import/routes", async (req, res) => {
+    try {
+      const { getImportedRoutes } = await import("./services/connexcs-sync");
+      const limit = parseInt(req.query.limit as string) || 100;
+      const routes = await getImportedRoutes(limit);
+      res.json(routes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch routes" });
+    }
+  });
+
+  app.get("/api/admin/connexcs/import/scripts", async (req, res) => {
+    try {
+      const { getImportedScripts } = await import("./services/connexcs-sync");
+      const limit = parseInt(req.query.limit as string) || 100;
+      const scripts = await getImportedScripts(limit);
+      res.json(scripts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch scripts" });
+    }
+  });
+
+  // CDR Statistics Dashboard API
+  app.get("/api/admin/connexcs/cdr-stats", async (req, res) => {
+    try {
+      const { getCachedCDRStats } = await import("./services/connexcs-sync");
+      const periodType = req.query.periodType as string;
+      const stats = await getCachedCDRStats(periodType);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch CDR statistics" });
+    }
+  });
+
+  app.post("/api/admin/connexcs/cdr-stats/calculate", async (req, res) => {
+    try {
+      const { periodType, startDate, endDate } = req.body;
+      if (!periodType || !startDate || !endDate) {
+        return res.status(400).json({ error: "periodType, startDate, and endDate are required" });
+      }
+      const { calculateCDRStats } = await import("./services/connexcs-sync");
+      await calculateCDRStats(periodType, new Date(startDate), new Date(endDate));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to calculate CDR stats" });
+    }
+  });
+
   // ==================== CARRIERS ====================
 
   app.get("/api/carriers", async (req, res) => {

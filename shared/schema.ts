@@ -2916,6 +2916,8 @@ export const connexcsEntityTypeEnum = pgEnum("connexcs_entity_type", [
   "ratecard",
   "cdr",
   "balance",
+  "route",
+  "script",
 ]);
 
 export const connexcsSyncJobs = pgTable("connexcs_sync_jobs", {
@@ -3056,6 +3058,90 @@ export const connexcsSyncLogs = pgTable("connexcs_sync_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ConnexCS Routes table
+export const connexcsImportRoutes = pgTable("connexcs_import_routes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  syncJobId: varchar("sync_job_id").references(() => connexcsSyncJobs.id),
+  connexcsId: integer("connexcs_id").notNull(),
+  name: text("name").notNull(),
+  customerId: integer("customer_id"),
+  customerName: text("customer_name"),
+  prefix: text("prefix"),
+  techPrefix: text("tech_prefix"),
+  routingType: text("routing_type"),
+  status: text("status"),
+  priority: integer("priority"),
+  weight: integer("weight"),
+  rateCardId: text("rate_card_id"),
+  carrierId: integer("carrier_id"),
+  carrierName: text("carrier_name"),
+  channels: integer("channels"),
+  cps: integer("cps"),
+  rawData: jsonb("raw_data"),
+  importStatus: text("import_status").default("imported"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ConnexCS Balance Snapshots table
+export const connexcsImportBalances = pgTable("connexcs_import_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  syncJobId: varchar("sync_job_id").references(() => connexcsSyncJobs.id),
+  connexcsCustomerId: integer("connexcs_customer_id").notNull(),
+  customerName: text("customer_name"),
+  balance: decimal("balance", { precision: 14, scale: 4 }),
+  creditLimit: decimal("credit_limit", { precision: 14, scale: 4 }),
+  availableCredit: decimal("available_credit", { precision: 14, scale: 4 }),
+  currency: text("currency"),
+  billingType: text("billing_type"),
+  lastUpdated: timestamp("last_updated"),
+  rawData: jsonb("raw_data"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ConnexCS ScriptForge Scripts table
+export const connexcsImportScripts = pgTable("connexcs_import_scripts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  syncJobId: varchar("sync_job_id").references(() => connexcsSyncJobs.id),
+  connexcsId: text("connexcs_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  scriptType: text("script_type"),
+  language: text("language"),
+  code: text("code"),
+  enabled: boolean("enabled").default(true),
+  version: integer("version"),
+  lastModified: timestamp("last_modified"),
+  rawData: jsonb("raw_data"),
+  importStatus: text("import_status").default("imported"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ConnexCS CDR Statistics cache table
+export const connexcsCdrStats = pgTable("connexcs_cdr_stats", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  periodType: text("period_type").notNull(), // 'daily', 'monthly', 'yearly'
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  totalCalls: integer("total_calls").default(0),
+  answeredCalls: integer("answered_calls").default(0),
+  failedCalls: integer("failed_calls").default(0),
+  totalDuration: integer("total_duration").default(0), // in seconds
+  totalMinutes: decimal("total_minutes", { precision: 14, scale: 2 }),
+  totalCost: decimal("total_cost", { precision: 14, scale: 4 }),
+  totalRevenue: decimal("total_revenue", { precision: 14, scale: 4 }),
+  asr: decimal("asr", { precision: 6, scale: 2 }), // Answer Seizure Ratio
+  acd: decimal("acd", { precision: 8, scale: 2 }), // Average Call Duration
+  pdd: decimal("pdd", { precision: 8, scale: 2 }), // Post Dial Delay
+  ner: decimal("ner", { precision: 6, scale: 2 }), // Network Effectiveness Ratio
+  topDestinations: jsonb("top_destinations"),
+  topCustomers: jsonb("top_customers"),
+  topCarriers: jsonb("top_carriers"),
+  hourlyDistribution: jsonb("hourly_distribution"),
+  rawData: jsonb("raw_data"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Zod schemas for ConnexCS sync
 export const insertConnexcsSyncJobSchema = createInsertSchema(connexcsSyncJobs).omit({ id: true, createdAt: true });
 export const insertConnexcsEntityMapSchema = createInsertSchema(connexcsEntityMap).omit({ id: true, createdAt: true });
@@ -3064,6 +3150,10 @@ export const insertConnexcsImportCarrierSchema = createInsertSchema(connexcsImpo
 export const insertConnexcsImportRateCardSchema = createInsertSchema(connexcsImportRateCards).omit({ id: true, createdAt: true });
 export const insertConnexcsImportCdrSchema = createInsertSchema(connexcsImportCdrs).omit({ id: true, createdAt: true });
 export const insertConnexcsSyncLogSchema = createInsertSchema(connexcsSyncLogs).omit({ id: true, createdAt: true });
+export const insertConnexcsImportRouteSchema = createInsertSchema(connexcsImportRoutes).omit({ id: true, createdAt: true });
+export const insertConnexcsImportBalanceSchema = createInsertSchema(connexcsImportBalances).omit({ id: true, createdAt: true });
+export const insertConnexcsImportScriptSchema = createInsertSchema(connexcsImportScripts).omit({ id: true, createdAt: true });
+export const insertConnexcsCdrStatsSchema = createInsertSchema(connexcsCdrStats).omit({ id: true, createdAt: true });
 
 // ConnexCS sync types
 export type InsertConnexcsSyncJob = z.infer<typeof insertConnexcsSyncJobSchema>;
@@ -3080,3 +3170,11 @@ export type InsertConnexcsImportCdr = z.infer<typeof insertConnexcsImportCdrSche
 export type ConnexcsImportCdr = typeof connexcsImportCdrs.$inferSelect;
 export type InsertConnexcsSyncLog = z.infer<typeof insertConnexcsSyncLogSchema>;
 export type ConnexcsSyncLog = typeof connexcsSyncLogs.$inferSelect;
+export type InsertConnexcsImportRoute = z.infer<typeof insertConnexcsImportRouteSchema>;
+export type ConnexcsImportRoute = typeof connexcsImportRoutes.$inferSelect;
+export type InsertConnexcsImportBalance = z.infer<typeof insertConnexcsImportBalanceSchema>;
+export type ConnexcsImportBalance = typeof connexcsImportBalances.$inferSelect;
+export type InsertConnexcsImportScript = z.infer<typeof insertConnexcsImportScriptSchema>;
+export type ConnexcsImportScript = typeof connexcsImportScripts.$inferSelect;
+export type InsertConnexcsCdrStats = z.infer<typeof insertConnexcsCdrStatsSchema>;
+export type ConnexcsCdrStats = typeof connexcsCdrStats.$inferSelect;

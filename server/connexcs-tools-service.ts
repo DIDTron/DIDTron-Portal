@@ -120,21 +120,147 @@ interface ConnexCSRoute {
   id: number;
   name: string;
   prefix?: string;
+  tech_prefix?: string;
+  customer_id?: number;
+  customer_name?: string;
+  carrier_id?: number;
+  carrier_name?: string;
+  rate_card_id?: string;
+  routing_type?: string;
+  status?: string;
+  priority?: number;
+  weight?: number;
+  channels?: number;
+  cps?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface ConnexCSScript {
+  id: string;
+  name: string;
+  description?: string;
+  script_type?: string;
+  language?: string;
+  code?: string;
+  enabled?: boolean;
+  version?: number;
+  last_modified?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface ConnexCSCDR {
-  id: string;
-  call_id: string;
-  src: string;
-  dst: string;
-  duration: number;
-  billsec: number;
+  // Core fields
+  id?: string;
   dt: string;
+  callid?: string;
+  call_id?: string;
+  callid_b?: string;
+  
+  // Source/Destination - ConnexCS uses different field names
+  source_cli?: string;
+  src?: string;
+  dest_number?: string;
+  dst?: string;
+  source_dest_number?: string;
+  dest_cli?: string;
+  
+  // Duration fields
+  duration?: number;
+  customer_duration?: number;
+  provider_duration?: number;
+  reseller_duration?: number;
+  ring_duration?: number;
+  billsec?: number;
+  
+  // Customer billing
+  customer_id?: number;
+  customer_card_id?: number;
+  customer_card_dest_code?: string;
+  customer_card_dest_name?: string;
+  customer_card_pulse?: number;
+  customer_card_mcd?: number;
+  customer_card_connect_rate?: number;
+  customer_card_rate?: number;
+  customer_currency?: string;
+  customer_card_currency?: string;
+  customer_charge?: number;
+  customer_card_charge?: number;
+  cx_name?: string;
+  cx_type?: string;
+  cx_iso3166_3?: string;
+  
+  // Provider billing
+  provider_id?: number;
+  provider_card_id?: number;
+  provider_card_dest_code?: string;
+  provider_card_dest_name?: string;
+  provider_card_pulse?: number;
+  provider_card_mcd?: number;
+  provider_card_connect_rate?: number;
+  provider_card_rate?: number;
+  provider_currency?: string;
+  provider_card_currency?: string;
+  provider_charge?: number;
+  provider_card_charge?: number;
+  
+  // Reseller billing
+  reseller_id?: number;
+  reseller_card_id?: number;
+  reseller_card_dest_code?: string;
+  reseller_card_dest_name?: string;
+  reseller_card_pulse?: number;
+  reseller_card_mcd?: number;
+  reseller_card_connect_rate?: number;
+  reseller_card_rate?: number;
+  reseller_currency?: string;
+  reseller_charge?: number;
+  reseller_card_charge?: number;
+  reseller_card_currency?: string;
+  
+  // Network/Technical
+  source_ip?: string;
+  switch_ip?: string;
+  rtp_server_ip?: string;
+  rtp_engagement_latency?: number;
+  customer_rtp_ip?: string;
+  provider_rtp_ip?: string;
+  pdd_in?: number;
+  pdd_out?: number;
+  dtmf?: string;
+  tech_prefix?: string;
+  lrn_number?: string;
+  
+  // Call result
+  sip_code?: number;
+  sip_reason?: string;
+  release_reason?: string;
+  
+  // Other
+  direction?: string;
+  jurisdiction?: string;
+  account_id?: number;
+  billing_id?: string;
+  ingress_id?: number;
+  did?: string;
+  recording_cost?: number;
+  recording_file?: string;
+  record_time?: string;
+  account_profit?: number;
+  account_profit_percent?: number;
+  reseller_profit?: number;
+  reseller_profit_percent?: number;
+  meta?: unknown;
+  meta_temp?: unknown;
+  valid?: boolean;
+  auth_user?: string;
+  branch_idx?: number;
+  
+  // Legacy/Mapped fields
   cost?: number;
   status?: string;
   hangup_cause?: string;
-  direction?: string;
-  customer_id?: number;
   customer_name?: string;
   carrier_id?: number;
   carrier_name?: string;
@@ -146,7 +272,6 @@ interface ConnexCSCDR {
   pdd?: number;
   codec?: string;
   lnp?: boolean;
-  src_ip?: string;
   dst_ip?: string;
 }
 
@@ -1025,6 +1150,63 @@ class ConnexCSToolsService {
       direction: i % 2 === 0 ? "outbound" : "inbound",
     }));
   }
+
+  // ScriptForge Methods
+  async getScripts(storage: StorageInterface): Promise<ConnexCSScript[]> {
+    if (this.mockMode) {
+      return this.getMockScripts();
+    }
+    try {
+      const scripts = await this.makeAuthenticatedRequest<ConnexCSScript[]>(storage, "script");
+      return scripts || [];
+    } catch (error) {
+      console.error("[ConnexCS Tools] Failed to fetch scripts:", error);
+      return [];
+    }
+  }
+
+  async getScriptById(storage: StorageInterface, id: string): Promise<ConnexCSScript | null> {
+    if (this.mockMode) {
+      return this.getMockScripts().find(s => s.id === id) || null;
+    }
+    try {
+      const script = await this.makeAuthenticatedRequest<ConnexCSScript>(storage, `script/${id}`);
+      return script || null;
+    } catch (error) {
+      console.error(`[ConnexCS Tools] Failed to fetch script ${id}:`, error);
+      return null;
+    }
+  }
+
+  // Enhanced routes with full details
+  async getRoutesFull(storage: StorageInterface): Promise<ConnexCSRoute[]> {
+    if (this.mockMode) {
+      return this.getMockRoutesFull();
+    }
+    try {
+      const routes = await this.makeAuthenticatedRequest<ConnexCSRoute[]>(storage, "route");
+      return routes || [];
+    } catch (error) {
+      console.error("[ConnexCS Tools] Failed to fetch routes:", error);
+      return [];
+    }
+  }
+
+  private getMockScripts(): ConnexCSScript[] {
+    return [
+      { id: "script-1", name: "Rate Lookup", description: "Dynamic rate lookup script", script_type: "rate", language: "javascript", enabled: true, version: 1 },
+      { id: "script-2", name: "Fraud Detection", description: "Anti-fraud call screening", script_type: "screening", language: "javascript", enabled: true, version: 2 },
+      { id: "script-3", name: "LNP Dip", description: "Local number portability lookup", script_type: "lnp", language: "javascript", enabled: false, version: 1 },
+    ];
+  }
+
+  private getMockRoutesFull(): ConnexCSRoute[] {
+    return [
+      { id: 1, name: "US Route 1", prefix: "1", tech_prefix: "", customer_id: 1, customer_name: "Acme Corp", carrier_id: 1, carrier_name: "Premium Voice US", routing_type: "lcr", status: "active", priority: 1, weight: 100, channels: 50, cps: 25 },
+      { id: 2, name: "UK Route", prefix: "44", tech_prefix: "", customer_id: 2, customer_name: "TechStart Inc", carrier_id: 2, carrier_name: "Global Transit EU", routing_type: "static", status: "active", priority: 1, weight: 100, channels: 30, cps: 15 },
+      { id: 3, name: "EU Route", prefix: "49", tech_prefix: "", customer_id: 3, customer_name: "Global Telecom", carrier_id: 2, carrier_name: "Global Transit EU", routing_type: "lcr", status: "active", priority: 2, weight: 50, channels: 20, cps: 10 },
+    ];
+  }
 }
 
 export const connexcsTools = new ConnexCSToolsService();
@@ -1043,4 +1225,5 @@ export type {
   ConnexCSBalance,
   ConnexCSSyncResult,
   ConnexCSCDRQueryParams,
+  ConnexCSScript,
 };
