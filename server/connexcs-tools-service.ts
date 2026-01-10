@@ -1212,13 +1212,33 @@ class ConnexCSToolsService {
     if (this.mockMode) {
       return this.getMockServers();
     }
-    try {
-      const servers = await this.makeAuthenticatedRequest<ConnexCSServer[]>(storage, "server");
-      return servers || [];
-    } catch (error) {
-      console.error("[ConnexCS Tools] Failed to fetch servers:", error);
-      return [];
+    
+    // Try multiple endpoint variations based on ConnexCS URL structure
+    const endpointsToTry = [
+      "setup/server",
+      "settings/server",
+      "setup/settings/server",
+      "server",
+      "switch",
+      "setup/switch",
+    ];
+    
+    for (const endpoint of endpointsToTry) {
+      try {
+        console.log(`[ConnexCS Tools] Trying server endpoint: ${endpoint}`);
+        const servers = await this.makeAuthenticatedRequest<ConnexCSServer[]>(storage, endpoint);
+        if (servers && servers.length > 0) {
+          console.log(`[ConnexCS Tools] Successfully fetched ${servers.length} servers from ${endpoint}`);
+          return servers;
+        }
+      } catch (error: any) {
+        console.log(`[ConnexCS Tools] Endpoint ${endpoint} failed: ${error.message}`);
+        continue;
+      }
     }
+    
+    console.log("[ConnexCS Tools] All server endpoints returned empty or failed");
+    return [];
   }
 
   async getAccountInfo(storage: StorageInterface): Promise<ConnexCSAccountInfo | null> {
