@@ -591,12 +591,7 @@ export function SoftswitchCarriersPage() {
               </TableHeader>
               <TableBody>
                 {filteredCarriers.map(carrier => (
-                  <TableRow 
-                    key={carrier.id} 
-                    data-testid={`row-carrier-${carrier.id}`}
-                    className="cursor-pointer hover-elevate"
-                    onClick={() => window.location.href = `/admin/carriers/${carrier.id}`}
-                  >
+                  <TableRow key={carrier.id} data-testid={`row-carrier-${carrier.id}`}>
                     <TableCell>
                       <CarrierTypeIcon type={carrier.partnerType || "bilateral"} />
                     </TableCell>

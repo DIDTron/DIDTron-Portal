@@ -47,6 +47,15 @@ export const sectionConfigs: Record<string, SectionConfig> = {
       { id: "routes", label: "Routes", route: "/admin/routes", icon: RouteIcon },
     ],
   },
+  "wholesale-partners": {
+    title: "Carrier Management",
+    items: [
+      { id: "wholesale-partners", label: "Partners", route: "/admin/carriers", icon: Building2 },
+      { id: "wholesale-customers", label: "Customers", route: "/admin/wholesale/customers", icon: Users },
+      { id: "wholesale-customer-rates", label: "Customer Rates", route: "/admin/wholesale/customer-rates", icon: CreditCard },
+      { id: "wholesale-did-countries", label: "DID Countries", route: "/admin/wholesale/did-countries", icon: Globe },
+    ],
+  },
   "rate-cards": {
     title: "Rate Cards",
     items: [
