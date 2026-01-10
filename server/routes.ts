@@ -5097,10 +5097,22 @@ export async function registerRoutes(
 
   // ==================== CONNEXCS SYNC ====================
   
+  // Helper to get valid userId (validates user exists in database)
+  async function getValidUserId(sessionUserId?: string): Promise<string | undefined> {
+    if (!sessionUserId) return undefined;
+    try {
+      const user = await storage.getUser(sessionUserId);
+      return user ? user.id : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  
   app.post("/api/admin/connexcs/sync/customers", async (req, res) => {
     try {
       const { syncCustomers } = await import("./services/connexcs-sync");
-      const result = await syncCustomers(req.session?.userId);
+      const userId = await getValidUserId(req.session?.userId);
+      const result = await syncCustomers(userId);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "Sync failed" });
@@ -5110,7 +5122,8 @@ export async function registerRoutes(
   app.post("/api/admin/connexcs/sync/carriers", async (req, res) => {
     try {
       const { syncCarriers } = await import("./services/connexcs-sync");
-      const result = await syncCarriers(req.session?.userId);
+      const userId = await getValidUserId(req.session?.userId);
+      const result = await syncCarriers(userId);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "Sync failed" });
@@ -5120,7 +5133,8 @@ export async function registerRoutes(
   app.post("/api/admin/connexcs/sync/ratecards", async (req, res) => {
     try {
       const { syncRateCards } = await import("./services/connexcs-sync");
-      const result = await syncRateCards(req.session?.userId);
+      const userId = await getValidUserId(req.session?.userId);
+      const result = await syncRateCards(userId);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "Sync failed" });
@@ -5134,7 +5148,8 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Year and month are required" });
       }
       const { syncCDRs } = await import("./services/connexcs-sync");
-      const result = await syncCDRs(year, month, req.session?.userId);
+      const userId = await getValidUserId(req.session?.userId);
+      const result = await syncCDRs(year, month, userId);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "Sync failed" });
@@ -5144,7 +5159,7 @@ export async function registerRoutes(
   app.post("/api/admin/connexcs/sync/all", async (req, res) => {
     try {
       const { syncCustomers, syncCarriers, syncRateCards } = await import("./services/connexcs-sync");
-      const userId = req.session?.userId;
+      const userId = await getValidUserId(req.session?.userId);
       
       const [customersResult, carriersResult, rateCardsResult] = await Promise.all([
         syncCustomers(userId),

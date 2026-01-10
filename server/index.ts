@@ -1037,6 +1037,25 @@ async function seedBillingTerms() {
         
         const { connexcsTools } = await import("./connexcs-tools-service");
         await connexcsTools.loadCredentialsFromStorage(storage);
+        
+        // Auto-sync ConnexCS data on startup (non-blocking)
+        setTimeout(async () => {
+          try {
+            const status = await connexcsTools.getStatus(storage);
+            if (status.connected && !status.mockMode) {
+              log("Starting automatic ConnexCS data sync...", "connexcs-sync");
+              const { syncCustomers, syncCarriers, syncRateCards } = await import("./services/connexcs-sync");
+              const [customers, carriers, ratecards] = await Promise.all([
+                syncCustomers(),
+                syncCarriers(),
+                syncRateCards(),
+              ]);
+              log(`Auto-sync complete: ${customers.imported + customers.updated} customers, ${carriers.imported + carriers.updated} carriers, ${ratecards.imported + ratecards.updated} ratecards`, "connexcs-sync");
+            }
+          } catch (err) {
+            log(`Auto-sync failed: ${err}`, "connexcs-sync");
+          }
+        }, 5000); // Wait 5 seconds for services to stabilize
       } catch (error) {
         log(`Integration initialization failed: ${error}`, "integrations");
       }
