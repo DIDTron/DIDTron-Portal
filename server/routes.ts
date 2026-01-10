@@ -5099,11 +5099,21 @@ export async function registerRoutes(
   
   // Helper to get valid userId (validates user exists in database)
   async function getValidUserId(sessionUserId?: string): Promise<string | undefined> {
-    if (!sessionUserId) return undefined;
+    if (!sessionUserId) {
+      console.log("[getValidUserId] No session user ID provided");
+      return undefined;
+    }
     try {
       const user = await storage.getUser(sessionUserId);
-      return user ? user.id : undefined;
-    } catch {
+      if (user) {
+        console.log(`[getValidUserId] User validated: ${user.id}`);
+        return user.id;
+      } else {
+        console.log(`[getValidUserId] User not found in database: ${sessionUserId}`);
+        return undefined;
+      }
+    } catch (err) {
+      console.log(`[getValidUserId] Error looking up user: ${err}`);
       return undefined;
     }
   }
