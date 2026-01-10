@@ -6,10 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -25,10 +25,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, Pencil } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { ChevronLeft, ChevronDown, Plus, Pencil, Trash2, GripVertical } from "lucide-react";
 import type { CarrierInterconnect, Carrier } from "@shared/schema";
 
-// Helper function to get tabs based on direction (hoisted)
 function getTabsForDirection(direction: string) {
   const baseTabs = [{ id: "details", label: "Details" }];
   
@@ -65,6 +77,46 @@ function getTabsForDirection(direction: string) {
   }
 }
 
+interface Service {
+  id: string;
+  name: string;
+  customerRatingPlan: string;
+  routingPlan: string;
+  currency: string;
+  capacity: string;
+  status: "active" | "inactive";
+}
+
+interface IPAddress {
+  id: string;
+  ip: string;
+  isRange: boolean;
+  rangeEnd?: string;
+  addressType: "transport" | "via";
+  includeLastVia: boolean;
+  active: boolean;
+}
+
+interface Codec {
+  id: string;
+  name: string;
+  allowed: boolean;
+  relayOnly: boolean;
+  vad: boolean;
+  ptime: number;
+}
+
+const defaultCodecs: Codec[] = [
+  { id: "g711u", name: "G.711 μ-law (PCMU)", allowed: true, relayOnly: false, vad: false, ptime: 20 },
+  { id: "g711a", name: "G.711 A-law (PCMA)", allowed: true, relayOnly: false, vad: false, ptime: 20 },
+  { id: "g729", name: "G.729", allowed: true, relayOnly: false, vad: true, ptime: 20 },
+  { id: "g723", name: "G.723.1", allowed: true, relayOnly: false, vad: true, ptime: 30 },
+  { id: "gsm", name: "GSM", allowed: true, relayOnly: true, vad: false, ptime: 20 },
+  { id: "opus", name: "Opus", allowed: true, relayOnly: true, vad: false, ptime: 20 },
+  { id: "amr", name: "AMR", allowed: false, relayOnly: true, vad: false, ptime: 20 },
+  { id: "amr-wb", name: "AMR-WB", allowed: false, relayOnly: true, vad: false, ptime: 20 },
+];
+
 export default function InterconnectDetailPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -74,6 +126,75 @@ export default function InterconnectDetailPage() {
 
   const [activeTab, setActiveTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
+  
+  const [showAddServiceDialog, setShowAddServiceDialog] = useState(false);
+  const [showAddIPDialog, setShowAddIPDialog] = useState(false);
+  const [isEditingValidation, setIsEditingValidation] = useState(false);
+  const [isEditingTranslation, setIsEditingTranslation] = useState(false);
+  const [isEditingMedia, setIsEditingMedia] = useState(false);
+  const [isEditingSignalling, setIsEditingSignalling] = useState(false);
+
+  const [services, setServices] = useState<Service[]>([]);
+  const [ipAddresses, setIpAddresses] = useState<IPAddress[]>([]);
+  const [codecs, setCodecs] = useState<Codec[]>(defaultCodecs);
+
+  const [validationData, setValidationData] = useState({
+    techPrefix: "",
+    fromUri: "",
+    contactUri: "",
+    trunkGroup: "",
+    trunkContext: "",
+    validateTrunkGroup: false,
+    maxCps: "",
+    maxCpsEnabled: false,
+    testSystemControl: "dont_allow",
+  });
+
+  const [translationData, setTranslationData] = useState({
+    originationPreference: "pai_then_from",
+    originationValidation: "none",
+    setPaiHeader: "none",
+    globalTranslation: "",
+    originTranslation: "",
+    destinationTranslation: "",
+  });
+
+  const [mediaData, setMediaData] = useState({
+    dtmfDetection: "rfc2833",
+    mediaRelay: "always",
+    mediaNetwork: "same_as_signalling",
+    rtpTimeout: "",
+    rtpTimeoutEnabled: false,
+  });
+
+  const [signallingData, setSignallingData] = useState({
+    privacyMethod: "rfc3325",
+    sessionTimerEnabled: true,
+    minSessionTimer: 90,
+    defaultSessionTimer: 1800,
+    rel100: "supported",
+    maxCallDurationEnabled: false,
+    maxCallDuration: 0,
+    callProgressDefault: true,
+    tryingTimeout: 180000,
+    ringingTimeout: 180000,
+    releaseCauseMapping: "",
+  });
+
+  const [newService, setNewService] = useState({
+    name: "",
+    customerRatingPlan: "",
+    routingPlan: "",
+    capacity: "unrestricted",
+  });
+
+  const [newIP, setNewIP] = useState({
+    ip: "",
+    isRange: false,
+    rangeEnd: "",
+    addressType: "transport" as "transport" | "via",
+    includeLastVia: false,
+  });
 
   const { data: carrier } = useQuery<Carrier>({
     queryKey: ["/api/carriers", carrierId],
@@ -85,7 +206,6 @@ export default function InterconnectDetailPage() {
     enabled: !!interconnectId,
   });
 
-  // Fetch ConnexCS servers for Session Border Controller section
   interface ConnexCSServer {
     id: number;
     type: string;
@@ -116,7 +236,6 @@ export default function InterconnectDetailPage() {
     sipPort: 5060,
   });
 
-  // Reset tab state when navigating to a different interconnect
   useEffect(() => {
     setActiveTab("details");
   }, [interconnectId]);
@@ -136,7 +255,6 @@ export default function InterconnectDetailPage() {
         sipPort: interconnect.sipPort || 5060,
       });
       
-      // Set active tab to first tab for this direction when data loads
       const firstTab = getTabsForDirection(interconnect.direction || "both")[0]?.id || "details";
       setActiveTab(firstTab);
     }
@@ -174,6 +292,48 @@ export default function InterconnectDetailPage() {
     }
   };
 
+  const handleAddService = () => {
+    const newSvc: Service = {
+      id: crypto.randomUUID(),
+      name: newService.name,
+      customerRatingPlan: newService.customerRatingPlan,
+      routingPlan: newService.routingPlan,
+      currency: interconnect?.currencyCode || "USD",
+      capacity: newService.capacity,
+      status: "active",
+    };
+    setServices([...services, newSvc]);
+    setShowAddServiceDialog(false);
+    setNewService({ name: "", customerRatingPlan: "", routingPlan: "", capacity: "unrestricted" });
+    toast({ title: "Service added successfully" });
+  };
+
+  const handleDeleteService = (id: string) => {
+    setServices(services.filter(s => s.id !== id));
+    toast({ title: "Service deleted" });
+  };
+
+  const handleAddIP = () => {
+    const newAddr: IPAddress = {
+      id: crypto.randomUUID(),
+      ip: newIP.ip,
+      isRange: newIP.isRange,
+      rangeEnd: newIP.rangeEnd,
+      addressType: newIP.addressType,
+      includeLastVia: newIP.includeLastVia,
+      active: true,
+    };
+    setIpAddresses([...ipAddresses, newAddr]);
+    setShowAddIPDialog(false);
+    setNewIP({ ip: "", isRange: false, rangeEnd: "", addressType: "transport", includeLastVia: false });
+    toast({ title: "IP address added successfully" });
+  };
+
+  const handleDeleteIP = (id: string) => {
+    setIpAddresses(ipAddresses.filter(ip => ip.id !== id));
+    toast({ title: "IP address removed" });
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
   }
@@ -200,7 +360,7 @@ export default function InterconnectDetailPage() {
             <div className="text-sm text-muted-foreground flex items-center gap-2">
               <span 
                 className="cursor-pointer hover:underline text-primary"
-                onClick={() => setLocation("/admin/carriers")}
+                onClick={() => setLocation("/admin/softswitch/carriers")}
               >
                 Carrier Management
               </span>
@@ -234,6 +394,7 @@ export default function InterconnectDetailPage() {
         </div>
 
         <div className="flex-1 overflow-auto p-6">
+          {/* Details Tab */}
           <TabsContent value="details" className="mt-0">
             <div className="grid grid-cols-2 gap-8">
               <Card>
@@ -431,95 +592,989 @@ export default function InterconnectDetailPage() {
             </div>
           </TabsContent>
 
+          {/* Services Tab */}
           <TabsContent value="services" className="mt-0">
             <Card>
-              <CardHeader>
-                <CardTitle>Services</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between gap-4">
+                <CardTitle className="text-xl">Services</CardTitle>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button data-testid="button-services-actions">
+                      Actions <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowAddServiceDialog(true)} data-testid="menu-add-service">
+                      <Plus className="mr-2 h-4 w-4" /> Add Service
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Services configuration for this interconnect.</p>
+                {services.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    No services configured for this interconnect. Click Actions &gt; Add Service to create one.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-primary">
+                        <TableHead className="text-primary-foreground">Name</TableHead>
+                        <TableHead className="text-primary-foreground">Customer Rating Plan</TableHead>
+                        <TableHead className="text-primary-foreground">Routing Plan</TableHead>
+                        <TableHead className="text-primary-foreground">Currency</TableHead>
+                        <TableHead className="text-primary-foreground">Capacity</TableHead>
+                        <TableHead className="text-primary-foreground">Status</TableHead>
+                        <TableHead className="text-primary-foreground w-20">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {services.map((service) => (
+                        <TableRow key={service.id} data-testid={`row-service-${service.id}`}>
+                          <TableCell className="font-medium">{service.name}</TableCell>
+                          <TableCell>{service.customerRatingPlan || "-"}</TableCell>
+                          <TableCell>{service.routingPlan || "-"}</TableCell>
+                          <TableCell>{service.currency}</TableCell>
+                          <TableCell>{service.capacity}</TableCell>
+                          <TableCell>
+                            <Badge className={service.status === "active" ? "bg-green-500" : "bg-gray-500"}>
+                              {service.status === "active" ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" data-testid={`button-edit-service-${service.id}`}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleDeleteService(service.id)}
+                                data-testid={`button-delete-service-${service.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Ingress Validation Tab */}
           <TabsContent value="ingress-validation" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Ingress Validation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Ingress validation rules for incoming traffic.</p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-2 gap-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                  <CardTitle className="text-base">Call Validation</CardTitle>
+                  {!isEditingValidation && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditingValidation(true)} data-testid="button-edit-validation">
+                      Edit
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Tech Prefix</span>
+                      {isEditingValidation ? (
+                        <Input
+                          value={validationData.techPrefix}
+                          onChange={(e) => setValidationData({ ...validationData, techPrefix: e.target.value })}
+                          placeholder="e.g., 1234"
+                          data-testid="input-tech-prefix"
+                        />
+                      ) : (
+                        <span className="text-sm font-mono">{validationData.techPrefix || "-"}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">From URI</span>
+                      {isEditingValidation ? (
+                        <Input
+                          value={validationData.fromUri}
+                          onChange={(e) => setValidationData({ ...validationData, fromUri: e.target.value })}
+                          placeholder="e.g., %sip.example.com"
+                          data-testid="input-from-uri"
+                        />
+                      ) : (
+                        <span className="text-sm font-mono">{validationData.fromUri || "-"}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Contact URI</span>
+                      {isEditingValidation ? (
+                        <Input
+                          value={validationData.contactUri}
+                          onChange={(e) => setValidationData({ ...validationData, contactUri: e.target.value })}
+                          placeholder="e.g., %sip.example.com"
+                          data-testid="input-contact-uri"
+                        />
+                      ) : (
+                        <span className="text-sm font-mono">{validationData.contactUri || "-"}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-start gap-2">
+                      <span className="text-sm text-muted-foreground pt-2">Trunk Group</span>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={validationData.validateTrunkGroup}
+                            onCheckedChange={(checked) => setValidationData({ ...validationData, validateTrunkGroup: !!checked })}
+                            disabled={!isEditingValidation}
+                          />
+                          <span className="text-sm">Validate</span>
+                        </div>
+                        {isEditingValidation && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              value={validationData.trunkGroup}
+                              onChange={(e) => setValidationData({ ...validationData, trunkGroup: e.target.value })}
+                              placeholder="Trunk Group"
+                            />
+                            <Input
+                              value={validationData.trunkContext}
+                              onChange={(e) => setValidationData({ ...validationData, trunkContext: e.target.value })}
+                              placeholder="Trunk Context"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Max CPS</span>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={validationData.maxCpsEnabled}
+                          onCheckedChange={(checked) => setValidationData({ ...validationData, maxCpsEnabled: !!checked })}
+                          disabled={!isEditingValidation}
+                        />
+                        {isEditingValidation && validationData.maxCpsEnabled ? (
+                          <Input
+                            type="number"
+                            value={validationData.maxCps}
+                            onChange={(e) => setValidationData({ ...validationData, maxCps: e.target.value })}
+                            className="w-24"
+                            placeholder="CPS"
+                          />
+                        ) : (
+                          <span className="text-sm">{validationData.maxCpsEnabled ? validationData.maxCps : "Unlimited"}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Test System Control</span>
+                      {isEditingValidation ? (
+                        <Select
+                          value={validationData.testSystemControl}
+                          onValueChange={(v) => setValidationData({ ...validationData, testSystemControl: v })}
+                        >
+                          <SelectTrigger data-testid="select-test-control">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="dont_allow">Don't Allow</SelectItem>
+                            <SelectItem value="allow">Allow</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm">{validationData.testSystemControl === "dont_allow" ? "Don't Allow" : "Allow"}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {isEditingValidation && (
+                    <div className="flex gap-2 pt-4">
+                      <Button onClick={() => { setIsEditingValidation(false); toast({ title: "Validation settings saved" }); }}>
+                        Save
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsEditingValidation(false)}>Cancel</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                  <CardTitle className="text-base">IP Addresses</CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => setShowAddIPDialog(true)} data-testid="button-add-ip">
+                    <Plus className="mr-1 h-4 w-4" /> Add IP
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {ipAddresses.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4 text-sm">
+                      No IP addresses configured. Click Add IP to add one.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-primary">
+                          <TableHead className="text-primary-foreground">IP Address</TableHead>
+                          <TableHead className="text-primary-foreground">Type</TableHead>
+                          <TableHead className="text-primary-foreground text-center">Active</TableHead>
+                          <TableHead className="text-primary-foreground w-16">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {ipAddresses.map((addr) => (
+                          <TableRow key={addr.id}>
+                            <TableCell className="font-mono text-sm">
+                              {addr.isRange ? `${addr.ip} - ${addr.rangeEnd}` : addr.ip}
+                            </TableCell>
+                            <TableCell className="text-sm">{addr.addressType === "transport" ? "Transport Address" : "Via Address"}</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox checked={addr.active} disabled />
+                            </TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleDeleteIP(addr.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
+          {/* Ingress Translation Tab */}
           <TabsContent value="ingress-translation" className="mt-0">
             <Card>
-              <CardHeader>
-                <CardTitle>Ingress Translation</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                <CardTitle className="text-base">Ingress Parameter Manipulation</CardTitle>
+                {!isEditingTranslation && (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditingTranslation(true)} data-testid="button-edit-translation">
+                    Edit
+                  </Button>
+                )}
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Ingress parameter manipulation settings.</p>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Origination Settings</h4>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Origination Preference</span>
+                      {isEditingTranslation ? (
+                        <Select
+                          value={translationData.originationPreference}
+                          onValueChange={(v) => setTranslationData({ ...translationData, originationPreference: v })}
+                        >
+                          <SelectTrigger data-testid="select-origination-preference">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pai_then_from">PAI then From</SelectItem>
+                            <SelectItem value="from_then_pai">From then PAI</SelectItem>
+                            <SelectItem value="from">From only</SelectItem>
+                            <SelectItem value="pai">PAI only</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm">
+                          {translationData.originationPreference === "pai_then_from" ? "PAI then From" :
+                           translationData.originationPreference === "from_then_pai" ? "From then PAI" :
+                           translationData.originationPreference === "from" ? "From only" : "PAI only"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Origination Validation</span>
+                      {isEditingTranslation ? (
+                        <Select
+                          value={translationData.originationValidation}
+                          onValueChange={(v) => setTranslationData({ ...translationData, originationValidation: v })}
+                        >
+                          <SelectTrigger data-testid="select-origination-validation">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="e164">E.164 Format</SelectItem>
+                            <SelectItem value="nanpa">NANPA Format</SelectItem>
+                            <SelectItem value="custom">Custom</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm">{translationData.originationValidation === "none" ? "Not Checked" : translationData.originationValidation}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Set PAI Header</span>
+                      {isEditingTranslation ? (
+                        <Select
+                          value={translationData.setPaiHeader}
+                          onValueChange={(v) => setTranslationData({ ...translationData, setPaiHeader: v })}
+                        >
+                          <SelectTrigger data-testid="select-set-pai">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="always">Always Generate</SelectItem>
+                            <SelectItem value="if_missing">If Missing</SelectItem>
+                            <SelectItem value="from_to_and_destination">From To & Destination</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm">{translationData.setPaiHeader === "none" ? "None" : translationData.setPaiHeader}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Number Translation</h4>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Global Translation</span>
+                      {isEditingTranslation ? (
+                        <Select
+                          value={translationData.globalTranslation || "none"}
+                          onValueChange={(v) => setTranslationData({ ...translationData, globalTranslation: v === "none" ? "" : v })}
+                        >
+                          <SelectTrigger data-testid="select-global-translation">
+                            <SelectValue placeholder="Select..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="strip_plus">Strip + Prefix</SelectItem>
+                            <SelectItem value="strip_00">Strip 00 Prefix</SelectItem>
+                            <SelectItem value="add_plus">Add + Prefix</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm">{translationData.globalTranslation || "None"}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Origin Translation</span>
+                      {isEditingTranslation ? (
+                        <Input
+                          value={translationData.originTranslation}
+                          onChange={(e) => setTranslationData({ ...translationData, originTranslation: e.target.value })}
+                          placeholder="e.g., ^\\+(.*)$|\\1"
+                          data-testid="input-origin-translation"
+                        />
+                      ) : (
+                        <span className="text-sm font-mono">{translationData.originTranslation || "-"}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Destination Translation</span>
+                      {isEditingTranslation ? (
+                        <Input
+                          value={translationData.destinationTranslation}
+                          onChange={(e) => setTranslationData({ ...translationData, destinationTranslation: e.target.value })}
+                          placeholder="e.g., ^\\+(.*)$|\\1"
+                          data-testid="input-destination-translation"
+                        />
+                      ) : (
+                        <span className="text-sm font-mono">{translationData.destinationTranslation || "-"}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {isEditingTranslation && (
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button onClick={() => { setIsEditingTranslation(false); toast({ title: "Translation settings saved" }); }}>
+                      Save
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsEditingTranslation(false)}>Cancel</Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Media Tab */}
+          <TabsContent value="media" className="mt-0">
+            <div className="grid grid-cols-2 gap-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                  <CardTitle className="text-base">Codecs</CardTitle>
+                  {!isEditingMedia && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditingMedia(true)} data-testid="button-edit-media">
+                      Edit
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-primary">
+                        {isEditingMedia && <TableHead className="text-primary-foreground w-10"></TableHead>}
+                        <TableHead className="text-primary-foreground">Codec</TableHead>
+                        <TableHead className="text-primary-foreground text-center">Allow</TableHead>
+                        <TableHead className="text-primary-foreground text-center">VAD</TableHead>
+                        <TableHead className="text-primary-foreground text-center">ptime</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {codecs.map((codec) => (
+                        <TableRow key={codec.id}>
+                          {isEditingMedia && (
+                            <TableCell>
+                              <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+                            </TableCell>
+                          )}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">{codec.name}</span>
+                              {codec.relayOnly && (
+                                <Badge variant="secondary" className="text-xs">Relay Only</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={codec.allowed}
+                              onCheckedChange={(checked) => {
+                                if (isEditingMedia) {
+                                  setCodecs(codecs.map(c => c.id === codec.id ? { ...c, allowed: !!checked } : c));
+                                }
+                              }}
+                              disabled={!isEditingMedia}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={codec.vad}
+                              onCheckedChange={(checked) => {
+                                if (isEditingMedia) {
+                                  setCodecs(codecs.map(c => c.id === codec.id ? { ...c, vad: !!checked } : c));
+                                }
+                              }}
+                              disabled={!isEditingMedia || codec.relayOnly}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {isEditingMedia && !codec.relayOnly ? (
+                              <Select
+                                value={codec.ptime.toString()}
+                                onValueChange={(v) => setCodecs(codecs.map(c => c.id === codec.id ? { ...c, ptime: parseInt(v) } : c))}
+                              >
+                                <SelectTrigger className="w-16 h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="10">10</SelectItem>
+                                  <SelectItem value="20">20</SelectItem>
+                                  <SelectItem value="30">30</SelectItem>
+                                  <SelectItem value="40">40</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <span className="text-sm">{codec.ptime}ms</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {isEditingMedia && (
+                    <div className="flex gap-2 pt-4">
+                      <Button onClick={() => { setIsEditingMedia(false); toast({ title: "Codec settings saved" }); }}>
+                        Save
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsEditingMedia(false)}>Cancel</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Media Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">DTMF Detection</span>
+                    {isEditingMedia ? (
+                      <Select
+                        value={mediaData.dtmfDetection}
+                        onValueChange={(v) => setMediaData({ ...mediaData, dtmfDetection: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="rfc2833">RFC 2833</SelectItem>
+                          <SelectItem value="inband">Inband</SelectItem>
+                          <SelectItem value="sip_info">SIP INFO</SelectItem>
+                          <SelectItem value="auto">Auto Detect</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm">{mediaData.dtmfDetection.toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Media Relay</span>
+                    {isEditingMedia ? (
+                      <Select
+                        value={mediaData.mediaRelay}
+                        onValueChange={(v) => setMediaData({ ...mediaData, mediaRelay: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="always">Always</SelectItem>
+                          <SelectItem value="never">Never (Direct RTP)</SelectItem>
+                          <SelectItem value="on_transcoding">On Transcoding</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm">{mediaData.mediaRelay === "always" ? "Always" : mediaData.mediaRelay === "never" ? "Never (Direct RTP)" : "On Transcoding"}</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Media Network</span>
+                    <span className="text-sm">Same as Signalling</span>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">RTP Timeout</span>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={mediaData.rtpTimeoutEnabled}
+                        onCheckedChange={(checked) => setMediaData({ ...mediaData, rtpTimeoutEnabled: !!checked })}
+                        disabled={!isEditingMedia}
+                      />
+                      {isEditingMedia && mediaData.rtpTimeoutEnabled ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            value={mediaData.rtpTimeout}
+                            onChange={(e) => setMediaData({ ...mediaData, rtpTimeout: e.target.value })}
+                            className="w-20"
+                          />
+                          <span className="text-sm text-muted-foreground">seconds</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm">{mediaData.rtpTimeoutEnabled ? `${mediaData.rtpTimeout} seconds` : "Disabled"}</span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Signalling Tab */}
+          <TabsContent value="signalling" className="mt-0">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                <CardTitle className="text-base">Signalling Configuration</CardTitle>
+                {!isEditingSignalling && (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditingSignalling(true)} data-testid="button-edit-signalling">
+                    Edit
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Privacy & Identity</h4>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Privacy Method</span>
+                      {isEditingSignalling ? (
+                        <Select
+                          value={signallingData.privacyMethod}
+                          onValueChange={(v) => setSignallingData({ ...signallingData, privacyMethod: v })}
+                        >
+                          <SelectTrigger data-testid="select-privacy-method">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="rfc3261">RFC 3261</SelectItem>
+                            <SelectItem value="remote_party_id">Remote Party ID</SelectItem>
+                            <SelectItem value="rfc3325">RFC 3325 (P-Asserted Identity)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm">
+                          {signallingData.privacyMethod === "rfc3261" ? "RFC 3261" :
+                           signallingData.privacyMethod === "remote_party_id" ? "Remote Party ID" :
+                           "RFC 3325 (P-Asserted Identity)"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">100rel</span>
+                      {isEditingSignalling ? (
+                        <Select
+                          value={signallingData.rel100}
+                          onValueChange={(v) => setSignallingData({ ...signallingData, rel100: v })}
+                        >
+                          <SelectTrigger data-testid="select-100rel">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="supported">Supported</SelectItem>
+                            <SelectItem value="required">Required</SelectItem>
+                            <SelectItem value="disabled">Disabled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm capitalize">{signallingData.rel100}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Session Timer</h4>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Enabled</span>
+                      <Switch
+                        checked={signallingData.sessionTimerEnabled}
+                        onCheckedChange={(checked) => setSignallingData({ ...signallingData, sessionTimerEnabled: checked })}
+                        disabled={!isEditingSignalling}
+                      />
+                    </div>
+                    {signallingData.sessionTimerEnabled && (
+                      <>
+                        <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Min Session Timer</span>
+                          {isEditingSignalling ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                value={signallingData.minSessionTimer}
+                                onChange={(e) => setSignallingData({ ...signallingData, minSessionTimer: parseInt(e.target.value) || 90 })}
+                                className="w-24"
+                              />
+                              <span className="text-sm text-muted-foreground">sec</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm">{signallingData.minSessionTimer} sec</span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Default Session Timer</span>
+                          {isEditingSignalling ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                value={signallingData.defaultSessionTimer}
+                                onChange={(e) => setSignallingData({ ...signallingData, defaultSessionTimer: parseInt(e.target.value) || 1800 })}
+                                className="w-24"
+                              />
+                              <span className="text-sm text-muted-foreground">sec</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm">{signallingData.defaultSessionTimer} sec</span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-medium">Call Duration</h4>
+                      <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Max Call Duration</span>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={!signallingData.maxCallDurationEnabled}
+                            onCheckedChange={(checked) => setSignallingData({ ...signallingData, maxCallDurationEnabled: !checked })}
+                            disabled={!isEditingSignalling}
+                          />
+                          <span className="text-sm">No Limit</span>
+                          {signallingData.maxCallDurationEnabled && isEditingSignalling && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <Input
+                                type="number"
+                                value={signallingData.maxCallDuration}
+                                onChange={(e) => setSignallingData({ ...signallingData, maxCallDuration: parseInt(e.target.value) || 0 })}
+                                className="w-20"
+                              />
+                              <span className="text-sm text-muted-foreground">min</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-medium">Call Progress Timers</h4>
+                      <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Use Default</span>
+                        <Switch
+                          checked={signallingData.callProgressDefault}
+                          onCheckedChange={(checked) => setSignallingData({ ...signallingData, callProgressDefault: checked })}
+                          disabled={!isEditingSignalling}
+                        />
+                      </div>
+                      {!signallingData.callProgressDefault && (
+                        <>
+                          <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Trying Timeout</span>
+                            {isEditingSignalling ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={signallingData.tryingTimeout}
+                                  onChange={(e) => setSignallingData({ ...signallingData, tryingTimeout: parseInt(e.target.value) || 0 })}
+                                  className="w-28"
+                                />
+                                <span className="text-sm text-muted-foreground">ms</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm">{signallingData.tryingTimeout} ms</span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Ringing Timeout</span>
+                            {isEditingSignalling ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={signallingData.ringingTimeout}
+                                  onChange={(e) => setSignallingData({ ...signallingData, ringingTimeout: parseInt(e.target.value) || 0 })}
+                                  className="w-28"
+                                />
+                                <span className="text-sm text-muted-foreground">ms</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm">{signallingData.ringingTimeout} ms</span>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Release Cause Mapping</span>
+                    {isEditingSignalling ? (
+                      <Select
+                        value={signallingData.releaseCauseMapping || "none"}
+                        onValueChange={(v) => setSignallingData({ ...signallingData, releaseCauseMapping: v === "none" ? "" : v })}
+                      >
+                        <SelectTrigger className="w-64" data-testid="select-release-cause">
+                          <SelectValue placeholder="Select mapping group..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="default">Default Mapping</SelectItem>
+                          <SelectItem value="strict">Strict Mapping</SelectItem>
+                          <SelectItem value="carrier_specific">Carrier Specific</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm">{signallingData.releaseCauseMapping || "None"}</span>
+                    )}
+                  </div>
+                </div>
+
+                {isEditingSignalling && (
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button onClick={() => { setIsEditingSignalling(false); toast({ title: "Signalling settings saved" }); }}>
+                      Save
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsEditingSignalling(false)}>Cancel</Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Egress Routing Tab (Supplier) */}
           <TabsContent value="egress-routing" className="mt-0">
             <Card>
               <CardHeader>
                 <CardTitle>Egress Routing</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Egress routing configuration for outbound traffic.</p>
+                <p className="text-muted-foreground">Egress routing configuration for outbound traffic to this supplier.</p>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Egress Translations Tab (Supplier) */}
           <TabsContent value="egress-translations" className="mt-0">
             <Card>
               <CardHeader>
                 <CardTitle>Egress Translations</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Egress translation rules.</p>
+                <p className="text-muted-foreground">Egress translation rules for outbound traffic.</p>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="media" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Media</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Media handling configuration (codecs, transcoding, etc.)</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
+          {/* Monitoring Tab (Supplier) */}
           <TabsContent value="monitoring" className="mt-0">
             <Card>
               <CardHeader>
                 <CardTitle>Monitoring</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Monitoring and alerting settings for this interconnect.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="signalling" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Signalling</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">SIP signalling configuration.</p>
+                <p className="text-muted-foreground">SIP OPTIONS ping and call response monitoring settings.</p>
               </CardContent>
             </Card>
           </TabsContent>
         </div>
       </Tabs>
+
+      {/* Add Service Dialog */}
+      <Dialog open={showAddServiceDialog} onOpenChange={setShowAddServiceDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add Service</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+              <span className="text-sm font-medium">Name</span>
+              <Input
+                value={newService.name}
+                onChange={(e) => setNewService({ ...newService, name: e.target.value })}
+                placeholder="Enter service name"
+                data-testid="input-service-name"
+              />
+            </div>
+            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+              <span className="text-sm font-medium">Rating Plan</span>
+              <Select
+                value={newService.customerRatingPlan}
+                onValueChange={(v) => setNewService({ ...newService, customerRatingPlan: v })}
+              >
+                <SelectTrigger data-testid="select-rating-plan">
+                  <SelectValue placeholder="Select rating plan..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard Rate Plan</SelectItem>
+                  <SelectItem value="premium">Premium Rate Plan</SelectItem>
+                  <SelectItem value="wholesale">Wholesale Rate Plan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+              <span className="text-sm font-medium">Routing Plan</span>
+              <Select
+                value={newService.routingPlan}
+                onValueChange={(v) => setNewService({ ...newService, routingPlan: v })}
+              >
+                <SelectTrigger data-testid="select-routing-plan">
+                  <SelectValue placeholder="Select routing plan..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lcr">LCR Routing</SelectItem>
+                  <SelectItem value="quality">Quality Routing</SelectItem>
+                  <SelectItem value="direct">Direct Routing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+              <span className="text-sm font-medium">Capacity</span>
+              <Select
+                value={newService.capacity}
+                onValueChange={(v) => setNewService({ ...newService, capacity: v })}
+              >
+                <SelectTrigger data-testid="select-service-capacity">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unrestricted">Unrestricted</SelectItem>
+                  <SelectItem value="10">10 Channels</SelectItem>
+                  <SelectItem value="50">50 Channels</SelectItem>
+                  <SelectItem value="100">100 Channels</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddServiceDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddService} disabled={!newService.name} data-testid="button-save-service">
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add IP Dialog */}
+      <Dialog open={showAddIPDialog} onOpenChange={setShowAddIPDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add IP Address</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+              <span className="text-sm font-medium">IP Address</span>
+              <Input
+                value={newIP.ip}
+                onChange={(e) => setNewIP({ ...newIP, ip: e.target.value })}
+                placeholder="e.g., 192.168.1.1"
+                data-testid="input-ip-address"
+              />
+            </div>
+            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+              <span className="text-sm font-medium">Range</span>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={newIP.isRange}
+                  onCheckedChange={(checked) => setNewIP({ ...newIP, isRange: !!checked })}
+                />
+                {newIP.isRange && (
+                  <Input
+                    value={newIP.rangeEnd}
+                    onChange={(e) => setNewIP({ ...newIP, rangeEnd: e.target.value })}
+                    placeholder="End IP"
+                    className="w-40"
+                  />
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+              <span className="text-sm font-medium">Address Type</span>
+              <Select
+                value={newIP.addressType}
+                onValueChange={(v: "transport" | "via") => setNewIP({ ...newIP, addressType: v })}
+              >
+                <SelectTrigger data-testid="select-address-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="transport">Transport Address</SelectItem>
+                  <SelectItem value="via">Via Address</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {newIP.addressType === "via" && (
+              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                <span className="text-sm font-medium">Include Last Via</span>
+                <Checkbox
+                  checked={newIP.includeLastVia}
+                  onCheckedChange={(checked) => setNewIP({ ...newIP, includeLastVia: !!checked })}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddIPDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddIP} disabled={!newIP.ip} data-testid="button-save-ip">
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
