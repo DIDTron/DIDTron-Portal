@@ -1149,8 +1149,8 @@ function CarrierDetailsTab({
   };
 
   return (
-    <div className="grid grid-cols-3 gap-6">
-      <div className="space-y-6">
+    <div className="grid grid-cols-3 gap-6" style={{ minWidth: "1100px" }}>
+      <div className="space-y-6 min-w-[320px]">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Carrier Details</CardTitle>
@@ -1158,7 +1158,7 @@ function CarrierDetailsTab({
           <CardContent className="space-y-3 text-sm">
             {isEditingLeft ? (
               <>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
                   <Label className="text-muted-foreground text-xs">Carrier Name</Label>
                   <Input 
                     value={leftForm.name} 
@@ -1167,7 +1167,7 @@ function CarrierDetailsTab({
                     data-testid="input-carrier-name"
                   />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
                   <Label className="text-muted-foreground text-xs">Type</Label>
                   <Select value={leftForm.partnerType} onValueChange={(v) => setLeftForm({...leftForm, partnerType: v as "customer" | "supplier" | "bilateral"})}>
                     <SelectTrigger className="h-8" data-testid="select-partner-type-edit">
@@ -1180,7 +1180,7 @@ function CarrierDetailsTab({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
                   <Label className="text-muted-foreground text-xs">Time Zone</Label>
                   <Select value={leftForm.timezone} onValueChange={(v) => setLeftForm({...leftForm, timezone: v})}>
                     <SelectTrigger className="h-8" data-testid="select-timezone">
@@ -1193,7 +1193,7 @@ function CarrierDetailsTab({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
                   <Label className="text-muted-foreground text-xs">Account Manager</Label>
                   <Select value={leftForm.accountManager || "none"} onValueChange={(v) => setLeftForm({...leftForm, accountManager: v === "none" ? "" : v})}>
                     <SelectTrigger className="h-8" data-testid="select-account-manager">
@@ -1209,7 +1209,7 @@ function CarrierDetailsTab({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
                   <Label className="text-muted-foreground text-xs">Customer Billing</Label>
                   <Select value={leftForm.customerBillingMode} onValueChange={(v) => setLeftForm({...leftForm, customerBillingMode: v})}>
                     <SelectTrigger className="h-8" data-testid="select-billing-mode">
@@ -1256,7 +1256,7 @@ function CarrierDetailsTab({
           <CardContent className="space-y-3 text-sm">
             {isEditingLeft ? (
               <>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
                   <Label className="text-muted-foreground text-xs">Primary Currency</Label>
                   <Select value={leftForm.currencyCode} onValueChange={(v) => setLeftForm({...leftForm, currencyCode: v})}>
                     <SelectTrigger className="h-8" data-testid="select-currency">
@@ -1276,11 +1276,11 @@ function CarrierDetailsTab({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
                   <Label className="text-muted-foreground text-xs">Currency 2</Label>
                   <span className="text-muted-foreground">-</span>
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="grid grid-cols-[130px_1fr] items-center gap-3">
                   <Label className="text-muted-foreground text-xs">Currency 3</Label>
                   <span className="text-muted-foreground">-</span>
                 </div>
@@ -1311,28 +1311,28 @@ function CarrierDetailsTab({
           <CardContent className="space-y-3 text-sm">
             {isEditingLeft ? (
               <>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="space-y-2">
                   <Label className="text-muted-foreground text-xs">Capacity (Channels)</Label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <Input 
                       type="number"
                       value={leftForm.capacityMode === "unrestricted" ? "" : leftForm.capacityLimit} 
                       onChange={(e) => setLeftForm({...leftForm, capacityLimit: e.target.value, capacityMode: "capped"})}
-                      className="h-8 w-20"
+                      className="h-8 w-24"
                       disabled={leftForm.capacityMode === "unrestricted"}
                       data-testid="input-capacity"
                     />
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <Checkbox 
                         checked={leftForm.capacityMode === "unrestricted"}
                         onCheckedChange={(checked) => setLeftForm({...leftForm, capacityMode: checked ? "unrestricted" : "capped"})}
                         data-testid="checkbox-unrestricted"
                       />
-                      <Label className="text-xs">Unrestricted</Label>
+                      <Label className="text-xs whitespace-nowrap">Unrestricted</Label>
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <div className="space-y-2">
                   <Label className="text-muted-foreground text-xs">Circular Routing</Label>
                   <Select value={leftForm.circularRouting ? "enabled" : "disabled"} onValueChange={(v) => setLeftForm({...leftForm, circularRouting: v === "enabled"})}>
                     <SelectTrigger className="h-8" data-testid="select-circular-routing">
@@ -1372,7 +1372,7 @@ function CarrierDetailsTab({
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 min-w-[340px]">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Credit Control</CardTitle>
@@ -1579,7 +1579,7 @@ function CarrierDetailsTab({
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 min-w-[340px]">
         {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
           <Card>
             <CardHeader className="pb-3">
@@ -1588,7 +1588,7 @@ function CarrierDetailsTab({
             <CardContent className="space-y-3 text-sm">
               {isEditingCreditSettings ? (
                 <>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                  <div className="grid grid-cols-[160px_1fr] items-center gap-3">
                     <Label className="text-muted-foreground text-xs">Credit Type</Label>
                     <Select value={settingsForm.customerCreditType} onValueChange={(v) => setSettingsForm({...settingsForm, customerCreditType: v as "prepaid" | "postpaid"})}>
                       <SelectTrigger className="h-8" data-testid="select-customer-credit-type">
@@ -1600,7 +1600,7 @@ function CarrierDetailsTab({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                  <div className="grid grid-cols-[160px_1fr] items-center gap-3">
                     <Label className="text-muted-foreground text-xs">Bilateral Limit Breach</Label>
                     <Select value={settingsForm.customerBilateralLimitBreach} onValueChange={(v) => setSettingsForm({...settingsForm, customerBilateralLimitBreach: v})}>
                       <SelectTrigger className="h-8" data-testid="select-bilateral-limit-breach">
@@ -1613,7 +1613,7 @@ function CarrierDetailsTab({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                  <div className="grid grid-cols-[160px_1fr] items-center gap-3">
                     <Label className="text-muted-foreground text-xs">24 Hr Spend Limit Breach</Label>
                     <Select value={settingsForm.customer24HrSpendLimitBreach} onValueChange={(v) => setSettingsForm({...settingsForm, customer24HrSpendLimitBreach: v})}>
                       <SelectTrigger className="h-8" data-testid="select-24hr-breach">
@@ -1626,7 +1626,7 @@ function CarrierDetailsTab({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                  <div className="grid grid-cols-[160px_1fr] items-center gap-3">
                     <Label className="text-muted-foreground text-xs">24 Hr Spend Mode</Label>
                     <Select value={settingsForm.customer24HrSpendMode} onValueChange={(v) => setSettingsForm({...settingsForm, customer24HrSpendMode: v})}>
                       <SelectTrigger className="h-8" data-testid="select-24hr-mode">
@@ -1670,7 +1670,7 @@ function CarrierDetailsTab({
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {isEditingCreditSettings ? (
-                <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                <div className="grid grid-cols-[160px_1fr] items-center gap-3">
                   <Label className="text-muted-foreground text-xs">Credit Type</Label>
                   <Select value={settingsForm.supplierCreditType} onValueChange={(v) => setSettingsForm({...settingsForm, supplierCreditType: v as "prepaid" | "postpaid"})}>
                     <SelectTrigger className="h-8" data-testid="select-supplier-credit-type">
