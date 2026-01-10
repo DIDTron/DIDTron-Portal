@@ -666,29 +666,40 @@ class ConnexCSToolsService {
       return { cdrs: this.getMockCDRs(), hasMore: false };
     }
 
-    const { startDate, endDate, customerId, carrierId, direction, limit = 1000, offset = 0 } = params;
+    const { startDate, endDate, customerId, limit = 1000, offset = 0 } = params;
     
+    // ConnexCS CDR API uses SQL queries via POST /api/cp/cdr
+    // Build a SQL query to fetch CDRs
     let whereClause = `dt >= '${startDate}' AND dt <= '${endDate} 23:59:59'`;
     
     if (customerId) {
       whereClause += ` AND customer_id = ${customerId}`;
     }
-    if (carrierId) {
-      whereClause += ` AND carrier_id = ${carrierId}`;
-    }
-    if (direction) {
-      whereClause += ` AND direction = '${direction}'`;
-    }
 
     const sql = `SELECT * FROM cdr WHERE ${whereClause} ORDER BY dt ASC LIMIT ${limit + 1} OFFSET ${offset}`;
-    const cdrs = await this.executeSQLQuery(storage, sql);
     
-    const hasMore = cdrs.length > limit;
-    if (hasMore) {
-      cdrs.pop();
+    console.log(`[ConnexCS CDR] Fetching CDRs via SQL:`, sql.substring(0, 100) + '...');
+    
+    try {
+      const cdrs = await this.executeSQLQuery(storage, sql);
+      
+      console.log(`[ConnexCS CDR] Received ${Array.isArray(cdrs) ? cdrs.length : 0} CDRs`);
+      
+      if (!Array.isArray(cdrs)) {
+        console.log(`[ConnexCS CDR] Response is not an array`);
+        return { cdrs: [], hasMore: false };
+      }
+      
+      const hasMore = cdrs.length > limit;
+      if (hasMore) {
+        cdrs.pop();
+      }
+      
+      return { cdrs, hasMore };
+    } catch (error) {
+      console.log(`[ConnexCS CDR] Error fetching CDRs: ${error}`);
+      return { cdrs: [], hasMore: false };
     }
-
-    return { cdrs, hasMore };
   }
 
   async getCDRsByMonth(storage: StorageInterface, year: number, month: number): Promise<ConnexCSCDR[]> {

@@ -1044,13 +1044,49 @@ async function seedBillingTerms() {
             const status = await connexcsTools.getStatus(storage);
             if (status.connected && !status.mockMode) {
               log("Starting automatic ConnexCS data sync...", "connexcs-sync");
-              const { syncCustomers, syncCarriers, syncRateCards } = await import("./services/connexcs-sync");
+              const { syncCustomers, syncCarriers, syncRateCards, syncCDRs } = await import("./services/connexcs-sync");
+              
+              // Sync entities first
               const [customers, carriers, ratecards] = await Promise.all([
                 syncCustomers(),
                 syncCarriers(),
                 syncRateCards(),
               ]);
-              log(`Auto-sync complete: ${customers.imported + customers.updated} customers, ${carriers.imported + carriers.updated} carriers, ${ratecards.imported + ratecards.updated} ratecards`, "connexcs-sync");
+              log(`Entity sync complete: ${customers.imported + customers.updated} customers, ${carriers.imported + carriers.updated} carriers, ${ratecards.imported + ratecards.updated} ratecards`, "connexcs-sync");
+              
+              // Now sync all CDRs for 2025 (all months that have passed)
+              log("Starting automatic CDR sync for 2025...", "connexcs-sync");
+              const currentDate = new Date();
+              const currentYear = currentDate.getFullYear();
+              const currentMonth = currentDate.getMonth() + 1;
+              
+              let totalCdrs = 0;
+              // Sync all months of 2025 up to current month
+              for (let month = 1; month <= (currentYear === 2025 ? currentMonth : 12); month++) {
+                try {
+                  const cdrResult = await syncCDRs(2025, month);
+                  totalCdrs += cdrResult.imported + cdrResult.updated;
+                  log(`CDR sync 2025-${String(month).padStart(2, '0')}: ${cdrResult.imported + cdrResult.updated} records`, "connexcs-sync");
+                } catch (cdrErr) {
+                  log(`CDR sync 2025-${String(month).padStart(2, '0')} failed: ${cdrErr}`, "connexcs-sync");
+                }
+              }
+              
+              // Also sync 2026 if we're in 2026
+              if (currentYear >= 2026) {
+                const maxMonth = currentYear === 2026 ? currentMonth : 12;
+                for (let month = 1; month <= maxMonth; month++) {
+                  try {
+                    const cdrResult = await syncCDRs(2026, month);
+                    totalCdrs += cdrResult.imported + cdrResult.updated;
+                    log(`CDR sync 2026-${String(month).padStart(2, '0')}: ${cdrResult.imported + cdrResult.updated} records`, "connexcs-sync");
+                  } catch (cdrErr) {
+                    log(`CDR sync 2026-${String(month).padStart(2, '0')} failed: ${cdrErr}`, "connexcs-sync");
+                  }
+                }
+              }
+              
+              log(`Auto-sync complete: entities + ${totalCdrs} CDRs`, "connexcs-sync");
             }
           } catch (err) {
             log(`Auto-sync failed: ${err}`, "connexcs-sync");
