@@ -182,7 +182,7 @@ export default function CarrierDetailPage() {
   });
 
   const updateCarrierMutation = useMutation({
-    mutationFn: async (data: Partial<typeof formData>) => {
+    mutationFn: async (data: Record<string, unknown>) => {
       const res = await apiRequest("PUT", `/api/carriers/${carrierId}`, data);
       return res.json();
     },
@@ -458,7 +458,13 @@ export default function CarrierDetailPage() {
 
         <div className="flex-1 overflow-auto p-6">
           <TabsContent value="details" className="mt-0">
-            <CarrierDetailsTab carrier={carrier} currency={currency} />
+            <CarrierDetailsTab 
+              carrier={carrier} 
+              currency={currency} 
+              users={users}
+              currencies={currencies}
+              onUpdate={(data) => updateCarrierMutation.mutate(data)}
+            />
           </TabsContent>
 
           <TabsContent value="interconnects" className="mt-0">
@@ -1057,135 +1063,444 @@ export default function CarrierDetailPage() {
   );
 }
 
-function CarrierDetailsTab({ carrier, currency }: { carrier: Carrier; currency?: Currency }) {
+function CarrierDetailsTab({ 
+  carrier, 
+  currency, 
+  users,
+  currencies,
+  onUpdate 
+}: { 
+  carrier: Carrier; 
+  currency?: Currency;
+  users?: User[];
+  currencies?: Currency[];
+  onUpdate: (data: Partial<Carrier>) => void;
+}) {
+  const [isEditingLeft, setIsEditingLeft] = useState(false);
+  const [isEditingCredit, setIsEditingCredit] = useState(false);
+  const [isEditingCreditSettings, setIsEditingCreditSettings] = useState(false);
+  
+  const [leftForm, setLeftForm] = useState({
+    name: carrier.name,
+    partnerType: carrier.partnerType || "bilateral" as "customer" | "supplier" | "bilateral",
+    timezone: carrier.timezone || "UTC",
+    accountManager: carrier.accountManager || "",
+    customerBillingMode: carrier.customerBillingMode || "Automatic",
+    currencyCode: carrier.currencyCode || "USD",
+    capacityLimit: carrier.capacityLimit?.toString() || "",
+    capacityMode: carrier.capacityMode || "unrestricted" as "unrestricted" | "capped",
+    circularRouting: carrier.circularRouting || false,
+  });
+
+  const [creditForm, setCreditForm] = useState({
+    customerCreditLimit: carrier.customerCreditLimit || "0",
+    customerCreditLimitUnlimited: carrier.customerCreditLimitUnlimited || false,
+    supplierCreditLimit: carrier.supplierCreditLimit || "0",
+    supplierCreditLimitUnlimited: carrier.supplierCreditLimitUnlimited || false,
+    bilateralCreditLimit: carrier.bilateralCreditLimit || "0",
+    bilateralCreditLimitUnlimited: carrier.bilateralCreditLimitUnlimited || false,
+    customer24HrSpendLimit: carrier.customer24HrSpendLimit || "0",
+    customer24HrSpendLimitUnlimited: carrier.customer24HrSpendLimitUnlimited || false,
+    supplier24HrSpendLimit: carrier.supplier24HrSpendLimit || "0",
+    supplier24HrSpendLimitUnlimited: carrier.supplier24HrSpendLimitUnlimited || false,
+  });
+
+  const [settingsForm, setSettingsForm] = useState({
+    customerCreditType: (carrier.customerCreditType || "postpaid") as "prepaid" | "postpaid",
+    customerBilateralLimitBreach: carrier.customerBilateralLimitBreach || "Alert Only",
+    customer24HrSpendLimitBreach: carrier.customer24HrSpendLimitBreach || "Alert Only",
+    customer24HrSpendMode: carrier.customer24HrSpendMode || "Rolling 24 Hours",
+    supplierCreditType: (carrier.supplierCreditType || "postpaid") as "prepaid" | "postpaid",
+  });
+
+  const timezones = [
+    "UTC -12:00", "UTC -11:00", "UTC -10:00", "UTC -09:00", "UTC -08:00", "UTC -07:00",
+    "UTC -06:00", "UTC -05:00", "UTC -04:00", "UTC -03:30", "UTC -03:00", "UTC -02:00",
+    "UTC -01:00", "UTC", "UTC +01:00", "UTC +02:00", "UTC +03:00", "UTC +03:30",
+    "UTC +04:00", "UTC +04:30", "UTC +05:00", "UTC +05:30", "UTC +05:45", "UTC +06:00",
+    "UTC +06:30", "UTC +07:00", "UTC +08:00", "UTC +09:00", "UTC +09:30", "UTC +10:00",
+    "UTC +11:00", "UTC +12:00", "UTC +13:00"
+  ];
+
+  const handleSaveLeft = () => {
+    onUpdate({
+      ...leftForm,
+      capacityLimit: leftForm.capacityMode === "unrestricted" ? null : parseInt(leftForm.capacityLimit) || null,
+    });
+    setIsEditingLeft(false);
+  };
+
+  const handleSaveCredit = () => {
+    onUpdate(creditForm);
+    setIsEditingCredit(false);
+  };
+
+  const handleSaveCreditSettings = () => {
+    onUpdate(settingsForm);
+    setIsEditingCreditSettings(false);
+  };
+
+  const handleReset24HrSpend = (direction: "customer" | "supplier") => {
+    if (direction === "customer") {
+      onUpdate({ customer24HrSpend: "0" });
+    } else {
+      onUpdate({ supplier24HrSpend: "0" });
+    }
+  };
+
   return (
     <div className="grid grid-cols-3 gap-6">
       <div className="space-y-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Carrier Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Carrier Name</span>
-              <span className="font-medium">{carrier.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Type</span>
-              <Badge variant="outline">{carrier.partnerType}</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Time Zone</span>
-              <span>{carrier.timezone || "(UTC)"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Account Manager</span>
-              <span>{carrier.accountManager || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Customer Billing</span>
-              <span>{carrier.customerBillingMode || "Automatic"}</span>
-            </div>
+            {isEditingLeft ? (
+              <>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Carrier Name</Label>
+                  <Input 
+                    value={leftForm.name} 
+                    onChange={(e) => setLeftForm({...leftForm, name: e.target.value})}
+                    className="h-8"
+                    data-testid="input-carrier-name"
+                  />
+                </div>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Type</Label>
+                  <Select value={leftForm.partnerType} onValueChange={(v) => setLeftForm({...leftForm, partnerType: v as "customer" | "supplier" | "bilateral"})}>
+                    <SelectTrigger className="h-8" data-testid="select-partner-type-edit">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bilateral">Bilateral</SelectItem>
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="supplier">Supplier</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Time Zone</Label>
+                  <Select value={leftForm.timezone} onValueChange={(v) => setLeftForm({...leftForm, timezone: v})}>
+                    <SelectTrigger className="h-8" data-testid="select-timezone">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timezones.map((tz) => (
+                        <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Account Manager</Label>
+                  <Select value={leftForm.accountManager || "none"} onValueChange={(v) => setLeftForm({...leftForm, accountManager: v === "none" ? "" : v})}>
+                    <SelectTrigger className="h-8" data-testid="select-account-manager">
+                      <SelectValue placeholder="Select manager" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {users?.map((user) => (
+                        <SelectItem key={user.id} value={`${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email}>
+                          {`${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Customer Billing</Label>
+                  <Select value={leftForm.customerBillingMode} onValueChange={(v) => setLeftForm({...leftForm, customerBillingMode: v})}>
+                    <SelectTrigger className="h-8" data-testid="select-billing-mode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Automatic">Automatic</SelectItem>
+                      <SelectItem value="Manual">Manual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Carrier Name</span>
+                  <span className="font-medium">{carrier.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="capitalize">{carrier.partnerType}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Time Zone</span>
+                  <span>({carrier.timezone || "UTC"})</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Account Manager</span>
+                  <span>{carrier.accountManager || "-"}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Customer Billing</span>
+                  <span>{carrier.customerBillingMode || "Automatic"}</span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Currency</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Primary Currency</span>
-              <span className="font-medium">{currency?.code || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Currency 2</span>
-              <span>-</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Currency 3</span>
-              <span>-</span>
-            </div>
+            {isEditingLeft ? (
+              <>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Primary Currency</Label>
+                  <Select value={leftForm.currencyCode} onValueChange={(v) => setLeftForm({...leftForm, currencyCode: v})}>
+                    <SelectTrigger className="h-8" data-testid="select-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currencies?.map((c) => (
+                        <SelectItem key={c.id} value={c.code}>{c.code}</SelectItem>
+                      ))}
+                      {(!currencies || currencies.length === 0) && (
+                        <>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Currency 2</Label>
+                  <span className="text-muted-foreground">-</span>
+                </div>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Currency 3</Label>
+                  <span className="text-muted-foreground">-</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Primary Currency</span>
+                  <span className="font-medium">{currency?.code || carrier.currencyCode || "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Currency 2</span>
+                  <span>-</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Currency 3</span>
+                  <span>-</span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Routing</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Capacity</span>
-              <span>{carrier.capacityMode === "unrestricted" ? "Unrestricted" : carrier.capacityLimit}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Circular Routing</span>
-              <span>{carrier.circularRouting ? "Enabled" : "Disabled"}</span>
-            </div>
+            {isEditingLeft ? (
+              <>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Capacity (Channels)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      type="number"
+                      value={leftForm.capacityMode === "unrestricted" ? "" : leftForm.capacityLimit} 
+                      onChange={(e) => setLeftForm({...leftForm, capacityLimit: e.target.value, capacityMode: "capped"})}
+                      className="h-8 w-20"
+                      disabled={leftForm.capacityMode === "unrestricted"}
+                      data-testid="input-capacity"
+                    />
+                    <div className="flex items-center gap-1">
+                      <Checkbox 
+                        checked={leftForm.capacityMode === "unrestricted"}
+                        onCheckedChange={(checked) => setLeftForm({...leftForm, capacityMode: checked ? "unrestricted" : "capped"})}
+                        data-testid="checkbox-unrestricted"
+                      />
+                      <Label className="text-xs">Unrestricted</Label>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Circular Routing</Label>
+                  <Select value={leftForm.circularRouting ? "enabled" : "disabled"} onValueChange={(v) => setLeftForm({...leftForm, circularRouting: v === "enabled"})}>
+                    <SelectTrigger className="h-8" data-testid="select-circular-routing">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="disabled">Disabled</SelectItem>
+                      <SelectItem value="enabled">Enabled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Capacity</span>
+                  <span>{carrier.capacityMode === "unrestricted" ? "Unrestricted" : carrier.capacityLimit}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Circular Routing</span>
+                  <span>{carrier.circularRouting ? "Enabled" : "Disabled"}</span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
+
+        <div className="flex justify-center gap-2">
+          {isEditingLeft ? (
+            <>
+              <Button size="sm" onClick={handleSaveLeft} data-testid="button-save-left">Save</Button>
+              <Button size="sm" variant="outline" onClick={() => setIsEditingLeft(false)}>Cancel</Button>
+            </>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setIsEditingLeft(true)} data-testid="button-edit-left">Edit</Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Credit Control</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Direction</TableHead>
-                  <TableHead>$/€</TableHead>
-                  <TableHead className="text-right">Credit</TableHead>
-                  <TableHead className="text-right">Remaining</TableHead>
-                  <TableHead className="text-right">Limit</TableHead>
+                <TableRow className="bg-primary/10">
+                  <TableHead className="text-xs">Direction</TableHead>
+                  <TableHead className="text-xs">$/€</TableHead>
+                  <TableHead className="text-xs text-right">Credit</TableHead>
+                  <TableHead className="text-xs text-right">Remaining</TableHead>
+                  <TableHead className="text-xs text-right">Limit</TableHead>
+                  {isEditingCredit && <TableHead className="text-xs w-16"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
                   <TableRow>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>{currency?.code || "USD"}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant={parseFloat(carrier.customerBalance || "0") < 0 ? "destructive" : "default"}>
+                    <TableCell className="text-sm py-2">Customer</TableCell>
+                    <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                    <TableCell className="text-right py-2">
+                      <Badge variant={parseFloat(carrier.customerBalance || "0") < 0 ? "destructive" : "default"} className="text-xs">
                         {parseFloat(carrier.customerBalance || "0").toFixed(2)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {(parseFloat(carrier.customerCreditLimit || "0") - Math.abs(parseFloat(carrier.customerBalance || "0"))).toFixed(2)}
+                    <TableCell className="text-right text-sm py-2">
+                      {(parseFloat(creditForm.customerCreditLimit || "0") - Math.abs(parseFloat(carrier.customerBalance || "0"))).toFixed(2)}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {carrier.customerCreditLimitUnlimited ? "∞" : parseFloat(carrier.customerCreditLimit || "0").toFixed(0)}
+                    <TableCell className="text-right py-2">
+                      {isEditingCredit ? (
+                        <Input
+                          type="number"
+                          value={creditForm.customerCreditLimitUnlimited ? "" : creditForm.customerCreditLimit}
+                          onChange={(e) => setCreditForm({...creditForm, customerCreditLimit: e.target.value, customerCreditLimitUnlimited: false})}
+                          className="h-7 w-20 text-right text-xs"
+                          disabled={creditForm.customerCreditLimitUnlimited}
+                          data-testid="input-customer-credit-limit"
+                        />
+                      ) : (
+                        <span className="text-sm">{carrier.customerCreditLimitUnlimited ? "∞" : parseFloat(carrier.customerCreditLimit || "0").toFixed(0)}</span>
+                      )}
                     </TableCell>
+                    {isEditingCredit && (
+                      <TableCell className="py-2">
+                        <div className="flex items-center gap-1">
+                          <Checkbox 
+                            checked={creditForm.customerCreditLimitUnlimited}
+                            onCheckedChange={(checked) => setCreditForm({...creditForm, customerCreditLimitUnlimited: !!checked})}
+                          />
+                          <span className="text-xs">None</span>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 )}
                 {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
                   <TableRow>
-                    <TableCell>Supplier</TableCell>
-                    <TableCell>{currency?.code || "USD"}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant="default">
+                    <TableCell className="text-sm py-2">Supplier</TableCell>
+                    <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                    <TableCell className="text-right py-2">
+                      <Badge variant="default" className="text-xs">
                         {parseFloat(carrier.supplierBalance || "0").toFixed(2)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">-</TableCell>
-                    <TableCell className="text-right">
-                      {carrier.supplierCreditLimitUnlimited ? "∞" : parseFloat(carrier.supplierCreditLimit || "0").toFixed(0)}
+                    <TableCell className="text-right text-sm py-2">0.00</TableCell>
+                    <TableCell className="text-right py-2">
+                      {isEditingCredit ? (
+                        <Input
+                          type="number"
+                          value={creditForm.supplierCreditLimitUnlimited ? "" : creditForm.supplierCreditLimit}
+                          onChange={(e) => setCreditForm({...creditForm, supplierCreditLimit: e.target.value, supplierCreditLimitUnlimited: false})}
+                          className="h-7 w-20 text-right text-xs"
+                          disabled={creditForm.supplierCreditLimitUnlimited}
+                          data-testid="input-supplier-credit-limit"
+                        />
+                      ) : (
+                        <span className="text-sm">{carrier.supplierCreditLimitUnlimited ? "∞" : parseFloat(carrier.supplierCreditLimit || "0").toFixed(0)}</span>
+                      )}
                     </TableCell>
+                    {isEditingCredit && (
+                      <TableCell className="py-2">
+                        <div className="flex items-center gap-1">
+                          <Checkbox 
+                            checked={creditForm.supplierCreditLimitUnlimited}
+                            onCheckedChange={(checked) => setCreditForm({...creditForm, supplierCreditLimitUnlimited: !!checked})}
+                          />
+                          <span className="text-xs">None</span>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 )}
                 {carrier.partnerType === "bilateral" && (
                   <TableRow>
-                    <TableCell>Bilateral</TableCell>
-                    <TableCell>{currency?.code || "USD"}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant={parseFloat(carrier.bilateralBalance || "0") < 0 ? "destructive" : "default"}>
+                    <TableCell className="text-sm py-2">Bilateral</TableCell>
+                    <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                    <TableCell className="text-right py-2">
+                      <Badge variant={parseFloat(carrier.bilateralBalance || "0") < 0 ? "destructive" : "default"} className="text-xs">
                         {parseFloat(carrier.bilateralBalance || "0").toFixed(2)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">-</TableCell>
-                    <TableCell className="text-right">-</TableCell>
+                    <TableCell className="text-right text-sm py-2">-</TableCell>
+                    <TableCell className="text-right py-2">
+                      {isEditingCredit ? (
+                        <Input
+                          type="number"
+                          value={creditForm.bilateralCreditLimitUnlimited ? "" : creditForm.bilateralCreditLimit}
+                          onChange={(e) => setCreditForm({...creditForm, bilateralCreditLimit: e.target.value, bilateralCreditLimitUnlimited: false})}
+                          className="h-7 w-20 text-right text-xs"
+                          disabled={creditForm.bilateralCreditLimitUnlimited}
+                          data-testid="input-bilateral-credit-limit"
+                        />
+                      ) : (
+                        <span className="text-sm">{carrier.bilateralCreditLimitUnlimited ? "∞" : "-"}</span>
+                      )}
+                    </TableCell>
+                    {isEditingCredit && (
+                      <TableCell className="py-2">
+                        <div className="flex items-center gap-1">
+                          <Checkbox 
+                            checked={creditForm.bilateralCreditLimitUnlimited}
+                            onCheckedChange={(checked) => setCreditForm({...creditForm, bilateralCreditLimitUnlimited: !!checked})}
+                          />
+                          <span className="text-xs">None</span>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 )}
               </TableBody>
@@ -1194,94 +1509,199 @@ function CarrierDetailsTab({ carrier, currency }: { carrier: Carrier; currency?:
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">24 Hour Spend Limit</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Direction</TableHead>
-                  <TableHead>$/€</TableHead>
-                  <TableHead className="text-right">24 Hr Spend</TableHead>
-                  <TableHead className="text-right">Remaining</TableHead>
-                  <TableHead className="text-right">Limit</TableHead>
+                <TableRow className="bg-primary/10">
+                  <TableHead className="text-xs">Direction</TableHead>
+                  <TableHead className="text-xs">$/€</TableHead>
+                  <TableHead className="text-xs text-right">24 Hr Spend</TableHead>
+                  <TableHead className="text-xs text-right">Remaining</TableHead>
+                  <TableHead className="text-xs text-right">Limit</TableHead>
+                  <TableHead className="text-xs w-16"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
                   <TableRow>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>{currency?.code || "USD"}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant="default">
+                    <TableCell className="text-sm py-2">Customer</TableCell>
+                    <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                    <TableCell className="text-right py-2">
+                      <Badge variant="default" className="text-xs">
                         {parseFloat(carrier.customer24HrSpend || "0").toFixed(2)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">-</TableCell>
-                    <TableCell className="text-right">-</TableCell>
+                    <TableCell className="text-right text-sm py-2">-</TableCell>
+                    <TableCell className="text-right text-sm py-2">-</TableCell>
+                    <TableCell className="py-2">
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleReset24HrSpend("customer")} data-testid="button-reset-customer-spend">
+                        Reset
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 )}
                 {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
                   <TableRow>
-                    <TableCell>Supplier</TableCell>
-                    <TableCell>{currency?.code || "USD"}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant="default">
+                    <TableCell className="text-sm py-2">Supplier</TableCell>
+                    <TableCell className="text-sm py-2">{currency?.code || "USD"}</TableCell>
+                    <TableCell className="text-right py-2">
+                      <Badge variant="default" className="text-xs">
                         {parseFloat(carrier.supplier24HrSpend || "0").toFixed(2)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">-</TableCell>
-                    <TableCell className="text-right">-</TableCell>
+                    <TableCell className="text-right text-sm py-2">-</TableCell>
+                    <TableCell className="text-right text-sm py-2">-</TableCell>
+                    <TableCell className="py-2">
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleReset24HrSpend("supplier")} data-testid="button-reset-supplier-spend">
+                        Reset
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
+
+        {isEditingCredit && (
+          <div className="flex justify-center gap-2">
+            <Button size="sm" onClick={handleSaveCredit} data-testid="button-save-credit">Save</Button>
+            <Button size="sm" variant="outline" onClick={() => setIsEditingCredit(false)}>Cancel</Button>
+          </div>
+        )}
+        {!isEditingCredit && (
+          <div className="flex justify-center">
+            <Button size="sm" variant="outline" onClick={() => setIsEditingCredit(true)} data-testid="button-edit-credit">Edit</Button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">
         {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="pb-3">
               <CardTitle className="text-base">Customer Credit Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Credit Type</span>
-                <span className="capitalize">{carrier.customerCreditType}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Bilateral Limit Breach</span>
-                <span>{carrier.customerBilateralLimitBreach || "Alert Only"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">24 Hr Spend Limit Breach</span>
-                <span>{carrier.customer24HrSpendLimitBreach || "Alert Only"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">24 Hr Spend Mode</span>
-                <span>{carrier.customer24HrSpendMode || "Rolling 24 Hours"}</span>
-              </div>
+              {isEditingCreditSettings ? (
+                <>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                    <Label className="text-muted-foreground text-xs">Credit Type</Label>
+                    <Select value={settingsForm.customerCreditType} onValueChange={(v) => setSettingsForm({...settingsForm, customerCreditType: v as "prepaid" | "postpaid"})}>
+                      <SelectTrigger className="h-8" data-testid="select-customer-credit-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="prepaid">Prepaid</SelectItem>
+                        <SelectItem value="postpaid">Postpaid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                    <Label className="text-muted-foreground text-xs">Bilateral Limit Breach</Label>
+                    <Select value={settingsForm.customerBilateralLimitBreach} onValueChange={(v) => setSettingsForm({...settingsForm, customerBilateralLimitBreach: v})}>
+                      <SelectTrigger className="h-8" data-testid="select-bilateral-limit-breach">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Alert Only">Alert Only</SelectItem>
+                        <SelectItem value="Block Calls">Block Calls</SelectItem>
+                        <SelectItem value="Ignore">Ignore</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                    <Label className="text-muted-foreground text-xs">24 Hr Spend Limit Breach</Label>
+                    <Select value={settingsForm.customer24HrSpendLimitBreach} onValueChange={(v) => setSettingsForm({...settingsForm, customer24HrSpendLimitBreach: v})}>
+                      <SelectTrigger className="h-8" data-testid="select-24hr-breach">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Alert Only">Alert Only</SelectItem>
+                        <SelectItem value="Block Calls">Block Calls</SelectItem>
+                        <SelectItem value="Ignore">Ignore</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                    <Label className="text-muted-foreground text-xs">24 Hr Spend Mode</Label>
+                    <Select value={settingsForm.customer24HrSpendMode} onValueChange={(v) => setSettingsForm({...settingsForm, customer24HrSpendMode: v})}>
+                      <SelectTrigger className="h-8" data-testid="select-24hr-mode">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Rolling 24 Hours">Rolling 24 Hours</SelectItem>
+                        <SelectItem value="Fixed Daily">Fixed Daily</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Credit Type</span>
+                    <span className="capitalize">{carrier.customerCreditType}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bilateral Limit Breach</span>
+                    <span>{carrier.customerBilateralLimitBreach || "Alert Only"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">24 Hr Spend Limit Breach</span>
+                    <span>{carrier.customer24HrSpendLimitBreach || "Alert Only"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">24 Hr Spend Mode</span>
+                    <span>{carrier.customer24HrSpendMode || "Rolling 24 Hours"}</span>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
 
         {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="pb-3">
               <CardTitle className="text-base">Supplier Credit Settings</CardTitle>
-              <Button variant="outline" size="sm">Edit</Button>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Credit Type</span>
-                <span className="capitalize">{carrier.supplierCreditType}</span>
-              </div>
+              {isEditingCreditSettings ? (
+                <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                  <Label className="text-muted-foreground text-xs">Credit Type</Label>
+                  <Select value={settingsForm.supplierCreditType} onValueChange={(v) => setSettingsForm({...settingsForm, supplierCreditType: v as "prepaid" | "postpaid"})}>
+                    <SelectTrigger className="h-8" data-testid="select-supplier-credit-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="prepaid">Prepaid</SelectItem>
+                      <SelectItem value="postpaid">Postpaid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Credit Type</span>
+                  <span className="capitalize">{carrier.supplierCreditType}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
+
+        <div className="flex justify-end gap-2">
+          {isEditingCreditSettings ? (
+            <>
+              <Button size="sm" onClick={handleSaveCreditSettings} data-testid="button-save-credit-settings">Save</Button>
+              <Button size="sm" variant="outline" onClick={() => setIsEditingCreditSettings(false)}>Cancel</Button>
+            </>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setIsEditingCreditSettings(true)} data-testid="button-edit-credit-settings">Edit</Button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -315,6 +315,13 @@ export const carriers = pgTable("carriers", {
   supplier24HrSpend: decimal("supplier_24hr_spend", { precision: 14, scale: 4 }).default("0"),
   
   bilateralBalance: decimal("bilateral_balance", { precision: 14, scale: 4 }).default("0"),
+  bilateralCreditLimit: decimal("bilateral_credit_limit", { precision: 14, scale: 4 }).default("0"),
+  bilateralCreditLimitUnlimited: boolean("bilateral_credit_limit_unlimited").default(true),
+  
+  customer24HrSpendLimitUnlimited: boolean("customer_24hr_spend_limit_unlimited").default(true),
+  supplier24HrSpendLimitUnlimited: boolean("supplier_24hr_spend_limit_unlimited").default(true),
+  
+  currencyCode: text("currency_code").default("USD"),
   
   billingEmail: text("billing_email"),
   technicalEmail: text("technical_email"),
