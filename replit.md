@@ -37,3 +37,33 @@ The billing system supports prepaid/postpaid customers, CDR rating, invoicing, a
 -   **OpenAI GPT-4o**: All AI features, integrated via Replit AI.
 -   **Twilio, SignalWire, Spearline**: SIP testing functionalities.
 -   **ConnexCS**: Class 4 Softswitch for call routing, CDR generation, and real-time balance management.
+
+## ConnexCS Integration Details
+
+### API Endpoints
+The ConnexCS integration uses the base URL `https://app.connexcs.com/api/cp/` with the following endpoints:
+- `customer` - Customer management
+- `carrier` - Carrier/supplier management  
+- `card` - Rate card management
+- `cdr` - Call Detail Records (SQL queries)
+- `route` - Routing configuration
+- `setup/server` - Server/switch infrastructure info
+- `auth/jwt` and `auth/jwt/refresh` - Authentication
+
+### Server Feature Flags
+ConnexCS servers have feature flags that indicate enabled capabilities:
+
+| Feature | Description |
+|---------|-------------|
+| **UAC_AUTH** | User Agent Client Authentication - validates incoming SIP requests |
+| **TLS_INTERNAL** | Internal TLS encryption within ConnexCS infrastructure |
+| **WEBRTC** | WebRTC support for browser-based calling (webphones) |
+| **TLS** | Transport Layer Security - encrypted SIP signaling on port 5061 |
+| **AUTO_UPGRADE** | Automatic software updates enabled |
+| **TCP_SIPTRACE** | SIP tracing over TCP for debugging/troubleshooting |
+| **CNX_REG** | ConnexCS Registration - allows SIP endpoint registration |
+| **APIBAN** | APIBAN integration - blocks known malicious SIP scanners |
+| **ROUTING_ENGINE_BODY** | Advanced routing that can inspect SIP message bodies |
+
+### Rate Limiting
+ConnexCS enforces a strict 2-session concurrent limit. All DIDTron sync operations are serialized with 5-second delays between entity types to avoid session overflow errors.
