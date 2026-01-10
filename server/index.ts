@@ -1026,6 +1026,21 @@ async function seedBillingTerms() {
         log(`Job worker auto-start failed: ${error}`, "job-queue");
       }
 
+      // Initialize integrations and load credentials into services
+      try {
+        const { initializeIntegrations } = await import("./services/integrations");
+        await initializeIntegrations(storage);
+        
+        // Load credentials into services that need them
+        const { brevoService } = await import("./brevo");
+        await brevoService.loadCredentialsFromStorage(storage);
+        
+        const { connexcsTools } = await import("./connexcs-tools-service");
+        await connexcsTools.loadCredentialsFromStorage(storage);
+      } catch (error) {
+        log(`Integration initialization failed: ${error}`, "integrations");
+      }
+
       // Start Open Exchange Rates hourly sync scheduler
       try {
         const { startScheduler } = await import("./services/open-exchange-rates");
