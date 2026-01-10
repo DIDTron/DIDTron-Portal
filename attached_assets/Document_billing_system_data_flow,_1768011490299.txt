@@ -1,0 +1,180 @@
+Document billing system data flow, structure
+Add billing UI styles to library
+Create billing module navigation routes
+Create ledger account and transaction tables
+Build ledger table and admin viewer
+Create ledger API routes, calculate balance
+Test double-entry ledger creation process
+Build financial summary card component
+Update top-up to use ledger entries
+Build admin UI for prepaid/postpaid
+Test top-up, ledger, and balance
+Create CDR raw and rated usage schema
+Create CDR upload template and UI
+Build rating engine for usage costs
+Build destination breakdown usage table
+Test rating calculations for accuracy
+Test CDR upload, rating, and deduction
+Enhance invoice schema with details
+Build invoice status workflow badge
+Build UI to run invoice generation
+Create invoice generation logic
+Test invoice generation and ledger entry
+Create billing templates schema
+Build template editor UI with preview
+Create default billing templates
+Build document generation tools
+Test template editing and generation
+Create credit notes schema
+Build credit note issue UI
+Build statement of account generator
+Build statement of account UI
+Test credit note and SOA generation
+Create supplier invoice and reconciliation schema
+Create supplier invoice import UI
+Build supplier reconciliation comparison grid
+Create reconciliation engine and variance
+Build dispute workflow for discrepancies
+Test supplier invoice import and dispute
+Create netting requests schema
+Build netting request UI
+Create ledger entries for netting
+Test netting and ledger updates
+Set up ConnexCS API integration
+Build sync status indicator component
+Create PUSH jobs to ConnexCS
+Create PULL jobs for CDR ingestion
+Build admin sync dashboard
+Test customer sync and CDR pull
+Create scheduled invoice generation job
+Wire email dispatch for invoices
+Create low balance alert job
+Create auto-top-up low balance job
+Test full billing cycle automation
+Build super admin billing overview
+Enhance customer portal billing section
+Add audit logging for billing operations
+Complete end-to-end billing flow test
+_________________________________________________________________________________________________________________________________
+
+I've expanded the billing module with 8 new pages and added 8 billing UI patterns to the Component Library.
+
+Billing System Overview - How It All Connects
+Your billing system is like a financial control center for your VoIP business. Here's what each page does:
+
+1. Billing Overview (/admin/billing)
+Purpose: Your financial dashboard - see everything at a glance
+
+Inputs	Outputs
+Customer balances	Total balance across all customers
+Invoice statuses	Pending invoice count & amount
+Payment history	Quick action buttons
+Sync health data	Alerts for items needing attention
+Think of it as: The "home screen" of billing - shows you key numbers and things that need your attention.
+
+2. Customer Billing (/admin/billing/customers)
+Purpose: Configure HOW each customer pays you
+
+Inputs	Outputs
+Customer list	Billing type changes (prepaid → postpaid)
+Current balance	Credit limit updates
+Category/Group	Payment terms (Net 7, 30, 60 days)
+Three billing types:
+
+Prepaid: Customer adds money BEFORE making calls (balance goes down)
+Postpaid: Customer pays AFTER using service (you send invoice monthly)
+Bilateral: Customer is ALSO a supplier (you buy AND sell to each other)
+3. Invoices (/admin/billing/invoices)
+Purpose: Generate and send invoices to postpaid customers
+
+Inputs	Outputs
+CDRs (call records) from ConnexCS	Invoice documents (PDF/Excel/CSV)
+Rate cards (prices per destination)	Email to customer
+Customer billing settings	Ledger entry (money owed)
+Tax profiles	Aging report (what's overdue)
+Flow: CDRs → Rate → Calculate charges → Generate Invoice → Send to Customer
+
+4. Credit Notes (/admin/billing/credit-notes)
+Purpose: Give money back or adjust invoices when something was wrong
+
+Inputs	Outputs
+Original invoice reference	Credit note document
+Dispute/error details	Ledger reversal (reduces amount owed)
+Approved amount	Updated invoice balance
+When to use: Customer disputes charges, QoS problems, billing errors, goodwill gestures
+
+5. Statement of Account (SOA) (/admin/billing/soa)
+Purpose: Show a customer their complete transaction history for a period
+
+Inputs	Outputs
+Customer selection	SOA document (PDF/Excel)
+Date range	Transaction list with running balance
+All ledger entries	Opening/closing balance summary
+What it shows:
+
+Date       | Type     | Description              | Debit  | Credit | Balance
+01/01/2026 | Opening  | Opening Balance          |        |        | $17,500
+01/15/2026 | Invoice  | Invoice INV-001          | $5,000 |        | $22,500
+01/20/2026 | Payment  | Bank Transfer            |        | $10,000| $12,500
+6. Netting (/admin/billing/netting)
+Purpose: Offset invoices when you're both customer AND supplier with the same carrier
+
+Inputs	Outputs
+Your invoices TO them (they owe you)	Netting agreement
+Their invoices TO you (you owe them)	Net amount to pay/receive
+Agreement terms	Updated invoice statuses
+Example:
+
+They owe you: $41,000 (your invoices to them)
+You owe them: $30,000 (their invoices to you)
+Net result: They pay you $11,000 (instead of exchanging $71,000)
+7. Supplier Audit (/admin/billing/supplier-audit)
+Purpose: Check if supplier invoices match what you calculated
+
+Inputs	Outputs
+Supplier invoice file (CSV/Excel)	Variance report (differences)
+Your internal CDR calculations	Accept/Dispute decision
+Destination breakdowns	Dispute ticket (if needed)
+Why needed: Suppliers sometimes bill you incorrectly. This page compares:
+
+What THEY say you used
+What YOUR system recorded
+Highlights differences for review
+8. Templates (/admin/billing/templates)
+Purpose: Design how your documents look
+
+Inputs	Outputs
+Template design	Invoice template
+Variable definitions	SOA template
+Branding (logo, colors)	Credit note template
+Netting request template
+Variables you can use: {{customer_name}}, {{invoice_number}}, {{total}}, etc.
+
+9. Sync Status (/admin/billing/sync-status)
+Purpose: Monitor data flow between DIDTron and ConnexCS
+
+Inputs	Outputs
+Sync job status	Health indicators
+Last sync times	Error alerts
+Record counts	Manual sync trigger
+What syncs:
+
+PUSH to ConnexCS: Customer accounts, balances, rate cards, DID rules
+PULL from ConnexCS: CDRs (every 5 min), real-time stats, balance reconciliation
+The Big Picture Flow
+ConnexCS (Softswitch)
+       ↓
+   CDRs (calls made)
+       ↓
+   Rate Engine (apply prices)
+       ↓
+   Rated Usage (call + price)
+       ↓
+   Invoice Generation ─────→ Customer gets PDF
+       ↓
+   Ledger Entry (money owed)
+       ↓
+   Payment Received ─────→ Update balance
+       ↓
+   SOA (history) / Credit Notes (adjustments)
+Would you like me to focus on implementing any specific page first, or would you prefer a visual diagram showing how these pages connect?
