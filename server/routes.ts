@@ -5728,12 +5728,17 @@ export async function registerRoutes(
 
   app.get("/api/softswitch/rating/az-lookup/codes", async (req, res) => {
     try {
-      const { zone } = req.query;
+      const { zone, withIntervals } = req.query;
       if (!zone || typeof zone !== 'string') {
-        return res.json([]);
+        return res.json(withIntervals === 'true' ? { codes: [], billingIncrement: null } : []);
       }
-      const codes = await storage.getCodesForZone(zone);
-      res.json(codes);
+      if (withIntervals === 'true') {
+        const result = await storage.getCodesWithIntervalsForZone(zone);
+        res.json(result);
+      } else {
+        const codes = await storage.getCodesForZone(zone);
+        res.json(codes);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to get codes for zone" });
     }

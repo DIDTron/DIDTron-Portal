@@ -64,6 +64,7 @@ interface AddRateFormData {
   initialInterval: string;
   recurringCharge: string;
   recurringInterval: string;
+  usePeriodException: boolean;
   advancedOptions: string;
   minMargin: string;
   applyDefaultMargin: boolean;
@@ -87,6 +88,7 @@ const defaultAddRateForm: AddRateFormData = {
   initialInterval: "1",
   recurringCharge: "0.0000",
   recurringInterval: "1",
+  usePeriodException: true,
   advancedOptions: "",
   minMargin: "0",
   applyDefaultMargin: false,
@@ -179,11 +181,23 @@ export default function RatingPlanDetailPage() {
 
   const lookupCodesMutation = useMutation({
     mutationFn: async (zone: string) => {
-      const response = await fetch(`/api/softswitch/rating/az-lookup/codes?zone=${encodeURIComponent(zone)}`);
+      const response = await fetch(`/api/softswitch/rating/az-lookup/codes?zone=${encodeURIComponent(zone)}&withIntervals=true`);
       return response.json();
     },
-    onSuccess: (codes: string[]) => {
-      setAddRateForm(prev => ({ ...prev, codes }));
+    onSuccess: (data: { codes: string[], billingIncrement: string | null }) => {
+      const { codes, billingIncrement } = data;
+      setAddRateForm(prev => {
+        let initialInterval = prev.initialInterval;
+        let recurringInterval = prev.recurringInterval;
+        if (prev.usePeriodException && billingIncrement) {
+          const parts = billingIncrement.split('/');
+          if (parts.length === 2) {
+            initialInterval = parts[0];
+            recurringInterval = parts[1];
+          }
+        }
+        return { ...prev, codes, initialInterval, recurringInterval };
+      });
       setCodesText(codes.join(", "));
     },
   });
@@ -1039,6 +1053,18 @@ export default function RatingPlanDetailPage() {
                         data-testid="input-add-rate-recurring-interval"
                       />
                       <span className="text-sm">Seconds</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Label className="w-36 text-right text-sm text-primary">Period Exception</Label>
+                      <Checkbox 
+                        id="use-period-exception"
+                        checked={addRateForm.usePeriodException}
+                        onCheckedChange={(checked) => {
+                          setAddRateForm(prev => ({ ...prev, usePeriodException: !!checked }));
+                        }}
+                        data-testid="checkbox-use-period-exception"
+                      />
+                      <span className="text-sm text-primary">Apply Defaults</span>
                     </div>
                   </div>
                 </div>

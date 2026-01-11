@@ -213,6 +213,7 @@ export interface IStorage {
   deleteRatingPlanRate(id: string): Promise<boolean>;
   searchZonesFromAZ(searchTerm: string): Promise<string[]>;
   getCodesForZone(zone: string): Promise<string[]>;
+  getCodesWithIntervalsForZone(zone: string): Promise<{ codes: string[], billingIncrement: string | null }>;
   lookupZoneByCode(code: string): Promise<string | null>;
 
   // Carrier Assignments
@@ -1557,6 +1558,27 @@ export class MemStorage implements IStorage {
         .orderBy(azDestinations.code);
     }
     return results.map(r => r.code);
+  }
+
+  async getCodesWithIntervalsForZone(zone: string): Promise<{ codes: string[], billingIncrement: string | null }> {
+    const isWildcard = zone.includes('%');
+    const searchTerm = zone.replace(/%/g, '');
+    
+    let results;
+    if (isWildcard) {
+      results = await db.select({ code: azDestinations.code, billingIncrement: azDestinations.billingIncrement })
+        .from(azDestinations)
+        .where(ilike(azDestinations.destination, `${searchTerm}%`))
+        .orderBy(azDestinations.code);
+    } else {
+      results = await db.select({ code: azDestinations.code, billingIncrement: azDestinations.billingIncrement })
+        .from(azDestinations)
+        .where(eq(azDestinations.destination, zone))
+        .orderBy(azDestinations.code);
+    }
+    const codes = results.map(r => r.code);
+    const billingIncrement = results.length > 0 ? results[0].billingIncrement : null;
+    return { codes, billingIncrement };
   }
 
   async lookupZoneByCode(code: string): Promise<string | null> {
