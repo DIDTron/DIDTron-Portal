@@ -23,14 +23,10 @@ function Router() {
       <Route path="/docs" component={Docs} />
       <Route path="/docs/:category" component={Docs} />
       <Route path="/docs/:category/:article" component={Docs} />
+      <Route path="/admin/:rest*" component={AdminLayout} />
       <Route path="/admin" component={AdminLayout} />
-      <Route path="/admin/carriers/:carrierId/interconnects/:interconnectId" component={AdminLayout} />
-      <Route path="/admin/:section" component={AdminLayout} />
-      <Route path="/admin/:section/:subsection" component={AdminLayout} />
-      <Route path="/admin/:section/:subsection/:item" component={AdminLayout} />
+      <Route path="/portal/:rest*" component={PortalLayout} />
       <Route path="/portal" component={PortalLayout} />
-      <Route path="/portal/:section" component={PortalLayout} />
-      <Route path="/portal/:section/:subsection" component={PortalLayout} />
       <Route component={NotFound} />
     </Switch>
   );
