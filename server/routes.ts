@@ -5660,7 +5660,9 @@ export async function registerRoutes(
 
   app.get("/api/softswitch/rating/customer-plans/:planId/rates", async (req, res) => {
     try {
-      const rates = await storage.getRatingPlanRates(req.params.planId);
+      const plan = await storage.resolveCustomerRatingPlan(req.params.planId);
+      if (!plan) return res.status(404).json({ error: "Rating plan not found" });
+      const rates = await storage.getRatingPlanRates(plan.id);
       res.json(rates);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch rating plan rates" });
@@ -5679,7 +5681,9 @@ export async function registerRoutes(
 
   app.post("/api/softswitch/rating/customer-plans/:planId/rates", async (req, res) => {
     try {
-      const body = { ...req.body, ratingPlanId: req.params.planId };
+      const plan = await storage.resolveCustomerRatingPlan(req.params.planId);
+      if (!plan) return res.status(404).json({ error: "Rating plan not found" });
+      const body = { ...req.body, ratingPlanId: plan.id };
       if (body.effectiveDate && typeof body.effectiveDate === 'string') {
         body.effectiveDate = new Date(body.effectiveDate);
       }
