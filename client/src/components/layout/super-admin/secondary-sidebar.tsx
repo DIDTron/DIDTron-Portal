@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Menu, GripVertical } from "lucide-react";
+import { Menu, GripVertical, ChevronDown } from "lucide-react";
 import {
   Server, Layers, Radio, CreditCard, Building2, Globe, Building,
   Route as RouteIcon, Users, UserPlus, Tags, Gift, Ticket,
@@ -15,13 +15,15 @@ import {
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export interface NavSubItem {
   id: string;
   label: string;
   route: string;
   icon: React.ComponentType<{ className?: string }>;
+  children?: NavSubItem[];
 }
 
 export interface SectionConfig {
@@ -142,11 +144,19 @@ export const sectionConfigs: Record<string, SectionConfig> = {
     title: "Class 4 Softswitch",
     items: [
       { id: "softswitch-carriers", label: "Carriers", route: "/admin/softswitch/carriers", icon: Building2 },
-      { id: "softswitch-customer-rating", label: "Customer Rating Plans", route: "/admin/softswitch/rating/customer-plans", icon: CreditCard },
-      { id: "softswitch-supplier-rating", label: "Supplier Rating Plans", route: "/admin/softswitch/rating/supplier-plans", icon: CreditCard },
-      { id: "softswitch-period-exceptions", label: "Period Exceptions", route: "/admin/softswitch/rating/period-exceptions", icon: Settings },
-      { id: "softswitch-cdr-rerating", label: "CDR Rerating", route: "/admin/softswitch/rating/cdr-rerating", icon: History },
-      { id: "softswitch-zone-name", label: "Rating Zone Name", route: "/admin/softswitch/rating/zone-name", icon: Tags },
+      { 
+        id: "softswitch-rating", 
+        label: "Rating", 
+        route: "/admin/softswitch/rating/customer-plans", 
+        icon: CreditCard,
+        children: [
+          { id: "softswitch-customer-rating", label: "Customer Rating Plans", route: "/admin/softswitch/rating/customer-plans", icon: CreditCard },
+          { id: "softswitch-supplier-rating", label: "Supplier Rating Plans", route: "/admin/softswitch/rating/supplier-plans", icon: CreditCard },
+          { id: "softswitch-period-exceptions", label: "Period Exceptions", route: "/admin/softswitch/rating/period-exceptions", icon: Settings },
+          { id: "softswitch-cdr-rerating", label: "CDR Rerating", route: "/admin/softswitch/rating/cdr-rerating", icon: History },
+          { id: "softswitch-zone-name", label: "Rating Zone Name", route: "/admin/softswitch/rating/zone-name", icon: Tags },
+        ]
+      },
       { id: "softswitch-routing", label: "Routing", route: "/admin/softswitch/routing", icon: RouteIcon },
     ],
   },
@@ -256,8 +266,68 @@ function SortableSubItem({ item, isActive, onClick }: SortableSubItemProps) {
   );
 }
 
+interface CollapsibleSubItemProps {
+  item: NavSubItem;
+  activeSubItem: string | null;
+  onChildClick: (child: NavSubItem) => void;
+  location: string;
+}
+
+function CollapsibleSubItem({ item, activeSubItem, onChildClick, location }: CollapsibleSubItemProps) {
+  const isChildActive = item.children?.some(child => 
+    activeSubItem === child.id || location.startsWith(child.route.split('?')[0])
+  );
+  const [isOpen, setIsOpen] = useState(isChildActive);
+  
+  const Icon = item.icon;
+  
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger asChild>
+        <div
+          className={cn(
+            "group flex items-center gap-1 px-2 py-1.5 text-sm rounded-md cursor-pointer transition-colors w-full",
+            isChildActive
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-sidebar-foreground/70 hover-elevate"
+          )}
+          data-testid={`sidebar-item-${item.id}`}
+        >
+          <Icon className="h-4 w-4 shrink-0" />
+          <span className="truncate flex-1">{item.label}</span>
+          <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="pl-4 space-y-0.5 mt-0.5">
+          {item.children?.map((child) => {
+            const ChildIcon = child.icon;
+            const isActive = activeSubItem === child.id || location === child.route;
+            return (
+              <div
+                key={child.id}
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer transition-colors",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover-elevate"
+                )}
+                onClick={() => onChildClick(child)}
+                data-testid={`sidebar-item-${child.id}`}
+              >
+                <ChildIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{child.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export function SecondarySidebar() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { 
     activeSection, 
     activeSubItem, 
@@ -358,16 +428,26 @@ export function SecondarySidebar() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={orderedItems.map((i) => i.id)}
+              items={orderedItems.filter(i => !i.children).map((i) => i.id)}
               strategy={verticalListSortingStrategy}
             >
               {orderedItems.map((item) => (
-                <SortableSubItem
-                  key={item.id}
-                  item={item}
-                  isActive={activeSubItem === item.id}
-                  onClick={() => handleItemClick(item)}
-                />
+                item.children ? (
+                  <CollapsibleSubItem
+                    key={item.id}
+                    item={item}
+                    activeSubItem={activeSubItem}
+                    onChildClick={handleItemClick}
+                    location={location}
+                  />
+                ) : (
+                  <SortableSubItem
+                    key={item.id}
+                    item={item}
+                    isActive={activeSubItem === item.id}
+                    onClick={() => handleItemClick(item)}
+                  />
+                )
               ))}
             </SortableContext>
           </DndContext>

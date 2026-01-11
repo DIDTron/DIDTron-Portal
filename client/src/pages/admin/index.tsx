@@ -153,6 +153,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/softswitch/rating/cdr-rerating": { section: "softswitch", subItem: "softswitch-cdr-rerating" },
   "/admin/softswitch/rating/zone-name": { section: "softswitch", subItem: "softswitch-zone-name" },
   "/admin/softswitch/routing": { section: "softswitch", subItem: "softswitch-routing" },
+  "/admin/softswitch": { section: "softswitch", subItem: "softswitch-carriers" },
   "/admin/experience-manager": { section: "experience-manager", subItem: "em-dashboard" },
   "/admin/experience-manager/marketing": { section: "experience-manager", subItem: "em-marketing" },
   "/admin/experience-manager/portal-themes": { section: "experience-manager", subItem: "em-portal-themes" },

@@ -338,10 +338,6 @@ const sectionDefaultItems: Record<string, { id: string; label: string; route: st
   softswitch: [
     { id: "softswitch-carriers", label: "Carriers", route: "/admin/softswitch/carriers" },
     { id: "softswitch-customer-rating", label: "Customer Rating Plans", route: "/admin/softswitch/rating/customer-plans" },
-    { id: "softswitch-supplier-rating", label: "Supplier Rating Plans", route: "/admin/softswitch/rating/supplier-plans" },
-    { id: "softswitch-period-exceptions", label: "Period Exceptions", route: "/admin/softswitch/rating/period-exceptions" },
-    { id: "softswitch-cdr-rerating", label: "CDR Rerating", route: "/admin/softswitch/rating/cdr-rerating" },
-    { id: "softswitch-zone-name", label: "Rating Zone Name", route: "/admin/softswitch/rating/zone-name" },
     { id: "softswitch-routing", label: "Routing", route: "/admin/softswitch/routing" },
   ],
   cms: [
