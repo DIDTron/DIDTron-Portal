@@ -73,7 +73,8 @@ import {
   insertInterconnectCodecSchema,
   insertInterconnectMediaSettingsSchema,
   insertInterconnectSignallingSettingsSchema,
-  insertInterconnectMonitoringSettingsSchema
+  insertInterconnectMonitoringSettingsSchema,
+  insertCustomerRatingPlanSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -5539,6 +5540,82 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete carrier" });
+    }
+  });
+
+  // ==================== CUSTOMER RATING PLANS ====================
+
+  app.get("/api/softswitch/rating/customer-plans", async (req, res) => {
+    try {
+      const plans = await storage.getCustomerRatingPlans();
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch customer rating plans" });
+    }
+  });
+
+  app.get("/api/softswitch/rating/customer-plans/:id", async (req, res) => {
+    try {
+      const plan = await storage.getCustomerRatingPlan(req.params.id);
+      if (!plan) return res.status(404).json({ error: "Rating plan not found" });
+      res.json(plan);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rating plan" });
+    }
+  });
+
+  app.post("/api/softswitch/rating/customer-plans", async (req, res) => {
+    try {
+      const parsed = insertCustomerRatingPlanSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const plan = await storage.createCustomerRatingPlan(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "customer_rating_plans",
+        recordId: plan.id,
+        newValues: plan,
+      });
+      res.status(201).json(plan);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create rating plan" });
+    }
+  });
+
+  app.patch("/api/softswitch/rating/customer-plans/:id", async (req, res) => {
+    try {
+      const oldPlan = await storage.getCustomerRatingPlan(req.params.id);
+      const plan = await storage.updateCustomerRatingPlan(req.params.id, req.body);
+      if (!plan) return res.status(404).json({ error: "Rating plan not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "customer_rating_plans",
+        recordId: req.params.id,
+        oldValues: oldPlan,
+        newValues: plan,
+      });
+      res.json(plan);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update rating plan" });
+    }
+  });
+
+  app.delete("/api/softswitch/rating/customer-plans/:id", async (req, res) => {
+    try {
+      const oldPlan = await storage.getCustomerRatingPlan(req.params.id);
+      const deleted = await storage.deleteCustomerRatingPlan(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Rating plan not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "customer_rating_plans",
+        recordId: req.params.id,
+        oldValues: oldPlan,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete rating plan" });
     }
   });
 
