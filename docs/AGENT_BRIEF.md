@@ -127,5 +127,121 @@ DIDTron Communications is an AI-first, white-label wholesale VoIP platform. The 
 - **OpenAI GPT-4o**: All AI features via Replit AI
 - **PostgreSQL + Drizzle ORM**: Database layer
 
+---
+
+## 8) APPROVED INFRA PROVIDERS (MANDATORY — NO SUBSTITUTIONS)
+
+We use these services. Assume they are the default choices unless explicitly changed in docs/DECISIONS.md:
+
+| Service | Provider | Purpose |
+|---------|----------|---------|
+| Object Storage | **Cloudflare R2** | File uploads, exports, recordings |
+| Cache/Sessions/Locks | **Upstash Redis** | Sessions, rate limits, distributed locks, job state |
+| Email | **Brevo** | Transactional/notification emails |
+| Payments | **Stripe** | Payment processing, KYC verification |
+| VoIP Backend | **ConnexCS** | Call routing, CDR generation, real-time balances |
+| Currency Rates | **OpenExchangeRates** | FX rates, currency conversion |
+| AI | **OpenAI GPT-4o** | AI features via Replit integration |
+
+Hard rules:
+- Do NOT introduce alternative providers unless explicitly approved and recorded in DECISIONS + TODO
+- Integrations must be behind stable adapters (one clear code entry point per provider)
+- Secrets must come from environment variables; never hardcode credentials
+- If env var names are unknown, search the repo first, document in DECISIONS, then implement
+
+---
+
+## 9) INFRA HARDENING — MUST IMPLEMENT (NO "PLANNED" HAND-WAVING)
+
+These are production requirements. If dev-only substitutes exist, they MUST be migrated via TODO tasks.
+
+### A) Sessions MUST NOT use in-memory stores in production
+- MemoryStore/memorystore is NOT production safe
+- Production session storage MUST be Upstash Redis (secure cookie settings, TTL)
+- If memory store exists, add TODO task to replace with Redis session store
+
+### B) Scheduled tasks must not duplicate when scaling
+- All cron/scheduled sync tasks MUST use a distributed lock in Upstash Redis
+- If lock exists, task must skip; if lock acquired, run and refresh lock
+- Apply to: ConnexCS sync, currency sync, balance sync
+
+### C) Config must be validated at startup
+- Create single config module validated with zod (fail-fast if env vars missing)
+- Never silently fall back to mock mode in production
+- If service is mocked, it must be explicit in DECISIONS and tracked in TODO
+
+### D) Logging and Audit
+- Structured logging for all key operations
+- Audit events for super-admin actions (DB-backed audit table)
+- Log job IDs for DataQueue tasks and key integration actions
+
+---
+
+## 10) PRODUCTION QUALITY + TESTING GATE (PLAYWRIGHT + AXE REQUIRED)
+
+Mandatory tooling:
+- **Playwright** for end-to-end UI testing
+- **@axe-core/playwright** for accessibility scanning
+
+Rules:
+1. Every new/changed page/tab/modal/workflow MUST have Playwright tests
+2. Every new/changed page must pass Axe scan (no accessibility violations)
+3. Do NOT silence Axe failures to make tests pass
+4. Tests must use stable `data-testid` selectors
+
+Done includes:
+- Tests pass (Playwright + Axe)
+- No broken routes/dead buttons
+- Loading/empty/error states handled
+- Docs updated
+
+---
+
+## 11) TIME & TIMESTAMPING — GOLD MUST RULE (MANDATORY)
+
+All time-sensitive objects (rates, CDRs, invoices, logs, alerts, imports) MUST be timestamped consistently.
+
+Rules:
+1. Store UTC as canonical backend time. Use ISO 8601 (e.g., 2026-01-11T10:15:30Z)
+2. All core tables must include `created_at`, `updated_at` (UTC)
+3. Audit/event tables must include `occurred_at` (UTC) and actor identifiers
+4. Rate/CDR records must include `effective_from` and optional `effective_to`
+5. Never trust client time for authoritative timestamps. Server assigns and validates
+6. Any feature is NOT done unless timestamps are stored and displayed correctly
+
+---
+
+## 12) BIG DATA + JOB PROCESSING — GOLD MUST RULE (PERMANENT CRASH PREVENTION)
+
+We handle large datasets (CDR sync, prefix lists, rating imports) in a way that MUST NOT crash the app.
+
+Rules:
+1. Never load full datasets into RAM. All large reads/writes MUST be paginated/streamed
+2. Canonical storage is the database. Redis is NOT canonical (cache/queue only)
+3. **DataQueue is mandatory for heavy jobs**:
+   - Heavy tasks MUST run via DataQueue, not inside API requests
+   - Jobs MUST be chunked into small batches (500–2,000 records)
+   - API requests enqueue job and return job ID; UI shows progress
+4. CDR sync MUST be incremental with DB high-water mark (`last_synced_at` or `last_cdr_id`)
+5. Destinations/prefixes must be query-on-demand (search + limit + cursor). UI uses typeahead
+6. Backend guards: default limit + enforced max limit, pagination mandatory
+
+Mandatory items if missing:
+- Batched incremental CDR sync with high-water mark
+- Destination search endpoint + UI typeahead
+- Import pipeline: R2 upload → DataQueue batch insert → progress in Redis → finalize in DB
+
+---
+
+## 13) EMERGENCY STOP COMMAND
+
+If user says "EMERGENCY STOP":
+1. STOP coding immediately
+2. Re-read docs/AGENT_BRIEF.md + docs/TODO.md + docs/UI_SPEC.md
+3. Reply with: (1) current Plan ID, (2) which TODO task, (3) DOC TARGET, (4) smallest next step
+4. Do NOT change any files until outputting those 4 items
+
+---
+
 ## Current Focus
 Building the Class 4 Softswitch module that exactly matches Digitalk Carrier Cloud Manager UI/UX and functionality.

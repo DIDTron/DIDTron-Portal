@@ -166,3 +166,43 @@ try {
 10. Modules that must use this pattern
 
 **Location**: `docs/UI_SPEC.md` → Section "Digitalk Layout Patterns"
+
+---
+
+## 2026-01-11: Adopted FOREVER POLICY as Project Constitution
+
+**Decision**: Adopted comprehensive "FOREVER POLICY — PRODUCTION PROJECT GOVERNANCE (NO DRIFT)" document as the project's governing constitution.
+
+**Reason**: Establish permanent, non-negotiable rules for drift prevention, infrastructure hardening, testing requirements, time/timestamping, and big data handling.
+
+**Changes to AGENT_BRIEF.md**:
+- Added Section 8: Approved Infra Providers (Cloudflare R2, Upstash Redis, Brevo, Stripe, ConnexCS, OpenExchangeRates, OpenAI)
+- Added Section 9: Infra Hardening (Redis sessions, distributed locks, config validation, audit logging)
+- Added Section 10: Production Quality + Testing Gate (Playwright + Axe required)
+- Added Section 11: Time & Timestamping Gold Rule (UTC canonical, timestamps mandatory)
+- Added Section 12: Big Data + Job Processing Gold Rule (DataQueue, pagination, no RAM loading)
+- Added Section 13: Emergency Stop Command
+
+**Changes to TODO.md**:
+- Added Phase 3: Infrastructure Hardening (Plan ID: PLAN-2026-01-11-03)
+- T17: Replace MemoryStore with Upstash Redis
+- T18: Add distributed locks for scheduled tasks
+- T19: Create validated config module
+- T20: Implement incremental CDR sync with high-water mark
+- T21: Create Playwright test infrastructure
+- T22: Add Playwright tests for existing pages
+- T23: Wire Cloudflare R2 for file uploads
+
+**Current Integration Status**:
+| Integration | Configured | Actually Used |
+|-------------|------------|---------------|
+| ConnexCS | ✅ | ✅ Active |
+| Brevo | ✅ | ⚠️ Mock mode |
+| DataQueue | ✅ | ✅ Active |
+| Playwright | ✅ Installed | ❌ No tests |
+| @axe-core/playwright | ✅ Installed | ❌ No tests |
+| Upstash Redis | ✅ Configured | ❌ Not wired |
+| Cloudflare R2 | ✅ Configured | ❌ Not wired |
+| Session Store | ⚠️ MemoryStore | ❌ Must migrate |
+
+**Source Document**: `attached_assets/FOREVER_POLICY_—_PRODUCTION_PROJECT_1768150986435.txt`
