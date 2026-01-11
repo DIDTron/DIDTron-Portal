@@ -12,6 +12,8 @@ import {
   type CarrierAssignment, type InsertCarrierAssignment,
   type CustomerRatingPlan, type InsertCustomerRatingPlan,
   customerRatingPlans as customerRatingPlansTable,
+  type CustomerRatingPlanRate, type InsertCustomerRatingPlanRate,
+  customerRatingPlanRates as customerRatingPlanRatesTable,
   type AuditLog,
   type Route, type InsertRoute,
   type RouteGroup, type InsertRouteGroup,
@@ -79,6 +81,7 @@ import {
   type WebhookDelivery, type InsertWebhookDelivery,
   type CustomerApiKey, type InsertCustomerApiKey,
   type AzDestination, type InsertAzDestination,
+  azDestinations,
   type EmContentItem, type InsertEmContentItem,
   type EmContentVersion, type InsertEmContentVersion,
   type EmValidationResult, type InsertEmValidationResult,
@@ -113,7 +116,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -201,6 +204,16 @@ export interface IStorage {
   createCustomerRatingPlan(plan: InsertCustomerRatingPlan): Promise<CustomerRatingPlan>;
   updateCustomerRatingPlan(id: string, data: Partial<InsertCustomerRatingPlan>): Promise<CustomerRatingPlan | undefined>;
   deleteCustomerRatingPlan(id: string): Promise<boolean>;
+
+  // Customer Rating Plan Rates
+  getRatingPlanRates(ratingPlanId: string): Promise<CustomerRatingPlanRate[]>;
+  getRatingPlanRate(id: string): Promise<CustomerRatingPlanRate | undefined>;
+  createRatingPlanRate(rate: InsertCustomerRatingPlanRate): Promise<CustomerRatingPlanRate>;
+  updateRatingPlanRate(id: string, data: Partial<InsertCustomerRatingPlanRate>): Promise<CustomerRatingPlanRate | undefined>;
+  deleteRatingPlanRate(id: string): Promise<boolean>;
+  searchZonesFromAZ(searchTerm: string): Promise<string[]>;
+  getCodesForZone(zone: string): Promise<string[]>;
+  lookupZoneByCode(code: string): Promise<string | null>;
 
   // Carrier Assignments
   getCarrierAssignment(carrierId: string): Promise<CarrierAssignment | undefined>;
@@ -1482,6 +1495,76 @@ export class MemStorage implements IStorage {
   async deleteCustomerRatingPlan(id: string): Promise<boolean> {
     const results = await db.delete(customerRatingPlansTable).where(eq(customerRatingPlansTable.id, id)).returning();
     return results.length > 0;
+  }
+
+  // Customer Rating Plan Rates
+  async getRatingPlanRates(ratingPlanId: string): Promise<CustomerRatingPlanRate[]> {
+    return await db.select().from(customerRatingPlanRatesTable)
+      .where(eq(customerRatingPlanRatesTable.ratingPlanId, ratingPlanId))
+      .orderBy(customerRatingPlanRatesTable.zone);
+  }
+
+  async getRatingPlanRate(id: string): Promise<CustomerRatingPlanRate | undefined> {
+    const results = await db.select().from(customerRatingPlanRatesTable)
+      .where(eq(customerRatingPlanRatesTable.id, id));
+    return results[0];
+  }
+
+  async createRatingPlanRate(rate: InsertCustomerRatingPlanRate): Promise<CustomerRatingPlanRate> {
+    const results = await db.insert(customerRatingPlanRatesTable).values(rate).returning();
+    return results[0];
+  }
+
+  async updateRatingPlanRate(id: string, data: Partial<InsertCustomerRatingPlanRate>): Promise<CustomerRatingPlanRate | undefined> {
+    const results = await db.update(customerRatingPlanRatesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(customerRatingPlanRatesTable.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async deleteRatingPlanRate(id: string): Promise<boolean> {
+    const results = await db.delete(customerRatingPlanRatesTable)
+      .where(eq(customerRatingPlanRatesTable.id, id))
+      .returning();
+    return results.length > 0;
+  }
+
+  async searchZonesFromAZ(searchTerm: string): Promise<string[]> {
+    const term = searchTerm.replace(/%/g, '');
+    const results = await db.selectDistinct({ destination: azDestinations.destination })
+      .from(azDestinations)
+      .where(ilike(azDestinations.destination, `%${term}%`))
+      .orderBy(azDestinations.destination)
+      .limit(50);
+    return results.map(r => r.destination);
+  }
+
+  async getCodesForZone(zone: string): Promise<string[]> {
+    const isWildcard = zone.includes('%');
+    const searchTerm = zone.replace(/%/g, '');
+    
+    let results;
+    if (isWildcard) {
+      results = await db.select({ code: azDestinations.code })
+        .from(azDestinations)
+        .where(ilike(azDestinations.destination, `${searchTerm}%`))
+        .orderBy(azDestinations.code);
+    } else {
+      results = await db.select({ code: azDestinations.code })
+        .from(azDestinations)
+        .where(eq(azDestinations.destination, zone))
+        .orderBy(azDestinations.code);
+    }
+    return results.map(r => r.code);
+  }
+
+  async lookupZoneByCode(code: string): Promise<string | null> {
+    const results = await db.select({ destination: azDestinations.destination })
+      .from(azDestinations)
+      .where(eq(azDestinations.code, code))
+      .limit(1);
+    return results[0]?.destination ?? null;
   }
 
   // Carrier Assignments
