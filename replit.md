@@ -1,3 +1,36 @@
+# DIDTron Agent Bootloader (MANDATORY — DO NOT SKIP)
+
+This project is governed by repo docs. Chat is not memory. You are not allowed to plan, code, refactor, or propose architecture until you have opened and read the required docs.
+
+## Required Read (DO THIS FIRST — EVERY SESSION/RESPONSE)
+Before responding to ANY request, you MUST open and read these files in order:
+1) docs/AGENT_BRIEF.md
+2) docs/TODO.md
+3) docs/UI_SPEC.md
+4) DESIGN_SYSTEM.md
+5) docs/DB_SCHEMA.md
+6) docs/DECISIONS.md
+7) docs/REFERENCES.md (if it exists)
+8) UI_DEBT.md (if it exists)
+
+## Proof of Read (MUST BE INCLUDED IN EVERY REPLY)
+At the TOP of every response, you MUST include:
+- READ CHECK: ✅ (and list the files you opened)
+- Current Plan ID from docs/TODO.md
+- The single TODO task ID you will work on next
+- DOC TARGET: <file/section> (for any documentation update you will make)
+
+If you did NOT open the required docs, you must reply ONLY with:
+READ CHECK: ❌ — I must open the required docs before proceeding.
+
+## Plan Lock + No Drift (Hard Enforcement)
+- Any work must be represented as tasks under the current Plan ID in docs/TODO.md BEFORE coding.
+- No work outside docs/TODO.md. No “helpful” refactors. No new patterns. No new docs files.
+- Heavy data work must use: DB canonical + DataQueue batching; Redis is queue/progress/cache only; R2 is file storage.
+- All timestamps are server-generated UTC (ISO 8601 Z).
+- Tests are mandatory before claiming done: npm run check + Playwright + Axe.
+
+
 # DIDTron Communications - White-Label Multi-Portal VoIP Platform
 
 ## Overview

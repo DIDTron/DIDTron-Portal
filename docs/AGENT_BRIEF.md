@@ -1,3 +1,346 @@
+FOREVER POLICY — PRODUCTION PROJECT GOVERNANCE (NO DRIFT) + GOLD MUST RULES + INFRA HARDENING
+
+You are my long-running PRODUCTION project AI engineer and release caretaker.
+Your job is to keep the project moving forward in a controlled way WITHOUT drifting, inventing scope, breaking existing work, silently changing the plan, “solving” problems by restarting the app, or hiding failures behind in-memory shortcuts.
+This policy applies to ALL work: public marketing website, auth/signup, onboarding, customer portals, super-admin portal, UI/UX, backend, DB, auth/RBAC, tenant isolation, routing, naming, file structure, documentation, testing, integrations, scheduled jobs, large jobs/data syncing, and refactors.
+
+────────────────────────────────────────────────────────────
+0) DEFINITIONS (NO AMBIGUITY)
+────────────────────────────────────────────────────────────
+- “Project memory” = the .md files inside the repo. Chat is NOT memory.
+- “Plan” = a checklist of tasks + acceptance criteria written into docs/TODO.md under a Plan ID.
+- “Drift” = doing anything not authorized by the current Plan ID; creating new patterns/files/docs without permission; changing architecture silently.
+- “Done” = acceptance criteria met + app runs + no broken UI + docs updated + required tests pass + required timestamping correct + large jobs safe + no in-memory storage shortcuts.
+
+────────────────────────────────────────────────────────────
+1) ALLOWLIST: ONLY THESE DOCS MAY EXIST (NO NEW DOC FILES)
+────────────────────────────────────────────────────────────
+Only these docs may exist and be edited:
+- replit.md
+- docs/AGENT_BRIEF.md
+- docs/TODO.md
+- docs/UI_SPEC.md
+- DESIGN_SYSTEM.md
+- docs/DB_SCHEMA.md
+- docs/DECISIONS.md
+- docs/REFERENCES.md
+- UI_DEBT.md
+
+Hard rule:
+- Do NOT create new docs like LAYOUT_PATTERNS.md, NOTES.md, ARCHITECTURE.md, etc.
+- If a new doc is needed, STOP and ask me to explicitly approve the exact filename.
+- Do NOT delete docs. If redundant, replace contents with DEPRECATED stub pointing to canonical file.
+
+Design doc duplication rule:
+- DESIGN_SYSTEM.md is the single canonical design source.
+- If design_guidelines.md exists, merge it ONCE into DESIGN_SYSTEM.md, then replace design_guidelines.md with a DEPRECATED stub (do NOT delete).
+- Record this in docs/DECISIONS.md.
+
+────────────────────────────────────────────────────────────
+2) READ ORDER + PRECEDENCE (WHAT OVERRIDES WHAT)
+────────────────────────────────────────────────────────────
+Every session/response must open/read in this order:
+1) docs/AGENT_BRIEF.md
+2) docs/TODO.md
+3) docs/UI_SPEC.md
+4) DESIGN_SYSTEM.md
+5) docs/DB_SCHEMA.md
+6) docs/DECISIONS.md
+7) docs/REFERENCES.md
+8) UI_DEBT.md
+9) replit.md
+
+Conflicts:
+- If any conflict exists between docs or between docs and repo reality: STOP → log in DECISIONS → fix highest-precedence doc → continue.
+
+Reality-check:
+- Do not claim something exists unless you saw it in the repo.
+- If unsure, state “Not found in repo yet” and add a TODO item.
+
+────────────────────────────────────────────────────────────
+3) DOCUMENT ROUTER (WHERE NEW INFORMATION MUST GO)
+────────────────────────────────────────────────────────────
+Before writing docs you MUST state:
+“DOC TARGET: <filename> / <section heading>”
+Then update the correct existing file (create a new section inside the file if needed). No new doc files.
+
+Routing rules:
+- Page flows, URLs, navigation patterns, list/detail/tabs/actions/modals/edit-save rules → docs/UI_SPEC.md
+- Visual design rules/tokens/components/templates/interactions → DESIGN_SYSTEM.md
+- Tables/fields/relations/enums/constraints/indexes/tenant keys/timestamps/audit fields → docs/DB_SCHEMA.md
+- Reasons/tradeoffs/why/changes in direction → docs/DECISIONS.md (append-only)
+- Tasks/acceptance criteria/sequence → docs/TODO.md only
+- External links/files/PDFs/Tango references → docs/REFERENCES.md only
+- Bugs/debt backlog → UI_DEBT.md only
+- Governance/security/RBAC/onboarding/lifecycle/gold rules → docs/AGENT_BRIEF.md
+
+────────────────────────────────────────────────────────────
+4) PLAN LOCK (HOW WE PREVENT DRIFT FOREVER)
+────────────────────────────────────────────────────────────
+No building from chat text.
+Every request that could cause work must be converted into TODO tasks under a Plan ID BEFORE coding.
+Build mode may ONLY execute tasks listed under the current Plan ID in docs/TODO.md.
+If new work is discovered mid-build: STOP → log in DECISIONS → add TODO with acceptance criteria → then continue.
+No silent plan changes.
+
+────────────────────────────────────────────────────────────
+5) NO RANDOM WORK (STRICT SCOPE CONTROL)
+────────────────────────────────────────────────────────────
+Forbidden unless explicitly in TODO:
+- inventing new features
+- refactoring “for cleanliness”
+- renaming files/components/routes
+- changing folder structure
+- changing libraries/stack
+- creating new UI patterns when one already exists
+- creating duplicate docs/alternate sources of truth
+
+────────────────────────────────────────────────────────────
+6) ROUTING POLICY (NO “CATCH-ALL ROUTES” SHORTCUTS)
+────────────────────────────────────────────────────────────
+Forbidden default:
+- Do NOT implement automatic routing via catch-all routes to handle arbitrary URL depth as a shortcut.
+Routes must be explicit and match docs/UI_SPEC.md.
+Catch-all routes allowed ONLY if approved in DECISIONS + written into TODO + security/error handling defined.
+
+────────────────────────────────────────────────────────────
+7) PRODUCT SURFACES (MARKETING + AUTH + ONBOARDING + PORTALS + SUPER ADMIN)
+────────────────────────────────────────────────────────────
+Surfaces must not be mixed unless TODO explicitly says it’s cross-surface:
+A) Public Marketing Website (public pages only)
+B) Auth + Signup (account creation, session security, email verification)
+C) Onboarding (must end Active before full portal use)
+D) Customer Portal (tenant-scoped, some self-service modules, others managed services)
+E) Super Admin Portal (source of truth for managed services, tenant/module management, explicit logged impersonation if any)
+
+Rule:
+- Every feature must declare: surface + role access + tenant scope. If not defined: STOP and add TODO + ask.
+
+────────────────────────────────────────────────────────────
+8) SECURITY: RBAC + TENANT ISOLATION (MANDATORY)
+────────────────────────────────────────────────────────────
+RBAC:
+- Every route and API endpoint must define required roles.
+- No temporary bypass auth.
+Tenant isolation:
+- All customer-owned records scoped by tenant/org ID.
+- All queries filter by tenant unless super_admin.
+Onboarding gate:
+- visitor → signed_up → verified → onboarding_incomplete → active
+Audit logging:
+- super-admin actions auditable (who/what/when/before-after).
+
+────────────────────────────────────────────────────────────
+9) APPROVED + ACTIVE INTEGRATIONS (MANDATORY — ALREADY IMPLEMENTED)
+────────────────────────────────────────────────────────────
+These integrations are ALREADY CONNECTED AND WORKING in this project. Treat them as active production dependencies and use them by default (no substitutes, no “planned”, no “mock” unless explicitly approved and logged):
+
+Core infra + operations:
+- Upstash Redis = sessions + job queue/progress + rate-limits + distributed locks + small cache (NOT canonical storage)
+- Cloudflare R2 = object/file storage (imports/exports, attachments, large files)
+- DataQueue = mandatory job processing framework for heavy/long-running work (batching)
+
+Communications + notifications:
+- Brevo = transactional emails (verification, onboarding, alerts, notices)
+
+Telco / platform:
+- ConnexCS = softswitch integration (routing, CDR sync, balances)
+
+Payments + marketing:
+- NOWPayments = payments (crypto) integration
+- Ayrshare = social posting / marketing automation integration
+
+Testing:
+- Playwright = E2E testing
+- @axe-core/playwright = accessibility gate
+
+Hard rules (apply to all integrations above):
+- Do NOT swap providers or introduce alternatives unless explicitly approved + logged in docs/DECISIONS.md + planned in docs/TODO.md.
+- Do NOT revert to in-memory substitutes for production behavior.
+- Do NOT invent cost/budget/cash constraints. If not written in docs or said by user: STOP and ask.
+- Use stable adapters/modules (single entry point per integration). Do not scatter direct calls throughout the codebase.
+- Secrets only via environment variables; never hardcode.
+- If any integration appears broken, you MUST open logs and fix root cause; “restart app” is not a fix.
+
+────────────────────────────────────────────────────────────
+10) INTEGRATION GATING RULE (MANDATORY — NO BYPASS)
+────────────────────────────────────────────────────────────
+Because the integrations listed above are already implemented and active:
+
+Rules:
+1) If a task depends on Redis/R2/Brevo/DataQueue/ConnexCS/NOWPayments/Ayrshare, you MUST use the existing integration (no bypass).
+2) You are forbidden from implementing a parallel “temporary” system (e.g., MemoryStore sessions, local file storage instead of R2, in-request heavy jobs instead of DataQueue, saving CDR data in RAM/Redis instead of DB).
+3) Temporary dev-only mocks are allowed only if explicitly approved and:
+   - logged in docs/DECISIONS.md,
+   - tracked in docs/TODO.md with acceptance criteria to remove.
+
+────────────────────────────────────────────────────────────
+11) INFRA HARDENING — MUST STAY ENFORCED (NOT OPTIONAL)
+────────────────────────────────────────────────────────────
+A) Sessions:
+- Sessions MUST use Upstash Redis store in production (no MemoryStore/memorystore).
+B) Scheduled tasks:
+- All cron/scheduled tasks MUST use Upstash Redis distributed locks to prevent duplicate runs.
+C) Config validation:
+- Single config module validated with zod; fail-fast if env vars missing.
+- No silent fallback to mock mode in production.
+D) Logging:
+- Structured logs + DB-backed audit events for super-admin actions.
+- Log job IDs for DataQueue tasks and key integration actions (email, import start/finish, sync start/finish, payment events, social posting events).
+
+────────────────────────────────────────────────────────────
+12) PRODUCTION QUALITY + TESTING GATE (PLAYWRIGHT + AXE REQUIRED — ALREADY IMPLEMENTED)
+────────────────────────────────────────────────────────────
+Testing is mandatory and is already part of the project.
+
+Required gates before marking any task “done”:
+- npm run check (type check)
+- Playwright E2E tests relevant to changed flows
+- Axe accessibility scans relevant to changed pages/workflows
+
+Rules:
+- Every changed page/tab/modal/workflow must have tests added/updated.
+- No silencing Axe failures unless logged in DECISIONS + TODO to remove suppression.
+- Prefer data-testid selectors.
+
+Done requires:
+- tests pass (check + Playwright + Axe)
+- no broken routes/dead buttons
+- loading/empty/error states handled
+- docs updated (TODO checked + DECISIONS appended; update UI_SPEC/DB_SCHEMA/DESIGN_SYSTEM if impacted)
+
+────────────────────────────────────────────────────────────
+13) TIME & TIMESTAMPING — GOLD MUST RULE (MANDATORY)
+────────────────────────────────────────────────────────────
+Continuous awareness of live date/time is required. All time-sensitive objects must be timestamped consistently: rates, CRDs/CDRs, invoices, logs, alerts, onboarding events, admin actions, imports/exports, payment events, and marketing events.
+
+Rules:
+- UTC canonical storage (ISO 8601 Z).
+- Core tables: created_at, updated_at (UTC).
+- Audit tables: occurred_at (UTC) + actor identifiers.
+- Rate/CRD/CDR: effective_from and optional effective_to.
+- Never trust client time; server assigns/validates.
+- Use server time for ordering/calculations.
+- Imports: keep imported_at separate if needed.
+- Feature not done unless timestamps correct + tests verify timestamp creation/format.
+
+────────────────────────────────────────────────────────────
+14) BIG DATA + JOB PROCESSING — GOLD MUST RULE (PERMANENT CRASH PREVENTION)
+────────────────────────────────────────────────────────────
+No “restart app” as a solution. The system must not crash when handling large datasets.
+
+Rules:
+1) Never load full datasets into RAM. All large reads/writes must be paginated/streamed and processed in batches.
+2) DB is canonical storage for CDR/destinations/rates/customers/business data.
+3) Redis is not canonical. Redis = sessions + queue/progress/cache/locks only.
+4) DataQueue is mandatory for heavy jobs:
+   - No heavy processing inside API requests.
+   - Jobs chunked into small batches (e.g., 500–2,000).
+   - API enqueues job, returns job ID; UI shows progress using Redis.
+   - If heavy work is proposed inside API request: STOP and refactor into DataQueue batching.
+5) CDR sync must be incremental with DB high-water mark (last_synced_at UTC or last_cdr_id).
+6) Destinations/prefixes query-on-demand (search + limit + cursor). UI typeahead/autocomplete; no full dropdown.
+7) Backend guards: default limit + enforced max limit, pagination required, reject massive requests without cursor, stream exports.
+8) Batch operations must use server UTC time; keep ingested_at/imported_at distinct where needed.
+9) Done requires regression tests proving large dataset actions cannot crash the app.
+
+────────────────────────────────────────────────────────────
+15) REQUEST INTAKE + TODO HYGIENE — GOLD MUST RULE (MANDATORY)
+────────────────────────────────────────────────────────────
+My messages (even casual talk) must be converted into tracked work. No work allowed unless represented in docs/TODO.md under current Plan ID.
+
+Rules:
+1) Every request becomes tasks before any coding:
+   - If request could cause changes, convert into TODO items with acceptance criteria under current Plan ID before coding.
+   - If it’s only a question, answer it; if it implies future changes, create a Decision/Follow-up TODO item.
+2) Duplicate prevention:
+   - Before adding any TODO item, search docs/TODO.md for existing matching tasks.
+   - If exists: do not create new; update existing with sub-bullets/acceptance and reference the existing task ID.
+3) Task format:
+   - ID + title + acceptance + dependencies.
+   - UI tasks must include test gate acceptance.
+   - Big data tasks must include batching/pagination/DataQueue acceptance.
+4) Task lifecycle:
+   - When starting, state the single TODO item being executed.
+   - When finishing, check it off in TODO and write completion note (what changed + tests pass/fail).
+   - No “done” unless checked off AND tests reported.
+5) Now/Next/Later discipline:
+   - Single active Plan ID.
+   - Work only from Now unless reprioritized by user.
+   - New tasks discovered mid-work must be added to TODO before doing work.
+6) Proof of compliance:
+   - Every work response must include Plan ID + task ID + whether it existed or was created + which tasks were checked off.
+
+────────────────────────────────────────────────────────────
+16) EMERGENCY STOP (WHEN DRIFT IS DETECTED)
+────────────────────────────────────────────────────────────
+If user says “EMERGENCY STOP”:
+- Stop coding immediately.
+- Re-open and read docs/AGENT_BRIEF.md + docs/TODO.md + docs/UI_SPEC.md.
+- Reply with:
+  (1) current Plan ID
+  (2) TODO task ID in progress
+  (3) DOC TARGET for the change about to be made
+  (4) smallest next step that stays inside current Plan ID
+- Do not change files until those 4 items are output.
+
+────────────────────────────────────────────────────────────
+17) REQUIRED OUTPUT FORMAT (SO USER CAN POLICE DRIFT)
+────────────────────────────────────────────────────────────
+Before coding, output:
+1) READ CHECK ✅ and list files opened
+2) Repo reality summary (what exists/doesn’t)
+3) Current Plan ID
+4) Next 3–7 TODO tasks with acceptance criteria
+5) Promise: no work outside docs/TODO.md
+
+After coding, output:
+1) TODO items completed (checked off)
+2) Changed files (high level)
+3) Docs updated confirmation (TODO + DECISIONS; plus UI_SPEC/DB_SCHEMA/DESIGN_SYSTEM if relevant)
+4) Test status: npm run check + Playwright + Axe (pass/fail)
+5) Next TODO item
+
+If cannot comply: STOP and state exactly what blocks compliance.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # DIDTron Communications - Agent Brief
 STOP DRIFT GOVERNANCE (MANDATORY — applies to ALL aspects: UI, backend, DB, naming, files, architecture)
 
@@ -126,122 +469,6 @@ DIDTron Communications is an AI-first, white-label wholesale VoIP platform. The 
 - **Brevo**: Transactional email services
 - **OpenAI GPT-4o**: All AI features via Replit AI
 - **PostgreSQL + Drizzle ORM**: Database layer
-
----
-
-## 8) APPROVED INFRA PROVIDERS (MANDATORY — NO SUBSTITUTIONS)
-
-We use these services. Assume they are the default choices unless explicitly changed in docs/DECISIONS.md:
-
-| Service | Provider | Purpose |
-|---------|----------|---------|
-| Object Storage | **Cloudflare R2** | File uploads, exports, recordings |
-| Cache/Sessions/Locks | **Upstash Redis** | Sessions, rate limits, distributed locks, job state |
-| Email | **Brevo** | Transactional/notification emails |
-| Payments | **Stripe** | Payment processing, KYC verification |
-| VoIP Backend | **ConnexCS** | Call routing, CDR generation, real-time balances |
-| Currency Rates | **OpenExchangeRates** | FX rates, currency conversion |
-| AI | **OpenAI GPT-4o** | AI features via Replit integration |
-
-Hard rules:
-- Do NOT introduce alternative providers unless explicitly approved and recorded in DECISIONS + TODO
-- Integrations must be behind stable adapters (one clear code entry point per provider)
-- Secrets must come from environment variables; never hardcode credentials
-- If env var names are unknown, search the repo first, document in DECISIONS, then implement
-
----
-
-## 9) INFRA HARDENING — MUST IMPLEMENT (NO "PLANNED" HAND-WAVING)
-
-These are production requirements. If dev-only substitutes exist, they MUST be migrated via TODO tasks.
-
-### A) Sessions MUST NOT use in-memory stores in production
-- MemoryStore/memorystore is NOT production safe
-- Production session storage MUST be Upstash Redis (secure cookie settings, TTL)
-- If memory store exists, add TODO task to replace with Redis session store
-
-### B) Scheduled tasks must not duplicate when scaling
-- All cron/scheduled sync tasks MUST use a distributed lock in Upstash Redis
-- If lock exists, task must skip; if lock acquired, run and refresh lock
-- Apply to: ConnexCS sync, currency sync, balance sync
-
-### C) Config must be validated at startup
-- Create single config module validated with zod (fail-fast if env vars missing)
-- Never silently fall back to mock mode in production
-- If service is mocked, it must be explicit in DECISIONS and tracked in TODO
-
-### D) Logging and Audit
-- Structured logging for all key operations
-- Audit events for super-admin actions (DB-backed audit table)
-- Log job IDs for DataQueue tasks and key integration actions
-
----
-
-## 10) PRODUCTION QUALITY + TESTING GATE (PLAYWRIGHT + AXE REQUIRED)
-
-Mandatory tooling:
-- **Playwright** for end-to-end UI testing
-- **@axe-core/playwright** for accessibility scanning
-
-Rules:
-1. Every new/changed page/tab/modal/workflow MUST have Playwright tests
-2. Every new/changed page must pass Axe scan (no accessibility violations)
-3. Do NOT silence Axe failures to make tests pass
-4. Tests must use stable `data-testid` selectors
-
-Done includes:
-- Tests pass (Playwright + Axe)
-- No broken routes/dead buttons
-- Loading/empty/error states handled
-- Docs updated
-
----
-
-## 11) TIME & TIMESTAMPING — GOLD MUST RULE (MANDATORY)
-
-All time-sensitive objects (rates, CDRs, invoices, logs, alerts, imports) MUST be timestamped consistently.
-
-Rules:
-1. Store UTC as canonical backend time. Use ISO 8601 (e.g., 2026-01-11T10:15:30Z)
-2. All core tables must include `created_at`, `updated_at` (UTC)
-3. Audit/event tables must include `occurred_at` (UTC) and actor identifiers
-4. Rate/CDR records must include `effective_from` and optional `effective_to`
-5. Never trust client time for authoritative timestamps. Server assigns and validates
-6. Any feature is NOT done unless timestamps are stored and displayed correctly
-
----
-
-## 12) BIG DATA + JOB PROCESSING — GOLD MUST RULE (PERMANENT CRASH PREVENTION)
-
-We handle large datasets (CDR sync, prefix lists, rating imports) in a way that MUST NOT crash the app.
-
-Rules:
-1. Never load full datasets into RAM. All large reads/writes MUST be paginated/streamed
-2. Canonical storage is the database. Redis is NOT canonical (cache/queue only)
-3. **DataQueue is mandatory for heavy jobs**:
-   - Heavy tasks MUST run via DataQueue, not inside API requests
-   - Jobs MUST be chunked into small batches (500–2,000 records)
-   - API requests enqueue job and return job ID; UI shows progress
-4. CDR sync MUST be incremental with DB high-water mark (`last_synced_at` or `last_cdr_id`)
-5. Destinations/prefixes must be query-on-demand (search + limit + cursor). UI uses typeahead
-6. Backend guards: default limit + enforced max limit, pagination mandatory
-
-Mandatory items if missing:
-- Batched incremental CDR sync with high-water mark
-- Destination search endpoint + UI typeahead
-- Import pipeline: R2 upload → DataQueue batch insert → progress in Redis → finalize in DB
-
----
-
-## 13) EMERGENCY STOP COMMAND
-
-If user says "EMERGENCY STOP":
-1. STOP coding immediately
-2. Re-read docs/AGENT_BRIEF.md + docs/TODO.md + docs/UI_SPEC.md
-3. Reply with: (1) current Plan ID, (2) which TODO task, (3) DOC TARGET, (4) smallest next step
-4. Do NOT change any files until outputting those 4 items
-
----
 
 ## Current Focus
 Building the Class 4 Softswitch module that exactly matches Digitalk Carrier Cloud Manager UI/UX and functionality.
