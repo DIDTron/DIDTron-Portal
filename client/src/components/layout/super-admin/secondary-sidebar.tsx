@@ -142,6 +142,12 @@ export const sectionConfigs: Record<string, SectionConfig> = {
     title: "Class 4 Softswitch",
     items: [
       { id: "softswitch-carriers", label: "Carriers", route: "/admin/softswitch/carriers", icon: Building2 },
+      { id: "softswitch-customer-rating", label: "Customer Rating Plans", route: "/admin/softswitch/rating/customer-plans", icon: CreditCard },
+      { id: "softswitch-supplier-rating", label: "Supplier Rating Plans", route: "/admin/softswitch/rating/supplier-plans", icon: CreditCard },
+      { id: "softswitch-period-exceptions", label: "Period Exceptions", route: "/admin/softswitch/rating/period-exceptions", icon: Settings },
+      { id: "softswitch-cdr-rerating", label: "CDR Rerating", route: "/admin/softswitch/rating/cdr-rerating", icon: History },
+      { id: "softswitch-zone-name", label: "Rating Zone Name", route: "/admin/softswitch/rating/zone-name", icon: Tags },
+      { id: "softswitch-routing", label: "Routing", route: "/admin/softswitch/routing", icon: RouteIcon },
     ],
   },
   "experience-manager": {

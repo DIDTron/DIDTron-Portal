@@ -63,6 +63,7 @@ import AiVoiceAnalyticsPage from "./ai-voice-analytics";
 import AiVoiceSettingsPage from "./ai-voice-settings";
 import AiVoiceAssignmentsPage from "./ai-voice-assignments";
 import { SoftswitchCarriersPage } from "./softswitch";
+import { CustomerRatingPlansPage, SupplierRatingPlansPage, PeriodExceptionsPage, CDRReratingPage, RatingZoneNamePage } from "./softswitch-rating";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
 import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization, GlobalSettingsAZDatabase } from "./global-settings";
@@ -146,6 +147,12 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/ai-voice/settings": { section: "ai-voice", subItem: "ai-voice-settings" },
   "/admin/ai-voice/assignments": { section: "ai-voice", subItem: "ai-voice-assignments" },
   "/admin/softswitch/carriers": { section: "softswitch", subItem: "softswitch-carriers" },
+  "/admin/softswitch/rating/customer-plans": { section: "softswitch", subItem: "softswitch-customer-rating" },
+  "/admin/softswitch/rating/supplier-plans": { section: "softswitch", subItem: "softswitch-supplier-rating" },
+  "/admin/softswitch/rating/period-exceptions": { section: "softswitch", subItem: "softswitch-period-exceptions" },
+  "/admin/softswitch/rating/cdr-rerating": { section: "softswitch", subItem: "softswitch-cdr-rerating" },
+  "/admin/softswitch/rating/zone-name": { section: "softswitch", subItem: "softswitch-zone-name" },
+  "/admin/softswitch/routing": { section: "softswitch", subItem: "softswitch-routing" },
   "/admin/experience-manager": { section: "experience-manager", subItem: "em-dashboard" },
   "/admin/experience-manager/marketing": { section: "experience-manager", subItem: "em-marketing" },
   "/admin/experience-manager/portal-themes": { section: "experience-manager", subItem: "em-portal-themes" },
@@ -289,6 +296,12 @@ export default function AdminLayout() {
                 <Route path="/admin/ai-voice/settings" component={AiVoiceSettingsPage} />
                 <Route path="/admin/ai-voice/assignments" component={AiVoiceAssignmentsPage} />
                 <Route path="/admin/softswitch/carriers" component={SoftswitchCarriersPage} />
+                <Route path="/admin/softswitch/rating/customer-plans" component={CustomerRatingPlansPage} />
+                <Route path="/admin/softswitch/rating/supplier-plans" component={SupplierRatingPlansPage} />
+                <Route path="/admin/softswitch/rating/period-exceptions" component={PeriodExceptionsPage} />
+                <Route path="/admin/softswitch/rating/cdr-rerating" component={CDRReratingPage} />
+                <Route path="/admin/softswitch/rating/zone-name" component={RatingZoneNamePage} />
+                <Route path="/admin/softswitch/routing">{() => <PlaceholderPage title="Routing" />}</Route>
                 <Route path="/admin/experience-manager" component={ExperienceManagerPage} />
                 <Route path="/admin/experience-manager/marketing" component={EMMarketingPage} />
                 <Route path="/admin/experience-manager/portal-themes" component={EMPortalThemesPage} />

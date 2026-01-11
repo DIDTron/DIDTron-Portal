@@ -1,0 +1,855 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChevronDown, Search, Settings, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type WizardStage = 1 | 2 | 3 | 4 | 5;
+
+interface CustomerRatingPlan {
+  id: string;
+  name: string;
+  currency: string;
+  marginEnforcement: "enabled" | "disabled";
+  template: string | null;
+  uncommittedChanges: boolean;
+  lastUpdated: string;
+  assigned: boolean;
+}
+
+interface TimeClass {
+  id: string;
+  name: string;
+  days: string;
+  startPeriod: string;
+  endPeriod: string;
+}
+
+interface AddPlanFormData {
+  name: string;
+  currency: string;
+  timeZone: string;
+  carrierTimeZone: string;
+  defaultRates: string;
+  marginEnforcement: string;
+  minMargin: string;
+  effectiveDate: string;
+  effectiveTime: string;
+  initialInterval: string;
+  recurringInterval: string;
+  periodExceptionTemplate: string;
+  zonesSelect: string;
+  zonesFilter: string;
+  assignOrigin: string;
+  selectedTimeClasses: string[];
+  selectedZones: string[];
+}
+
+const defaultFormData: AddPlanFormData = {
+  name: "",
+  currency: "USD",
+  timeZone: "UTC",
+  carrierTimeZone: "",
+  defaultRates: "Define Later",
+  marginEnforcement: "Enabled",
+  minMargin: "0",
+  effectiveDate: new Date().toISOString().split("T")[0],
+  effectiveTime: "00:00",
+  initialInterval: "0",
+  recurringInterval: "1",
+  periodExceptionTemplate: "None",
+  zonesSelect: "None",
+  zonesFilter: "",
+  assignOrigin: "None",
+  selectedTimeClasses: [],
+  selectedZones: [],
+};
+
+const mockPlans: CustomerRatingPlan[] = [
+  { id: "1", name: "A-test-a", currency: "USD", marginEnforcement: "enabled", template: "A-test-a", uncommittedChanges: true, lastUpdated: "23/12/2025 13:57", assigned: false },
+  { id: "2", name: "ALLIP-CU-PRM", currency: "USD", marginEnforcement: "enabled", template: null, uncommittedChanges: false, lastUpdated: "18/12/2025 09:18", assigned: true },
+  { id: "3", name: "AYA-TEAT", currency: "USD", marginEnforcement: "enabled", template: null, uncommittedChanges: false, lastUpdated: "27/11/2025 13:13", assigned: false },
+  { id: "4", name: "Demo Customer VB", currency: "USD", marginEnforcement: "enabled", template: "Demo Customer VB", uncommittedChanges: true, lastUpdated: "21/10/2025 18:17", assigned: false },
+  { id: "5", name: "Gizat PRM CU Rate", currency: "USD", marginEnforcement: "enabled", template: "GIZAT-PRM-CU", uncommittedChanges: false, lastUpdated: "23/12/2025 19:49", assigned: true },
+];
+
+const mockTimeClasses: TimeClass[] = [
+  { id: "1", name: "AnyDay", days: "Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday", startPeriod: "00:00", endPeriod: "00:00" },
+  { id: "2", name: "Middle East Weekend", days: "Friday, Saturday", startPeriod: "00:00", endPeriod: "00:00" },
+  { id: "3", name: "Weekend", days: "Saturday, Sunday", startPeriod: "00:00", endPeriod: "00:00" },
+];
+
+const regionOptions = [
+  "Africa-Eastern Africa", "Africa-MENA", "Africa-Middle Africa", "Africa-Southern Africa",
+  "Africa-Western Africa", "Americas-Caribbean", "Americas-Central America", "Americas-Northern America",
+  "Americas-South America", "Antarctica-non", "Asia-CIS", "Asia-Eastern Asia"
+];
+
+function StageIndicator({ currentStage }: { currentStage: WizardStage }) {
+  const stages = [
+    { num: 1, label: "Plan Details" },
+    { num: 2, label: "Default Rates" },
+    { num: 3, label: "Time Classes" },
+    { num: 4, label: "Zones" },
+    { num: 5, label: "Analysis and Creation" },
+  ];
+
+  return (
+    <div className="flex items-center gap-2 text-sm border-b pb-4 mb-6">
+      {stages.map((stage, idx) => (
+        <div key={stage.num} className="flex items-center gap-2">
+          <span
+            className={cn(
+              "cursor-pointer",
+              currentStage === stage.num
+                ? "text-primary font-medium"
+                : currentStage > stage.num
+                  ? "text-muted-foreground"
+                  : "text-muted-foreground"
+            )}
+          >
+            {stage.num}. {stage.label}
+          </span>
+          {idx < stages.length - 1 && <span className="text-muted-foreground">&gt;</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Stage1PlanDetails({ form, setForm }: { form: AddPlanFormData; setForm: (f: AddPlanFormData) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-8">
+      <div className="space-y-6">
+        <div>
+          <h3 className="font-medium mb-4">Customer Rating Plan Details</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                data-testid="input-plan-name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder=""
+              />
+            </div>
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="currency">Currency</Label>
+              <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v })}>
+                <SelectTrigger data-testid="select-currency" className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                  <SelectItem value="AED">AED</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 className="font-medium mb-4">Time Zone</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-[100px_1fr_auto_1fr] items-center gap-4">
+              <Label htmlFor="timeZone">Time Zone</Label>
+              <Select value={form.timeZone} onValueChange={(v) => setForm({ ...form, timeZone: v })}>
+                <SelectTrigger data-testid="select-timezone" className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="UTC">UTC</SelectItem>
+                  <SelectItem value="EST">EST</SelectItem>
+                  <SelectItem value="PST">PST</SelectItem>
+                  <SelectItem value="GMT">GMT</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm">Default</Button>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="carrierTimeZone">Carrier Time Zone</Label>
+                <Input
+                  id="carrierTimeZone"
+                  data-testid="input-carrier-timezone"
+                  value={form.carrierTimeZone}
+                  onChange={(e) => setForm({ ...form, carrierTimeZone: e.target.value })}
+                  className="w-32"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Assigned Currency
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-2">
+            <p>Assigning currency to a Customer Rating Plan is mandatory.</p>
+            <p className="text-destructive font-medium">Important</p>
+            <p className="text-muted-foreground">
+              It is not possible to change currency once the Customer Rating Plan has been created. If the wrong currency is assigned you will need to delete the rating plan and then create a new plan with the correct currency assigned.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function Stage2DefaultRates({ form, setForm }: { form: AddPlanFormData; setForm: (f: AddPlanFormData) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-8">
+      <div className="space-y-6">
+        <div>
+          <h3 className="font-medium mb-4">Default Rates</h3>
+          <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+            <Label htmlFor="defaultRates">Default Rates</Label>
+            <Select value={form.defaultRates} onValueChange={(v) => setForm({ ...form, defaultRates: v })}>
+              <SelectTrigger data-testid="select-default-rates" className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Define Later">Define Later</SelectItem>
+                <SelectItem value="Floor Price">Floor Price</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div>
+          <h3 className="font-medium mb-4">Default Periods</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+              <Label htmlFor="initialInterval">Initial Interval</Label>
+              <Input
+                id="initialInterval"
+                data-testid="input-initial-interval"
+                value={form.initialInterval}
+                onChange={(e) => setForm({ ...form, initialInterval: e.target.value })}
+                className="w-24"
+              />
+            </div>
+            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+              <Label htmlFor="recurringInterval">Recurring Interval</Label>
+              <Input
+                id="recurringInterval"
+                data-testid="input-recurring-interval"
+                value={form.recurringInterval}
+                onChange={(e) => setForm({ ...form, recurringInterval: e.target.value })}
+                className="w-24"
+              />
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 className="font-medium mb-4">Period Exception</h3>
+          <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+            <Label htmlFor="template">Template</Label>
+            <Select value={form.periodExceptionTemplate} onValueChange={(v) => setForm({ ...form, periodExceptionTemplate: v })}>
+              <SelectTrigger data-testid="select-period-exception" className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="None">None</SelectItem>
+                <SelectItem value="Period-Exception-ALL">Period-Exception-ALL</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-6">
+        <div>
+          <h3 className="font-medium mb-4">Default Options</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label htmlFor="marginEnforcement">Margin Enforcement</Label>
+              <Select value={form.marginEnforcement} onValueChange={(v) => setForm({ ...form, marginEnforcement: v })}>
+                <SelectTrigger data-testid="select-margin-enforcement" className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Enabled">Enabled</SelectItem>
+                  <SelectItem value="Disabled">Disabled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-[140px_1fr_auto] items-center gap-4">
+              <Label htmlFor="minMargin">Min Margin</Label>
+              <Input
+                id="minMargin"
+                data-testid="input-min-margin"
+                value={form.minMargin}
+                onChange={(e) => setForm({ ...form, minMargin: e.target.value })}
+                className="w-24"
+              />
+              <span>%</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 className="font-medium mb-4">Rates effective from</h3>
+          <div className="flex items-center gap-4">
+            <Label htmlFor="effectiveDate">Effective Date</Label>
+            <Input
+              id="effectiveDate"
+              type="date"
+              data-testid="input-effective-date"
+              value={form.effectiveDate}
+              onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })}
+              className="w-40"
+            />
+            <Input
+              id="effectiveTime"
+              type="time"
+              data-testid="input-effective-time"
+              value={form.effectiveTime}
+              onChange={(e) => setForm({ ...form, effectiveTime: e.target.value })}
+              className="w-24"
+            />
+          </div>
+        </div>
+        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Period Exceptions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-3">
+            <p>Period Exceptions enable overriding periods to be defined for specific Prefixes.</p>
+            <p className="text-muted-foreground">
+              For example: Mexico destinations (Prefix 52) often charge per minute - or "60/60". Therefore an exception can be added which defines both the initial and recurring periods as 60 seconds for all codes starting with the prefix 52.
+            </p>
+            <p className="font-medium">Floor Price</p>
+            <p className="text-muted-foreground">
+              Floor price enables customers rates to be automatically generated based on Supplier rates and Supplier position in a routing plan.
+            </p>
+            <p className="text-muted-foreground">
+              Note: The calculation of floor price is based on a set of rules which must be created along with a routing plan before automatic rate generation can be performed.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function Stage3TimeClasses({ form, setForm }: { form: AddPlanFormData; setForm: (f: AddPlanFormData) => void }) {
+  const toggleTimeClass = (id: string) => {
+    if (form.selectedTimeClasses.includes(id)) {
+      setForm({ ...form, selectedTimeClasses: form.selectedTimeClasses.filter(tc => tc !== id) });
+    } else {
+      setForm({ ...form, selectedTimeClasses: [...form.selectedTimeClasses, id] });
+    }
+  };
+
+  return (
+    <div>
+      <h3 className="font-medium mb-4">Select Time Classes</h3>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-10">
+              <Checkbox
+                data-testid="checkbox-select-all-timeclasses"
+                checked={form.selectedTimeClasses.length === mockTimeClasses.length}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setForm({ ...form, selectedTimeClasses: mockTimeClasses.map(tc => tc.id) });
+                  } else {
+                    setForm({ ...form, selectedTimeClasses: [] });
+                  }
+                }}
+              />
+            </TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Days</TableHead>
+            <TableHead>Start Period</TableHead>
+            <TableHead>End Period</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {mockTimeClasses.map((tc) => (
+            <TableRow key={tc.id} data-testid={`row-timeclass-${tc.id}`}>
+              <TableCell>
+                <Checkbox
+                  data-testid={`checkbox-timeclass-${tc.id}`}
+                  checked={form.selectedTimeClasses.includes(tc.id)}
+                  onCheckedChange={() => toggleTimeClass(tc.id)}
+                />
+              </TableCell>
+              <TableCell className="font-medium">{tc.name}</TableCell>
+              <TableCell className="text-muted-foreground">{tc.days}</TableCell>
+              <TableCell>{tc.startPeriod}</TableCell>
+              <TableCell>{tc.endPeriod}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function Stage4Zones({ form, setForm }: { form: AddPlanFormData; setForm: (f: AddPlanFormData) => void }) {
+  const [showRegions, setShowRegions] = useState(false);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="font-medium mb-4">Select Routing Zones to include in Rating Plan</h3>
+        <div className="grid grid-cols-[80px_1fr] items-center gap-4">
+          <Label htmlFor="zonesSelect">Select</Label>
+          <Select value={form.zonesSelect} onValueChange={(v) => {
+            setForm({ ...form, zonesSelect: v });
+            setShowRegions(v === "Specify");
+          }}>
+            <SelectTrigger data-testid="select-zones" className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="None">None</SelectItem>
+              <SelectItem value="All">All</SelectItem>
+              <SelectItem value="Specify">Specify</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {form.zonesSelect === "Specify" && (
+          <div className="mt-4 space-y-4">
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="zonesFilter">Zones & Codes</Label>
+              <Input
+                id="zonesFilter"
+                data-testid="input-zones-filter"
+                value={form.zonesFilter}
+                onChange={(e) => {
+                  setForm({ ...form, zonesFilter: e.target.value });
+                  setShowRegions(e.target.value.length > 0);
+                }}
+                placeholder="Click to filter"
+                className="flex-1"
+              />
+            </div>
+            {showRegions && (
+              <div className="border rounded-md p-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Region</h4>
+                    <div className="text-sm text-muted-foreground">Region</div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Routing</h4>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <div>Zones</div>
+                      <div>Codes</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                  {regionOptions.map((region) => (
+                    <div key={region} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`region-${region}`}
+                        data-testid={`checkbox-region-${region.replace(/\s+/g, "-")}`}
+                        checked={form.selectedZones.includes(region)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setForm({ ...form, selectedZones: [...form.selectedZones, region] });
+                          } else {
+                            setForm({ ...form, selectedZones: form.selectedZones.filter(z => z !== region) });
+                          }
+                        }}
+                      />
+                      <label htmlFor={`region-${region}`} className="text-sm">{region}</label>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" size="sm" data-testid="button-select-all-zones" onClick={() => setForm({ ...form, selectedZones: regionOptions })}>
+                    Select all
+                  </Button>
+                  <Button variant="outline" size="sm" data-testid="button-add-filter">
+                    Add another filter
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div>
+        <h3 className="font-medium mb-4">Origin Sets to Include</h3>
+        <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+          <Label htmlFor="assignOrigin">Assign Origin</Label>
+          <Select value={form.assignOrigin} onValueChange={(v) => setForm({ ...form, assignOrigin: v })}>
+            <SelectTrigger data-testid="select-assign-origin" className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="None">None</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Origin Rates
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm space-y-3">
+          <p>Origin Rates can be added to a new Rating Plan on creation. Origin Rates can only be added for Zones and Codes identified above.</p>
+          <p className="font-medium">Origin Mapping</p>
+          <p className="text-muted-foreground">
+            Assigning an Origin Mapping Group to the Rating Plan enables Origin Sets to be automatically applied to Zones based on the defined mappings. Furthermore, Origin Mapping Groups define which Zones, that are mapped to one or more Origin Sets, will also need a Rest of World entry.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function Stage5Analysis({ form, isCreating, creationComplete }: { form: AddPlanFormData; isCreating: boolean; creationComplete: boolean }) {
+  const zonesCount = form.zonesSelect === "None" ? 0 : form.zonesSelect === "All" ? "All" : form.selectedZones.length;
+  const timeClassesCount = form.selectedTimeClasses.length;
+
+  return (
+    <div>
+      <h3 className="font-medium mb-4">Sheet creation status</h3>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm space-y-3">
+          <p>The following rate plan will be created: <strong>{form.name || "(unnamed)"}</strong></p>
+          <p>The new rate plan will consist of:</p>
+          <ul className="list-none space-y-1">
+            <li>{zonesCount} Zones</li>
+            <li>{timeClassesCount} Time class{timeClassesCount !== 1 ? "es" : ""}</li>
+          </ul>
+          {creationComplete && (
+            <>
+              <p className="font-medium mt-4">Creation Complete</p>
+              <p>A new rating plan was created successfully containing 0 rates:</p>
+              <p className="text-muted-foreground">No errors were reported</p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AddRatingPlanWizard({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { toast } = useToast();
+  const [stage, setStage] = useState<WizardStage>(1);
+  const [form, setForm] = useState<AddPlanFormData>(defaultFormData);
+  const [isCreating, setIsCreating] = useState(false);
+  const [creationComplete, setCreationComplete] = useState(false);
+
+  const handlePrevious = () => {
+    if (stage > 1) {
+      setStage((s) => (s - 1) as WizardStage);
+    }
+  };
+
+  const handleNext = () => {
+    if (stage < 5) {
+      setStage((s) => (s + 1) as WizardStage);
+    } else if (stage === 5 && !creationComplete) {
+      setIsCreating(true);
+      setTimeout(() => {
+        setIsCreating(false);
+        setCreationComplete(true);
+        toast({ title: "Rating plan created successfully" });
+      }, 1000);
+    }
+  };
+
+  const handleDone = () => {
+    setStage(1);
+    setForm(defaultFormData);
+    setCreationComplete(false);
+    onOpenChange(false);
+    queryClient.invalidateQueries({ queryKey: ["/api/softswitch/rating/customer-plans"] });
+  };
+
+  const handleCancel = () => {
+    setStage(1);
+    setForm(defaultFormData);
+    setCreationComplete(false);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add Rating Plan</DialogTitle>
+        </DialogHeader>
+        <StageIndicator currentStage={stage} />
+        <div className="min-h-[400px]">
+          {stage === 1 && <Stage1PlanDetails form={form} setForm={setForm} />}
+          {stage === 2 && <Stage2DefaultRates form={form} setForm={setForm} />}
+          {stage === 3 && <Stage3TimeClasses form={form} setForm={setForm} />}
+          {stage === 4 && <Stage4Zones form={form} setForm={setForm} />}
+          {stage === 5 && <Stage5Analysis form={form} isCreating={isCreating} creationComplete={creationComplete} />}
+        </div>
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          {creationComplete ? (
+            <Button data-testid="button-done" onClick={handleDone}>Done</Button>
+          ) : (
+            <>
+              <Button variant="outline" data-testid="button-previous" onClick={handlePrevious} disabled={stage === 1}>
+                Previous
+              </Button>
+              <Button data-testid="button-next" onClick={handleNext} disabled={isCreating}>
+                {isCreating ? "Creating..." : "Next"}
+              </Button>
+              <Button variant="outline" data-testid="button-cancel" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function CustomerRatingPlansPage() {
+  const [tab, setTab] = useState("rating-plans");
+  const [nameFilter, setNameFilter] = useState("");
+  const [uncommittedFilter, setUncommittedFilter] = useState("");
+  const [wizardOpen, setWizardOpen] = useState(false);
+
+  const filteredPlans = mockPlans.filter((plan) => {
+    if (nameFilter && !plan.name.toLowerCase().includes(nameFilter.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-2xl font-semibold">Customer Rating Plans</h1>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button data-testid="button-actions">
+              Actions <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem data-testid="menu-add-plan" onClick={() => setWizardOpen(true)}>
+              Add Plan
+            </DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-copy-plan">Copy Plan</DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-export-rates">Export Rates</DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-import-new-rating-plan">Import New Rating Plan</DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-import-rates-multiple">Import Rates into Multiple Plans</DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-replace-plan">Replace Plan</DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-usage-check">Usage Check</DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-restore-plans">Restore Plans</DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-delete-old-versions">Delete Old Versions</DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-delete-import-templates">Delete Import Templates</DropdownMenuItem>
+            <DropdownMenuItem data-testid="menu-delete-export-templates">Delete Export Templates</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="rating-plans" data-testid="tab-rating-plans">Rating Plans</TabsTrigger>
+          <TabsTrigger value="notifications" data-testid="tab-notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="floor-price-rules" data-testid="tab-floor-price-rules">Floor Price Rules</TabsTrigger>
+          <TabsTrigger value="multiplan-import" data-testid="tab-multiplan-import">Multiplan Import</TabsTrigger>
+          <TabsTrigger value="business-rules" data-testid="tab-business-rules">Business Rules</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="rating-plans" className="space-y-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="nameFilter" className="text-sm">Name</Label>
+              <Input
+                id="nameFilter"
+                data-testid="input-name-filter"
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                className="w-32"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="uncommittedFilter" className="text-sm">Uncommitted Changes</Label>
+              <Select value={uncommittedFilter} onValueChange={setUncommittedFilter}>
+                <SelectTrigger data-testid="select-uncommitted-filter" className="w-32">
+                  <SelectValue placeholder="" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="yes">Yes</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="ghost" size="icon" data-testid="button-search">
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>£/$</TableHead>
+                <TableHead>Margin Enforcement</TableHead>
+                <TableHead>Template</TableHead>
+                <TableHead>Uncommitted Changes</TableHead>
+                <TableHead>Last Updated</TableHead>
+                <TableHead>Assigned</TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredPlans.map((plan) => (
+                <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
+                  <TableCell>
+                    <a href="#" className="text-primary hover:underline" data-testid={`link-plan-${plan.id}`}>
+                      {plan.name}
+                    </a>
+                  </TableCell>
+                  <TableCell>{plan.currency}</TableCell>
+                  <TableCell>
+                    <Badge variant="default" className="bg-teal-600 hover:bg-teal-600">
+                      {plan.marginEnforcement === "enabled" ? "Enabled" : "Disabled"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{plan.template || "-"}</TableCell>
+                  <TableCell>
+                    {plan.uncommittedChanges ? (
+                      <Badge variant="default" className="bg-green-600 hover:bg-green-600">Yes</Badge>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                  <TableCell>{plan.lastUpdated}</TableCell>
+                  <TableCell>{plan.assigned ? "Yes" : "-"}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="sm" data-testid={`button-delete-${plan.id}`}>
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <div className="py-12 text-center text-muted-foreground">
+            Notifications configuration coming soon
+          </div>
+        </TabsContent>
+
+        <TabsContent value="floor-price-rules">
+          <div className="py-12 text-center text-muted-foreground">
+            Floor Price Rules configuration coming soon
+          </div>
+        </TabsContent>
+
+        <TabsContent value="multiplan-import">
+          <div className="py-12 text-center text-muted-foreground">
+            Multiplan Import configuration coming soon
+          </div>
+        </TabsContent>
+
+        <TabsContent value="business-rules">
+          <div className="py-12 text-center text-muted-foreground">
+            Business Rules configuration coming soon
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      <AddRatingPlanWizard open={wizardOpen} onOpenChange={setWizardOpen} />
+    </div>
+  );
+}
+
+export function SupplierRatingPlansPage() {
+  return (
+    <div className="py-12 text-center text-muted-foreground">
+      <h1 className="text-2xl font-semibold mb-4">Supplier Rating Plans</h1>
+      <p>Supplier Rating Plans coming soon</p>
+    </div>
+  );
+}
+
+export function PeriodExceptionsPage() {
+  return (
+    <div className="py-12 text-center text-muted-foreground">
+      <h1 className="text-2xl font-semibold mb-4">Period Exceptions Rating Zone Name</h1>
+      <p>Period Exceptions configuration coming soon</p>
+    </div>
+  );
+}
+
+export function CDRReratingPage() {
+  return (
+    <div className="py-12 text-center text-muted-foreground">
+      <h1 className="text-2xl font-semibold mb-4">CDR Rerating</h1>
+      <p>CDR Rerating configuration coming soon</p>
+    </div>
+  );
+}
+
+export function RatingZoneNamePage() {
+  return (
+    <div className="py-12 text-center text-muted-foreground">
+      <h1 className="text-2xl font-semibold mb-4">Rating Zone Name</h1>
+      <p>Rating Zone Name configuration coming soon</p>
+    </div>
+  );
+}
