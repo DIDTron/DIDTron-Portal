@@ -5508,8 +5508,9 @@ export async function registerRoutes(
 
   app.patch("/api/carriers/:id", async (req, res) => {
     try {
-      const oldCarrier = await storage.getCarrier(req.params.id);
-      const carrier = await storage.updateCarrier(req.params.id, req.body);
+      const oldCarrier = await storage.resolveCarrier(req.params.id);
+      if (!oldCarrier) return res.status(404).json({ error: "Carrier not found" });
+      const carrier = await storage.updateCarrier(oldCarrier.id, req.body);
       if (!carrier) return res.status(404).json({ error: "Carrier not found" });
       await storage.createAuditLog({
         userId: req.session?.userId,
@@ -5527,8 +5528,9 @@ export async function registerRoutes(
 
   app.delete("/api/carriers/:id", async (req, res) => {
     try {
-      const oldCarrier = await storage.getCarrier(req.params.id);
-      const deleted = await storage.deleteCarrier(req.params.id);
+      const oldCarrier = await storage.resolveCarrier(req.params.id);
+      if (!oldCarrier) return res.status(404).json({ error: "Carrier not found" });
+      const deleted = await storage.deleteCarrier(oldCarrier.id);
       if (!deleted) return res.status(404).json({ error: "Carrier not found" });
       await storage.createAuditLog({
         userId: req.session?.userId,
@@ -5545,7 +5547,7 @@ export async function registerRoutes(
 
   app.post("/api/carriers/:id/reset-spend", async (req, res) => {
     try {
-      const carrier = await storage.getCarrier(req.params.id);
+      const carrier = await storage.resolveCarrier(req.params.id);
       if (!carrier) return res.status(404).json({ error: "Carrier not found" });
       
       const { direction } = req.body as { direction: "customer" | "supplier" };
@@ -5557,7 +5559,7 @@ export async function registerRoutes(
         ? { customer24HrSpend: "0.00" }
         : { supplier24HrSpend: "0.00" };
       
-      const updated = await storage.updateCarrier(req.params.id, updateData);
+      const updated = await storage.updateCarrier(carrier.id, updateData);
       
       await storage.createAuditLog({
         userId: req.session?.userId,
@@ -8194,7 +8196,7 @@ export async function registerRoutes(
 
   app.post("/api/carriers/:id/sync", async (req, res) => {
     try {
-      const carrier = await storage.getCarrier(req.params.id);
+      const carrier = await storage.resolveCarrier(req.params.id);
       if (!carrier) {
         return res.status(404).json({ error: "Carrier not found" });
       }
