@@ -44,6 +44,42 @@
 
 ---
 
+- [x] **T11**: Add Digitalk Layout Patterns section to docs/UI_SPEC.md
+  - Files: `docs/UI_SPEC.md`
+  - Acceptance: Documented 3-level navigation, URL structure, tab behavior, card layouts, edit/save patterns
+
+---
+
+## Phase 2: ConnexCS Sync Implementation
+
+### Plan ID: PLAN-2026-01-11-02
+
+**Objective**: Build bi-directional sync between DIDTron (source of truth) and ConnexCS (telephony backend).
+
+### Pending Tasks
+
+- [ ] **T12**: Create ConnexCS sync service foundation
+  - Files: `server/services/connexcs-sync.ts`
+  - Acceptance: Base service with authentication, error handling, rate limiting
+
+- [ ] **T13**: Implement Carrier → ConnexCS Customer push sync
+  - Files: `server/services/connexcs-sync.ts`, `server/routes.ts`
+  - Acceptance: Create/Update ConnexCS Customer when DIDTron Carrier (type: customer) changes
+
+- [ ] **T14**: Implement Carrier → ConnexCS Carrier push sync
+  - Files: `server/services/connexcs-sync.ts`, `server/routes.ts`
+  - Acceptance: Create/Update ConnexCS Carrier when DIDTron Carrier (type: supplier) changes
+
+- [ ] **T15**: Implement Interconnect settings push sync
+  - Files: `server/services/connexcs-sync.ts`
+  - Acceptance: Push IP auth, codecs, capacity, tech prefix to ConnexCS
+
+- [ ] **T16**: Implement CDR pull sync
+  - Files: `server/services/connexcs-sync.ts`, new CDR tables
+  - Acceptance: Pull CDRs from ConnexCS, store in DIDTron, mark as processed
+
+---
+
 ## Next Actions
-1. Review current Interconnect Detail implementation against Digitalk screenshots
-2. Continue with T5 (Carrier Detail Page) when approved
+1. Complete T11 documentation (DONE)
+2. Await user guidance on ConnexCS sync implementation order

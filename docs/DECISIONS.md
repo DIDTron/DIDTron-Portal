@@ -144,3 +144,25 @@ try {
 4. Replaced design_guidelines.md with DEPRECATED stub (not deleted, to prevent accidental recreation)
 
 **Canonical source**: `DESIGN_SYSTEM.md` is the ONLY design documentation file going forward
+
+---
+
+## 2026-01-11: Digitalk Layout Patterns Documented in UI_SPEC.md
+
+**Decision**: Added comprehensive "Digitalk Layout Patterns" section to `docs/UI_SPEC.md`.
+
+**Reason**: Establish a reusable reference pattern for all hierarchical entity management modules. This ensures consistency when building future modules (Rating, Routing, DIDs, etc.) that follow the same Digitalk navigation flow.
+
+**What was documented**:
+1. Three-Level Navigation Flow (List → Detail → Sub-Detail)
+2. URL Structure Pattern with hierarchical paths
+3. Page Header Pattern (Back, Breadcrumb, Actions, Tabs)
+4. Tab Behavior by Entity Direction (Customer/Supplier/Bilateral)
+5. Card Layout Patterns (multi-column, full-width, embedded tables)
+6. Edit/Save Interaction Pattern
+7. Dropdown-Dependent Settings Pattern
+8. List-to-Detail Navigation Pattern
+9. Complete Flow Example from Carriers section
+10. Modules that must use this pattern
+
+**Location**: `docs/UI_SPEC.md` → Section "Digitalk Layout Patterns"
