@@ -194,6 +194,8 @@ export interface IStorage {
   // Carriers
   getCarriers(): Promise<Carrier[]>;
   getCarrier(id: string): Promise<Carrier | undefined>;
+  getCarrierByCode(code: string): Promise<Carrier | undefined>;
+  resolveCarrier(identifier: string): Promise<Carrier | undefined>;
   createCarrier(carrier: InsertCarrier): Promise<Carrier>;
   updateCarrier(id: string, data: Partial<InsertCarrier>): Promise<Carrier | undefined>;
   deleteCarrier(id: string): Promise<boolean>;
@@ -201,6 +203,8 @@ export interface IStorage {
   // Customer Rating Plans
   getCustomerRatingPlans(): Promise<CustomerRatingPlan[]>;
   getCustomerRatingPlan(id: string): Promise<CustomerRatingPlan | undefined>;
+  getCustomerRatingPlanByShortCode(shortCode: string): Promise<CustomerRatingPlan | undefined>;
+  resolveCustomerRatingPlan(identifier: string): Promise<CustomerRatingPlan | undefined>;
   createCustomerRatingPlan(plan: InsertCustomerRatingPlan): Promise<CustomerRatingPlan>;
   updateCustomerRatingPlan(id: string, data: Partial<InsertCustomerRatingPlan>): Promise<CustomerRatingPlan | undefined>;
   deleteCustomerRatingPlan(id: string): Promise<boolean>;
@@ -224,6 +228,8 @@ export interface IStorage {
   getAllCarrierInterconnects(): Promise<CarrierInterconnect[]>;
   getCarrierInterconnects(carrierId: string): Promise<CarrierInterconnect[]>;
   getCarrierInterconnect(id: string): Promise<CarrierInterconnect | undefined>;
+  getCarrierInterconnectByShortCode(shortCode: string): Promise<CarrierInterconnect | undefined>;
+  resolveCarrierInterconnect(identifier: string): Promise<CarrierInterconnect | undefined>;
   createCarrierInterconnect(interconnect: InsertCarrierInterconnect): Promise<CarrierInterconnect>;
   updateCarrierInterconnect(id: string, data: Partial<InsertCarrierInterconnect>): Promise<CarrierInterconnect | undefined>;
   deleteCarrierInterconnect(id: string): Promise<boolean>;
@@ -233,6 +239,8 @@ export interface IStorage {
   getCarrierServices(carrierId: string): Promise<CarrierService[]>;
   getInterconnectServices(interconnectId: string): Promise<CarrierService[]>;
   getCarrierService(id: string): Promise<CarrierService | undefined>;
+  getCarrierServiceByShortCode(shortCode: string): Promise<CarrierService | undefined>;
+  resolveCarrierService(identifier: string): Promise<CarrierService | undefined>;
   createCarrierService(service: InsertCarrierService): Promise<CarrierService>;
   updateCarrierService(id: string, data: Partial<InsertCarrierService>): Promise<CarrierService | undefined>;
   deleteCarrierService(id: string): Promise<boolean>;
@@ -1452,6 +1460,19 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getCarrierByCode(code: string): Promise<Carrier | undefined> {
+    const results = await db.select().from(carriersTable).where(eq(carriersTable.code, code));
+    return results[0];
+  }
+
+  async resolveCarrier(identifier: string): Promise<Carrier | undefined> {
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return this.getCarrier(identifier);
+    }
+    return this.getCarrierByCode(identifier);
+  }
+
   async createCarrier(carrier: InsertCarrier): Promise<Carrier> {
     const results = await db.insert(carriersTable).values(carrier).returning();
     return results[0];
@@ -1480,8 +1501,33 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getCustomerRatingPlanByShortCode(shortCode: string): Promise<CustomerRatingPlan | undefined> {
+    const results = await db.select().from(customerRatingPlansTable).where(eq(customerRatingPlansTable.shortCode, shortCode));
+    return results[0];
+  }
+
+  async resolveCustomerRatingPlan(identifier: string): Promise<CustomerRatingPlan | undefined> {
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return this.getCustomerRatingPlan(identifier);
+    }
+    return this.getCustomerRatingPlanByShortCode(identifier);
+  }
+
+  private async getNextRatingPlanShortCode(): Promise<string> {
+    const result = await db.select({ shortCode: customerRatingPlansTable.shortCode })
+      .from(customerRatingPlansTable)
+      .where(ilike(customerRatingPlansTable.shortCode, 'P%'));
+    const maxNum = result.reduce((max, r) => {
+      const match = r.shortCode?.match(/^P(\d+)$/);
+      return match ? Math.max(max, parseInt(match[1], 10)) : max;
+    }, 0);
+    return `P${maxNum + 1}`;
+  }
+
   async createCustomerRatingPlan(plan: InsertCustomerRatingPlan): Promise<CustomerRatingPlan> {
-    const results = await db.insert(customerRatingPlansTable).values(plan).returning();
+    const shortCode = await this.getNextRatingPlanShortCode();
+    const results = await db.insert(customerRatingPlansTable).values({ ...plan, shortCode }).returning();
     return results[0];
   }
 
@@ -1630,8 +1676,33 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getCarrierInterconnectByShortCode(shortCode: string): Promise<CarrierInterconnect | undefined> {
+    const results = await db.select().from(carrierInterconnectsTable).where(eq(carrierInterconnectsTable.shortCode, shortCode));
+    return results[0];
+  }
+
+  async resolveCarrierInterconnect(identifier: string): Promise<CarrierInterconnect | undefined> {
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return this.getCarrierInterconnect(identifier);
+    }
+    return this.getCarrierInterconnectByShortCode(identifier);
+  }
+
+  private async getNextInterconnectShortCode(): Promise<string> {
+    const result = await db.select({ shortCode: carrierInterconnectsTable.shortCode })
+      .from(carrierInterconnectsTable)
+      .where(ilike(carrierInterconnectsTable.shortCode, 'I%'));
+    const maxNum = result.reduce((max, r) => {
+      const match = r.shortCode?.match(/^I(\d+)$/);
+      return match ? Math.max(max, parseInt(match[1], 10)) : max;
+    }, 0);
+    return `I${maxNum + 1}`;
+  }
+
   async createCarrierInterconnect(interconnect: InsertCarrierInterconnect): Promise<CarrierInterconnect> {
-    const results = await db.insert(carrierInterconnectsTable).values(interconnect).returning();
+    const shortCode = await this.getNextInterconnectShortCode();
+    const results = await db.insert(carrierInterconnectsTable).values({ ...interconnect, shortCode }).returning();
     return results[0];
   }
 
@@ -1666,8 +1737,33 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getCarrierServiceByShortCode(shortCode: string): Promise<CarrierService | undefined> {
+    const results = await db.select().from(carrierServicesTable).where(eq(carrierServicesTable.shortCode, shortCode));
+    return results[0];
+  }
+
+  async resolveCarrierService(identifier: string): Promise<CarrierService | undefined> {
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return this.getCarrierService(identifier);
+    }
+    return this.getCarrierServiceByShortCode(identifier);
+  }
+
+  private async getNextServiceShortCode(): Promise<string> {
+    const result = await db.select({ shortCode: carrierServicesTable.shortCode })
+      .from(carrierServicesTable)
+      .where(ilike(carrierServicesTable.shortCode, 'S%'));
+    const maxNum = result.reduce((max, r) => {
+      const match = r.shortCode?.match(/^S(\d+)$/);
+      return match ? Math.max(max, parseInt(match[1], 10)) : max;
+    }, 0);
+    return `S${maxNum + 1}`;
+  }
+
   async createCarrierService(service: InsertCarrierService): Promise<CarrierService> {
-    const results = await db.insert(carrierServicesTable).values(service).returning();
+    const shortCode = await this.getNextServiceShortCode();
+    const results = await db.insert(carrierServicesTable).values({ ...service, shortCode }).returning();
     return results[0];
   }
 
