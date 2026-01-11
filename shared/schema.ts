@@ -354,6 +354,7 @@ export const carriers = pgTable("carriers", {
 
 export const carrierInterconnects = pgTable("carrier_interconnects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortCode: text("short_code").unique(),
   carrierId: varchar("carrier_id").references(() => carriers.id).notNull(),
   name: text("name").notNull(),
   direction: text("direction").default("both"),
@@ -378,6 +379,7 @@ export const carrierInterconnects = pgTable("carrier_interconnects", {
 // Carrier Services - THE KEY LINKAGE: Interconnect → Rating Plan + Routing Plan
 export const carrierServices = pgTable("carrier_services", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortCode: text("short_code").unique(),
   carrierId: varchar("carrier_id").references(() => carriers.id).notNull(),
   interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull(),
   name: text("name").notNull(),
@@ -551,6 +553,7 @@ export const interconnectMonitoringSettings = pgTable("interconnect_monitoring_s
 
 export const customerRatingPlans = pgTable("customer_rating_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortCode: text("short_code").unique(),
   name: text("name").notNull(),
   currency: text("currency").notNull().default("USD"),
   timeZone: text("time_zone").default("UTC"),
