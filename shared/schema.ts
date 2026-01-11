@@ -447,6 +447,94 @@ export const carrierAssignments = pgTable("carrier_assignments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ==================== INTERCONNECT SETTINGS (Digitalk Matching) ====================
+
+export const interconnectIpAddresses = pgTable("interconnect_ip_addresses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull(),
+  ipAddress: text("ip_address").notNull(),
+  isRange: boolean("is_range").default(false),
+  rangeEnd: text("range_end"),
+  addressType: text("address_type").default("transport"),
+  includeLastVia: boolean("include_last_via").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const interconnectValidationSettings = pgTable("interconnect_validation_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull().unique(),
+  techPrefix: text("tech_prefix"),
+  fromUri: text("from_uri"),
+  contactUri: text("contact_uri"),
+  trunkGroup: text("trunk_group"),
+  trunkContext: text("trunk_context"),
+  validateTrunkGroup: boolean("validate_trunk_group").default(false),
+  maxCps: integer("max_cps"),
+  maxCpsEnabled: boolean("max_cps_enabled").default(false),
+  testSystemControl: text("test_system_control").default("dont_allow"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const interconnectTranslationSettings = pgTable("interconnect_translation_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull().unique(),
+  originationPreference: text("origination_preference").default("pai_then_from"),
+  originationValidation: text("origination_validation").default("none"),
+  setPaiHeader: text("set_pai_header").default("none"),
+  globalTranslation: text("global_translation"),
+  originTranslation: text("origin_translation"),
+  destinationTranslation: text("destination_translation"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const interconnectCodecs = pgTable("interconnect_codecs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull(),
+  codecName: text("codec_name").notNull(),
+  codecId: text("codec_id").notNull(),
+  allowed: boolean("allowed").default(true),
+  relayOnly: boolean("relay_only").default(false),
+  vad: boolean("vad").default(false),
+  ptime: integer("ptime").default(20),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const interconnectMediaSettings = pgTable("interconnect_media_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull().unique(),
+  dtmfDetection: text("dtmf_detection").default("rfc2833"),
+  mediaRelay: text("media_relay").default("always"),
+  mediaNetwork: text("media_network").default("same_as_signalling"),
+  rtpTimeout: integer("rtp_timeout"),
+  rtpTimeoutEnabled: boolean("rtp_timeout_enabled").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const interconnectSignallingSettings = pgTable("interconnect_signalling_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull().unique(),
+  privacyMethod: text("privacy_method").default("rfc3325"),
+  sessionTimerEnabled: boolean("session_timer_enabled").default(true),
+  minSessionTimer: integer("min_session_timer").default(90),
+  defaultSessionTimer: integer("default_session_timer").default(1800),
+  rel100: text("rel_100").default("supported"),
+  maxCallDurationEnabled: boolean("max_call_duration_enabled").default(false),
+  maxCallDuration: integer("max_call_duration"),
+  callProgressDefault: boolean("call_progress_default").default(true),
+  tryingTimeout: integer("trying_timeout").default(180000),
+  ringingTimeout: integer("ringing_timeout").default(180000),
+  releaseCauseMapping: text("release_cause_mapping"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== POPS (Points of Presence) ====================
 
 export const pops = pgTable("pops", {
@@ -2676,6 +2764,13 @@ export const insertCustomerApiKeySchema = createInsertSchema(customerApiKeys).om
 export const insertRateCardSchema = createInsertSchema(rateCards).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertRateCardRateSchema = createInsertSchema(rateCardRates).omit({ id: true, createdAt: true });
 
+export const insertInterconnectIpAddressSchema = createInsertSchema(interconnectIpAddresses).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInterconnectValidationSettingsSchema = createInsertSchema(interconnectValidationSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInterconnectTranslationSettingsSchema = createInsertSchema(interconnectTranslationSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInterconnectCodecSchema = createInsertSchema(interconnectCodecs).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInterconnectMediaSettingsSchema = createInsertSchema(interconnectMediaSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInterconnectSignallingSettingsSchema = createInsertSchema(interconnectSignallingSettings).omit({ id: true, createdAt: true, updatedAt: true });
+
 // ==================== TYPES ====================
 
 export type InsertCustomerCategory = z.infer<typeof insertCustomerCategorySchema>;
@@ -2698,6 +2793,18 @@ export type InsertCarrierContact = z.infer<typeof insertCarrierContactSchema>;
 export type CarrierContact = typeof carrierContacts.$inferSelect;
 export type InsertCarrierCreditAlert = z.infer<typeof insertCarrierCreditAlertSchema>;
 export type CarrierCreditAlert = typeof carrierCreditAlerts.$inferSelect;
+export type InsertInterconnectIpAddress = z.infer<typeof insertInterconnectIpAddressSchema>;
+export type InterconnectIpAddress = typeof interconnectIpAddresses.$inferSelect;
+export type InsertInterconnectValidationSettings = z.infer<typeof insertInterconnectValidationSettingsSchema>;
+export type InterconnectValidationSettings = typeof interconnectValidationSettings.$inferSelect;
+export type InsertInterconnectTranslationSettings = z.infer<typeof insertInterconnectTranslationSettingsSchema>;
+export type InterconnectTranslationSettings = typeof interconnectTranslationSettings.$inferSelect;
+export type InsertInterconnectCodec = z.infer<typeof insertInterconnectCodecSchema>;
+export type InterconnectCodec = typeof interconnectCodecs.$inferSelect;
+export type InsertInterconnectMediaSettings = z.infer<typeof insertInterconnectMediaSettingsSchema>;
+export type InterconnectMediaSettings = typeof interconnectMediaSettings.$inferSelect;
+export type InsertInterconnectSignallingSettings = z.infer<typeof insertInterconnectSignallingSettingsSchema>;
+export type InterconnectSignallingSettings = typeof interconnectSignallingSettings.$inferSelect;
 export type InsertPop = z.infer<typeof insertPopSchema>;
 export type Pop = typeof pops.$inferSelect;
 export type InsertVoiceTier = z.infer<typeof insertVoiceTierSchema>;
