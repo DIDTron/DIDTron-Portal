@@ -145,6 +145,7 @@ export default function InterconnectDetailPage() {
     trunkGroup: "",
     trunkContext: "",
     validateTrunkGroup: false,
+    addressType: "transport",
     maxCps: "",
     maxCpsEnabled: false,
     testSystemControl: "dont_allow",
@@ -336,6 +337,7 @@ export default function InterconnectDetailPage() {
         trunkGroup: validationSettingsData.trunkGroup || "",
         trunkContext: validationSettingsData.trunkContext || "",
         validateTrunkGroup: validationSettingsData.validateTrunkGroup || false,
+        addressType: validationSettingsData.addressType || "transport",
         maxCps: validationSettingsData.maxCps?.toString() || "",
         maxCpsEnabled: validationSettingsData.maxCpsEnabled || false,
         testSystemControl: validationSettingsData.testSystemControl || "dont_allow",
@@ -469,6 +471,7 @@ export default function InterconnectDetailPage() {
         trunkGroup: data.trunkGroup || null,
         trunkContext: data.trunkContext || null,
         validateTrunkGroup: data.validateTrunkGroup,
+        addressType: data.addressType,
         maxCps: data.maxCps ? parseInt(data.maxCps) : null,
         maxCpsEnabled: data.maxCpsEnabled,
         testSystemControl: data.testSystemControl,
@@ -1060,46 +1063,6 @@ export default function InterconnectDetailPage() {
                         )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Max CPS</span>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={validationData.maxCpsEnabled}
-                          onCheckedChange={(checked) => setValidationData({ ...validationData, maxCpsEnabled: !!checked })}
-                          disabled={!isEditingValidation}
-                        />
-                        {isEditingValidation && validationData.maxCpsEnabled ? (
-                          <Input
-                            type="number"
-                            value={validationData.maxCps}
-                            onChange={(e) => setValidationData({ ...validationData, maxCps: e.target.value })}
-                            className="w-24"
-                            placeholder="CPS"
-                          />
-                        ) : (
-                          <span className="text-sm">{validationData.maxCpsEnabled ? validationData.maxCps : "Unlimited"}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Test System Control</span>
-                      {isEditingValidation ? (
-                        <Select
-                          value={validationData.testSystemControl}
-                          onValueChange={(v) => setValidationData({ ...validationData, testSystemControl: v })}
-                        >
-                          <SelectTrigger data-testid="select-test-control">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="dont_allow">Don't Allow</SelectItem>
-                            <SelectItem value="allow">Allow</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-sm">{validationData.testSystemControl === "dont_allow" ? "Don't Allow" : "Allow"}</span>
-                      )}
-                    </div>
                   </div>
 
                   {isEditingValidation && (
@@ -1165,6 +1128,99 @@ export default function InterconnectDetailPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Ingress Options Card - Full Width */}
+            <Card className="mt-6">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                <CardTitle className="text-base">Ingress Options</CardTitle>
+                {!isEditingValidation && (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditingValidation(true)} data-testid="button-edit-ingress-options">
+                    Edit
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-[180px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Address Type</span>
+                    {isEditingValidation ? (
+                      <Select
+                        value={validationData.addressType}
+                        onValueChange={(v) => setValidationData({ ...validationData, addressType: v })}
+                      >
+                        <SelectTrigger data-testid="select-address-type" className="w-56">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="via">Via Address</SelectItem>
+                          <SelectItem value="transport">Transport address</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm">{validationData.addressType === "via" ? "Via Address" : "Transport address"}</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-[180px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Max Calls Per Second</span>
+                    <div className="flex items-center gap-3">
+                      {isEditingValidation ? (
+                        <>
+                          <Input
+                            type="number"
+                            value={validationData.maxCps}
+                            onChange={(e) => setValidationData({ ...validationData, maxCps: e.target.value })}
+                            className="w-32"
+                            placeholder="CPS"
+                            disabled={!validationData.maxCpsEnabled}
+                          />
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={!validationData.maxCpsEnabled}
+                              onCheckedChange={(checked) => setValidationData({ ...validationData, maxCpsEnabled: !checked })}
+                              data-testid="checkbox-unlimited-cps"
+                            />
+                            <span className="text-sm">Unlimited</span>
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-sm">{validationData.maxCpsEnabled ? validationData.maxCps : "-"}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-[180px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Test System Control</span>
+                    {isEditingValidation ? (
+                      <Select
+                        value={validationData.testSystemControl}
+                        onValueChange={(v) => setValidationData({ ...validationData, testSystemControl: v })}
+                      >
+                        <SelectTrigger data-testid="select-test-system-control" className="w-56">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="allow">Allow</SelectItem>
+                          <SelectItem value="dont_allow">Don't Allow</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm">{validationData.testSystemControl === "dont_allow" ? "Don't Allow" : "Allow"}</span>
+                    )}
+                  </div>
+                </div>
+
+                {isEditingValidation && (
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      onClick={() => saveValidationMutation.mutate(validationData)} 
+                      disabled={saveValidationMutation.isPending}
+                    >
+                      {saveValidationMutation.isPending ? "Saving..." : "Save"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsEditingValidation(false)}>Cancel</Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Ingress Translation Tab */}

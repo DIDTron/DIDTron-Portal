@@ -103,3 +103,21 @@ try {
 - New table: `interconnect_monitoring_settings` with columns: monitoringEnabled, alarmSeverity, sendEmailOn, recipients
 - API endpoints: GET/PUT `/api/interconnects/:id/monitoring-settings`
 - Upsert pattern matching other interconnect settings tables
+
+---
+
+## 2026-01-11: Ingress Options Card Added to Ingress Validation Tab
+
+**Decision**: Add "Ingress Options" card to Ingress Validation tab, matching Digitalk's UI exactly.
+
+**UI Changes**:
+1. **Removed from Call Validation card**: Max CPS and Test System Control fields
+2. **New Ingress Options card** (full-width below 2-column grid) with:
+   - Address Type dropdown: Via Address, Transport address
+   - Max Calls Per Second: input with "Unlimited" checkbox
+   - Test System Control dropdown: Allow, Don't Allow
+
+**Schema Changes**:
+- Added `address_type` column to `interconnect_validation_settings` table (default: "transport")
+
+**Persistence**: Both cards share the same validation settings record - single Edit/Save button saves all fields together

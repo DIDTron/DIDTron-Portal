@@ -471,6 +471,7 @@ export const interconnectValidationSettings = pgTable("interconnect_validation_s
   trunkGroup: text("trunk_group"),
   trunkContext: text("trunk_context"),
   validateTrunkGroup: boolean("validate_trunk_group").default(false),
+  addressType: text("address_type").default("transport"),
   maxCps: integer("max_cps"),
   maxCpsEnabled: boolean("max_cps_enabled").default(false),
   testSystemControl: text("test_system_control").default("dont_allow"),
