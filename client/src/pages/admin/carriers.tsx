@@ -520,7 +520,7 @@ export default function CarriersPage() {
                       data-testid={`row-carrier-${carrier.id}`}
                     >
                       <TableCell className="font-medium">
-                        <Link href={`/admin/carriers/${carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                        <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
                           {carrier.name}
                         </Link>
                       </TableCell>

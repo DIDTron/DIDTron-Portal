@@ -546,7 +546,7 @@ export function SoftswitchCarriersPage() {
             {paginatedCarriers.map((carrier) => (
               <TableRow key={carrier.id} data-testid={`row-carrier-${carrier.id}`}>
                 <TableCell className="font-medium">
-                  <Link href={`/admin/carriers/${carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                  <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
                     {carrier.name}
                   </Link>
                 </TableCell>
@@ -640,12 +640,12 @@ export function SoftswitchCarriersPage() {
               return (
                 <TableRow key={interconnect.id} data-testid={`row-interconnect-${interconnect.id}`}>
                   <TableCell className="font-medium">
-                    <Link href={`/admin/interconnects/${interconnect.id}`} className="text-primary hover:underline" data-testid={`link-interconnect-${interconnect.id}`}>
+                    <Link href={`/admin/interconnects/${interconnect.shortCode || interconnect.id}`} className="text-primary hover:underline" data-testid={`link-interconnect-${interconnect.id}`}>
                       {interconnect.name}
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/admin/carriers/${interconnect.carrierId}`} className="text-primary hover:underline">
+                    <Link href={`/admin/carriers/${carrier?.code || interconnect.carrierId}`} className="text-primary hover:underline">
                       {carrier?.name || interconnect.carrierName || "-"}
                     </Link>
                   </TableCell>
@@ -722,12 +722,12 @@ export function SoftswitchCarriersPage() {
                 <TableRow key={service.id} data-testid={`row-service-${service.id}`}>
                   <TableCell className="font-medium">{service.name}</TableCell>
                   <TableCell>
-                    <Link href={`/admin/carriers/${service.carrierId}`} className="text-primary hover:underline">
+                    <Link href={`/admin/carriers/${carrier?.code || service.carrierId}`} className="text-primary hover:underline">
                       {carrier?.name || service.carrierName || "-"}
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/admin/interconnects/${service.interconnectId}`} className="text-primary hover:underline">
+                    <Link href={`/admin/interconnects/${interconnect?.shortCode || service.interconnectId}`} className="text-primary hover:underline">
                       {interconnect?.name || service.interconnectName || "-"}
                     </Link>
                   </TableCell>

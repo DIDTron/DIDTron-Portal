@@ -835,7 +835,7 @@ export function CustomerRatingPlansPage() {
                       <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
                         <TableCell>
                           <a 
-                            href={`/admin/softswitch/rating/customer-plans/${plan.id}`}
+                            href={`/admin/softswitch/rating/customer-plans/${plan.shortCode || plan.id}`}
                             className="text-primary hover:underline" 
                             data-testid={`link-plan-${plan.id}`}
                           >
