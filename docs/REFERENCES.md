@@ -42,10 +42,22 @@
 ## External Services
 
 ### ConnexCS Integration
+| Resource | URL | Usage |
+|----------|-----|-------|
+| ConnexCS Documentation | [https://docs.connexcs.com/](https://docs.connexcs.com/) | API reference, configuration guides, feature documentation |
+| connexcs-tools NPM Package | [https://www.npmjs.com/package/connexcs-tools](https://www.npmjs.com/package/connexcs-tools) | Node.js SDK for ConnexCS API integration |
+
+**Capabilities:**
 - Class 4 Softswitch backend
 - CDR generation and routing
 - Real-time balance management
-- Sync: Push customers/rates, Pull CDRs
+- Customer/Carrier account management
+- Rate card synchronization
+- DID provisioning
+
+**Sync Patterns:**
+- Push: Customers, balances, rate cards, DID rules
+- Pull: CDRs, real-time statistics
 
 ### Stripe Integration
 - Payment processing
