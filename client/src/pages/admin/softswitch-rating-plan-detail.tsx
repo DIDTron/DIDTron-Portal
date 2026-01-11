@@ -717,6 +717,14 @@ export default function RatingPlanDetailPage() {
                         <Input 
                           value={addRateForm.zone}
                           onChange={(e) => setAddRateForm(prev => ({ ...prev, zone: e.target.value }))}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              setShowZoneSuggestions(false);
+                              handleLookupCodes();
+                            }
+                          }}
+                          onBlur={() => setTimeout(() => setShowZoneSuggestions(false), 200)}
                           placeholder=""
                           data-testid="input-add-rate-zone"
                         />
@@ -744,8 +752,14 @@ export default function RatingPlanDetailPage() {
                         <textarea 
                           value={codesText}
                           onChange={(e) => handleCodesChange(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleLookupZone();
+                            }
+                          }}
                           placeholder=""
-                          className="w-full h-20 px-3 py-2 text-sm border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full h-20 px-3 py-2 text-sm border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                           data-testid="input-add-rate-codes"
                         />
                       </div>
