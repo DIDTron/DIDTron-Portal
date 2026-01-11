@@ -206,6 +206,42 @@ export default function InterconnectDetailPage() {
     enabled: !!interconnectId,
   });
 
+  // Fetch IP addresses from backend
+  const { data: ipAddressesData } = useQuery<Array<{ id: string; interconnectId: string; ipAddress: string; isRange: boolean; rangeEnd?: string; addressType: string; includeLastVia: boolean; isActive: boolean }>>({
+    queryKey: ["/api/interconnects", interconnectId, "ip-addresses"],
+    enabled: !!interconnectId,
+  });
+
+  // Fetch validation settings from backend
+  const { data: validationSettingsData } = useQuery<Record<string, any>>({
+    queryKey: ["/api/interconnects", interconnectId, "validation-settings"],
+    enabled: !!interconnectId,
+  });
+
+  // Fetch translation settings from backend
+  const { data: translationSettingsData } = useQuery<Record<string, any>>({
+    queryKey: ["/api/interconnects", interconnectId, "translation-settings"],
+    enabled: !!interconnectId,
+  });
+
+  // Fetch media settings from backend
+  const { data: mediaSettingsData } = useQuery<Record<string, any>>({
+    queryKey: ["/api/interconnects", interconnectId, "media-settings"],
+    enabled: !!interconnectId,
+  });
+
+  // Fetch signalling settings from backend
+  const { data: signallingSettingsData } = useQuery<Record<string, any>>({
+    queryKey: ["/api/interconnects", interconnectId, "signalling-settings"],
+    enabled: !!interconnectId,
+  });
+
+  // Fetch codecs from backend
+  const { data: codecsData } = useQuery<Array<{ id: string; interconnectId: string; codecName: string; allowed: boolean; relayOnly: boolean; vad: boolean; ptime: number; sortOrder: number }>>({
+    queryKey: ["/api/interconnects", interconnectId, "codecs"],
+    enabled: !!interconnectId,
+  });
+
   interface ConnexCSServer {
     id: number;
     type: string;
@@ -259,6 +295,250 @@ export default function InterconnectDetailPage() {
       setActiveTab(firstTab);
     }
   }, [interconnect]);
+
+  // Sync IP addresses from backend
+  useEffect(() => {
+    if (ipAddressesData) {
+      setIpAddresses(ipAddressesData.map(addr => ({
+        id: addr.id,
+        ip: addr.ipAddress,
+        isRange: addr.isRange || false,
+        rangeEnd: addr.rangeEnd,
+        addressType: (addr.addressType as "transport" | "via") || "transport",
+        includeLastVia: addr.includeLastVia || false,
+        active: addr.isActive ?? true,
+      })));
+    }
+  }, [ipAddressesData]);
+
+  // Sync validation settings from backend
+  useEffect(() => {
+    if (validationSettingsData && Object.keys(validationSettingsData).length > 0) {
+      setValidationData({
+        techPrefix: validationSettingsData.techPrefix || "",
+        fromUri: validationSettingsData.fromUri || "",
+        contactUri: validationSettingsData.contactUri || "",
+        trunkGroup: validationSettingsData.trunkGroup || "",
+        trunkContext: validationSettingsData.trunkContext || "",
+        validateTrunkGroup: validationSettingsData.validateTrunkGroup || false,
+        maxCps: validationSettingsData.maxCps?.toString() || "",
+        maxCpsEnabled: validationSettingsData.maxCpsEnabled || false,
+        testSystemControl: validationSettingsData.testSystemControl || "dont_allow",
+      });
+    }
+  }, [validationSettingsData]);
+
+  // Sync translation settings from backend
+  useEffect(() => {
+    if (translationSettingsData && Object.keys(translationSettingsData).length > 0) {
+      setTranslationData({
+        originationPreference: translationSettingsData.originationPreference || "pai_then_from",
+        originationValidation: translationSettingsData.originationValidation || "none",
+        setPaiHeader: translationSettingsData.setPaiHeader || "none",
+        globalTranslation: translationSettingsData.globalTranslation || "",
+        originTranslation: translationSettingsData.originTranslation || "",
+        destinationTranslation: translationSettingsData.destinationTranslation || "",
+      });
+    }
+  }, [translationSettingsData]);
+
+  // Sync media settings from backend
+  useEffect(() => {
+    if (mediaSettingsData && Object.keys(mediaSettingsData).length > 0) {
+      setMediaData({
+        dtmfDetection: mediaSettingsData.dtmfDetection || "rfc2833",
+        mediaRelay: mediaSettingsData.mediaRelay || "always",
+        mediaNetwork: mediaSettingsData.mediaNetwork || "same_as_signalling",
+        rtpTimeout: mediaSettingsData.rtpTimeout?.toString() || "",
+        rtpTimeoutEnabled: mediaSettingsData.rtpTimeoutEnabled || false,
+      });
+    }
+  }, [mediaSettingsData]);
+
+  // Sync signalling settings from backend
+  useEffect(() => {
+    if (signallingSettingsData && Object.keys(signallingSettingsData).length > 0) {
+      setSignallingData({
+        privacyMethod: signallingSettingsData.privacyMethod || "rfc3325",
+        sessionTimerEnabled: signallingSettingsData.sessionTimerEnabled ?? true,
+        minSessionTimer: signallingSettingsData.minSessionTimer || 90,
+        defaultSessionTimer: signallingSettingsData.defaultSessionTimer || 1800,
+        rel100: signallingSettingsData.rel100 || "supported",
+        maxCallDurationEnabled: signallingSettingsData.maxCallDurationEnabled || false,
+        maxCallDuration: signallingSettingsData.maxCallDuration || 0,
+        callProgressDefault: signallingSettingsData.callProgressDefault ?? true,
+        tryingTimeout: signallingSettingsData.tryingTimeout || 180000,
+        ringingTimeout: signallingSettingsData.ringingTimeout || 180000,
+        releaseCauseMapping: signallingSettingsData.releaseCauseMapping || "",
+      });
+    }
+  }, [signallingSettingsData]);
+
+  // Sync codecs from backend (merge with defaults)
+  useEffect(() => {
+    if (codecsData && codecsData.length > 0) {
+      const backendCodecMap = new Map(codecsData.map(c => [c.codecName, c]));
+      setCodecs(defaultCodecs.map(dc => {
+        const backendCodec = backendCodecMap.get(dc.id);
+        if (backendCodec) {
+          return {
+            ...dc,
+            allowed: backendCodec.allowed,
+            relayOnly: backendCodec.relayOnly,
+            vad: backendCodec.vad,
+            ptime: backendCodec.ptime,
+          };
+        }
+        return dc;
+      }));
+    }
+  }, [codecsData]);
+
+  // Mutation to add IP address
+  const addIpAddressMutation = useMutation({
+    mutationFn: async (data: typeof newIP) => {
+      const res = await apiRequest("POST", `/api/interconnects/${interconnectId}/ip-addresses`, {
+        ipAddress: data.ip,
+        isRange: data.isRange,
+        rangeEnd: data.rangeEnd || null,
+        addressType: data.addressType,
+        includeLastVia: data.includeLastVia,
+        isActive: true,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "ip-addresses"] });
+      toast({ title: "IP address added successfully" });
+      setShowAddIPDialog(false);
+      setNewIP({ ip: "", isRange: false, rangeEnd: "", addressType: "transport", includeLastVia: false });
+    },
+    onError: () => {
+      toast({ title: "Failed to add IP address", variant: "destructive" });
+    },
+  });
+
+  // Mutation to delete IP address
+  const deleteIpAddressMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/ip-addresses/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "ip-addresses"] });
+      toast({ title: "IP address removed" });
+    },
+    onError: () => {
+      toast({ title: "Failed to remove IP address", variant: "destructive" });
+    },
+  });
+
+  // Mutation to save validation settings
+  const saveValidationMutation = useMutation({
+    mutationFn: async (data: typeof validationData) => {
+      const res = await apiRequest("PUT", `/api/interconnects/${interconnectId}/validation-settings`, {
+        techPrefix: data.techPrefix || null,
+        fromUri: data.fromUri || null,
+        contactUri: data.contactUri || null,
+        trunkGroup: data.trunkGroup || null,
+        trunkContext: data.trunkContext || null,
+        validateTrunkGroup: data.validateTrunkGroup,
+        maxCps: data.maxCps ? parseInt(data.maxCps) : null,
+        maxCpsEnabled: data.maxCpsEnabled,
+        testSystemControl: data.testSystemControl,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "validation-settings"] });
+      toast({ title: "Validation settings saved" });
+      setIsEditingValidation(false);
+    },
+    onError: () => {
+      toast({ title: "Failed to save validation settings", variant: "destructive" });
+    },
+  });
+
+  // Mutation to save translation settings
+  const saveTranslationMutation = useMutation({
+    mutationFn: async (data: typeof translationData) => {
+      const res = await apiRequest("PUT", `/api/interconnects/${interconnectId}/translation-settings`, {
+        originationPreference: data.originationPreference,
+        originationValidation: data.originationValidation,
+        setPaiHeader: data.setPaiHeader,
+        globalTranslation: data.globalTranslation || null,
+        originTranslation: data.originTranslation || null,
+        destinationTranslation: data.destinationTranslation || null,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "translation-settings"] });
+      toast({ title: "Translation settings saved" });
+      setIsEditingTranslation(false);
+    },
+    onError: () => {
+      toast({ title: "Failed to save translation settings", variant: "destructive" });
+    },
+  });
+
+  // Mutation to save media settings (success/error handled in combined save handler)
+  const saveMediaMutation = useMutation({
+    mutationFn: async (data: typeof mediaData) => {
+      const res = await apiRequest("PUT", `/api/interconnects/${interconnectId}/media-settings`, {
+        dtmfDetection: data.dtmfDetection,
+        mediaRelay: data.mediaRelay,
+        mediaNetwork: data.mediaNetwork,
+        rtpTimeout: data.rtpTimeout ? parseInt(data.rtpTimeout) : null,
+        rtpTimeoutEnabled: data.rtpTimeoutEnabled,
+      });
+      return res.json();
+    },
+  });
+
+  // Mutation to save signalling settings
+  const saveSignallingMutation = useMutation({
+    mutationFn: async (data: typeof signallingData) => {
+      const res = await apiRequest("PUT", `/api/interconnects/${interconnectId}/signalling-settings`, {
+        privacyMethod: data.privacyMethod,
+        sessionTimerEnabled: data.sessionTimerEnabled,
+        minSessionTimer: data.minSessionTimer,
+        defaultSessionTimer: data.defaultSessionTimer,
+        rel100: data.rel100,
+        maxCallDurationEnabled: data.maxCallDurationEnabled,
+        maxCallDuration: data.maxCallDuration,
+        callProgressDefault: data.callProgressDefault,
+        tryingTimeout: data.tryingTimeout,
+        ringingTimeout: data.ringingTimeout,
+        releaseCauseMapping: data.releaseCauseMapping || null,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "signalling-settings"] });
+      toast({ title: "Signalling settings saved" });
+      setIsEditingSignalling(false);
+    },
+    onError: () => {
+      toast({ title: "Failed to save signalling settings", variant: "destructive" });
+    },
+  });
+
+  // Mutation to save codecs (success/error handled in combined save handler)
+  const saveCodecsMutation = useMutation({
+    mutationFn: async (codecsToSave: Codec[]) => {
+      const res = await apiRequest("PUT", `/api/interconnects/${interconnectId}/codecs`, {
+        codecs: codecsToSave.map((c, index) => ({
+          codecName: c.id,
+          allowed: c.allowed,
+          relayOnly: c.relayOnly,
+          vad: c.vad,
+          ptime: c.ptime,
+          sortOrder: index,
+        })),
+      });
+      return res.json();
+    },
+  });
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -314,24 +594,11 @@ export default function InterconnectDetailPage() {
   };
 
   const handleAddIP = () => {
-    const newAddr: IPAddress = {
-      id: crypto.randomUUID(),
-      ip: newIP.ip,
-      isRange: newIP.isRange,
-      rangeEnd: newIP.rangeEnd,
-      addressType: newIP.addressType,
-      includeLastVia: newIP.includeLastVia,
-      active: true,
-    };
-    setIpAddresses([...ipAddresses, newAddr]);
-    setShowAddIPDialog(false);
-    setNewIP({ ip: "", isRange: false, rangeEnd: "", addressType: "transport", includeLastVia: false });
-    toast({ title: "IP address added successfully" });
+    addIpAddressMutation.mutate(newIP);
   };
 
   const handleDeleteIP = (id: string) => {
-    setIpAddresses(ipAddresses.filter(ip => ip.id !== id));
-    toast({ title: "IP address removed" });
+    deleteIpAddressMutation.mutate(id);
   };
 
   if (isLoading) {
@@ -789,8 +1056,11 @@ export default function InterconnectDetailPage() {
 
                   {isEditingValidation && (
                     <div className="flex gap-2 pt-4">
-                      <Button onClick={() => { setIsEditingValidation(false); toast({ title: "Validation settings saved" }); }}>
-                        Save
+                      <Button 
+                        onClick={() => saveValidationMutation.mutate(validationData)} 
+                        disabled={saveValidationMutation.isPending}
+                      >
+                        {saveValidationMutation.isPending ? "Saving..." : "Save"}
                       </Button>
                       <Button variant="outline" onClick={() => setIsEditingValidation(false)}>Cancel</Button>
                     </div>
@@ -987,8 +1257,11 @@ export default function InterconnectDetailPage() {
 
                 {isEditingTranslation && (
                   <div className="flex gap-2 pt-4 border-t">
-                    <Button onClick={() => { setIsEditingTranslation(false); toast({ title: "Translation settings saved" }); }}>
-                      Save
+                    <Button 
+                      onClick={() => saveTranslationMutation.mutate(translationData)} 
+                      disabled={saveTranslationMutation.isPending}
+                    >
+                      {saveTranslationMutation.isPending ? "Saving..." : "Save"}
                     </Button>
                     <Button variant="outline" onClick={() => setIsEditingTranslation(false)}>Cancel</Button>
                   </div>
@@ -1085,8 +1358,25 @@ export default function InterconnectDetailPage() {
 
                   {isEditingMedia && (
                     <div className="flex gap-2 pt-4">
-                      <Button onClick={() => { setIsEditingMedia(false); toast({ title: "Codec settings saved" }); }}>
-                        Save
+                      <Button 
+                        onClick={async () => {
+                          try {
+                            await Promise.all([
+                              saveCodecsMutation.mutateAsync(codecs),
+                              saveMediaMutation.mutateAsync(mediaData),
+                            ]);
+                            // Only show success and exit edit mode if both succeed
+                            queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "codecs"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "media-settings"] });
+                            toast({ title: "Media settings saved" });
+                            setIsEditingMedia(false);
+                          } catch {
+                            toast({ title: "Failed to save media settings", variant: "destructive" });
+                          }
+                        }} 
+                        disabled={saveCodecsMutation.isPending || saveMediaMutation.isPending}
+                      >
+                        {(saveCodecsMutation.isPending || saveMediaMutation.isPending) ? "Saving..." : "Save"}
                       </Button>
                       <Button variant="outline" onClick={() => setIsEditingMedia(false)}>Cancel</Button>
                     </div>
@@ -1386,8 +1676,11 @@ export default function InterconnectDetailPage() {
 
                 {isEditingSignalling && (
                   <div className="flex gap-2 pt-4 border-t">
-                    <Button onClick={() => { setIsEditingSignalling(false); toast({ title: "Signalling settings saved" }); }}>
-                      Save
+                    <Button 
+                      onClick={() => saveSignallingMutation.mutate(signallingData)} 
+                      disabled={saveSignallingMutation.isPending}
+                    >
+                      {saveSignallingMutation.isPending ? "Saving..." : "Save"}
                     </Button>
                     <Button variant="outline" onClick={() => setIsEditingSignalling(false)}>Cancel</Button>
                   </div>
@@ -1569,8 +1862,12 @@ export default function InterconnectDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddIPDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddIP} disabled={!newIP.ip} data-testid="button-save-ip">
-              Save
+            <Button 
+              onClick={handleAddIP} 
+              disabled={!newIP.ip || addIpAddressMutation.isPending} 
+              data-testid="button-save-ip"
+            >
+              {addIpAddressMutation.isPending ? "Adding..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
