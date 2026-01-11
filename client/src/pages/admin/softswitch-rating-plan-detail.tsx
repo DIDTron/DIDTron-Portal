@@ -42,8 +42,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DataTableFooter } from "@/components/ui/data-table-footer";
-import { ChevronDown, Search, Settings2, Loader2, Calendar } from "lucide-react";
+import { ChevronDown, Search, Settings2, Loader2, CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import type { CustomerRatingPlan, CustomerRatingPlanRate } from "@shared/schema";
 
 interface AddRateFormData {
@@ -815,13 +817,38 @@ export default function RatingPlanDetailPage() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
                       <Label className="w-24 text-right text-sm">Effective Date</Label>
-                      <Input 
-                        type="date"
-                        value={addRateForm.effectiveDate}
-                        onChange={(e) => setAddRateForm(prev => ({ ...prev, effectiveDate: e.target.value }))}
-                        className="w-36"
-                        data-testid="input-add-rate-effective-date"
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-36 justify-start text-left font-normal",
+                              !addRateForm.effectiveDate && "text-muted-foreground"
+                            )}
+                            data-testid="input-add-rate-effective-date"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {addRateForm.effectiveDate 
+                              ? format(new Date(addRateForm.effectiveDate), "MM/dd/yyyy")
+                              : "mm/dd/yyyy"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={addRateForm.effectiveDate ? new Date(addRateForm.effectiveDate) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                setAddRateForm(prev => ({ 
+                                  ...prev, 
+                                  effectiveDate: format(date, "yyyy-MM-dd") 
+                                }));
+                              }
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <Input 
                         type="time"
                         value={addRateForm.effectiveTime}
@@ -837,7 +864,7 @@ export default function RatingPlanDetailPage() {
                         onCheckedChange={(checked) => {
                           if (checked) {
                             const now = new Date();
-                            const dateStr = now.toISOString().split("T")[0];
+                            const dateStr = format(now, "yyyy-MM-dd");
                             const timeStr = now.toTimeString().slice(0, 5);
                             setAddRateForm(prev => ({ 
                               ...prev, 
@@ -855,13 +882,38 @@ export default function RatingPlanDetailPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <Label className="w-24 text-right text-sm">End Date</Label>
-                      <Input 
-                        type="date"
-                        value={addRateForm.endDate}
-                        onChange={(e) => setAddRateForm(prev => ({ ...prev, endDate: e.target.value }))}
-                        className="w-36"
-                        data-testid="input-add-rate-end-date"
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-36 justify-start text-left font-normal",
+                              !addRateForm.endDate && "text-muted-foreground"
+                            )}
+                            data-testid="input-add-rate-end-date"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {addRateForm.endDate 
+                              ? format(new Date(addRateForm.endDate), "MM/dd/yyyy")
+                              : "mm/dd/yyyy"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={addRateForm.endDate ? new Date(addRateForm.endDate) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                setAddRateForm(prev => ({ 
+                                  ...prev, 
+                                  endDate: format(date, "yyyy-MM-dd") 
+                                }));
+                              }
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <Input 
                         type="time"
                         value={addRateForm.endTime}
