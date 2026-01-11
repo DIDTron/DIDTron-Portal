@@ -247,7 +247,7 @@ function SortableSubItem({ item, isActive, onClick }: SortableSubItemProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center gap-1 px-2 py-2 rounded-md text-sm cursor-pointer group",
+        "flex items-center gap-1 px-1 py-2 rounded-md text-sm cursor-pointer group",
         isActive
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
           : "text-sidebar-foreground hover-elevate"
@@ -313,31 +313,27 @@ function SortableCollapsibleItem({ item, activeSubItem, onChildClick, location }
         <CollapsibleTrigger asChild>
           <div
             className={cn(
-              "group flex flex-col px-2 py-2 text-sm rounded-md cursor-pointer transition-colors w-full",
+              "group flex items-center gap-1 px-1 py-2 text-sm rounded-md cursor-pointer transition-colors w-full",
               isChildActive
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-sidebar-foreground hover-elevate"
             )}
             data-testid={`sidebar-item-${item.id}`}
           >
-            <div className="flex items-center gap-1 w-full">
-              <button
-                type="button"
-                {...attributes}
-                {...listeners}
-                className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity bg-transparent border-none p-0"
-                aria-label={`Reorder ${item.label}`}
-                data-testid={`drag-handle-item-${item.id}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <GripVertical className="h-3 w-3" />
-              </button>
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="flex-1 break-words whitespace-normal leading-tight">{item.label}</span>
-            </div>
-            <div className="flex justify-center mt-1">
-              <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-            </div>
+            <button
+              type="button"
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity bg-transparent border-none p-0"
+              aria-label={`Reorder ${item.label}`}
+              data-testid={`drag-handle-item-${item.id}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="h-3 w-3" />
+            </button>
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="flex-1 break-words whitespace-normal leading-tight">{item.label}</span>
+            <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", isOpen && "rotate-180")} />
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -349,7 +345,7 @@ function SortableCollapsibleItem({ item, activeSubItem, onChildClick, location }
                 <div
                   key={child.id}
                   className={cn(
-                    "flex items-center gap-1 px-2 py-2 text-sm rounded-md cursor-pointer transition-colors",
+                    "flex items-center gap-1 px-1 py-2 text-sm rounded-md cursor-pointer transition-colors",
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "text-sidebar-foreground hover-elevate"
@@ -465,7 +461,7 @@ export function SecondarySidebar() {
       </div>
       
       <ScrollArea className="flex-1">
-        <nav className="py-2 px-2 space-y-0.5">
+        <nav className="py-2 px-1 space-y-0.5">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
