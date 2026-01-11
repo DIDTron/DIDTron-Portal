@@ -3327,6 +3327,23 @@ export const connexcsImportScripts = pgTable("connexcs_import_scripts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ConnexCS CDR Sync State - tracks high-water mark for incremental sync
+export const connexcsCdrSyncState = pgTable("connexcs_cdr_sync_state", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  syncType: text("sync_type").notNull().default("incremental"), // 'incremental', 'full', 'historical'
+  lastSyncedTimestamp: timestamp("last_synced_timestamp"), // High-water mark - last CDR timestamp synced
+  lastSyncedCallId: text("last_synced_call_id"), // Last CDR call ID synced (for deduplication)
+  currentOffset: integer("current_offset").default(0), // Current offset for resumable sync
+  batchSize: integer("batch_size").default(500), // Records per batch
+  totalSynced: integer("total_synced").default(0), // Total CDRs synced in current run
+  status: text("status").default("idle"), // 'idle', 'running', 'paused', 'completed', 'failed'
+  lastError: text("last_error"),
+  lastRunStartedAt: timestamp("last_run_started_at"),
+  lastRunCompletedAt: timestamp("last_run_completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ConnexCS CDR Statistics cache table
 export const connexcsCdrStats = pgTable("connexcs_cdr_stats", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -3365,6 +3382,7 @@ export const insertConnexcsImportRouteSchema = createInsertSchema(connexcsImport
 export const insertConnexcsImportBalanceSchema = createInsertSchema(connexcsImportBalances).omit({ id: true, createdAt: true });
 export const insertConnexcsImportScriptSchema = createInsertSchema(connexcsImportScripts).omit({ id: true, createdAt: true });
 export const insertConnexcsCdrStatsSchema = createInsertSchema(connexcsCdrStats).omit({ id: true, createdAt: true });
+export const insertConnexcsCdrSyncStateSchema = createInsertSchema(connexcsCdrSyncState).omit({ id: true, createdAt: true });
 
 // ConnexCS sync types
 export type InsertConnexcsSyncJob = z.infer<typeof insertConnexcsSyncJobSchema>;
@@ -3389,3 +3407,5 @@ export type InsertConnexcsImportScript = z.infer<typeof insertConnexcsImportScri
 export type ConnexcsImportScript = typeof connexcsImportScripts.$inferSelect;
 export type InsertConnexcsCdrStats = z.infer<typeof insertConnexcsCdrStatsSchema>;
 export type ConnexcsCdrStats = typeof connexcsCdrStats.$inferSelect;
+export type InsertConnexcsCdrSyncState = z.infer<typeof insertConnexcsCdrSyncStateSchema>;
+export type ConnexcsCdrSyncState = typeof connexcsCdrSyncState.$inferSelect;

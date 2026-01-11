@@ -11,6 +11,7 @@ import {
   connexcsImportBalances,
   connexcsImportScripts,
   connexcsCdrStats,
+  connexcsCdrSyncState,
   connexcsSyncLogs,
   connexcsEntityMap,
   customers,
@@ -507,6 +508,280 @@ export async function getSyncJobs(limit = 50) {
     .from(connexcsSyncJobs)
     .orderBy(connexcsSyncJobs.createdAt)
     .limit(limit);
+}
+
+// ==================== INCREMENTAL CDR SYNC (T20) ====================
+// Memory-safe CDR sync using high-water mark and batched processing
+// Prevents heap overflow by fetching small batches and tracking progress
+
+const INCREMENTAL_CDR_BATCH_SIZE = 500; // Records per batch
+const MAX_BATCHES_PER_RUN = 20; // Max batches per sync run to prevent long-running jobs
+
+interface IncrementalCDRSyncResult {
+  status: "completed" | "partial" | "failed" | "no_new_data";
+  imported: number;
+  skipped: number;
+  errors: string[];
+  lastSyncedTimestamp: string | null;
+  hasMore: boolean;
+}
+
+async function getOrCreateSyncState() {
+  const [existing] = await db.select()
+    .from(connexcsCdrSyncState)
+    .where(eq(connexcsCdrSyncState.syncType, "incremental"))
+    .limit(1);
+  
+  if (existing) {
+    return existing;
+  }
+  
+  // Create initial sync state - start from 30 days ago
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const [newState] = await db.insert(connexcsCdrSyncState).values({
+    syncType: "incremental",
+    lastSyncedTimestamp: thirtyDaysAgo,
+    batchSize: INCREMENTAL_CDR_BATCH_SIZE,
+    status: "idle",
+  }).returning();
+  
+  return newState;
+}
+
+export async function syncCDRsIncremental(userId?: string): Promise<IncrementalCDRSyncResult> {
+  console.log("[ConnexCS CDR] Starting incremental CDR sync...");
+  
+  const result: IncrementalCDRSyncResult = {
+    status: "completed",
+    imported: 0,
+    skipped: 0,
+    errors: [],
+    lastSyncedTimestamp: null,
+    hasMore: false,
+  };
+  
+  try {
+    // Get or create sync state
+    const syncState = await getOrCreateSyncState();
+    
+    // Check if another sync is running
+    if (syncState.status === "running") {
+      console.log("[ConnexCS CDR] Sync already in progress, skipping");
+      result.status = "partial";
+      result.errors.push("Another sync is already running");
+      return result;
+    }
+    
+    // Mark as running
+    await db.update(connexcsCdrSyncState)
+      .set({ 
+        status: "running", 
+        lastRunStartedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(connexcsCdrSyncState.id, syncState.id));
+    
+    // Calculate date range: from last synced to now
+    const startDate = syncState.lastSyncedTimestamp 
+      ? new Date(syncState.lastSyncedTimestamp).toISOString().split('T')[0]
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const endDate = new Date().toISOString().split('T')[0];
+    
+    console.log(`[ConnexCS CDR] Syncing from ${startDate} to ${endDate}`);
+    
+    // Create a sync job for tracking
+    const [job] = await db.insert(connexcsSyncJobs).values({
+      entityType: "cdr",
+      status: "syncing",
+      startedAt: new Date(),
+      params: JSON.stringify({ startDate, endDate, mode: "incremental" }),
+      ...(userId ? { createdBy: userId } : {}),
+    }).returning();
+    
+    let offset = syncState.currentOffset || 0;
+    let batchCount = 0;
+    let lastCdrTimestamp: Date | null = null;
+    let lastCdrCallId: string | null = null;
+    
+    // Process batches until no more data or max batches reached
+    while (batchCount < MAX_BATCHES_PER_RUN) {
+      console.log(`[ConnexCS CDR] Fetching batch ${batchCount + 1} (offset: ${offset})`);
+      
+      const { cdrs, hasMore } = await connexcsTools.getCDRsPaginated(storage, {
+        startDate,
+        endDate,
+        limit: INCREMENTAL_CDR_BATCH_SIZE,
+        offset,
+      });
+      
+      if (cdrs.length === 0) {
+        console.log("[ConnexCS CDR] No more CDRs to sync");
+        result.hasMore = false;
+        break;
+      }
+      
+      // Process batch - sort CDRs by timestamp for deterministic ordering
+      const sortedCdrs = cdrs.sort((a, b) => {
+        const timeA = a.dt ? new Date(a.dt).getTime() : 0;
+        const timeB = b.dt ? new Date(b.dt).getTime() : 0;
+        return timeA - timeB;
+      });
+      
+      try {
+        let batchImported = 0;
+        let batchSkipped = 0;
+        
+        // Process each CDR individually to handle duplicates gracefully
+        for (const cdr of sortedCdrs) {
+          const connexcsId = cdr.callid || cdr.id || `${cdr.dt}-${cdr.customer_id}`;
+          
+          // Check if CDR already exists (duplicate detection)
+          const [existing] = await db.select({ id: connexcsImportCdrs.id })
+            .from(connexcsImportCdrs)
+            .where(eq(connexcsImportCdrs.connexcsId, connexcsId))
+            .limit(1);
+          
+          if (existing) {
+            batchSkipped++;
+            result.skipped++;
+            continue;
+          }
+          
+          // Insert new CDR
+          await db.insert(connexcsImportCdrs).values({
+            syncJobId: job.id,
+            connexcsId,
+            callId: cdr.callid,
+            src: cdr.source_cli,
+            dst: cdr.dest_number,
+            duration: cdr.duration != null ? Math.round(Number(cdr.duration)) : null,
+            billsec: cdr.customer_duration != null ? Math.round(Number(cdr.customer_duration)) : null,
+            callTime: cdr.dt ? new Date(cdr.dt) : null,
+            cost: cdr.customer_charge?.toString(),
+            rate: cdr.customer_card_rate?.toString(),
+            status: cdr.sip_code?.toString() === "200" ? "ANSWERED" : (cdr.sip_code ? "FAILED" : null),
+            hangupCause: cdr.release_reason || cdr.sip_reason,
+            direction: cdr.direction,
+            customerId: cdr.customer_id != null ? parseInt(String(cdr.customer_id), 10) : null,
+            customerName: cdr.cx_name,
+            carrierId: cdr.provider_id != null ? parseInt(String(cdr.provider_id), 10) : null,
+            carrierName: null,
+            prefix: cdr.customer_card_dest_code || cdr.tech_prefix,
+            destination: cdr.customer_card_dest_name,
+            currency: cdr.customer_currency,
+            rawData: JSON.stringify(cdr),
+            importStatus: "imported",
+          });
+          batchImported++;
+          
+          // Track last CDR for high-water mark (only from sorted list)
+          if (cdr.dt) {
+            lastCdrTimestamp = new Date(cdr.dt);
+            lastCdrCallId = connexcsId;
+          }
+        }
+        
+        result.imported += batchImported;
+        
+        console.log(`[ConnexCS CDR] Batch: ${batchImported} imported, ${batchSkipped} skipped (total: ${result.imported})`);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        result.errors.push(`Batch ${batchCount}: ${errorMsg}`);
+        console.error(`[ConnexCS CDR] Batch insert error: ${errorMsg}`);
+      }
+      
+      offset += INCREMENTAL_CDR_BATCH_SIZE;
+      batchCount++;
+      result.hasMore = hasMore;
+      
+      if (!hasMore) {
+        break;
+      }
+      
+      // Small delay between batches to prevent overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Update sync state with progress
+    const newStatus = result.hasMore ? "paused" : "idle";
+    result.lastSyncedTimestamp = lastCdrTimestamp?.toISOString() || syncState.lastSyncedTimestamp?.toISOString() || null;
+    
+    await db.update(connexcsCdrSyncState)
+      .set({
+        status: newStatus,
+        lastSyncedTimestamp: lastCdrTimestamp || syncState.lastSyncedTimestamp,
+        lastSyncedCallId: lastCdrCallId || syncState.lastSyncedCallId,
+        currentOffset: result.hasMore ? offset : 0,
+        totalSynced: (syncState.totalSynced || 0) + result.imported,
+        lastRunCompletedAt: new Date(),
+        lastError: result.errors.length > 0 ? result.errors.join("; ") : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(connexcsCdrSyncState.id, syncState.id));
+    
+    // Update job status
+    await db.update(connexcsSyncJobs)
+      .set({
+        status: result.errors.length > 0 ? "partial" : "completed",
+        completedAt: new Date(),
+        importedRecords: result.imported,
+        failedRecords: result.errors.length,
+        errors: result.errors.length > 0 ? JSON.stringify(result.errors) : null,
+      })
+      .where(eq(connexcsSyncJobs.id, job.id));
+    
+    result.status = result.hasMore ? "partial" : (result.imported === 0 ? "no_new_data" : "completed");
+    console.log(`[ConnexCS CDR] Incremental sync ${result.status}: ${result.imported} CDRs imported`);
+    
+  } catch (err) {
+    result.status = "failed";
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    result.errors.push(errorMsg);
+    console.error(`[ConnexCS CDR] Incremental sync failed: ${errorMsg}`);
+    
+    // Reset sync state on failure
+    try {
+      await db.update(connexcsCdrSyncState)
+        .set({
+          status: "idle",
+          lastError: errorMsg,
+          updatedAt: new Date(),
+        })
+        .where(eq(connexcsCdrSyncState.syncType, "incremental"));
+    } catch (e) {
+      console.error("[ConnexCS CDR] Failed to update sync state:", e);
+    }
+  }
+  
+  return result;
+}
+
+export async function getCDRSyncState() {
+  const [state] = await db.select()
+    .from(connexcsCdrSyncState)
+    .where(eq(connexcsCdrSyncState.syncType, "incremental"))
+    .limit(1);
+  return state || null;
+}
+
+export async function resetCDRSyncState() {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  await db.update(connexcsCdrSyncState)
+    .set({
+      status: "idle",
+      lastSyncedTimestamp: thirtyDaysAgo,
+      currentOffset: 0,
+      totalSynced: 0,
+      lastError: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(connexcsCdrSyncState.syncType, "incremental"));
+  
+  console.log("[ConnexCS CDR] Sync state reset to 30 days ago");
 }
 
 export async function getSyncJobLogs(jobId: string) {

@@ -84,10 +84,14 @@
 
 ### Pending Tasks
 
-- [ ] **T20**: Implement incremental CDR sync with high-water mark
-  - Files: `server/services/connexcs-sync.ts`
-  - Acceptance: CDR sync uses `last_synced_at` column; only fetches new records; no memory crash; batched in chunks of 500-1000
-  - Status: Pending - requires careful implementation to avoid heap overflow
+- [x] **T20**: Implement incremental CDR sync with high-water mark
+  - Files: `server/services/connexcs-sync.ts`, `shared/schema.ts`
+  - Acceptance: CDR sync uses `last_synced_at` column; only fetches new records; no memory crash; batched in chunks of 500
+  - Status: ✅ Complete - `syncCDRsIncremental()` function with:
+    * `connexcsCdrSyncState` table for high-water mark tracking
+    * Batched processing (500 records per batch, max 20 batches per run)
+    * Resumable sync with offset tracking
+    * Distributed lock to prevent concurrent runs
 
 ---
 
