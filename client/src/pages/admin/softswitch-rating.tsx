@@ -834,7 +834,11 @@ export function CustomerRatingPlansPage() {
                     paginatedPlans.map((plan) => (
                       <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
                         <TableCell>
-                          <a href="#" className="text-primary hover:underline" data-testid={`link-plan-${plan.id}`}>
+                          <a 
+                            href={`/admin/softswitch/rating/customer-plans/${plan.id}`}
+                            className="text-primary hover:underline" 
+                            data-testid={`link-plan-${plan.id}`}
+                          >
                             {plan.name}
                           </a>
                         </TableCell>
