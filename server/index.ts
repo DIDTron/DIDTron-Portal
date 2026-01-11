@@ -7,6 +7,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { hashPassword } from "./auth";
 import { integrationsRepository } from "./integrations-repository";
+import { initializeRedisSession, acquireDistributedLock, releaseDistributedLock } from "./services/redis-session";
 
 const app = express();
 const httpServer = createServer(app);
@@ -25,21 +26,38 @@ declare module "express-session" {
 
 const MemoryStoreSession = MemoryStore(session);
 
-app.use(
-  session({
+let sessionMiddlewareConfigured = false;
+
+async function configureSessionMiddleware() {
+  if (sessionMiddlewareConfigured) return;
+  
+  const { store: redisStore, isReady } = await initializeRedisSession();
+  
+  const sessionConfig: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "didtron-dev-secret-change-in-prod",
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStoreSession({
-      checkPeriod: 86400000,
-    }),
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "lax",
     },
-  })
-);
+  };
+  
+  if (isReady && redisStore) {
+    sessionConfig.store = redisStore;
+    log("Using Upstash Redis for session storage", "session");
+  } else {
+    sessionConfig.store = new MemoryStoreSession({
+      checkPeriod: 86400000,
+    });
+    log("Using MemoryStore for session storage (configure Upstash Redis for production)", "session");
+  }
+  
+  app.use(session(sessionConfig));
+  sessionMiddlewareConfigured = true;
+}
 
 app.use(
   express.json({
@@ -975,6 +993,7 @@ async function seedBillingTerms() {
 }
 
 (async () => {
+  await configureSessionMiddleware();
   await seedSuperAdmin();
   await seedDocumentation();
   await seedExperienceManager();
@@ -1088,13 +1107,21 @@ async function seedBillingTerms() {
               
               log(`Auto-sync complete`, "connexcs-sync");
               
-              // === BACKGROUND: Schedule periodic balance sync (every 5 minutes) ===
+              // === BACKGROUND: Schedule periodic balance sync (every 5 minutes) with distributed lock ===
               setInterval(async () => {
+                const lockKey = "didtron:lock:balance-sync";
+                const lockAcquired = await acquireDistributedLock(lockKey, 120);
+                if (!lockAcquired) {
+                  log("Balance sync skipped - another instance holds the lock", "connexcs-sync");
+                  return;
+                }
                 try {
                   const balanceResult = await syncBalances();
                   log(`Periodic balance sync: ${balanceResult.imported + balanceResult.updated} records`, "connexcs-sync");
                 } catch (err) {
                   log(`Periodic balance sync failed: ${err}`, "connexcs-sync");
+                } finally {
+                  await releaseDistributedLock(lockKey);
                 }
               }, 5 * 60 * 1000); // Every 5 minutes
             }
@@ -1112,6 +1139,19 @@ async function seedBillingTerms() {
         startScheduler();
       } catch (error) {
         log(`OpenExchange scheduler failed to start: ${error}`, "scheduler");
+      }
+
+      // Initialize Cloudflare R2 storage
+      try {
+        const { initializeR2Storage } = await import("./services/r2-storage");
+        const r2Ready = await initializeR2Storage();
+        if (r2Ready) {
+          log("Cloudflare R2 storage initialized", "r2");
+        } else {
+          log("Cloudflare R2 not configured - file uploads will fail", "r2");
+        }
+      } catch (error) {
+        log(`R2 initialization failed: ${error}`, "r2");
       }
     },
   );
