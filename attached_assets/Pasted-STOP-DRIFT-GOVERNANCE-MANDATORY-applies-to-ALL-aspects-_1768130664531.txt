@@ -1,0 +1,76 @@
+STOP DRIFT GOVERNANCE (MANDATORY — applies to ALL aspects: UI, backend, DB, naming, files, architecture)
+
+1) ALLOWED DOCUMENTS (DOC ALLOWLIST)
+You are NOT allowed to create any new documentation files. Only these docs may exist and be edited:
+- replit.md (high-level platform overview + global rules)
+- docs/AGENT_BRIEF.md (requirements + constraints + governance)
+- docs/UI_SPEC.md (navigation + page flows + UI behavior patterns)
+- DESIGN_SYSTEM.md (design tokens + components + layout templates; “how it looks/feels”)
+- docs/DB_SCHEMA.md (entities/relations/constraints/enums)
+- docs/TODO.md (the ONLY authorized plan + tasks + acceptance criteria + Plan ID)
+- docs/DECISIONS.md (append-only “why we decided”; never rewrite history)
+- docs/REFERENCES.md (links/files/sources index)
+- UI_DEBT.md (debt backlog only; no new requirements here)
+
+Hard rule: Do NOT create new files like LAYOUT_PATTERNS.md, ARCHITECTURE.md, NOTES.md, etc.
+If you believe a new file is needed, you must STOP and ask me to explicitly approve: “Create file X.md”.
+
+2) READ ORDER + PRECEDENCE (what overrides what)
+At the start of EVERY session/response you MUST open and read, in this order:
+1) docs/AGENT_BRIEF.md (governance + constraints)  [highest authority] 
+2) docs/TODO.md (current Plan ID + authorized tasks)
+3) docs/UI_SPEC.md (UI flows/patterns) 
+4) DESIGN_SYSTEM.md (components/tokens/templates — the “how it looks” rules)
+5) docs/DB_SCHEMA.md (schema truth)
+6) docs/DECISIONS.md (context + rationale)
+7) docs/REFERENCES.md (sources)
+8) UI_DEBT.md (later fixes)
+9) replit.md (background; if conflict with AGENT_BRIEF/UI_SPEC, replit.md loses)
+
+If any conflict exists: STOP → record conflict in docs/DECISIONS.md → update the highest-precedence doc → then proceed.
+
+3) DOCUMENT ROUTER (where new info MUST go)
+Before writing anything, you must state: “DOC TARGET: <file> / <section>”.
+Then you must add the information into the correct existing file (create a new section inside the file if needed).
+
+Routing rules:
+- UI navigation flow, page URL structure, list/detail/tabs/actions/modals behavior → docs/UI_SPEC.md
+- Visual design rules (colors, spacing, components, templates, interaction standards) → DESIGN_SYSTEM.md
+- Database tables/fields/relations/enums/constraints → docs/DB_SCHEMA.md
+- “Why we chose X / tradeoffs / changes to rules” → docs/DECISIONS.md (append-only)
+- Plan + tasks + acceptance criteria + sequencing → docs/TODO.md only
+- External references/links/PDF/Tango workflows → docs/REFERENCES.md only
+- Bugs/inconsistencies to fix later → UI_DEBT.md only
+- Global business constraints (no subscriptions etc.) → docs/AGENT_BRIEF.md
+
+4) PLAN LOCK (prevents “plan then drift when building”)
+You may NOT build from chat text.
+Any plan must be written into docs/TODO.md under the current Plan ID BEFORE coding.
+Build mode may ONLY execute tasks that exist in docs/TODO.md and have acceptance criteria.
+If you discover extra required work mid-build: STOP → update docs/DECISIONS.md (why) → update docs/TODO.md (new task + acceptance) → then continue.
+
+5) NO RANDOM WORK (scope lock)
+You are forbidden from:
+- inventing features not in TODO
+- refactoring “for cleanliness” unless TODO says so
+- renaming files/components/routes unless TODO says so
+- changing libraries/architecture unless explicitly approved and recorded in DECISIONS
+- creating duplicate patterns if one already exists (must reuse existing patterns)
+
+6) DEFINITION OF DONE (for every task)
+A task is NOT done unless:
+- acceptance criteria met
+- no broken navigation / dead buttons
+- error/loading/empty states handled consistently
+- docs updated: TODO checked + DECISIONS appended (and UI_SPEC/DB_SCHEMA/DESIGN_SYSTEM if affected)
+
+7) DESIGN DOC DUPLICATION RULE (prevents repeating design files)
+DESIGN_SYSTEM.md is the single canonical design source (it already states “single source of truth”). 
+If design_guidelines.md exists, it must be merged into DESIGN_SYSTEM.md ONCE and then replaced with a DEPRECATED stub (do not delete).
+Record this consolidation in docs/DECISIONS.md.
+
+Start now by confirming:
+A) Which docs are present from the allowlist
+B) Current Plan ID in docs/TODO.md
+C) Next 3 tasks you will execute from TODO (with acceptance criteria)
+D) The doc target you will use for any new UI pattern additions (usually docs/UI_SPEC.md)
