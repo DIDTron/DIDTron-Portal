@@ -271,7 +271,7 @@ function SortableSubItem({ item, isActive, onClick }: SortableSubItemProps) {
         aria-label={item.label}
       >
         <Icon className="h-4 w-4 shrink-0" />
-        <span className="truncate">{item.label}</span>
+        <span className="break-words whitespace-normal leading-tight">{item.label}</span>
       </button>
     </div>
   );
@@ -313,27 +313,31 @@ function SortableCollapsibleItem({ item, activeSubItem, onChildClick, location }
         <CollapsibleTrigger asChild>
           <div
             className={cn(
-              "group flex items-center gap-1 px-2 py-2 text-sm rounded-md cursor-pointer transition-colors w-full",
+              "group flex flex-col px-2 py-2 text-sm rounded-md cursor-pointer transition-colors w-full",
               isChildActive
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-sidebar-foreground hover-elevate"
             )}
             data-testid={`sidebar-item-${item.id}`}
           >
-            <button
-              type="button"
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity bg-transparent border-none p-0"
-              aria-label={`Reorder ${item.label}`}
-              data-testid={`drag-handle-item-${item.id}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <GripVertical className="h-3 w-3" />
-            </button>
-            <Icon className="h-4 w-4 shrink-0" />
-            <span className="truncate flex-1">{item.label}</span>
-            <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+            <div className="flex items-center gap-1 w-full">
+              <button
+                type="button"
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity bg-transparent border-none p-0"
+                aria-label={`Reorder ${item.label}`}
+                data-testid={`drag-handle-item-${item.id}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <GripVertical className="h-3 w-3" />
+              </button>
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="flex-1 break-words whitespace-normal leading-tight">{item.label}</span>
+            </div>
+            <div className="flex justify-center mt-1">
+              <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+            </div>
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -355,7 +359,7 @@ function SortableCollapsibleItem({ item, activeSubItem, onChildClick, location }
                 >
                   <div className="w-3" />
                   <ChildIcon className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{child.label}</span>
+                  <span className="break-words whitespace-normal leading-tight">{child.label}</span>
                 </div>
               );
             })}
