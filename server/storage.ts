@@ -10,6 +10,8 @@ import {
   type ChannelPlan, type InsertChannelPlan,
   type Carrier, type InsertCarrier,
   type CarrierAssignment, type InsertCarrierAssignment,
+  type CustomerRatingPlan, type InsertCustomerRatingPlan,
+  customerRatingPlans as customerRatingPlansTable,
   type AuditLog,
   type Route, type InsertRoute,
   type RouteGroup, type InsertRouteGroup,
@@ -192,6 +194,13 @@ export interface IStorage {
   createCarrier(carrier: InsertCarrier): Promise<Carrier>;
   updateCarrier(id: string, data: Partial<InsertCarrier>): Promise<Carrier | undefined>;
   deleteCarrier(id: string): Promise<boolean>;
+
+  // Customer Rating Plans
+  getCustomerRatingPlans(): Promise<CustomerRatingPlan[]>;
+  getCustomerRatingPlan(id: string): Promise<CustomerRatingPlan | undefined>;
+  createCustomerRatingPlan(plan: InsertCustomerRatingPlan): Promise<CustomerRatingPlan>;
+  updateCustomerRatingPlan(id: string, data: Partial<InsertCustomerRatingPlan>): Promise<CustomerRatingPlan | undefined>;
+  deleteCustomerRatingPlan(id: string): Promise<boolean>;
 
   // Carrier Assignments
   getCarrierAssignment(carrierId: string): Promise<CarrierAssignment | undefined>;
@@ -1444,6 +1453,34 @@ export class MemStorage implements IStorage {
 
   async deleteCarrier(id: string): Promise<boolean> {
     const results = await db.delete(carriersTable).where(eq(carriersTable.id, id)).returning();
+    return results.length > 0;
+  }
+
+  // Customer Rating Plans
+  async getCustomerRatingPlans(): Promise<CustomerRatingPlan[]> {
+    return await db.select().from(customerRatingPlansTable);
+  }
+
+  async getCustomerRatingPlan(id: string): Promise<CustomerRatingPlan | undefined> {
+    const results = await db.select().from(customerRatingPlansTable).where(eq(customerRatingPlansTable.id, id));
+    return results[0];
+  }
+
+  async createCustomerRatingPlan(plan: InsertCustomerRatingPlan): Promise<CustomerRatingPlan> {
+    const results = await db.insert(customerRatingPlansTable).values(plan).returning();
+    return results[0];
+  }
+
+  async updateCustomerRatingPlan(id: string, data: Partial<InsertCustomerRatingPlan>): Promise<CustomerRatingPlan | undefined> {
+    const results = await db.update(customerRatingPlansTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(customerRatingPlansTable.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async deleteCustomerRatingPlan(id: string): Promise<boolean> {
+    const results = await db.delete(customerRatingPlansTable).where(eq(customerRatingPlansTable.id, id)).returning();
     return results.length > 0;
   }
 
