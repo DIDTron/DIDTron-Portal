@@ -93,12 +93,14 @@ import {
   type InterconnectCodec, type InsertInterconnectCodec,
   type InterconnectMediaSettings, type InsertInterconnectMediaSettings,
   type InterconnectSignallingSettings, type InsertInterconnectSignallingSettings,
+  type InterconnectMonitoringSettings, type InsertInterconnectMonitoringSettings,
   interconnectIpAddresses as interconnectIpAddressesTable,
   interconnectValidationSettings as interconnectValidationSettingsTable,
   interconnectTranslationSettings as interconnectTranslationSettingsTable,
   interconnectCodecs as interconnectCodecsTable,
   interconnectMediaSettings as interconnectMediaSettingsTable,
   interconnectSignallingSettings as interconnectSignallingSettingsTable,
+  interconnectMonitoringSettings as interconnectMonitoringSettingsTable,
   customers as customersTable,
   carriers as carriersTable,
   carrierInterconnects as carrierInterconnectsTable,
@@ -250,6 +252,10 @@ export interface IStorage {
   // Interconnect Signalling Settings
   getInterconnectSignallingSettings(interconnectId: string): Promise<InterconnectSignallingSettings | undefined>;
   upsertInterconnectSignallingSettings(data: InsertInterconnectSignallingSettings): Promise<InterconnectSignallingSettings>;
+
+  // Interconnect Monitoring Settings
+  getInterconnectMonitoringSettings(interconnectId: string): Promise<InterconnectMonitoringSettings | undefined>;
+  upsertInterconnectMonitoringSettings(data: InsertInterconnectMonitoringSettings): Promise<InterconnectMonitoringSettings>;
 
   // Audit Logs
   getAuditLogs(tableName?: string, recordId?: string, limit?: number): Promise<AuditLog[]>;
@@ -1695,6 +1701,26 @@ export class MemStorage implements IStorage {
       return results[0];
     } else {
       const results = await db.insert(interconnectSignallingSettingsTable).values(data).returning();
+      return results[0];
+    }
+  }
+
+  // Interconnect Monitoring Settings - Persisted to Database
+  async getInterconnectMonitoringSettings(interconnectId: string): Promise<InterconnectMonitoringSettings | undefined> {
+    const results = await db.select().from(interconnectMonitoringSettingsTable).where(eq(interconnectMonitoringSettingsTable.interconnectId, interconnectId));
+    return results[0];
+  }
+
+  async upsertInterconnectMonitoringSettings(data: InsertInterconnectMonitoringSettings): Promise<InterconnectMonitoringSettings> {
+    const existing = await this.getInterconnectMonitoringSettings(data.interconnectId);
+    if (existing) {
+      const results = await db.update(interconnectMonitoringSettingsTable)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(interconnectMonitoringSettingsTable.interconnectId, data.interconnectId))
+        .returning();
+      return results[0];
+    } else {
+      const results = await db.insert(interconnectMonitoringSettingsTable).values(data).returning();
       return results[0];
     }
   }

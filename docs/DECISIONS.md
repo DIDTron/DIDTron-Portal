@@ -83,3 +83,23 @@ try {
 - **Customer (Ingress)**: Details, Services, Ingress Validation, Ingress Translation, Media, Signalling (6 tabs)
 - **Supplier (Egress)**: Details, Egress Routing, Egress Translations, Media, Monitoring, Signalling (6 tabs)
 - **Bilateral**: All 9 tabs combined
+
+---
+
+## 2026-01-11: Monitoring Tab Full Implementation
+
+**Decision**: Build Monitoring tab UI matching Digitalk exactly with two cards and persistence.
+
+**Components**:
+1. **Supplier Availability Monitoring** card with:
+   - Monitoring Enabled dropdown: None, SIP OPTIONS, Call Response, SIP OPTIONS & Call Response
+   - Info icon tooltip
+2. **Monitoring Alarm** card with:
+   - Alarm Severity: Low, Medium, High
+   - Send Email on: Breach Only, Breach And Clear
+   - Recipients: comma-separated email input
+
+**Backend**:
+- New table: `interconnect_monitoring_settings` with columns: monitoringEnabled, alarmSeverity, sendEmailOn, recipients
+- API endpoints: GET/PUT `/api/interconnects/:id/monitoring-settings`
+- Upsert pattern matching other interconnect settings tables

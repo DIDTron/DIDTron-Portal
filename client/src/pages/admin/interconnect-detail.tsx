@@ -181,6 +181,15 @@ export default function InterconnectDetailPage() {
     releaseCauseMapping: "",
   });
 
+  const [monitoringData, setMonitoringData] = useState({
+    monitoringEnabled: "none",
+    alarmSeverity: "low",
+    sendEmailOn: "breach_only",
+    recipients: "",
+  });
+
+  const [isEditingMonitoring, setIsEditingMonitoring] = useState(false);
+
   const [newService, setNewService] = useState({
     name: "",
     customerRatingPlan: "",
@@ -233,6 +242,12 @@ export default function InterconnectDetailPage() {
   // Fetch signalling settings from backend
   const { data: signallingSettingsData } = useQuery<Record<string, any>>({
     queryKey: ["/api/interconnects", interconnectId, "signalling-settings"],
+    enabled: !!interconnectId,
+  });
+
+  // Fetch monitoring settings from backend
+  const { data: monitoringSettingsData } = useQuery<Record<string, any>>({
+    queryKey: ["/api/interconnects", interconnectId, "monitoring-settings"],
     enabled: !!interconnectId,
   });
 
@@ -373,6 +388,18 @@ export default function InterconnectDetailPage() {
       });
     }
   }, [signallingSettingsData]);
+
+  // Sync monitoring settings from backend
+  useEffect(() => {
+    if (monitoringSettingsData && Object.keys(monitoringSettingsData).length > 0) {
+      setMonitoringData({
+        monitoringEnabled: monitoringSettingsData.monitoringEnabled || "none",
+        alarmSeverity: monitoringSettingsData.alarmSeverity || "low",
+        sendEmailOn: monitoringSettingsData.sendEmailOn || "breach_only",
+        recipients: monitoringSettingsData.recipients || "",
+      });
+    }
+  }, [monitoringSettingsData]);
 
   // Sync codecs from backend (merge with defaults)
   useEffect(() => {
@@ -520,6 +547,27 @@ export default function InterconnectDetailPage() {
     },
     onError: () => {
       toast({ title: "Failed to save signalling settings", variant: "destructive" });
+    },
+  });
+
+  // Mutation to save monitoring settings
+  const saveMonitoringMutation = useMutation({
+    mutationFn: async (data: typeof monitoringData) => {
+      const res = await apiRequest("PUT", `/api/interconnects/${interconnectId}/monitoring-settings`, {
+        monitoringEnabled: data.monitoringEnabled,
+        alarmSeverity: data.alarmSeverity,
+        sendEmailOn: data.sendEmailOn,
+        recipients: data.recipients || null,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "monitoring-settings"] });
+      toast({ title: "Monitoring settings saved" });
+      setIsEditingMonitoring(false);
+    },
+    onError: () => {
+      toast({ title: "Failed to save monitoring settings", variant: "destructive" });
     },
   });
 
@@ -1715,14 +1763,122 @@ export default function InterconnectDetailPage() {
 
           {/* Monitoring Tab (Supplier) */}
           <TabsContent value="monitoring" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Monitoring</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">SIP OPTIONS ping and call response monitoring settings.</p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-2 gap-8">
+              <Card>
+                <CardHeader className="bg-primary text-primary-foreground rounded-t-lg">
+                  <CardTitle className="text-base font-medium">Supplier Availability Monitoring</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="grid grid-cols-[160px_1fr_auto] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Monitoring Enabled</span>
+                    {isEditingMonitoring ? (
+                      <Select
+                        value={monitoringData.monitoringEnabled}
+                        onValueChange={(v) => setMonitoringData({ ...monitoringData, monitoringEnabled: v })}
+                      >
+                        <SelectTrigger data-testid="select-monitoring-enabled">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="sip_options">SIP OPTIONS</SelectItem>
+                          <SelectItem value="call_response">Call Response</SelectItem>
+                          <SelectItem value="sip_options_and_call_response">SIP OPTIONS & Call Response</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm font-medium">
+                        {monitoringData.monitoringEnabled === "none" ? "None" :
+                         monitoringData.monitoringEnabled === "sip_options" ? "SIP OPTIONS" :
+                         monitoringData.monitoringEnabled === "call_response" ? "Call Response" :
+                         monitoringData.monitoringEnabled === "sip_options_and_call_response" ? "SIP OPTIONS & Call Response" : "None"}
+                      </span>
+                    )}
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs cursor-help" title="Monitoring type determines how the system checks supplier availability">
+                      i
+                    </div>
+                  </div>
+                  {!isEditingMonitoring && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditingMonitoring(true)} data-testid="button-edit-monitoring">
+                      Edit
+                    </Button>
+                  )}
+                  {isEditingMonitoring && (
+                    <div className="flex gap-2">
+                      <Button onClick={() => saveMonitoringMutation.mutate(monitoringData)} disabled={saveMonitoringMutation.isPending} data-testid="button-save-monitoring">
+                        {saveMonitoringMutation.isPending ? "Saving..." : "Save"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsEditingMonitoring(false)}>Cancel</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="bg-primary text-primary-foreground rounded-t-lg">
+                  <CardTitle className="text-base font-medium">Monitoring Alarm</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Alarm Severity</span>
+                    {isEditingMonitoring ? (
+                      <Select
+                        value={monitoringData.alarmSeverity}
+                        onValueChange={(v) => setMonitoringData({ ...monitoringData, alarmSeverity: v })}
+                      >
+                        <SelectTrigger data-testid="select-alarm-severity">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm font-medium capitalize">{monitoringData.alarmSeverity}</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Send Email on</span>
+                    {isEditingMonitoring ? (
+                      <Select
+                        value={monitoringData.sendEmailOn}
+                        onValueChange={(v) => setMonitoringData({ ...monitoringData, sendEmailOn: v })}
+                      >
+                        <SelectTrigger data-testid="select-send-email-on">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="breach_only">Breach Only</SelectItem>
+                          <SelectItem value="breach_and_clear">Breach And Clear</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm font-medium">
+                        {monitoringData.sendEmailOn === "breach_only" ? "Breach Only" : "Breach And Clear"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] items-start gap-2">
+                    <span className="text-sm text-muted-foreground pt-2">Recipients</span>
+                    <div className="space-y-1">
+                      {isEditingMonitoring ? (
+                        <Input
+                          value={monitoringData.recipients}
+                          onChange={(e) => setMonitoringData({ ...monitoringData, recipients: e.target.value })}
+                          placeholder="email1@example.com, email2@example.com"
+                          data-testid="input-recipients"
+                        />
+                      ) : (
+                        <span className="text-sm font-medium">{monitoringData.recipients || "—"}</span>
+                      )}
+                      <p className="text-xs text-muted-foreground">Multiple e-mail addresses must be separated with a comma character (",")</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </div>
       </Tabs>

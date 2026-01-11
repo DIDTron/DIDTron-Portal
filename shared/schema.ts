@@ -535,6 +535,17 @@ export const interconnectSignallingSettings = pgTable("interconnect_signalling_s
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const interconnectMonitoringSettings = pgTable("interconnect_monitoring_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull().unique(),
+  monitoringEnabled: text("monitoring_enabled").default("none"),
+  alarmSeverity: text("alarm_severity").default("low"),
+  sendEmailOn: text("send_email_on").default("breach_only"),
+  recipients: text("recipients"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ==================== POPS (Points of Presence) ====================
 
 export const pops = pgTable("pops", {
@@ -2770,6 +2781,7 @@ export const insertInterconnectTranslationSettingsSchema = createInsertSchema(in
 export const insertInterconnectCodecSchema = createInsertSchema(interconnectCodecs).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertInterconnectMediaSettingsSchema = createInsertSchema(interconnectMediaSettings).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertInterconnectSignallingSettingsSchema = createInsertSchema(interconnectSignallingSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInterconnectMonitoringSettingsSchema = createInsertSchema(interconnectMonitoringSettings).omit({ id: true, createdAt: true, updatedAt: true });
 
 // ==================== TYPES ====================
 
@@ -2805,6 +2817,8 @@ export type InsertInterconnectMediaSettings = z.infer<typeof insertInterconnectM
 export type InterconnectMediaSettings = typeof interconnectMediaSettings.$inferSelect;
 export type InsertInterconnectSignallingSettings = z.infer<typeof insertInterconnectSignallingSettingsSchema>;
 export type InterconnectSignallingSettings = typeof interconnectSignallingSettings.$inferSelect;
+export type InsertInterconnectMonitoringSettings = z.infer<typeof insertInterconnectMonitoringSettingsSchema>;
+export type InterconnectMonitoringSettings = typeof interconnectMonitoringSettings.$inferSelect;
 export type InsertPop = z.infer<typeof insertPopSchema>;
 export type Pop = typeof pops.$inferSelect;
 export type InsertVoiceTier = z.infer<typeof insertVoiceTierSchema>;

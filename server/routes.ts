@@ -72,7 +72,8 @@ import {
   insertInterconnectTranslationSettingsSchema,
   insertInterconnectCodecSchema,
   insertInterconnectMediaSettingsSchema,
-  insertInterconnectSignallingSettingsSchema
+  insertInterconnectSignallingSettingsSchema,
+  insertInterconnectMonitoringSettingsSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -6108,6 +6109,34 @@ export async function registerRoutes(
       res.json(settings);
     } catch (error) {
       res.status(500).json({ error: "Failed to save signalling settings" });
+    }
+  });
+
+  // Interconnect Monitoring Settings
+  app.get("/api/interconnects/:id/monitoring-settings", async (req, res) => {
+    try {
+      const settings = await storage.getInterconnectMonitoringSettings(req.params.id);
+      res.json(settings || {});
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch monitoring settings" });
+    }
+  });
+
+  app.put("/api/interconnects/:id/monitoring-settings", async (req, res) => {
+    try {
+      const parsed = insertInterconnectMonitoringSettingsSchema.safeParse({ ...req.body, interconnectId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const settings = await storage.upsertInterconnectMonitoringSettings(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "upsert",
+        tableName: "interconnect_monitoring_settings",
+        recordId: settings.id,
+        newValues: settings,
+      });
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save monitoring settings" });
     }
   });
 
