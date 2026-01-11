@@ -6,6 +6,39 @@ import { getUpstashRedis } from "./integrations";
 let redisClient: Redis | null = null;
 let redisStore: RedisStore | null = null;
 
+function createRedisClientWrapper(upstashClient: Redis) {
+  return {
+    async get(key: string): Promise<string | null> {
+      const value = await upstashClient.get(key);
+      if (value === null || value === undefined) return null;
+      if (typeof value === 'string') return value;
+      return JSON.stringify(value);
+    },
+    async set(key: string, value: string, options?: { EX?: number }): Promise<string> {
+      if (options?.EX) {
+        await upstashClient.set(key, value, { ex: options.EX });
+      } else {
+        await upstashClient.set(key, value);
+      }
+      return "OK";
+    },
+    async del(key: string | string[]): Promise<number> {
+      const keys = Array.isArray(key) ? key : [key];
+      if (keys.length === 0) return 0;
+      return await upstashClient.del(...keys);
+    },
+    async ttl(key: string): Promise<number> {
+      return await upstashClient.ttl(key);
+    },
+    async expire(key: string, seconds: number): Promise<number> {
+      return await upstashClient.expire(key, seconds);
+    },
+    async ping(): Promise<string> {
+      return await upstashClient.ping();
+    },
+  };
+}
+
 export async function initializeRedisSession(): Promise<{
   store: RedisStore | null;
   client: Redis | null;
@@ -30,8 +63,10 @@ export async function initializeRedisSession(): Promise<{
       return { store: null, client: null, isReady: false };
     }
 
+    const wrappedClient = createRedisClientWrapper(redisClient);
+
     redisStore = new RedisStore({
-      client: redisClient,
+      client: wrappedClient as any,
       prefix: "didtron:sess:",
       ttl: 86400,
     });
