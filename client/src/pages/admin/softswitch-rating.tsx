@@ -575,10 +575,7 @@ function AddRatingPlanWizard({ open, onOpenChange }: { open: boolean; onOpenChan
 
   const createMutation = useMutation({
     mutationFn: async (data: AddPlanFormData) => {
-      const effectiveDateISO = data.effectiveDate 
-        ? new Date(data.effectiveDate + "T" + data.effectiveTime).toISOString() 
-        : null;
-      const response = await apiRequest("POST", "/api/softswitch/rating/customer-plans", {
+      const payload: Record<string, unknown> = {
         name: data.name,
         currency: data.currency,
         timeZone: data.timeZone,
@@ -586,7 +583,6 @@ function AddRatingPlanWizard({ open, onOpenChange }: { open: boolean; onOpenChan
         defaultRates: data.defaultRates,
         marginEnforcement: data.marginEnforcement,
         minMargin: data.minMargin,
-        effectiveDate: effectiveDateISO,
         initialInterval: parseInt(data.initialInterval) || 0,
         recurringInterval: parseInt(data.recurringInterval) || 1,
         periodExceptionTemplate: data.periodExceptionTemplate !== "None" ? data.periodExceptionTemplate : null,
@@ -594,7 +590,11 @@ function AddRatingPlanWizard({ open, onOpenChange }: { open: boolean; onOpenChan
         selectedZones: data.selectedZones,
         zonesSelect: data.zonesSelect,
         assignOrigin: data.assignOrigin,
-      });
+      };
+      if (data.effectiveDate) {
+        payload.effectiveDate = new Date(data.effectiveDate + "T" + data.effectiveTime);
+      }
+      const response = await apiRequest("POST", "/api/softswitch/rating/customer-plans", payload);
       return response.json();
     },
     onSuccess: () => {
@@ -874,12 +874,11 @@ export function CustomerRatingPlansPage() {
               </Table>
               <DataTableFooter
                 totalItems={totalPlans}
+                totalPages={totalPages}
                 pageSize={pageSize}
                 currentPage={currentPage}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}
-                isLoading={isFetching}
-                onRefresh={() => refetch()}
               />
             </>
           )}

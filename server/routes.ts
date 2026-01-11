@@ -5566,7 +5566,11 @@ export async function registerRoutes(
 
   app.post("/api/softswitch/rating/customer-plans", async (req, res) => {
     try {
-      const parsed = insertCustomerRatingPlanSchema.safeParse(req.body);
+      const body = { ...req.body };
+      if (body.effectiveDate && typeof body.effectiveDate === 'string') {
+        body.effectiveDate = new Date(body.effectiveDate);
+      }
+      const parsed = insertCustomerRatingPlanSchema.safeParse(body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const plan = await storage.createCustomerRatingPlan(parsed.data);
       await storage.createAuditLog({
