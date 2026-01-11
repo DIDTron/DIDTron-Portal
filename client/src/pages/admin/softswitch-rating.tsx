@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -36,21 +36,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronDown, Search, Settings, AlertCircle } from "lucide-react";
+import { DataTableFooter } from "@/components/ui/data-table-footer";
+import { ChevronDown, Search, Settings, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { CustomerRatingPlan as APICustomerRatingPlan } from "@shared/schema";
 
 type WizardStage = 1 | 2 | 3 | 4 | 5;
-
-interface CustomerRatingPlan {
-  id: string;
-  name: string;
-  currency: string;
-  marginEnforcement: "enabled" | "disabled";
-  template: string | null;
-  uncommittedChanges: boolean;
-  lastUpdated: string;
-  assigned: boolean;
-}
 
 interface TimeClass {
   id: string;
@@ -100,13 +91,6 @@ const defaultFormData: AddPlanFormData = {
   selectedZones: [],
 };
 
-const mockPlans: CustomerRatingPlan[] = [
-  { id: "1", name: "A-test-a", currency: "USD", marginEnforcement: "enabled", template: "A-test-a", uncommittedChanges: true, lastUpdated: "23/12/2025 13:57", assigned: false },
-  { id: "2", name: "ALLIP-CU-PRM", currency: "USD", marginEnforcement: "enabled", template: null, uncommittedChanges: false, lastUpdated: "18/12/2025 09:18", assigned: true },
-  { id: "3", name: "AYA-TEAT", currency: "USD", marginEnforcement: "enabled", template: null, uncommittedChanges: false, lastUpdated: "27/11/2025 13:13", assigned: false },
-  { id: "4", name: "Demo Customer VB", currency: "USD", marginEnforcement: "enabled", template: "Demo Customer VB", uncommittedChanges: true, lastUpdated: "21/10/2025 18:17", assigned: false },
-  { id: "5", name: "Gizat PRM CU Rate", currency: "USD", marginEnforcement: "enabled", template: "GIZAT-PRM-CU", uncommittedChanges: false, lastUpdated: "23/12/2025 19:49", assigned: true },
-];
 
 const mockTimeClasses: TimeClass[] = [
   { id: "1", name: "AnyDay", days: "Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday", startPeriod: "00:00", endPeriod: "00:00" },
@@ -587,8 +571,41 @@ function AddRatingPlanWizard({ open, onOpenChange }: { open: boolean; onOpenChan
   const { toast } = useToast();
   const [stage, setStage] = useState<WizardStage>(1);
   const [form, setForm] = useState<AddPlanFormData>(defaultFormData);
-  const [isCreating, setIsCreating] = useState(false);
   const [creationComplete, setCreationComplete] = useState(false);
+
+  const createMutation = useMutation({
+    mutationFn: async (data: AddPlanFormData) => {
+      const effectiveDateISO = data.effectiveDate 
+        ? new Date(data.effectiveDate + "T" + data.effectiveTime).toISOString() 
+        : null;
+      const response = await apiRequest("POST", "/api/softswitch/rating/customer-plans", {
+        name: data.name,
+        currency: data.currency,
+        timeZone: data.timeZone,
+        carrierTimeZone: data.carrierTimeZone || null,
+        defaultRates: data.defaultRates,
+        marginEnforcement: data.marginEnforcement,
+        minMargin: data.minMargin,
+        effectiveDate: effectiveDateISO,
+        initialInterval: parseInt(data.initialInterval) || 0,
+        recurringInterval: parseInt(data.recurringInterval) || 1,
+        periodExceptionTemplate: data.periodExceptionTemplate !== "None" ? data.periodExceptionTemplate : null,
+        selectedTimeClasses: data.selectedTimeClasses,
+        selectedZones: data.selectedZones,
+        zonesSelect: data.zonesSelect,
+        assignOrigin: data.assignOrigin,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setCreationComplete(true);
+      toast({ title: "Rating plan created successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/softswitch/rating/customer-plans"] });
+    },
+    onError: (error) => {
+      toast({ title: "Failed to create rating plan", description: String(error), variant: "destructive" });
+    },
+  });
 
   const handlePrevious = () => {
     if (stage > 1) {
@@ -600,12 +617,7 @@ function AddRatingPlanWizard({ open, onOpenChange }: { open: boolean; onOpenChan
     if (stage < 5) {
       setStage((s) => (s + 1) as WizardStage);
     } else if (stage === 5 && !creationComplete) {
-      setIsCreating(true);
-      setTimeout(() => {
-        setIsCreating(false);
-        setCreationComplete(true);
-        toast({ title: "Rating plan created successfully" });
-      }, 1000);
+      createMutation.mutate(form);
     }
   };
 
@@ -614,7 +626,6 @@ function AddRatingPlanWizard({ open, onOpenChange }: { open: boolean; onOpenChan
     setForm(defaultFormData);
     setCreationComplete(false);
     onOpenChange(false);
-    queryClient.invalidateQueries({ queryKey: ["/api/softswitch/rating/customer-plans"] });
   };
 
   const handleCancel = () => {
@@ -623,6 +634,8 @@ function AddRatingPlanWizard({ open, onOpenChange }: { open: boolean; onOpenChan
     setCreationComplete(false);
     onOpenChange(false);
   };
+  
+  const isCreating = createMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -665,13 +678,63 @@ export function CustomerRatingPlansPage() {
   const [nameFilter, setNameFilter] = useState("");
   const [uncommittedFilter, setUncommittedFilter] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
-  const filteredPlans = mockPlans.filter((plan) => {
+  const { toast } = useToast();
+  
+  const { data: plans = [], isLoading, isFetching, refetch, isError } = useQuery<APICustomerRatingPlan[]>({
+    queryKey: ["/api/softswitch/rating/customer-plans"],
+  });
+
+  useEffect(() => {
+    if (isError) {
+      toast({ title: "Failed to load rating plans", variant: "destructive" });
+    }
+  }, [isError, toast]);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/softswitch/rating/customer-plans/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Rating plan deleted successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/softswitch/rating/customer-plans"] });
+    },
+    onError: (error) => {
+      toast({ title: "Failed to delete rating plan", description: String(error), variant: "destructive" });
+    },
+  });
+
+  const filteredPlans = plans.filter((plan) => {
     if (nameFilter && !plan.name.toLowerCase().includes(nameFilter.toLowerCase())) {
+      return false;
+    }
+    if (uncommittedFilter === "yes" && !plan.uncommittedChanges) {
+      return false;
+    }
+    if (uncommittedFilter === "no" && plan.uncommittedChanges) {
       return false;
     }
     return true;
   });
+
+  const totalPlans = filteredPlans.length;
+  const totalPages = Math.ceil(totalPlans / pageSize);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [nameFilter, uncommittedFilter]);
+  
+  useEffect(() => {
+    if (totalPages === 0) {
+      setCurrentPage(1);
+    } else if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+  
+  const paginatedPlans = filteredPlans.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-4">
@@ -740,52 +803,86 @@ export function CustomerRatingPlansPage() {
             </Button>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>£/$</TableHead>
-                <TableHead>Margin Enforcement</TableHead>
-                <TableHead>Template</TableHead>
-                <TableHead>Uncommitted Changes</TableHead>
-                <TableHead>Last Updated</TableHead>
-                <TableHead>Assigned</TableHead>
-                <TableHead className="w-20"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPlans.map((plan) => (
-                <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
-                  <TableCell>
-                    <a href="#" className="text-primary hover:underline" data-testid={`link-plan-${plan.id}`}>
-                      {plan.name}
-                    </a>
-                  </TableCell>
-                  <TableCell>{plan.currency}</TableCell>
-                  <TableCell>
-                    <Badge variant="default" className="bg-teal-600 hover:bg-teal-600">
-                      {plan.marginEnforcement === "enabled" ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{plan.template || "-"}</TableCell>
-                  <TableCell>
-                    {plan.uncommittedChanges ? (
-                      <Badge variant="default" className="bg-green-600 hover:bg-green-600">Yes</Badge>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                  <TableCell>{plan.lastUpdated}</TableCell>
-                  <TableCell>{plan.assigned ? "Yes" : "-"}</TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm" data-testid={`button-delete-${plan.id}`}>
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {isLoading ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+              Loading rating plans...
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>£/$</TableHead>
+                    <TableHead>Margin Enforcement</TableHead>
+                    <TableHead>Template</TableHead>
+                    <TableHead>Uncommitted Changes</TableHead>
+                    <TableHead>Last Updated</TableHead>
+                    <TableHead>Assigned</TableHead>
+                    <TableHead className="w-20"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedPlans.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        No rating plans found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedPlans.map((plan) => (
+                      <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
+                        <TableCell>
+                          <a href="#" className="text-primary hover:underline" data-testid={`link-plan-${plan.id}`}>
+                            {plan.name}
+                          </a>
+                        </TableCell>
+                        <TableCell>{plan.currency}</TableCell>
+                        <TableCell>
+                          <Badge variant="default" className="bg-teal-600 hover:bg-teal-600">
+                            {plan.marginEnforcement === "Enabled" ? "Enabled" : "Disabled"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{plan.template || "-"}</TableCell>
+                        <TableCell>
+                          {plan.uncommittedChanges ? (
+                            <Badge variant="default" className="bg-green-600 hover:bg-green-600">Yes</Badge>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {plan.updatedAt ? new Date(plan.updatedAt).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "-"}
+                        </TableCell>
+                        <TableCell>{plan.assigned ? "Yes" : "-"}</TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            data-testid={`button-delete-${plan.id}`}
+                            onClick={() => deleteMutation.mutate(plan.id)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            {deleteMutation.isPending ? "..." : "Delete"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+              <DataTableFooter
+                totalItems={totalPlans}
+                pageSize={pageSize}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                isLoading={isFetching}
+                onRefresh={() => refetch()}
+              />
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="notifications">
