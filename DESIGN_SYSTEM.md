@@ -30,6 +30,11 @@ Before building ANY UI element:
 8. [Form Patterns](#8-form-patterns)
 9. [Accessibility Requirements](#9-accessibility-requirements)
 10. [Testing Standards](#10-testing-standards)
+11. [Design Principles](#11-design-principles)
+12. [Marketing Website Structure](#12-marketing-website-structure)
+13. [Dashboard-Specific Elements](#13-dashboard-specific-elements)
+14. [Responsive Behavior](#14-responsive-behavior)
+15. [Animation Guidelines](#15-animation-guidelines)
 
 ---
 
@@ -914,7 +919,117 @@ This section tracks all components and their adoption status across the platform
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-01-11 | 1.1.0 | Merged design_guidelines.md content - Marketing, Responsive, Animation sections |
 | 2026-01-08 | 1.0.0 | Initial release - Complete design system documentation |
+
+---
+
+## 11. Design Principles
+
+**Enterprise SaaS Dashboard System**: Professional B2B wholesale VoIP platform combining Stripe's enterprise polish with Linear's information density.
+
+### Core Principles
+- **Enterprise-grade professionalism**: Trustworthy, polished, telecommunications-focused
+- **Information density**: Dashboard-first layouts optimizing for data visibility
+- **Portal differentiation**: Subtle accent variations maintaining brand cohesion
+- **Dark mode native**: Designed for extended monitoring sessions
+
+---
+
+## 12. Marketing Website Structure
+
+### 12.1 Hero Section
+**Full-width split layout**:
+- Left (50%): Bold headline "Enterprise VoIP Wholesale Platform", subheading, two CTAs ("Start Free Trial" + "View Pricing"), trust line
+- Right (50%): Large dashboard screenshot showing real-time call metrics
+- Height: min-h-[700px] with gradient overlay background
+- Include subtle grid pattern background
+
+### 12.2 Platform Capabilities (3-column grid)
+Cards showcasing:
+- Wholesale voice termination
+- DID number management
+- Real-time call routing
+- Carrier interconnection
+- Billing & invoicing automation
+- Advanced analytics & reporting
+
+Each card: Icon (24px), title, 2-line description, underline link
+
+### 12.3 Portal Showcase (4-column)
+Visual cards for each portal with screenshots:
+- Customer portal preview
+- Carrier portal preview
+- Admin portal preview
+- API documentation portal
+
+### 12.4 Pricing Table
+3-tier comparison (Starter, Professional, Enterprise):
+- Feature checkmarks per tier
+- Prominent CTAs
+- "Contact Sales" for Enterprise
+
+### 12.5 Footer
+4-column layout:
+- Company info + logo
+- Products (Portal links)
+- Resources (Docs, API, Status Page)
+- Contact (Support, Sales, Social links)
+- Bottom bar: Copyright, legal links
+
+---
+
+## 13. Dashboard-Specific Elements
+
+### 13.1 Metrics Display
+- Large number typography for KPIs (text-4xl font-bold)
+- Percentage changes with color indicators (+green, -red)
+- Time range selectors (24h, 7d, 30d, Custom)
+
+### 13.2 Status Indicators
+- Online/Offline dots: 8px rounded-full
+- Health status: Green/Yellow/Red with labels
+- Real-time badges: "LIVE" pulsing indicator
+
+### 13.3 Data Visualization
+- Line charts for call volume trends
+- Bar charts for geographic distribution
+- Donut charts for resource utilization
+- Heatmaps for peak traffic periods
+
+---
+
+## 14. Responsive Behavior
+
+| Breakpoint | Layout | Notes |
+|------------|--------|-------|
+| Desktop (≥1024px) | Multi-column dashboards, side-by-side data views | Full feature set |
+| Tablet (768-1023px) | 2-column maximum, stacked cards | Reduced sidebars |
+| Mobile (<768px) | Single column, collapsible tables, bottom sheet filters | Hamburger menu |
+
+### Mobile Navigation
+- Hamburger menu with slide-out drawer
+- Bottom navigation for primary actions
+- Collapsible table views
+
+---
+
+## 15. Animation Guidelines
+
+**Rule**: Minimal and purposeful only
+
+| Animation | Usage | Duration |
+|-----------|-------|----------|
+| Fade-in on scroll | Marketing sections only | 300ms |
+| Number counting | Statistics/KPIs on load | 500ms |
+| Skeleton loading | Dashboard data loading | Until data loads |
+| Interactive transitions | Hover/focus states | 150ms |
+
+**Forbidden**:
+- Decorative animations
+- Parallax effects
+- Auto-playing carousels
+- Bouncing/wiggling elements
 
 ---
 

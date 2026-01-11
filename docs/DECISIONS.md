@@ -121,3 +121,26 @@ try {
 - Added `address_type` column to `interconnect_validation_settings` table (default: "transport")
 
 **Persistence**: Both cards share the same validation settings record - single Edit/Save button saves all fields together
+
+---
+
+## 2026-01-11: Design Documentation Consolidation
+
+**Decision**: Merged `design_guidelines.md` into `DESIGN_SYSTEM.md` as the single canonical design source.
+
+**Reason**: Prevent duplication and drift between two design documentation files. DESIGN_SYSTEM.md was more comprehensive and already declared as "Single Source of Truth".
+
+**What was merged**:
+- Design Principles (section 11)
+- Marketing Website Structure (section 12)
+- Dashboard-Specific Elements (section 13)
+- Responsive Behavior (section 14)
+- Animation Guidelines (section 15)
+
+**Actions taken**:
+1. Added sections 11-15 to DESIGN_SYSTEM.md
+2. Updated Table of Contents
+3. Updated changelog to version 1.1.0
+4. Replaced design_guidelines.md with DEPRECATED stub (not deleted, to prevent accidental recreation)
+
+**Canonical source**: `DESIGN_SYSTEM.md` is the ONLY design documentation file going forward
