@@ -89,7 +89,7 @@ const defaultAddRateForm: AddRateFormData = {
   recurringInterval: "1",
   advancedOptions: "",
   minMargin: "0",
-  applyDefaultMargin: true,
+  applyDefaultMargin: false,
   blocked: false,
   locked: false,
 };
@@ -834,26 +834,48 @@ export default function RatingPlanDetailPage() {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={addRateForm.effectiveDate ? new Date(addRateForm.effectiveDate) : undefined}
-                            onSelect={(date) => {
-                              if (date) {
-                                setAddRateForm(prev => ({ 
-                                  ...prev, 
-                                  effectiveDate: format(date, "yyyy-MM-dd") 
-                                }));
-                              }
-                            }}
-                            initialFocus
-                          />
+                          <div className="p-0">
+                            <Calendar
+                              mode="single"
+                              selected={addRateForm.effectiveDate ? new Date(addRateForm.effectiveDate) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  setAddRateForm(prev => ({ 
+                                    ...prev, 
+                                    effectiveDate: format(date, "yyyy-MM-dd") 
+                                  }));
+                                }
+                              }}
+                              initialFocus
+                            />
+                            <div className="border-t p-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  setAddRateForm(prev => ({ 
+                                    ...prev, 
+                                    effectiveDate: format(new Date(), "yyyy-MM-dd") 
+                                  }));
+                                }}
+                                data-testid="button-effective-date-today"
+                              >
+                                Today
+                              </Button>
+                            </div>
+                          </div>
                         </PopoverContent>
                       </Popover>
                       <Input 
-                        type="time"
+                        type="text"
+                        placeholder="00:00"
                         value={addRateForm.effectiveTime}
-                        onChange={(e) => setAddRateForm(prev => ({ ...prev, effectiveTime: e.target.value }))}
-                        className="w-24"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9:]/g, '');
+                          setAddRateForm(prev => ({ ...prev, effectiveTime: val }));
+                        }}
+                        className="w-20 text-center"
                         data-testid="input-add-rate-effective-time"
                       />
                     </div>
@@ -899,26 +921,48 @@ export default function RatingPlanDetailPage() {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={addRateForm.endDate ? new Date(addRateForm.endDate) : undefined}
-                            onSelect={(date) => {
-                              if (date) {
-                                setAddRateForm(prev => ({ 
-                                  ...prev, 
-                                  endDate: format(date, "yyyy-MM-dd") 
-                                }));
-                              }
-                            }}
-                            initialFocus
-                          />
+                          <div className="p-0">
+                            <Calendar
+                              mode="single"
+                              selected={addRateForm.endDate ? new Date(addRateForm.endDate) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  setAddRateForm(prev => ({ 
+                                    ...prev, 
+                                    endDate: format(date, "yyyy-MM-dd") 
+                                  }));
+                                }
+                              }}
+                              initialFocus
+                            />
+                            <div className="border-t p-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  setAddRateForm(prev => ({ 
+                                    ...prev, 
+                                    endDate: format(new Date(), "yyyy-MM-dd") 
+                                  }));
+                                }}
+                                data-testid="button-end-date-today"
+                              >
+                                Today
+                              </Button>
+                            </div>
+                          </div>
                         </PopoverContent>
                       </Popover>
                       <Input 
-                        type="time"
+                        type="text"
+                        placeholder="00:00"
                         value={addRateForm.endTime}
-                        onChange={(e) => setAddRateForm(prev => ({ ...prev, endTime: e.target.value }))}
-                        className="w-24"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9:]/g, '');
+                          setAddRateForm(prev => ({ ...prev, endTime: val }));
+                        }}
+                        className="w-20 text-center"
                         data-testid="input-add-rate-end-time"
                       />
                     </div>
