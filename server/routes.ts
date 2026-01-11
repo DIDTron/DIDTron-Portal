@@ -66,7 +66,13 @@ import {
   insertQueueSchema,
   insertWebhookSchema,
   insertBillingTermSchema,
-  updateBillingTermSchema
+  updateBillingTermSchema,
+  insertInterconnectIpAddressSchema,
+  insertInterconnectValidationSettingsSchema,
+  insertInterconnectTranslationSettingsSchema,
+  insertInterconnectCodecSchema,
+  insertInterconnectMediaSettingsSchema,
+  insertInterconnectSignallingSettingsSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -5918,6 +5924,190 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete carrier credit alert" });
+    }
+  });
+
+  // ==================== INTERCONNECT SETTINGS (Digitalk Matching) ====================
+
+  // Interconnect IP Addresses
+  app.get("/api/interconnects/:id/ip-addresses", async (req, res) => {
+    try {
+      const addresses = await storage.getInterconnectIpAddresses(req.params.id);
+      res.json(addresses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch IP addresses" });
+    }
+  });
+
+  app.post("/api/interconnects/:id/ip-addresses", async (req, res) => {
+    try {
+      const parsed = insertInterconnectIpAddressSchema.safeParse({ ...req.body, interconnectId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const address = await storage.createInterconnectIpAddress(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "interconnect_ip_addresses",
+        recordId: address.id,
+        newValues: address,
+      });
+      res.status(201).json(address);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create IP address" });
+    }
+  });
+
+  app.delete("/api/ip-addresses/:id", async (req, res) => {
+    try {
+      await storage.deleteInterconnectIpAddress(req.params.id);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "interconnect_ip_addresses",
+        recordId: req.params.id,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete IP address" });
+    }
+  });
+
+  // Interconnect Validation Settings
+  app.get("/api/interconnects/:id/validation-settings", async (req, res) => {
+    try {
+      const settings = await storage.getInterconnectValidationSettings(req.params.id);
+      res.json(settings || {});
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch validation settings" });
+    }
+  });
+
+  app.put("/api/interconnects/:id/validation-settings", async (req, res) => {
+    try {
+      const parsed = insertInterconnectValidationSettingsSchema.safeParse({ ...req.body, interconnectId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const settings = await storage.upsertInterconnectValidationSettings(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "upsert",
+        tableName: "interconnect_validation_settings",
+        recordId: settings.id,
+        newValues: settings,
+      });
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save validation settings" });
+    }
+  });
+
+  // Interconnect Translation Settings
+  app.get("/api/interconnects/:id/translation-settings", async (req, res) => {
+    try {
+      const settings = await storage.getInterconnectTranslationSettings(req.params.id);
+      res.json(settings || {});
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch translation settings" });
+    }
+  });
+
+  app.put("/api/interconnects/:id/translation-settings", async (req, res) => {
+    try {
+      const parsed = insertInterconnectTranslationSettingsSchema.safeParse({ ...req.body, interconnectId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const settings = await storage.upsertInterconnectTranslationSettings(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "upsert",
+        tableName: "interconnect_translation_settings",
+        recordId: settings.id,
+        newValues: settings,
+      });
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save translation settings" });
+    }
+  });
+
+  // Interconnect Codecs
+  app.get("/api/interconnects/:id/codecs", async (req, res) => {
+    try {
+      const codecs = await storage.getInterconnectCodecs(req.params.id);
+      res.json(codecs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch codecs" });
+    }
+  });
+
+  app.put("/api/interconnects/:id/codecs", async (req, res) => {
+    try {
+      const codecsData = req.body.codecs || [];
+      const codecs = await storage.upsertInterconnectCodecs(req.params.id, codecsData.map((c: any) => ({ ...c, interconnectId: req.params.id })));
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "upsert",
+        tableName: "interconnect_codecs",
+        recordId: req.params.id,
+        newValues: { codecs },
+      });
+      res.json(codecs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save codecs" });
+    }
+  });
+
+  // Interconnect Media Settings
+  app.get("/api/interconnects/:id/media-settings", async (req, res) => {
+    try {
+      const settings = await storage.getInterconnectMediaSettings(req.params.id);
+      res.json(settings || {});
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch media settings" });
+    }
+  });
+
+  app.put("/api/interconnects/:id/media-settings", async (req, res) => {
+    try {
+      const parsed = insertInterconnectMediaSettingsSchema.safeParse({ ...req.body, interconnectId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const settings = await storage.upsertInterconnectMediaSettings(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "upsert",
+        tableName: "interconnect_media_settings",
+        recordId: settings.id,
+        newValues: settings,
+      });
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save media settings" });
+    }
+  });
+
+  // Interconnect Signalling Settings
+  app.get("/api/interconnects/:id/signalling-settings", async (req, res) => {
+    try {
+      const settings = await storage.getInterconnectSignallingSettings(req.params.id);
+      res.json(settings || {});
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch signalling settings" });
+    }
+  });
+
+  app.put("/api/interconnects/:id/signalling-settings", async (req, res) => {
+    try {
+      const parsed = insertInterconnectSignallingSettingsSchema.safeParse({ ...req.body, interconnectId: req.params.id });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const settings = await storage.upsertInterconnectSignallingSettings(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "upsert",
+        tableName: "interconnect_signalling_settings",
+        recordId: settings.id,
+        newValues: settings,
+      });
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save signalling settings" });
     }
   });
 

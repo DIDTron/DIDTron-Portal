@@ -87,6 +87,18 @@ import {
   type CarrierService, type InsertCarrierService,
   type CarrierContact, type InsertCarrierContact,
   type CarrierCreditAlert, type InsertCarrierCreditAlert,
+  type InterconnectIpAddress, type InsertInterconnectIpAddress,
+  type InterconnectValidationSettings, type InsertInterconnectValidationSettings,
+  type InterconnectTranslationSettings, type InsertInterconnectTranslationSettings,
+  type InterconnectCodec, type InsertInterconnectCodec,
+  type InterconnectMediaSettings, type InsertInterconnectMediaSettings,
+  type InterconnectSignallingSettings, type InsertInterconnectSignallingSettings,
+  interconnectIpAddresses as interconnectIpAddressesTable,
+  interconnectValidationSettings as interconnectValidationSettingsTable,
+  interconnectTranslationSettings as interconnectTranslationSettingsTable,
+  interconnectCodecs as interconnectCodecsTable,
+  interconnectMediaSettings as interconnectMediaSettingsTable,
+  interconnectSignallingSettings as interconnectSignallingSettingsTable,
   customers as customersTable,
   carriers as carriersTable,
   carrierInterconnects as carrierInterconnectsTable,
@@ -213,6 +225,31 @@ export interface IStorage {
   createCarrierCreditAlert(alert: InsertCarrierCreditAlert): Promise<CarrierCreditAlert>;
   updateCarrierCreditAlert(id: string, data: Partial<InsertCarrierCreditAlert>): Promise<CarrierCreditAlert | undefined>;
   deleteCarrierCreditAlert(id: string): Promise<boolean>;
+
+  // Interconnect IP Addresses
+  getInterconnectIpAddresses(interconnectId: string): Promise<InterconnectIpAddress[]>;
+  createInterconnectIpAddress(data: InsertInterconnectIpAddress): Promise<InterconnectIpAddress>;
+  deleteInterconnectIpAddress(id: string): Promise<boolean>;
+
+  // Interconnect Validation Settings
+  getInterconnectValidationSettings(interconnectId: string): Promise<InterconnectValidationSettings | undefined>;
+  upsertInterconnectValidationSettings(data: InsertInterconnectValidationSettings): Promise<InterconnectValidationSettings>;
+
+  // Interconnect Translation Settings
+  getInterconnectTranslationSettings(interconnectId: string): Promise<InterconnectTranslationSettings | undefined>;
+  upsertInterconnectTranslationSettings(data: InsertInterconnectTranslationSettings): Promise<InterconnectTranslationSettings>;
+
+  // Interconnect Codecs
+  getInterconnectCodecs(interconnectId: string): Promise<InterconnectCodec[]>;
+  upsertInterconnectCodecs(interconnectId: string, codecs: InsertInterconnectCodec[]): Promise<InterconnectCodec[]>;
+
+  // Interconnect Media Settings
+  getInterconnectMediaSettings(interconnectId: string): Promise<InterconnectMediaSettings | undefined>;
+  upsertInterconnectMediaSettings(data: InsertInterconnectMediaSettings): Promise<InterconnectMediaSettings>;
+
+  // Interconnect Signalling Settings
+  getInterconnectSignallingSettings(interconnectId: string): Promise<InterconnectSignallingSettings | undefined>;
+  upsertInterconnectSignallingSettings(data: InsertInterconnectSignallingSettings): Promise<InterconnectSignallingSettings>;
 
   // Audit Logs
   getAuditLogs(tableName?: string, recordId?: string, limit?: number): Promise<AuditLog[]>;
@@ -1553,6 +1590,113 @@ export class MemStorage implements IStorage {
   async deleteCarrierCreditAlert(id: string): Promise<boolean> {
     const results = await db.delete(carrierCreditAlertsTable).where(eq(carrierCreditAlertsTable.id, id)).returning();
     return results.length > 0;
+  }
+
+  // Interconnect IP Addresses - Persisted to Database
+  async getInterconnectIpAddresses(interconnectId: string): Promise<InterconnectIpAddress[]> {
+    return await db.select().from(interconnectIpAddressesTable).where(eq(interconnectIpAddressesTable.interconnectId, interconnectId));
+  }
+
+  async createInterconnectIpAddress(data: InsertInterconnectIpAddress): Promise<InterconnectIpAddress> {
+    const results = await db.insert(interconnectIpAddressesTable).values(data).returning();
+    return results[0];
+  }
+
+  async deleteInterconnectIpAddress(id: string): Promise<boolean> {
+    const results = await db.delete(interconnectIpAddressesTable).where(eq(interconnectIpAddressesTable.id, id)).returning();
+    return results.length > 0;
+  }
+
+  // Interconnect Validation Settings - Persisted to Database
+  async getInterconnectValidationSettings(interconnectId: string): Promise<InterconnectValidationSettings | undefined> {
+    const results = await db.select().from(interconnectValidationSettingsTable).where(eq(interconnectValidationSettingsTable.interconnectId, interconnectId));
+    return results[0];
+  }
+
+  async upsertInterconnectValidationSettings(data: InsertInterconnectValidationSettings): Promise<InterconnectValidationSettings> {
+    const existing = await this.getInterconnectValidationSettings(data.interconnectId);
+    if (existing) {
+      const results = await db.update(interconnectValidationSettingsTable)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(interconnectValidationSettingsTable.interconnectId, data.interconnectId))
+        .returning();
+      return results[0];
+    } else {
+      const results = await db.insert(interconnectValidationSettingsTable).values(data).returning();
+      return results[0];
+    }
+  }
+
+  // Interconnect Translation Settings - Persisted to Database
+  async getInterconnectTranslationSettings(interconnectId: string): Promise<InterconnectTranslationSettings | undefined> {
+    const results = await db.select().from(interconnectTranslationSettingsTable).where(eq(interconnectTranslationSettingsTable.interconnectId, interconnectId));
+    return results[0];
+  }
+
+  async upsertInterconnectTranslationSettings(data: InsertInterconnectTranslationSettings): Promise<InterconnectTranslationSettings> {
+    const existing = await this.getInterconnectTranslationSettings(data.interconnectId);
+    if (existing) {
+      const results = await db.update(interconnectTranslationSettingsTable)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(interconnectTranslationSettingsTable.interconnectId, data.interconnectId))
+        .returning();
+      return results[0];
+    } else {
+      const results = await db.insert(interconnectTranslationSettingsTable).values(data).returning();
+      return results[0];
+    }
+  }
+
+  // Interconnect Codecs - Persisted to Database
+  async getInterconnectCodecs(interconnectId: string): Promise<InterconnectCodec[]> {
+    return await db.select().from(interconnectCodecsTable).where(eq(interconnectCodecsTable.interconnectId, interconnectId));
+  }
+
+  async upsertInterconnectCodecs(interconnectId: string, codecs: InsertInterconnectCodec[]): Promise<InterconnectCodec[]> {
+    await db.delete(interconnectCodecsTable).where(eq(interconnectCodecsTable.interconnectId, interconnectId));
+    if (codecs.length === 0) return [];
+    const results = await db.insert(interconnectCodecsTable).values(codecs).returning();
+    return results;
+  }
+
+  // Interconnect Media Settings - Persisted to Database
+  async getInterconnectMediaSettings(interconnectId: string): Promise<InterconnectMediaSettings | undefined> {
+    const results = await db.select().from(interconnectMediaSettingsTable).where(eq(interconnectMediaSettingsTable.interconnectId, interconnectId));
+    return results[0];
+  }
+
+  async upsertInterconnectMediaSettings(data: InsertInterconnectMediaSettings): Promise<InterconnectMediaSettings> {
+    const existing = await this.getInterconnectMediaSettings(data.interconnectId);
+    if (existing) {
+      const results = await db.update(interconnectMediaSettingsTable)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(interconnectMediaSettingsTable.interconnectId, data.interconnectId))
+        .returning();
+      return results[0];
+    } else {
+      const results = await db.insert(interconnectMediaSettingsTable).values(data).returning();
+      return results[0];
+    }
+  }
+
+  // Interconnect Signalling Settings - Persisted to Database
+  async getInterconnectSignallingSettings(interconnectId: string): Promise<InterconnectSignallingSettings | undefined> {
+    const results = await db.select().from(interconnectSignallingSettingsTable).where(eq(interconnectSignallingSettingsTable.interconnectId, interconnectId));
+    return results[0];
+  }
+
+  async upsertInterconnectSignallingSettings(data: InsertInterconnectSignallingSettings): Promise<InterconnectSignallingSettings> {
+    const existing = await this.getInterconnectSignallingSettings(data.interconnectId);
+    if (existing) {
+      const results = await db.update(interconnectSignallingSettingsTable)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(interconnectSignallingSettingsTable.interconnectId, data.interconnectId))
+        .returning();
+      return results[0];
+    } else {
+      const results = await db.insert(interconnectSignallingSettingsTable).values(data).returning();
+      return results[0];
+    }
   }
 
   // Audit Logs
