@@ -68,3 +68,18 @@ try {
 **Reason**: Without relayOnly, the field resets to default on each page load, losing user's configuration.
 
 **Fix Location**: `interconnect-detail.tsx` useEffect for codecsData
+
+---
+
+## 2026-01-11: Interconnect Tabs Overflow Fix for Bilateral
+
+**Decision**: Add horizontal scroll to TabsList container for interconnect detail page.
+
+**Reason**: Bilateral interconnects have 9 tabs (Details, Services, Ingress Validation, Ingress Translation, Egress Routing, Egress Translations, Media, Monitoring, Signalling) which were being cut off due to container overflow.
+
+**Fix**: Added `overflow-x-auto` to container div and `w-max` to TabsList to enable horizontal scrolling.
+
+**Tab Structure Per Direction** (matching Digitalk exactly):
+- **Customer (Ingress)**: Details, Services, Ingress Validation, Ingress Translation, Media, Signalling (6 tabs)
+- **Supplier (Egress)**: Details, Egress Routing, Egress Translations, Media, Monitoring, Signalling (6 tabs)
+- **Bilateral**: All 9 tabs combined

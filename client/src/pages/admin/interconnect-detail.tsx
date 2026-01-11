@@ -650,8 +650,8 @@ export default function InterconnectDetailPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <div className="border-b px-4">
-          <TabsList className="h-12">
+        <div className="border-b px-4 overflow-x-auto">
+          <TabsList className="h-12 w-max">
             {tabs.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id} data-testid={`tab-${tab.id}`}>
                 {tab.label}

@@ -16,6 +16,13 @@
 | Configure Digitalk Carrier Cloud Settings | 99 | [Link](https://app.tango.us/app/workflow/Configure-Digitalk-Carrier-Cloud-Settings-7dc7bf616d1f43dcb2c4970be1005d6c) | Global settings, system configuration |
 | Configure Privacy and Rating | 32 | [Link](https://app.tango.us/app/workflow/Configure-Privacy-and-Rating-in-Digitalk-a4dcd176c97f4e62ace6f888a9a13c4f) | Privacy methods, rating configuration |
 
+### Interconnect Tab Structure Screenshots (Digitalk Reference)
+| File | Direction | Tabs Shown |
+|------|-----------|------------|
+| `attached_assets/{A2F90D2C-28B8-4F24-BA82-105377EE5693}_1768092645247.png` | Customer (CU) | Details, Services, Ingress Validation, Ingress Translation, Media, Signalling |
+| `attached_assets/{9B356A91-FF06-4EEF-BDE5-A4C37E75A980}_1768092664570.png` | Supplier (SU) | Details, Egress Routing, Egress Translations, Media, Monitoring, Signalling |
+| `attached_assets/{A0103EB6-68C2-42FF-9653-A77893BFBA21}_1768092712279.png` | Bilateral | Details, Services, Ingress Validation, Ingress Translation, Egress Routing, Egress Translations, Media, Monitoring, Signalling |
+
 ## Key Implementation Files
 
 ### Frontend
