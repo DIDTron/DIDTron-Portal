@@ -272,7 +272,25 @@ Rules:
    - Every work response must include Plan ID + task ID + whether it existed or was created + which tasks were checked off.
 
 ────────────────────────────────────────────────────────────
-16) EMERGENCY STOP (WHEN DRIFT IS DETECTED)
+16) PRE-TASK VERIFICATION — MANDATORY EXISTENCE CHECK
+────────────────────────────────────────────────────────────
+Before starting ANY task from docs/TODO.md, you MUST verify if the feature/page/component already exists in the codebase.
+
+Mandatory steps:
+1) Search the codebase for the feature (glob, grep, search_codebase)
+2) Check if the page/component/API already exists and is functional
+3) If EXISTS:
+   - Report to user: "Feature X already exists at [location]"
+   - Mark the task as completed in docs/TODO.md with note: "Pre-verified: already implemented"
+   - Ask user what to do next
+4) If DOES NOT EXIST:
+   - Report to user: "Feature X not found, proceeding to build"
+   - Continue with implementation
+
+This prevents duplicate work and ensures accurate TODO tracking.
+
+────────────────────────────────────────────────────────────
+17) EMERGENCY STOP (WHEN DRIFT IS DETECTED)
 ────────────────────────────────────────────────────────────
 If user says “EMERGENCY STOP”:
 - Stop coding immediately.
@@ -285,7 +303,7 @@ If user says “EMERGENCY STOP”:
 - Do not change files until those 4 items are output.
 
 ────────────────────────────────────────────────────────────
-17) REQUIRED OUTPUT FORMAT (SO USER CAN POLICE DRIFT)
+18) REQUIRED OUTPUT FORMAT (SO USER CAN POLICE DRIFT)
 ────────────────────────────────────────────────────────────
 Before coding, output:
 1) READ CHECK ✅ and list files opened
