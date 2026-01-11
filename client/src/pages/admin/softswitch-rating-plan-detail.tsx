@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -65,6 +67,7 @@ interface AddRateFormData {
   recurringCharge: string;
   recurringInterval: string;
   usePeriodException: boolean;
+  copyRecurringFromInitial: boolean;
   advancedOptions: string;
   minMargin: string;
   applyDefaultMargin: boolean;
@@ -89,6 +92,7 @@ const defaultAddRateForm: AddRateFormData = {
   recurringCharge: "0.0000",
   recurringInterval: "1",
   usePeriodException: true,
+  copyRecurringFromInitial: true,
   advancedOptions: "",
   minMargin: "0",
   applyDefaultMargin: false,
@@ -140,6 +144,9 @@ export default function RatingPlanDetailPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  
+  const [showRecurringWarning, setShowRecurringWarning] = useState(false);
+  const [warningConfirmText, setWarningConfirmText] = useState("");
 
   const { data: plan, isLoading: planLoading } = useQuery<CustomerRatingPlan>({
     queryKey: [`/api/softswitch/rating/customer-plans/${planId}`],
@@ -252,16 +259,7 @@ export default function RatingPlanDetailPage() {
     setAddRateForm(prev => ({ ...prev, codes }));
   };
 
-  const handleSaveRate = () => {
-    if (!addRateForm.zone || addRateForm.codes.length === 0) {
-      toast({ title: "Error", description: "Zone and codes are required", variant: "destructive" });
-      return;
-    }
-    if (!addRateForm.recurringCharge || parseFloat(addRateForm.recurringCharge) < 0) {
-      toast({ title: "Error", description: "Valid recurring charge is required", variant: "destructive" });
-      return;
-    }
-
+  const doSubmitRate = () => {
     const effectiveDateISO = addRateForm.useCurrentDateTime 
       ? new Date().toISOString()
       : new Date(`${addRateForm.effectiveDate}T${addRateForm.effectiveTime}:00`).toISOString();
@@ -269,6 +267,10 @@ export default function RatingPlanDetailPage() {
     const endDateISO = addRateForm.endDate 
       ? new Date(`${addRateForm.endDate}T${addRateForm.endTime}:00`).toISOString()
       : null;
+
+    const finalRecurringCharge = addRateForm.copyRecurringFromInitial 
+      ? addRateForm.initialCharge 
+      : addRateForm.recurringCharge;
 
     createRateMutation.mutate({
       zone: addRateForm.zone,
@@ -281,7 +283,7 @@ export default function RatingPlanDetailPage() {
       connectionCharge: addRateForm.connectionCharge,
       initialCharge: addRateForm.initialCharge,
       initialInterval: parseInt(addRateForm.initialInterval) || 1,
-      recurringCharge: addRateForm.recurringCharge,
+      recurringCharge: finalRecurringCharge,
       recurringInterval: parseInt(addRateForm.recurringInterval) || 1,
       advancedOptions: addRateForm.advancedOptions || null,
       minMargin: addRateForm.minMargin,
@@ -290,6 +292,42 @@ export default function RatingPlanDetailPage() {
       locked: addRateForm.locked,
       currency: plan?.currency || "USD",
     });
+  };
+
+  const handleSaveRate = () => {
+    if (!addRateForm.zone || addRateForm.codes.length === 0) {
+      toast({ title: "Error", description: "Zone and codes are required", variant: "destructive" });
+      return;
+    }
+    
+    const finalRecurringCharge = addRateForm.copyRecurringFromInitial 
+      ? addRateForm.initialCharge 
+      : addRateForm.recurringCharge;
+      
+    if (!finalRecurringCharge || parseFloat(finalRecurringCharge) < 0) {
+      toast({ title: "Error", description: "Valid recurring charge is required", variant: "destructive" });
+      return;
+    }
+
+    if (!addRateForm.copyRecurringFromInitial) {
+      const recurring = parseFloat(addRateForm.recurringCharge) || 0;
+      const initial = parseFloat(addRateForm.initialCharge) || 0;
+      if (recurring < initial) {
+        setShowRecurringWarning(true);
+        setWarningConfirmText("");
+        return;
+      }
+    }
+
+    doSubmitRate();
+  };
+
+  const handleWarningConfirm = () => {
+    if (warningConfirmText.toLowerCase() === "yes") {
+      setShowRecurringWarning(false);
+      setWarningConfirmText("");
+      doSubmitRate();
+    }
   };
 
   const getEffectiveStatus = (rate: CustomerRatingPlanRate) => {
@@ -1036,12 +1074,25 @@ export default function RatingPlanDetailPage() {
                       <Input 
                         type="number"
                         step="0.0001"
-                        value={addRateForm.recurringCharge}
+                        value={addRateForm.copyRecurringFromInitial ? addRateForm.initialCharge : addRateForm.recurringCharge}
                         onChange={(e) => setAddRateForm(prev => ({ ...prev, recurringCharge: e.target.value }))}
                         className="w-24"
+                        disabled={addRateForm.copyRecurringFromInitial}
                         data-testid="input-add-rate-recurring-charge"
                       />
                       <span className="text-sm">{plan?.currency}</span>
+                      <Checkbox 
+                        id="copy-recurring-from-initial"
+                        checked={addRateForm.copyRecurringFromInitial}
+                        onCheckedChange={(checked) => {
+                          setAddRateForm(prev => ({ 
+                            ...prev, 
+                            copyRecurringFromInitial: !!checked,
+                            recurringCharge: checked ? prev.initialCharge : prev.recurringCharge
+                          }));
+                        }}
+                        data-testid="checkbox-copy-recurring-from-initial"
+                      />
                     </div>
                     <div className="flex items-center gap-4">
                       <Label className="w-36 text-right text-sm">Recurring Interval</Label>
@@ -1172,6 +1223,46 @@ export default function RatingPlanDetailPage() {
               {createRateMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRecurringWarning} onOpenChange={setShowRecurringWarning}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Warning: Recurring Charge Lower Than Initial</DialogTitle>
+            <DialogDescription>
+              The recurring charge ({addRateForm.recurringCharge}) is less than the initial charge ({addRateForm.initialCharge}). 
+              Are you sure you want to apply these changes?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="confirm-text">Type "yes" to confirm:</Label>
+              <Input 
+                id="confirm-text"
+                value={warningConfirmText}
+                onChange={(e) => setWarningConfirmText(e.target.value)}
+                placeholder="Type yes to confirm"
+                data-testid="input-warning-confirm"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => { setShowRecurringWarning(false); setWarningConfirmText(""); }}
+              data-testid="button-warning-no"
+            >
+              No
+            </Button>
+            <Button 
+              onClick={handleWarningConfirm}
+              disabled={warningConfirmText.toLowerCase() !== "yes"}
+              data-testid="button-warning-confirm"
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
