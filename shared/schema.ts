@@ -547,6 +547,36 @@ export const interconnectMonitoringSettings = pgTable("interconnect_monitoring_s
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ==================== CUSTOMER RATING PLANS ====================
+
+export const customerRatingPlans = pgTable("customer_rating_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  timeZone: text("time_zone").default("UTC"),
+  carrierTimeZone: text("carrier_time_zone"),
+  defaultRates: text("default_rates").default("Define Later"),
+  marginEnforcement: text("margin_enforcement").default("Enabled"),
+  minMargin: decimal("min_margin", { precision: 5, scale: 2 }).default("0"),
+  effectiveDate: timestamp("effective_date"),
+  initialInterval: integer("initial_interval").default(0),
+  recurringInterval: integer("recurring_interval").default(1),
+  periodExceptionTemplate: text("period_exception_template"),
+  template: text("template"),
+  uncommittedChanges: boolean("uncommitted_changes").default(false),
+  assigned: boolean("assigned").default(false),
+  selectedTimeClasses: text("selected_time_classes").array(),
+  selectedZones: text("selected_zones").array(),
+  zonesSelect: text("zones_select").default("None"),
+  assignOrigin: text("assign_origin").default("None"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCustomerRatingPlanSchema = createInsertSchema(customerRatingPlans).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCustomerRatingPlan = z.infer<typeof insertCustomerRatingPlanSchema>;
+export type CustomerRatingPlan = typeof customerRatingPlans.$inferSelect;
+
 // ==================== POPS (Points of Presence) ====================
 
 export const pops = pgTable("pops", {
