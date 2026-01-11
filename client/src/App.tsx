@@ -23,9 +23,9 @@ function Router() {
       <Route path="/docs" component={Docs} />
       <Route path="/docs/:category" component={Docs} />
       <Route path="/docs/:category/:article" component={Docs} />
-      <Route path="/admin/:rest*" component={AdminLayout} />
+      <Route path="/admin/*" component={AdminLayout} />
       <Route path="/admin" component={AdminLayout} />
-      <Route path="/portal/:rest*" component={PortalLayout} />
+      <Route path="/portal/*" component={PortalLayout} />
       <Route path="/portal" component={PortalLayout} />
       <Route component={NotFound} />
     </Switch>
