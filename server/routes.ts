@@ -5460,7 +5460,7 @@ export async function registerRoutes(
 
   app.get("/api/carriers/:id", async (req, res) => {
     try {
-      const carrier = await storage.getCarrier(req.params.id);
+      const carrier = await storage.resolveCarrier(req.params.id);
       if (!carrier) return res.status(404).json({ error: "Carrier not found" });
       res.json(carrier);
     } catch (error) {
@@ -5587,7 +5587,7 @@ export async function registerRoutes(
 
   app.get("/api/softswitch/rating/customer-plans/:id", async (req, res) => {
     try {
-      const plan = await storage.getCustomerRatingPlan(req.params.id);
+      const plan = await storage.resolveCustomerRatingPlan(req.params.id);
       if (!plan) return res.status(404).json({ error: "Rating plan not found" });
       res.json(plan);
     } catch (error) {
@@ -5619,14 +5619,14 @@ export async function registerRoutes(
 
   app.patch("/api/softswitch/rating/customer-plans/:id", async (req, res) => {
     try {
-      const oldPlan = await storage.getCustomerRatingPlan(req.params.id);
-      const plan = await storage.updateCustomerRatingPlan(req.params.id, req.body);
-      if (!plan) return res.status(404).json({ error: "Rating plan not found" });
+      const oldPlan = await storage.resolveCustomerRatingPlan(req.params.id);
+      if (!oldPlan) return res.status(404).json({ error: "Rating plan not found" });
+      const plan = await storage.updateCustomerRatingPlan(oldPlan.id, req.body);
       await storage.createAuditLog({
         userId: req.session?.userId,
         action: "update",
         tableName: "customer_rating_plans",
-        recordId: req.params.id,
+        recordId: oldPlan.id,
         oldValues: oldPlan,
         newValues: plan,
       });
@@ -5638,14 +5638,14 @@ export async function registerRoutes(
 
   app.delete("/api/softswitch/rating/customer-plans/:id", async (req, res) => {
     try {
-      const oldPlan = await storage.getCustomerRatingPlan(req.params.id);
-      const deleted = await storage.deleteCustomerRatingPlan(req.params.id);
-      if (!deleted) return res.status(404).json({ error: "Rating plan not found" });
+      const oldPlan = await storage.resolveCustomerRatingPlan(req.params.id);
+      if (!oldPlan) return res.status(404).json({ error: "Rating plan not found" });
+      const deleted = await storage.deleteCustomerRatingPlan(oldPlan.id);
       await storage.createAuditLog({
         userId: req.session?.userId,
         action: "delete",
         tableName: "customer_rating_plans",
-        recordId: req.params.id,
+        recordId: oldPlan.id,
         oldValues: oldPlan,
       });
       res.status(204).send();
@@ -5855,7 +5855,7 @@ export async function registerRoutes(
 
   app.get("/api/interconnects/:id", async (req, res) => {
     try {
-      const interconnect = await storage.getCarrierInterconnect(req.params.id);
+      const interconnect = await storage.resolveCarrierInterconnect(req.params.id);
       if (!interconnect) return res.status(404).json({ error: "Interconnect not found" });
       res.json(interconnect);
     } catch (error) {
@@ -5865,16 +5865,16 @@ export async function registerRoutes(
 
   app.put("/api/interconnects/:id", async (req, res) => {
     try {
-      const oldInterconnect = await storage.getCarrierInterconnect(req.params.id);
+      const oldInterconnect = await storage.resolveCarrierInterconnect(req.params.id);
       if (!oldInterconnect) return res.status(404).json({ error: "Interconnect not found" });
       const parsed = insertCarrierInterconnectSchema.partial().safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
-      const interconnect = await storage.updateCarrierInterconnect(req.params.id, parsed.data);
+      const interconnect = await storage.updateCarrierInterconnect(oldInterconnect.id, parsed.data);
       await storage.createAuditLog({
         userId: req.session?.userId,
         action: "update",
         tableName: "carrier_interconnects",
-        recordId: req.params.id,
+        recordId: oldInterconnect.id,
         oldValues: oldInterconnect,
         newValues: interconnect,
       });
@@ -5886,14 +5886,14 @@ export async function registerRoutes(
 
   app.delete("/api/interconnects/:id", async (req, res) => {
     try {
-      const oldInterconnect = await storage.getCarrierInterconnect(req.params.id);
+      const oldInterconnect = await storage.resolveCarrierInterconnect(req.params.id);
       if (!oldInterconnect) return res.status(404).json({ error: "Interconnect not found" });
-      await storage.deleteCarrierInterconnect(req.params.id);
+      await storage.deleteCarrierInterconnect(oldInterconnect.id);
       await storage.createAuditLog({
         userId: req.session?.userId,
         action: "delete",
         tableName: "carrier_interconnects",
-        recordId: req.params.id,
+        recordId: oldInterconnect.id,
         oldValues: oldInterconnect,
       });
       res.status(204).send();
@@ -5970,7 +5970,7 @@ export async function registerRoutes(
 
   app.get("/api/services/:id", async (req, res) => {
     try {
-      const service = await storage.getCarrierService(req.params.id);
+      const service = await storage.resolveCarrierService(req.params.id);
       if (!service) return res.status(404).json({ error: "Service not found" });
       res.json(service);
     } catch (error) {
@@ -5980,7 +5980,7 @@ export async function registerRoutes(
 
   app.put("/api/services/:id", async (req, res) => {
     try {
-      const oldService = await storage.getCarrierService(req.params.id);
+      const oldService = await storage.resolveCarrierService(req.params.id);
       if (!oldService) return res.status(404).json({ error: "Service not found" });
       const parsed = insertCarrierServiceSchema.partial().safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
@@ -6007,12 +6007,12 @@ export async function registerRoutes(
         }
       }
       
-      const service = await storage.updateCarrierService(req.params.id, parsed.data);
+      const service = await storage.updateCarrierService(oldService.id, parsed.data);
       await storage.createAuditLog({
         userId: req.session?.userId,
         action: "update",
         tableName: "carrier_services",
-        recordId: req.params.id,
+        recordId: oldService.id,
         oldValues: oldService,
         newValues: service,
       });
@@ -6024,14 +6024,14 @@ export async function registerRoutes(
 
   app.delete("/api/services/:id", async (req, res) => {
     try {
-      const oldService = await storage.getCarrierService(req.params.id);
+      const oldService = await storage.resolveCarrierService(req.params.id);
       if (!oldService) return res.status(404).json({ error: "Service not found" });
-      await storage.deleteCarrierService(req.params.id);
+      await storage.deleteCarrierService(oldService.id);
       await storage.createAuditLog({
         userId: req.session?.userId,
         action: "delete",
         tableName: "carrier_services",
-        recordId: req.params.id,
+        recordId: oldService.id,
         oldValues: oldService,
       });
       res.status(204).send();
