@@ -64,6 +64,7 @@ import AiVoiceSettingsPage from "./ai-voice-settings";
 import AiVoiceAssignmentsPage from "./ai-voice-assignments";
 import { SoftswitchCarriersPage } from "./softswitch";
 import { CustomerRatingPlansPage, SupplierRatingPlansPage, PeriodExceptionsPage, CDRReratingPage, RatingZoneNamePage } from "./softswitch-rating";
+import { CarrierBalancesPage, TwentyFourHourSpendPage, BalanceTotalsPage } from "./softswitch-balance";
 import RatingPlanDetailPage from "./softswitch-rating-plan-detail";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
@@ -155,6 +156,9 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/softswitch/rating/cdr-rerating": { section: "softswitch", subItem: "softswitch-cdr-rerating" },
   "/admin/softswitch/rating/zone-name": { section: "softswitch", subItem: "softswitch-zone-name" },
   "/admin/softswitch/routing": { section: "softswitch", subItem: "softswitch-routing" },
+  "/admin/softswitch/balance/carrier-balances": { section: "softswitch", subItem: "softswitch-carrier-balances" },
+  "/admin/softswitch/balance/24h-spend": { section: "softswitch", subItem: "softswitch-24h-spend" },
+  "/admin/softswitch/balance/totals": { section: "softswitch", subItem: "softswitch-balance-totals" },
   "/admin/softswitch": { section: "softswitch", subItem: "softswitch-carriers" },
   "/admin/experience-manager": { section: "experience-manager", subItem: "em-dashboard" },
   "/admin/experience-manager/marketing": { section: "experience-manager", subItem: "em-marketing" },
@@ -306,6 +310,9 @@ export default function AdminLayout() {
                 <Route path="/admin/softswitch/rating/cdr-rerating" component={CDRReratingPage} />
                 <Route path="/admin/softswitch/rating/zone-name" component={RatingZoneNamePage} />
                 <Route path="/admin/softswitch/routing">{() => <PlaceholderPage title="Routing" />}</Route>
+                <Route path="/admin/softswitch/balance/carrier-balances" component={CarrierBalancesPage} />
+                <Route path="/admin/softswitch/balance/24h-spend" component={TwentyFourHourSpendPage} />
+                <Route path="/admin/softswitch/balance/totals" component={BalanceTotalsPage} />
                 <Route path="/admin/experience-manager" component={ExperienceManagerPage} />
                 <Route path="/admin/experience-manager/marketing" component={EMMarketingPage} />
                 <Route path="/admin/experience-manager/portal-themes" component={EMPortalThemesPage} />

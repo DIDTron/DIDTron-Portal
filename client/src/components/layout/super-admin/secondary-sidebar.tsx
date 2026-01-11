@@ -158,6 +158,17 @@ export const sectionConfigs: Record<string, SectionConfig> = {
         ]
       },
       { id: "softswitch-routing", label: "Routing", route: "/admin/softswitch/routing", icon: RouteIcon },
+      { 
+        id: "softswitch-balance", 
+        label: "Balance & Spend", 
+        route: "/admin/softswitch/balance/carrier-balances", 
+        icon: DollarSign,
+        children: [
+          { id: "softswitch-carrier-balances", label: "Carrier Balances", route: "/admin/softswitch/balance/carrier-balances", icon: DollarSign },
+          { id: "softswitch-24h-spend", label: "24 Hour Spend", route: "/admin/softswitch/balance/24h-spend", icon: Activity },
+          { id: "softswitch-balance-totals", label: "Balance & Totals", route: "/admin/softswitch/balance/totals", icon: BarChart3 },
+        ]
+      },
     ],
   },
   "experience-manager": {

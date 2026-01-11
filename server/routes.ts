@@ -5543,6 +5543,37 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/carriers/:id/reset-spend", async (req, res) => {
+    try {
+      const carrier = await storage.getCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      
+      const { direction } = req.body as { direction: "customer" | "supplier" };
+      if (!direction || !["customer", "supplier"].includes(direction)) {
+        return res.status(400).json({ error: "Invalid direction. Must be 'customer' or 'supplier'" });
+      }
+      
+      const updateData = direction === "customer"
+        ? { customer24HrSpend: "0.00" }
+        : { supplier24HrSpend: "0.00" };
+      
+      const updated = await storage.updateCarrier(req.params.id, updateData);
+      
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "reset_spend",
+        tableName: "carriers",
+        recordId: req.params.id,
+        oldValues: { [`${direction}24HrSpend`]: carrier[`${direction}24HrSpend` as keyof typeof carrier] },
+        newValues: updateData,
+      });
+      
+      res.json({ success: true, carrier: updated });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reset carrier spend" });
+    }
+  });
+
   // ==================== CUSTOMER RATING PLANS ====================
 
   app.get("/api/softswitch/rating/customer-plans", async (req, res) => {

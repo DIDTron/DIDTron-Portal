@@ -24,15 +24,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Building2, Pencil, Trash2, ChevronLeft, Lightbulb, X, Save } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2, ChevronLeft, Lightbulb, X, Save, Network, Layers } from "lucide-react";
 import { Link } from "wouter";
-import type { Carrier, Currency } from "@shared/schema";
+import type { Carrier, Currency, CarrierInterconnect, CarrierService } from "@shared/schema";
 
 type ViewMode = "list" | "add";
+type EntityView = "carriers" | "interconnects" | "services";
 
 export function SoftswitchCarriersPage() {
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [entityView, setEntityView] = useState<EntityView>("carriers");
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   
   const [formData, setFormData] = useState({
@@ -59,6 +61,14 @@ export function SoftswitchCarriersPage() {
     queryKey: ["/api/currencies"],
   });
 
+  const { data: allInterconnects, isLoading: isLoadingInterconnects } = useQuery<(CarrierInterconnect & { carrierName?: string })[]>({
+    queryKey: ["/api/carrier-interconnects"],
+  });
+
+  const { data: allServices, isLoading: isLoadingServices } = useQuery<(CarrierService & { carrierName?: string; interconnectName?: string })[]>({
+    queryKey: ["/api/carrier-services"],
+  });
+
   const {
     currentPage,
     pageSize,
@@ -68,6 +78,9 @@ export function SoftswitchCarriersPage() {
     onPageChange,
     onPageSizeChange,
   } = useDataTablePagination(carriers || []);
+
+  const interconnectsPagination = useDataTablePagination(allInterconnects || []);
+  const servicesPagination = useDataTablePagination(allServices || []);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -482,113 +495,322 @@ export function SoftswitchCarriersPage() {
   }
 
   // List View
+  const getEntityTitle = () => {
+    switch (entityView) {
+      case "carriers": return "Carriers";
+      case "interconnects": return "Interconnects";
+      case "services": return "Services";
+    }
+  };
+
+  const getEntityDescription = () => {
+    switch (entityView) {
+      case "carriers": return "Manage carrier connections for the Class 4 Softswitch";
+      case "interconnects": return "View all interconnects across all carriers";
+      case "services": return "View all services across all carriers and interconnects";
+    }
+  };
+
+  const renderCarriersTable = () => {
+    if (isLoading) {
+      return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+    }
+    if (!carriers || carriers.length === 0) {
+      return (
+        <div className="p-8 text-center">
+          <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="font-medium mb-1">No carriers configured</h3>
+          <p className="text-sm text-muted-foreground mb-4">Add carrier connections for the Class 4 Softswitch</p>
+          <Button onClick={handleAdd} data-testid="button-add-first-carrier">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Carrier
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Currency</TableHead>
+              <TableHead className="text-right">Customer Balance</TableHead>
+              <TableHead className="text-right">Supplier Balance</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-24">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedCarriers.map((carrier) => (
+              <TableRow key={carrier.id} data-testid={`row-carrier-${carrier.id}`}>
+                <TableCell className="font-medium">
+                  <Link href={`/admin/carriers/${carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                    {carrier.name}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={
+                    carrier.partnerType === "bilateral" ? "default" :
+                    carrier.partnerType === "supplier" ? "secondary" : "outline"
+                  }>
+                    {carrier.partnerType === "bilateral" ? "Bilateral" :
+                     carrier.partnerType === "supplier" ? "Supplier" : "Customer"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {currencies?.find(c => c.id === carrier.primaryCurrencyId)?.code || "-"}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") ? (
+                    <span className={parseFloat(carrier.customerBalance || "0") >= 0 ? "text-green-600" : "text-red-600"}>
+                      {parseFloat(carrier.customerBalance || "0").toFixed(2)}
+                    </span>
+                  ) : "-"}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") ? (
+                    <span className={parseFloat(carrier.supplierBalance || "0") <= 0 ? "text-green-600" : "text-red-600"}>
+                      {parseFloat(carrier.supplierBalance || "0").toFixed(2)}
+                    </span>
+                  ) : "-"}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={carrier.status === "active" ? "default" : "secondary"}>
+                    {carrier.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Button size="icon" variant="ghost" onClick={() => handleEdit(carrier)} data-testid={`button-edit-${carrier.id}`}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(carrier.id)} data-testid={`button-delete-${carrier.id}`}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <DataTableFooter
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
+      </>
+    );
+  };
+
+  const renderInterconnectsTable = () => {
+    if (isLoadingInterconnects) {
+      return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+    }
+    if (!allInterconnects || allInterconnects.length === 0) {
+      return (
+        <div className="p-8 text-center">
+          <Network className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="font-medium mb-1">No interconnects configured</h3>
+          <p className="text-sm text-muted-foreground mb-4">Add interconnects through carrier detail pages</p>
+        </div>
+      );
+    }
+    return (
+      <>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Carrier</TableHead>
+              <TableHead>Direction</TableHead>
+              <TableHead>Currency</TableHead>
+              <TableHead>Protocol</TableHead>
+              <TableHead>Capacity</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {interconnectsPagination.paginatedItems.map((interconnect) => {
+              const carrier = carriers?.find(c => c.id === interconnect.carrierId);
+              return (
+                <TableRow key={interconnect.id} data-testid={`row-interconnect-${interconnect.id}`}>
+                  <TableCell className="font-medium">
+                    <Link href={`/admin/interconnects/${interconnect.id}`} className="text-primary hover:underline" data-testid={`link-interconnect-${interconnect.id}`}>
+                      {interconnect.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/admin/carriers/${interconnect.carrierId}`} className="text-primary hover:underline">
+                      {carrier?.name || interconnect.carrierName || "-"}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      interconnect.direction === "ingress" ? "outline" :
+                      interconnect.direction === "egress" ? "secondary" : "default"
+                    }>
+                      {interconnect.direction === "ingress" ? "Ingress" :
+                       interconnect.direction === "egress" ? "Egress" : "Both"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {interconnect.currencyCode || "-"}
+                  </TableCell>
+                  <TableCell>{interconnect.protocol || "SIP"}</TableCell>
+                  <TableCell>
+                    {interconnect.capacityMode === "unrestricted" ? "Unrestricted" : interconnect.capacityLimit || "-"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={interconnect.isActive ? "default" : "secondary"}>
+                      {interconnect.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+        <DataTableFooter
+          currentPage={interconnectsPagination.currentPage}
+          totalPages={interconnectsPagination.totalPages}
+          pageSize={interconnectsPagination.pageSize}
+          totalItems={interconnectsPagination.totalItems}
+          onPageChange={interconnectsPagination.onPageChange}
+          onPageSizeChange={interconnectsPagination.onPageSizeChange}
+        />
+      </>
+    );
+  };
+
+  const renderServicesTable = () => {
+    if (isLoadingServices) {
+      return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+    }
+    if (!allServices || allServices.length === 0) {
+      return (
+        <div className="p-8 text-center">
+          <Layers className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="font-medium mb-1">No services configured</h3>
+          <p className="text-sm text-muted-foreground mb-4">Add services through interconnect detail pages</p>
+        </div>
+      );
+    }
+    return (
+      <>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Carrier</TableHead>
+              <TableHead>Interconnect</TableHead>
+              <TableHead>Direction</TableHead>
+              <TableHead>Tech Prefix</TableHead>
+              <TableHead>Priority</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {servicesPagination.paginatedItems.map((service) => {
+              const carrier = carriers?.find(c => c.id === service.carrierId);
+              const interconnect = allInterconnects?.find(i => i.id === service.interconnectId);
+              return (
+                <TableRow key={service.id} data-testid={`row-service-${service.id}`}>
+                  <TableCell className="font-medium">{service.name}</TableCell>
+                  <TableCell>
+                    <Link href={`/admin/carriers/${service.carrierId}`} className="text-primary hover:underline">
+                      {carrier?.name || service.carrierName || "-"}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/admin/interconnects/${service.interconnectId}`} className="text-primary hover:underline">
+                      {interconnect?.name || service.interconnectName || "-"}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      service.direction === "ingress" ? "outline" :
+                      service.direction === "egress" ? "secondary" : "default"
+                    }>
+                      {service.direction === "ingress" ? "Ingress" :
+                       service.direction === "egress" ? "Egress" : "Both"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono">{service.techPrefix || "-"}</TableCell>
+                  <TableCell>{service.priority ?? 0}</TableCell>
+                  <TableCell>
+                    <Badge variant={service.status === "active" ? "default" : "secondary"}>
+                      {service.status === "active" ? "Active" : service.status || "Inactive"}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+        <DataTableFooter
+          currentPage={servicesPagination.currentPage}
+          totalPages={servicesPagination.totalPages}
+          pageSize={servicesPagination.pageSize}
+          totalItems={servicesPagination.totalItems}
+          onPageChange={servicesPagination.onPageChange}
+          onPageSizeChange={servicesPagination.onPageSizeChange}
+        />
+      </>
+    );
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-carriers-title">Carriers</h1>
-          <p className="text-muted-foreground">Manage carrier connections for the Class 4 Softswitch</p>
+        <div className="flex items-center gap-4">
+          <Select value={entityView} onValueChange={(v: EntityView) => setEntityView(v)}>
+            <SelectTrigger className="w-48" data-testid="select-entity-view">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="carriers">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Carriers
+                </div>
+              </SelectItem>
+              <SelectItem value="interconnects">
+                <div className="flex items-center gap-2">
+                  <Network className="h-4 w-4" />
+                  Interconnects
+                </div>
+              </SelectItem>
+              <SelectItem value="services">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4" />
+                  Services
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <div>
+            <h1 className="text-2xl font-bold" data-testid="text-page-title">{getEntityTitle()}</h1>
+            <p className="text-muted-foreground">{getEntityDescription()}</p>
+          </div>
         </div>
-        <Button onClick={handleAdd} data-testid="button-add-carrier">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Carrier
-        </Button>
+        {entityView === "carriers" && (
+          <Button onClick={handleAdd} data-testid="button-add-carrier">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Carrier
+          </Button>
+        )}
       </div>
 
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">Loading...</div>
-          ) : carriers && carriers.length > 0 ? (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Currency</TableHead>
-                    <TableHead className="text-right">Customer Balance</TableHead>
-                    <TableHead className="text-right">Supplier Balance</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-24">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedCarriers.map((carrier) => (
-                    <TableRow 
-                      key={carrier.id} 
-                      data-testid={`row-carrier-${carrier.id}`}
-                    >
-                      <TableCell className="font-medium">
-                        <Link href={`/admin/carriers/${carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
-                          {carrier.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          carrier.partnerType === "bilateral" ? "default" :
-                          carrier.partnerType === "supplier" ? "secondary" : "outline"
-                        }>
-                          {carrier.partnerType === "bilateral" ? "Bilateral" :
-                           carrier.partnerType === "supplier" ? "Supplier" : "Customer"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {currencies?.find(c => c.id === carrier.primaryCurrencyId)?.code || "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") ? (
-                          <span className={parseFloat(carrier.customerBalance || "0") >= 0 ? "text-green-600" : "text-red-600"}>
-                            {parseFloat(carrier.customerBalance || "0").toFixed(2)}
-                          </span>
-                        ) : "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") ? (
-                          <span className={parseFloat(carrier.supplierBalance || "0") <= 0 ? "text-green-600" : "text-red-600"}>
-                            {parseFloat(carrier.supplierBalance || "0").toFixed(2)}
-                          </span>
-                        ) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={carrier.status === "active" ? "default" : "secondary"}>
-                          {carrier.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => handleEdit(carrier)} data-testid={`button-edit-${carrier.id}`}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(carrier.id)} data-testid={`button-delete-${carrier.id}`}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <DataTableFooter
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={onPageChange}
-                onPageSizeChange={onPageSizeChange}
-              />
-            </>
-          ) : (
-            <div className="p-8 text-center">
-              <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium mb-1">No carriers configured</h3>
-              <p className="text-sm text-muted-foreground mb-4">Add carrier connections for the Class 4 Softswitch</p>
-              <Button onClick={handleAdd} data-testid="button-add-first-carrier">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Carrier
-              </Button>
-            </div>
-          )}
+          {entityView === "carriers" && renderCarriersTable()}
+          {entityView === "interconnects" && renderInterconnectsTable()}
+          {entityView === "services" && renderServicesTable()}
         </CardContent>
       </Card>
     </div>
