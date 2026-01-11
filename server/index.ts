@@ -1062,6 +1062,14 @@ async function seedBillingTerms() {
         setTimeout(async () => {
           const apiDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
           
+          // Acquire distributed lock for initial ConnexCS sync
+          const connexcsSyncLockKey = "didtron:lock:connexcs-initial-sync";
+          const lockAcquired = await acquireDistributedLock(connexcsSyncLockKey, 600); // 10 min TTL for full sync
+          if (!lockAcquired) {
+            log("ConnexCS initial sync skipped - another instance holds the lock", "connexcs-sync");
+            return;
+          }
+          
           try {
             const status = await connexcsTools.getStatus(storage);
             if (status.connected && !status.mockMode) {
@@ -1127,6 +1135,9 @@ async function seedBillingTerms() {
             }
           } catch (err) {
             log(`Auto-sync failed: ${err}`, "connexcs-sync");
+          } finally {
+            // Always release the initial sync lock
+            await releaseDistributedLock(connexcsSyncLockKey);
           }
         }, 5000); // Wait 5 seconds for services to stabilize
       } catch (error) {

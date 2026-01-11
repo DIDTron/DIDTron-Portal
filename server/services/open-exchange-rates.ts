@@ -174,6 +174,17 @@ export async function testConnection(): Promise<{ success: boolean; message: str
 
 async function runScheduledSync(): Promise<void> {
   console.log("[OpenExchange] Running scheduled currency/rates sync...");
+  
+  // Import distributed lock functions
+  const { acquireDistributedLock, releaseDistributedLock } = await import("./redis-session");
+  const lockKey = "didtron:lock:openexchange-sync";
+  
+  const lockAcquired = await acquireDistributedLock(lockKey, 300); // 5 minute TTL
+  if (!lockAcquired) {
+    console.log("[OpenExchange] Sync skipped - another instance holds the lock");
+    return;
+  }
+  
   try {
     const appId = await getAppId();
     if (!appId) {
@@ -186,6 +197,8 @@ async function runScheduledSync(): Promise<void> {
     console.log("[OpenExchange] Scheduled sync completed successfully");
   } catch (error) {
     console.error("[OpenExchange] Scheduled sync failed:", error);
+  } finally {
+    await releaseDistributedLock(lockKey);
   }
 }
 
