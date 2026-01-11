@@ -834,7 +834,21 @@ export default function RatingPlanDetailPage() {
                       <Checkbox 
                         id="use-current-datetime"
                         checked={addRateForm.useCurrentDateTime}
-                        onCheckedChange={(checked) => setAddRateForm(prev => ({ ...prev, useCurrentDateTime: checked as boolean }))}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            const now = new Date();
+                            const dateStr = now.toISOString().split("T")[0];
+                            const timeStr = now.toTimeString().slice(0, 5);
+                            setAddRateForm(prev => ({ 
+                              ...prev, 
+                              useCurrentDateTime: true,
+                              effectiveDate: dateStr,
+                              effectiveTime: timeStr
+                            }));
+                          } else {
+                            setAddRateForm(prev => ({ ...prev, useCurrentDateTime: false }));
+                          }
+                        }}
                         data-testid="checkbox-use-current-datetime"
                       />
                       <Label htmlFor="use-current-datetime" className="text-sm">Use Current Date & Time</Label>
