@@ -31,6 +31,19 @@ The backend utilizes PostgreSQL and Drizzle ORM, supported by a robust job queue
 ### Billing System
 The billing system supports prepaid/postpaid customers, CDR rating, invoicing, and supplier reconciliation using a double-entry ledger system. Data synchronization between DIDTron (core logic) and ConnexCS (telephony engine) uses push mechanisms for customer accounts, balances, rate cards, and DID rules, and pull mechanisms for CDRs and real-time statistics. Billing models include Individual, Small Business (prepaid), and Enterprise, Wholesaler, Call Center (postpaid). CDR rating involves ingestion, customer rating, supplier rating, storage of rated usage, and invoicing, with configurable billing increments. Document types include Invoices, Statements of Account, Credit Notes, and Netting Requests. The UI for billing is integrated across Super Admin and Customer portals.
 
+### Short URL Codes (Softswitch Module)
+The Softswitch module uses human-readable short codes for URL routing instead of UUIDs:
+- **Carriers**: Use existing `code` field (e.g., "ACME-TEST") - set by user
+- **Interconnects**: Auto-generated `shortCode` with "I" prefix (I1, I2, I3...)
+- **Services**: Auto-generated `shortCode` with "S" prefix (S1, S2, S3...)
+- **Rating Plans**: Auto-generated `shortCode` with "P" prefix (P1, P2, P3...)
+
+**API Resolution**: Routes accept both UUID and short code. Resolve methods check UUID pattern first (`/^[0-9a-f]{8}-.../`), then lookup by code/shortCode.
+
+**Frontend Links**: Use `shortCode || id` fallback pattern for backward compatibility with existing records that have null shortCodes.
+
+**Files**: `server/utils/short-codes.ts`, storage resolve methods in `server/storage.ts`
+
 ### Digitalk Carrier Hierarchy Implementation
 The Class 4 Softswitch module implements the Digitalk Carrier Cloud Manager hierarchy, which structures Carriers, Interconnects, and Services. A Carrier is a commercial entity (Customer/Supplier/Bilateral) with balance and credit limits. An Interconnect represents a SIP trunk (Ingress/Egress, tech prefix, IP authentication, codecs, capacity). A Service is the key linkage, connecting an Interconnect to a Rating Plan and a Routing Plan. Key concepts include Tech Prefixes for call identification, rate selection at the Service level, and Bilateral Carriers combining both customer and supplier roles. The `carrier_services` table defines the relationship between `carrierId`, `interconnectId`, `ratingPlanId`, and `routingPlanId`, along with direction, tech prefix, priority, capacity, and enforcement policies. The API enforces Digitalk hierarchy rules, ensuring interconnects belong to the same carrier and service direction is compatible with interconnect direction.
 
