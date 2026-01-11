@@ -516,10 +516,17 @@ export default function RatingPlanDetailPage() {
                 data-testid="input-effective-date"
               />
               <Input 
-                type="time" 
+                type="text" 
                 value={effectiveTime}
-                onChange={(e) => setEffectiveTime(e.target.value)}
-                className="w-20"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val) || val.length <= 5) {
+                    setEffectiveTime(val);
+                  }
+                }}
+                placeholder="00:00"
+                maxLength={5}
+                className="w-20 text-center"
                 data-testid="input-effective-time"
               />
             </div>
