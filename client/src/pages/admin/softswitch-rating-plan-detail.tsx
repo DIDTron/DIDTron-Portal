@@ -147,6 +147,7 @@ export default function RatingPlanDetailPage() {
   
   const [showRecurringWarning, setShowRecurringWarning] = useState(false);
   const [warningConfirmText, setWarningConfirmText] = useState("");
+  const [displayMode, setDisplayMode] = useState<"zone" | "code">("zone");
 
   const { data: plan, isLoading: planLoading } = useQuery<CustomerRatingPlan>({
     queryKey: [`/api/softswitch/rating/customer-plans/${planId}`],
@@ -361,9 +362,67 @@ export default function RatingPlanDetailPage() {
     });
   }, [rates, codeFilter, zoneFilter, timeClassFilter, effectiveFilter, blockedFilter, lockedFilter]);
 
-  const totalRates = filteredRates.length;
+  interface DisplayRow {
+    id: string;
+    zone: string;
+    codes: string;
+    codesFullList: string;
+    originSet: string | null;
+    timeClassName: string;
+    effectiveDate: Date | string;
+    endDate: Date | string | null;
+    recurringCharge: string;
+    recurringInterval: number | null;
+    locked: boolean | null;
+    blocked: boolean | null;
+    originalRate: CustomerRatingPlanRate;
+  }
+
+  const displayRows = useMemo((): DisplayRow[] => {
+    if (displayMode === "zone") {
+      return filteredRates.map(rate => ({
+        id: rate.id,
+        zone: rate.zone,
+        codes: rate.codes.length > 3 ? `${rate.codes.slice(0, 3).join(", ")}...` : rate.codes.join(", "),
+        codesFullList: rate.codes.join(", "),
+        originSet: rate.originSet,
+        timeClassName: rate.timeClassName || "AnyDay",
+        effectiveDate: rate.effectiveDate,
+        endDate: rate.endDate,
+        recurringCharge: rate.recurringCharge,
+        recurringInterval: rate.recurringInterval,
+        locked: rate.locked,
+        blocked: rate.blocked,
+        originalRate: rate,
+      }));
+    } else {
+      const rows: DisplayRow[] = [];
+      filteredRates.forEach(rate => {
+        rate.codes.forEach((code, idx) => {
+          rows.push({
+            id: `${rate.id}-${idx}`,
+            zone: rate.zone,
+            codes: code,
+            codesFullList: code,
+            originSet: rate.originSet,
+            timeClassName: rate.timeClassName || "AnyDay",
+            effectiveDate: rate.effectiveDate,
+            endDate: rate.endDate,
+            recurringCharge: rate.recurringCharge,
+            recurringInterval: rate.recurringInterval,
+            locked: rate.locked,
+            blocked: rate.blocked,
+            originalRate: rate,
+          });
+        });
+      });
+      return rows;
+    }
+  }, [filteredRates, displayMode]);
+
+  const totalRates = displayRows.length;
   const totalPages = Math.ceil(totalRates / pageSize);
-  const paginatedRates = filteredRates.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const paginatedRates = displayRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -650,8 +709,13 @@ export default function RatingPlanDetailPage() {
             </Popover>
           </div>
 
-          <Button variant="outline" size="sm" data-testid="button-change-code-view">
-            Change to Code View
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setDisplayMode(prev => prev === "zone" ? "code" : "zone")}
+            data-testid="button-change-code-view"
+          >
+            {displayMode === "zone" ? "Change to Code View" : "Change to Zone View"}
           </Button>
 
           {ratesLoading ? (
@@ -684,24 +748,24 @@ export default function RatingPlanDetailPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedRates.map((rate) => {
-                      const status = getEffectiveStatus(rate);
+                    paginatedRates.map((row) => {
+                      const status = getEffectiveStatus(row.originalRate);
                       return (
-                        <TableRow key={rate.id} data-testid={`row-rate-${rate.id}`}>
-                          <TableCell className="text-primary">{rate.zone}</TableCell>
-                          <TableCell className="max-w-[150px] truncate" title={rate.codes.join(", ")}>
-                            {rate.codes.length > 3 ? `${rate.codes.slice(0, 3).join(", ")}...` : rate.codes.join(", ")}
+                        <TableRow key={row.id} data-testid={`row-rate-${row.id}`}>
+                          <TableCell className="text-primary">{row.zone}</TableCell>
+                          <TableCell className="max-w-[150px] truncate" title={row.codesFullList}>
+                            {row.codes}
                           </TableCell>
-                          <TableCell>{rate.originSet || "-"}</TableCell>
-                          <TableCell>{rate.timeClassName}</TableCell>
+                          <TableCell>{row.originSet || "-"}</TableCell>
+                          <TableCell>{row.timeClassName}</TableCell>
                           <TableCell>
-                            {new Date(rate.effectiveDate).toLocaleString("en-GB", { 
+                            {new Date(row.effectiveDate).toLocaleString("en-GB", { 
                               day: "2-digit", month: "2-digit", year: "numeric", 
                               hour: "2-digit", minute: "2-digit" 
                             })}
                           </TableCell>
                           <TableCell>
-                            {rate.endDate ? new Date(rate.endDate).toLocaleString("en-GB", { 
+                            {row.endDate ? new Date(row.endDate).toLocaleString("en-GB", { 
                               day: "2-digit", month: "2-digit", year: "numeric", 
                               hour: "2-digit", minute: "2-digit" 
                             }) : "-"}
@@ -717,9 +781,9 @@ export default function RatingPlanDetailPage() {
                               {status === "active" ? "A" : status === "pending" ? "P" : "E"}
                             </Badge>
                           </TableCell>
-                          <TableCell>{rate.recurringCharge}</TableCell>
-                          <TableCell>{rate.recurringInterval}</TableCell>
-                          <TableCell>{rate.locked ? "1" : "-"}</TableCell>
+                          <TableCell>{row.recurringCharge}</TableCell>
+                          <TableCell>{row.recurringInterval}</TableCell>
+                          <TableCell>{row.locked ? "1" : "-"}</TableCell>
                         </TableRow>
                       );
                     })

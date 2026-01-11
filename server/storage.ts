@@ -216,6 +216,7 @@ export interface IStorage {
   updateRatingPlanRate(id: string, data: Partial<InsertCustomerRatingPlanRate>): Promise<CustomerRatingPlanRate | undefined>;
   deleteRatingPlanRate(id: string): Promise<boolean>;
   searchZonesFromAZ(searchTerm: string): Promise<string[]>;
+  expandWildcardZones(wildcardPattern: string): Promise<string[]>;
   getCodesForZone(zone: string): Promise<string[]>;
   getCodesWithIntervalsForZone(zone: string): Promise<{ codes: string[], billingIncrement: string | null }>;
   lookupZoneByCode(code: string): Promise<string | null>;
@@ -1584,6 +1585,15 @@ export class MemStorage implements IStorage {
       .where(ilike(azDestinations.destination, `%${term}%`))
       .orderBy(azDestinations.destination)
       .limit(50);
+    return results.map(r => r.destination);
+  }
+
+  async expandWildcardZones(wildcardPattern: string): Promise<string[]> {
+    const term = wildcardPattern.replace(/%/g, '');
+    const results = await db.selectDistinct({ destination: azDestinations.destination })
+      .from(azDestinations)
+      .where(ilike(azDestinations.destination, `${term}%`))
+      .orderBy(azDestinations.destination);
     return results.map(r => r.destination);
   }
 

@@ -5683,22 +5683,62 @@ export async function registerRoutes(
     try {
       const plan = await storage.resolveCustomerRatingPlan(req.params.planId);
       if (!plan) return res.status(404).json({ error: "Rating plan not found" });
-      const body = { ...req.body, ratingPlanId: plan.id };
-      if (body.effectiveDate && typeof body.effectiveDate === 'string') {
-        body.effectiveDate = new Date(body.effectiveDate);
+      
+      const baseBody = { ...req.body, ratingPlanId: plan.id };
+      if (baseBody.effectiveDate && typeof baseBody.effectiveDate === 'string') {
+        baseBody.effectiveDate = new Date(baseBody.effectiveDate);
       }
-      if (body.endDate && typeof body.endDate === 'string') {
-        body.endDate = new Date(body.endDate);
+      if (baseBody.endDate && typeof baseBody.endDate === 'string') {
+        baseBody.endDate = new Date(baseBody.endDate);
       }
-      const rate = await storage.createRatingPlanRate(body);
-      await storage.createAuditLog({
-        userId: req.session?.userId,
-        action: "create",
-        tableName: "customer_rating_plan_rates",
-        recordId: rate.id,
-        newValues: rate,
-      });
-      res.status(201).json(rate);
+      
+      const zoneInput = baseBody.zone as string;
+      const isWildcard = zoneInput.includes('%');
+      
+      if (isWildcard) {
+        const matchingZones = await storage.expandWildcardZones(zoneInput);
+        if (matchingZones.length === 0) {
+          return res.status(400).json({ error: "No zones match the wildcard pattern" });
+        }
+        
+        const createdRates = [];
+        for (const zoneName of matchingZones) {
+          const codes = await storage.getCodesForZone(zoneName);
+          if (codes.length === 0) continue;
+          
+          const rateBody = {
+            ...baseBody,
+            zone: zoneName,
+            codes: codes,
+          };
+          
+          const rate = await storage.createRatingPlanRate(rateBody);
+          createdRates.push(rate);
+          
+          await storage.createAuditLog({
+            userId: req.session?.userId,
+            action: "create",
+            tableName: "customer_rating_plan_rates",
+            recordId: rate.id,
+            newValues: rate,
+          });
+        }
+        
+        res.status(201).json({ 
+          message: `Created ${createdRates.length} rate entries for matching zones`,
+          rates: createdRates 
+        });
+      } else {
+        const rate = await storage.createRatingPlanRate(baseBody);
+        await storage.createAuditLog({
+          userId: req.session?.userId,
+          action: "create",
+          tableName: "customer_rating_plan_rates",
+          recordId: rate.id,
+          newValues: rate,
+        });
+        res.status(201).json(rate);
+      }
     } catch (error) {
       console.error("Failed to create rate:", error);
       res.status(500).json({ error: "Failed to create rate" });
