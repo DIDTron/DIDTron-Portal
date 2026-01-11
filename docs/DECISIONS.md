@@ -206,3 +206,30 @@ try {
 | Session Store | ⚠️ MemoryStore | ❌ Must migrate |
 
 **Source Document**: `attached_assets/FOREVER_POLICY_—_PRODUCTION_PROJECT_1768150986435.txt`
+
+---
+
+## 2026-01-11: Short URL Codes for Softswitch Module
+
+**Decision**: Implement human-readable short codes for URL routing in the Softswitch module instead of exposing UUIDs in URLs.
+
+**Reason**: Digitalk Carrier Cloud Manager uses readable identifiers in URLs. Short codes improve UX (e.g., `/admin/carriers/ACME-TEST` instead of `/admin/carriers/f8f8b7ad-950b-...`).
+
+**Implementation**:
+- Carriers: Use existing `code` field (user-defined, e.g., "ACME-TEST")
+- Interconnects: Auto-generated `shortCode` with "I" prefix (I1, I2, I3...)
+- Services: Auto-generated `shortCode` with "S" prefix (S1, S2, S3...)
+- Rating Plans: Auto-generated `shortCode` with "P" prefix (P1, P2, P3...)
+
+**API Pattern**: Routes accept both UUID and short code. Resolve methods check UUID pattern first (`/^[0-9a-f]{8}-.../`), then lookup by code/shortCode.
+
+**Frontend Pattern**: Use `shortCode || id` fallback for backward compatibility with existing records that have null shortCodes.
+
+**Files Changed**:
+- `shared/schema.ts` - Added shortCode columns
+- `server/storage.ts` - Added resolve methods, getByShortCode, auto-generation
+- `server/routes.ts` - Updated to use resolve methods
+- `server/utils/short-codes.ts` - Utility for generating/validating short codes
+- Frontend pages - Updated links to use shortCode fallback
+
+**Scope**: Softswitch module only (not global)

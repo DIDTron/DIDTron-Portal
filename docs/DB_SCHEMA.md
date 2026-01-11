@@ -42,6 +42,7 @@ shipTo: text
 ### Carrier Interconnects (carrier_interconnects)
 ```
 id: varchar (UUID)
+shortCode: text (auto-generated, e.g., I1, I2, I3 - used for URL routing)
 carrierId: FK → carriers
 name: text
 direction: text (ingress | egress | both)
@@ -59,6 +60,7 @@ sipPort: integer
 The KEY LINKAGE: Interconnect → Rating Plan + Routing Plan
 ```
 id: varchar (UUID)
+shortCode: text (auto-generated, e.g., S1, S2, S3 - used for URL routing)
 carrierId: FK → carriers
 interconnectId: FK → carrier_interconnects
 name: text
@@ -100,6 +102,30 @@ direction: text (customer | supplier)
 templateId: varchar
 recipients: jsonb
 isActive: boolean
+```
+
+### Customer Rating Plans (customer_rating_plans)
+```
+id: varchar (UUID)
+shortCode: text (auto-generated, e.g., P1, P2, P3 - used for URL routing)
+name: text
+currency: text
+timeZone: text
+carrierTimeZone: text
+defaultRates: text
+marginEnforcement: text
+minMargin: decimal
+effectiveDate: timestamp
+initialInterval: integer
+recurringInterval: integer
+periodExceptionTemplate: text
+template: text
+uncommittedChanges: boolean
+assigned: boolean
+selectedTimeClasses: jsonb
+selectedZones: jsonb
+zonesSelect: text
+assignOrigin: text
 ```
 
 ## Interconnect Settings Tables
