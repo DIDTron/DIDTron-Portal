@@ -577,6 +577,40 @@ export const insertCustomerRatingPlanSchema = createInsertSchema(customerRatingP
 export type InsertCustomerRatingPlan = z.infer<typeof insertCustomerRatingPlanSchema>;
 export type CustomerRatingPlan = typeof customerRatingPlans.$inferSelect;
 
+// ==================== CUSTOMER RATING PLAN RATES ====================
+
+export const effectiveStatusEnum = pgEnum("effective_status", ["active", "pending", "expired"]);
+
+export const customerRatingPlanRates = pgTable("customer_rating_plan_rates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ratingPlanId: varchar("rating_plan_id").references(() => customerRatingPlans.id, { onDelete: "cascade" }).notNull(),
+  zone: text("zone").notNull(),
+  codes: text("codes").array().notNull(),
+  originSet: text("origin_set"),
+  timeClassId: varchar("time_class_id"),
+  timeClassName: text("time_class_name").default("AnyDay"),
+  effectiveDate: timestamp("effective_date").notNull(),
+  endDate: timestamp("end_date"),
+  effectiveStatus: effectiveStatusEnum("effective_status").default("pending"),
+  connectionCharge: decimal("connection_charge", { precision: 10, scale: 4 }).default("0"),
+  initialCharge: decimal("initial_charge", { precision: 10, scale: 4 }).default("0"),
+  initialInterval: integer("initial_interval").default(1),
+  recurringCharge: decimal("recurring_charge", { precision: 10, scale: 4 }).notNull(),
+  recurringInterval: integer("recurring_interval").default(1),
+  advancedOptions: text("advanced_options"),
+  minMargin: decimal("min_margin", { precision: 5, scale: 2 }).default("0"),
+  applyDefaultMargin: boolean("apply_default_margin").default(true),
+  blocked: boolean("blocked").default(false),
+  locked: boolean("locked").default(false),
+  currency: text("currency").default("USD"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCustomerRatingPlanRateSchema = createInsertSchema(customerRatingPlanRates).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCustomerRatingPlanRate = z.infer<typeof insertCustomerRatingPlanRateSchema>;
+export type CustomerRatingPlanRate = typeof customerRatingPlanRates.$inferSelect;
+
 // ==================== POPS (Points of Presence) ====================
 
 export const pops = pgTable("pops", {
