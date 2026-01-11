@@ -5623,6 +5623,135 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CUSTOMER RATING PLAN RATES ====================
+
+  app.get("/api/softswitch/rating/customer-plans/:planId/rates", async (req, res) => {
+    try {
+      const rates = await storage.getRatingPlanRates(req.params.planId);
+      res.json(rates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rating plan rates" });
+    }
+  });
+
+  app.get("/api/softswitch/rating/rates/:id", async (req, res) => {
+    try {
+      const rate = await storage.getRatingPlanRate(req.params.id);
+      if (!rate) return res.status(404).json({ error: "Rate not found" });
+      res.json(rate);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rate" });
+    }
+  });
+
+  app.post("/api/softswitch/rating/customer-plans/:planId/rates", async (req, res) => {
+    try {
+      const body = { ...req.body, ratingPlanId: req.params.planId };
+      if (body.effectiveDate && typeof body.effectiveDate === 'string') {
+        body.effectiveDate = new Date(body.effectiveDate);
+      }
+      if (body.endDate && typeof body.endDate === 'string') {
+        body.endDate = new Date(body.endDate);
+      }
+      const rate = await storage.createRatingPlanRate(body);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "customer_rating_plan_rates",
+        recordId: rate.id,
+        newValues: rate,
+      });
+      res.status(201).json(rate);
+    } catch (error) {
+      console.error("Failed to create rate:", error);
+      res.status(500).json({ error: "Failed to create rate" });
+    }
+  });
+
+  app.patch("/api/softswitch/rating/rates/:id", async (req, res) => {
+    try {
+      const body = { ...req.body };
+      if (body.effectiveDate && typeof body.effectiveDate === 'string') {
+        body.effectiveDate = new Date(body.effectiveDate);
+      }
+      if (body.endDate && typeof body.endDate === 'string') {
+        body.endDate = new Date(body.endDate);
+      }
+      const oldRate = await storage.getRatingPlanRate(req.params.id);
+      const rate = await storage.updateRatingPlanRate(req.params.id, body);
+      if (!rate) return res.status(404).json({ error: "Rate not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "customer_rating_plan_rates",
+        recordId: req.params.id,
+        oldValues: oldRate,
+        newValues: rate,
+      });
+      res.json(rate);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update rate" });
+    }
+  });
+
+  app.delete("/api/softswitch/rating/rates/:id", async (req, res) => {
+    try {
+      const oldRate = await storage.getRatingPlanRate(req.params.id);
+      const deleted = await storage.deleteRatingPlanRate(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Rate not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "customer_rating_plan_rates",
+        recordId: req.params.id,
+        oldValues: oldRate,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete rate" });
+    }
+  });
+
+  // A-Z Zone/Code Lookup for Rating
+  app.get("/api/softswitch/rating/az-lookup/zones", async (req, res) => {
+    try {
+      const { search } = req.query;
+      if (!search || typeof search !== 'string') {
+        return res.json([]);
+      }
+      const zones = await storage.searchZonesFromAZ(search);
+      res.json(zones);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to search zones" });
+    }
+  });
+
+  app.get("/api/softswitch/rating/az-lookup/codes", async (req, res) => {
+    try {
+      const { zone } = req.query;
+      if (!zone || typeof zone !== 'string') {
+        return res.json([]);
+      }
+      const codes = await storage.getCodesForZone(zone);
+      res.json(codes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get codes for zone" });
+    }
+  });
+
+  app.get("/api/softswitch/rating/az-lookup/zone-by-code", async (req, res) => {
+    try {
+      const { code } = req.query;
+      if (!code || typeof code !== 'string') {
+        return res.json({ zone: null });
+      }
+      const zone = await storage.lookupZoneByCode(code);
+      res.json({ zone });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to lookup zone by code" });
+    }
+  });
+
   // Carrier Assignments
   app.get("/api/carriers/:id/assignment", async (req, res) => {
     try {
