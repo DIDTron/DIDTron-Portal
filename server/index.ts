@@ -1081,38 +1081,10 @@ async function seedBillingTerms() {
               
               log(`Entity sync complete: ${customers.imported + customers.updated} customers, ${carriers.imported + carriers.updated} carriers, ${ratecards.imported + ratecards.updated} ratecards, ${balances.imported + balances.updated} balances, ${routes.imported + routes.updated} routes, ${scripts.imported + scripts.updated} scripts`, "connexcs-sync");
               
-              // === PHASE 5: CDR Sync ===
-              log("Waiting for API sessions to reset before CDR sync...", "connexcs-sync");
-              await apiDelay(10000);
-              
-              const cdrTestResult = await connexcsTools.testCDRAccess(storage);
-              
-              if (!cdrTestResult.success) {
-                log(`CDR access test failed: ${cdrTestResult.error}`, "connexcs-sync");
-                log("Entity sync complete, CDR sync skipped", "connexcs-sync");
-                return;
-              }
-              
-              log(`CDR access SUCCESS! Found ${cdrTestResult.recordCount} records`, "connexcs-sync");
-              
-              // Sync current month CDRs
-              const currentDate = new Date();
-              const currentYear = currentDate.getFullYear();
-              const currentMonth = currentDate.getMonth() + 1;
-              
-              await apiDelay(5000);
-              try {
-                const cdrResult = await syncCDRs(currentYear, currentMonth);
-                log(`CDR sync ${currentYear}-${String(currentMonth).padStart(2, '0')}: ${cdrResult.imported + cdrResult.updated} records`, "connexcs-sync");
-                
-                // Calculate CDR statistics for the current month
-                const monthStart = new Date(currentYear, currentMonth - 1, 1);
-                const monthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59);
-                await calculateCDRStats('monthly', monthStart, monthEnd);
-                log(`CDR stats calculated for ${currentYear}-${String(currentMonth).padStart(2, '0')}`, "connexcs-sync");
-              } catch (cdrErr) {
-                log(`CDR sync failed: ${cdrErr}`, "connexcs-sync");
-              }
+              // === PHASE 5: CDR Sync (TEMPORARILY DISABLED - memory issues) ===
+              log("CDR sync temporarily disabled to prevent memory issues", "connexcs-sync");
+              // const cdrTestResult = await connexcsTools.testCDRAccess(storage);
+              // ... CDR sync code disabled
               
               log(`Auto-sync complete`, "connexcs-sync");
               
