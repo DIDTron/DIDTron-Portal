@@ -134,6 +134,8 @@ export default function RatingPlanDetailPage() {
   
   const [isEditingPlanDetails, setIsEditingPlanDetails] = useState(false);
   const [selectedHistoryVersion, setSelectedHistoryVersion] = useState<string | null>(null);
+  const [showRestoreConfirmDialog, setShowRestoreConfirmDialog] = useState(false);
+  const [showRestoreCompleteDialog, setShowRestoreCompleteDialog] = useState(false);
   const [planDetailsForm, setPlanDetailsForm] = useState({
     name: "",
     shortCode: "",
@@ -543,6 +545,8 @@ export default function RatingPlanDetailPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem 
                 disabled={!selectedHistoryVersion}
+                onClick={() => selectedHistoryVersion && setShowRestoreConfirmDialog(true)}
+                className={!selectedHistoryVersion ? "opacity-50 cursor-not-allowed" : ""}
                 data-testid="menu-restore-version"
               >
                 Restore Selected Version
@@ -1230,7 +1234,7 @@ export default function RatingPlanDetailPage() {
                           <div>{version.type}</div>
                           <div>{version.details}</div>
                           <div className="truncate" title={version.user}>{version.user}</div>
-                          <div>{version.isActive ? "Active" : "-"}</div>
+                          <div>{version.isActive ? "Active" : (selectedHistoryVersion === version.id ? "Make Active" : "-")}</div>
                         </div>
                       ));
                     })()}
@@ -1778,6 +1782,63 @@ export default function RatingPlanDetailPage() {
               data-testid="button-warning-confirm"
             >
               Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRestoreConfirmDialog} onOpenChange={setShowRestoreConfirmDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="bg-primary text-primary-foreground -m-6 mb-4 px-6 py-3 rounded-t-lg">
+              Restore Selected Version
+            </DialogTitle>
+            <DialogDescription className="pt-4">
+              The selected version of rating plan will be restored. All changes after this version will be rolled back and removed from this rating plan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowRestoreConfirmDialog(false);
+                setShowRestoreCompleteDialog(true);
+              }}
+              data-testid="button-restore-confirm"
+            >
+              Restore
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => setShowRestoreConfirmDialog(false)}
+              data-testid="button-restore-cancel"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRestoreCompleteDialog} onOpenChange={setShowRestoreCompleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="bg-primary text-primary-foreground -m-6 mb-4 px-6 py-3 rounded-t-lg">
+              Restore Complete
+            </DialogTitle>
+            <DialogDescription className="pt-4">
+              The selected version of the rating plan has been successfully restored.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setShowRestoreCompleteDialog(false);
+                setSelectedHistoryVersion(null);
+              }}
+              data-testid="button-restore-close"
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
