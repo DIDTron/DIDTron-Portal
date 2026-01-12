@@ -1197,14 +1197,9 @@ export default function RatingPlanDetailPage() {
                   <div className="divide-y max-h-[500px] overflow-y-auto">
                     {(() => {
                       const historyVersions = [
-                        { id: "v1", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: true },
-                        { id: "v2", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
-                        { id: "v3", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
-                        { id: "v4", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
-                        { id: "v5", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
-                        { id: "v6", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
-                        { id: "v7", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
-                        { id: "v8", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
+                        { id: "v1", date: "12/01/2026 01:52", type: "Restore", details: "Date of restored version - 11/01/2026 13:42", user: "adam@voice-blow.com", isActive: true },
+                        { id: "v2", date: "12/01/2026 01:50", type: "Manual Change", details: "-", user: "adam@voice-blow.com", isActive: false },
+                        { id: "v3", date: "11/01/2026 13:42", type: "Import", details: "-", user: "adam@voice-blow.com", isActive: false },
                       ];
                       
                       return historyVersions.map((version) => (
