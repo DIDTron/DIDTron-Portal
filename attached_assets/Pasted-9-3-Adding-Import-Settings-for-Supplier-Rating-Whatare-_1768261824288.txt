@@ -1,0 +1,190 @@
+9.3 Adding Import Settings for Supplier Rating
+Whatare Import Settings?
+ImportSettings arean optionalfeaturethatcan beusedwhenimportingSupplier RatingPlans intotheCarrier
+Cloud.ImportSettings can beassigneda setofBusiness Rules andoneor moreRatingNotifications toaddana
+lysis andnotification functionality when importingplans.
+ImportSettings arealsousedfor additionalfunctions when "AutomatingtheImportofSupplier RatingPlan
+Updates" onpage 567
+Thesections below describethecreation andconfiguration ofthedifferentelements thatgotomakeuptheImport
+Settings.
+Creating Import Settings for a Carrier
+After creatingthe appropriateBusiness Rules andNotifications,itis then possibletocreatetheImportSettings for
+eachSupplier Carrier for whom imports willberun.
+Note:
+ANoteonSpecificVersus GeneralSettings
+ImportSettings mustbeconfiguredfor eachindividualCarrier for which theyarerequired,however
+Business Rules andNotifications aregeneralsettings.
+AsinglesetofBusiness Rules canbeappliedtomanydifferentImportSettings,as cana Notification.
+C onfid entia l
+4 6 5 of 1635
+Follow the steps below to create importsettings for a Carrier.
+1. NavigatetoRating>Supplier Rating>ImportSettings.
+2. Select“AddImportSettings” from the“Actions” drop-downlistbox.
+Result: The“AddImportSettings” dialogboxis displayed.
+3. SelecttheCarrier for whom theImportSettings aretobeappliedfrom the“Carrier” drop-downlistbox.
+4. SelecttheBusiness Rules toapplyfrom the“Business Rule” drop-downlistbox.
+Reference:See"WorkingwithBusiness Rules"onpage 462 for informationoncreatingtheseNotifications.
+C onfid entia l
+4 6 6 of 1635
+5. Click “Save”.
+Result: Thenew ImportSettings havebeencreatedfor therequiredCarrier.
+Click heretoConfigureImportSettings AutoRateUpload
+C onfid entia l
+4 6 7 of 1635
+Click here to Add Notifications to Existing ImportSettings
+After the ImportSettings havebeencreatedfor a Carrier thenitis possibletoaddnotifications totheseImportSet
+tings.
+Reference:See"Supplier RatingNotifications" on page 471for information on creatingtheseNotifications.
+Follow thesteps below toaddnotifications toCarriers ImportSettings.
+1. NavigatetoRating>Supplier Rating>ImportSettings.
+2. Click thenameoftheCarrier for whomNotifications aretobeadded.
+Result: TheImportSettingdetails aredisplayed.
+3. Select“AddNotification” from the“Actions” menu.
+Result:  The“EditRateImportRule” dialogboxis displayed.
+C onfid entia l
+4 6 8 of 1635
+4. SelecttheNotification tobeassignedfrom the“Notification” drop-down listbox.
+Result: TheNotification Details will be displayed.
+5. Enter theemailaddresses for therequiredrecipient(s) oftheemailintothe“Recipients” field. Separatemultiple
+addresses usinga comma.
+6. Click “Save”.
+Result: Thenotification has been addedtotheCarrier's ImportSettings.
+C onfid entia l
+4 6 9 of 1635
+C onfid entia l
+4 70 of 1635
+9.4 Supplier Rating Notifications
+Supplier RatingNotifications can beusedbytheRatingAdministrator togeneratean emailnotification in thefol
+lowingcircumstances:
+l
+l
+l
+l
+Rates Committed
+Rates Committed-notification of errors/rejections/blocks
+RatingPlan Rejected
+RatingPlan ImportedtoReview (AutoRateImportFunctions)
+Creating and Configuring Supplier Rating Notifications
+Supplier RatingNotifications are usedtogenerateemailnotifications toan internalor externallistof recipients.
+Theemailnotifications can includea Spreadsheetattachmentwith information abouttheimportthathas taken
+place, with thelevelof granularity definedby theRatingAdministrator.
+Follow thesteps below tocreateandconfigurea Supplier ratingnotification Template.
+1. NavigatetoRating>Supplier RatingPlans >ImportNotifications.
+Result: TheImportNotification Templatescreen is displayed.
+2. Select“AddImportNotification” from the“Actions” drop-down listbox.
+3. Enter thenamebywhichthisnotificationwillbeknownintothe“Notification” field.
+C onfid entia l
+4 71 o f 16 35
+4. Selecttheeventthatwilltrigger this notification from the “ImportEvent” drop-down listbox.
+Theavailableevents areas follows:
+n RatesCommitted-thenotificationwillalways besentwhenrates arecommitted.
+n RatesCommitted(Errors/Rejected)-thenotification willbesentwhen an importis committedbutsomeof
+the rates havebeenrejected.
+n RatingPlanRejected-thenotification willbesentwhenanentireRatingPlanis rejected.
+n Notification Received-NOTCURRENTLYIN USE
+n RatesImportedfor Review-thenotificationwillbesentwhena RatingPlanhas beenreceivedandpro
+cessed,with a correspondingImportJobnow created.
+Note:
+If multiple notifications are configuredfor different events it is possible for a single email totrigger mul
+tiple notifications of different types.
+Example:
+Anemailthatis received,has theattachedRatingPlanimportedandautomaticallycom
+mitted; couldtrigger three emails:
+n Notification Received
+n RatesImportedfor Review,and
+n RatesCommitted.
+Whilethis maybedesirable,beawarethatImportSettings allow differentnotifications tobecon
+figured for different Suppliers, meaningthatNotifications can be sentas appropriatetothepro
+cessingof individual supplier emails.
+C onfid entia l
+4 72 of 1635
+5. Select/Enter therequiredformattingpattern for dates includedon thenotification. (Formatcan beselected
+from thepop-upbox,or another ISOCodecanbeentered)
+6. Enter therequiredoriginatingemailaddress in the“from” field.
+7. Enter therequiredsubjectfor this emailin the“Subject” field. If required,selectvariable(s) from thepop-upbox
+to bereplacedwithtextspecifictoindividualnotification. These tokens willbe replacedwith textspecific toindi
+vidual notification.
+Example:
+Example: {Carrier} will be replacedbythenameoftheCarrier for whichthenotification has been gen
+erated.
+8. Enter themaintextofthenotification in the“Body” field. 
+Example:
+Example: {ImportSummaryTable} willincludetheimportsummaryfor this importinthebodyofthe
+emailas wellas (if configured) on an attachment.
+C onfid entia l
+4 73 of 1635
+Attachment Details
+9. Selecttherequiredformatfor theSpreadsheetattachment. 
+Theavailableattachmentformats are
+n XSLX(defaultformat)
+n CSV
+n None(selectifnoattachmentis required)
+10. Enter thefilenamefor theattachmentinthe“Filename” field. 
+AttachmentHeader/Footer
+11. If a logois tobeaddedtotheattachment,thenenablethe“UseLogo” checkboxandbrowsefor therequired
+logo. (Thelogomustbeless than200pixels inheight)
+12. If header/footer text(additional text at the top/bottom of theattachment) is required,then enter this textin the
+“Header/Footer” field. 
+C onfid entia l
+4 74 of 1635
+AttachmentFieldSelection
+13. Selectthelevelof detailtobeincludedon theattachmentfrom the“LevelofDetail” drop-downlistbox.
+14. Selectthesections tobeincludedin theattachmentusingtheSectioncheckboxes.
+Technical Note:
+Information on the Attachment Field Selection
+TheAttachmentFieldSelection section is designedtoallow theRatingAdministrator totunethelevel
+of information that is providedtotherecipients sothatitis appropriatetotheir needs.
+TheSectionlistrefers tothedifferent sections displayedon theImportAnalysis and,byunchecking
+the “Show” box,theRatingAdministrator canremovesuperfluous informationfrom theattachment.
+TheLevelofDetaildrop-downlistboxallows theRatingAdministrator toinclude/withholddetailabout
+the import. Theoptions availablefor this are:
+n BasicRateOnly
+n RateswithChanges(default)
+n FullAnalysis
+Example:
+Theexamplesbelow showthesameNotificationwiththe3differentlevels ofgranularity.
+BasicRateOnly
+RateIncreases
+Zone
+Code
+Effective Date
+BangladeshA
+880431
+13/07/2016
+NewRate
+0.0189
+C onfid entia l
+4 75 of 1635
+476 of 1635
+Confidential
+BangladeshB 88031 13/07/2016 0.0168
+BangladeshC 880331 12/07/2016 0.0187
+RateswithChanges
+RateIncreases
+Zone Code EffectiveDate NewRate OldRate Change %Change
+BangladeshA 880431 13/07/2016 0.0189 0.0164 0.0025 15.2%
+BangladeshB 88031 13/07/2016 0.0168 0.0165 0.0003 1.8%
+BangladeshC 880331 12/07/2016 0.0187 0.0178 0.0009 5.1%
+FullAnalysis
+Rate
+Increases
+Zone Code Effective
+Date
+New
+Rate
+Old
+Rate Change %
+Change Initial Rec. Notice BusinessRule
+Breach
+Bangladesh
+A 880431 13/07/2016 0.0189 0.0164 0.0025 15.2% 0 1 7
+Bangladesh
+B 88031 13/07/2016 0.0168 0.0165 0.0003 1.8% 0 1 7
+Bangladesh
+C 880331 12/07/2016 0.0187 0.0178 0.0009 5.1% 0 1 6
+Increase
+Before
+7Days
+15. Click“Save”.
+Result: TheImportNotificationissavedandreadyforuse.
+C onfid entia 
