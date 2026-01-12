@@ -132,6 +132,21 @@ export default function RatingPlanDetailPage() {
   const [showZoneSuggestions, setShowZoneSuggestions] = useState(false);
   const [codesText, setCodesText] = useState("");
   
+  const [isEditingPlanDetails, setIsEditingPlanDetails] = useState(false);
+  const [planDetailsForm, setPlanDetailsForm] = useState({
+    name: "",
+    shortCode: "",
+    currency: "USD",
+    originMappingGroupId: "",
+    marginEnforcementEnabled: true,
+    minMargin: "0",
+    minRatedCallDurationEnabled: false,
+    minRatedCallDuration: 0,
+    shortCallDurationEnabled: false,
+    shortCallDuration: 0,
+    shortCallCharge: "0.0000",
+  });
+  
   const [displayOptions, setDisplayOptions] = useState({
     options: false,
     connectionCharge: false,
@@ -235,6 +250,39 @@ export default function RatingPlanDetailPage() {
       setShowZoneSuggestions(false);
     }
   }, [addRateForm.zone]);
+
+  useEffect(() => {
+    if (plan) {
+      setPlanDetailsForm({
+        name: plan.name || "",
+        shortCode: plan.shortCode || "",
+        currency: plan.currency || "USD",
+        originMappingGroupId: (plan as any).originMappingGroupId || "",
+        marginEnforcementEnabled: (plan as any).marginEnforcementEnabled ?? true,
+        minMargin: plan.minMargin || "0",
+        minRatedCallDurationEnabled: (plan as any).minRatedCallDurationEnabled ?? false,
+        minRatedCallDuration: (plan as any).minRatedCallDuration || 0,
+        shortCallDurationEnabled: (plan as any).shortCallDurationEnabled ?? false,
+        shortCallDuration: (plan as any).shortCallDuration || 0,
+        shortCallCharge: (plan as any).shortCallCharge || "0.0000",
+      });
+    }
+  }, [plan]);
+
+  const updatePlanDetailsMutation = useMutation({
+    mutationFn: async (data: typeof planDetailsForm) => {
+      const response = await apiRequest("PATCH", `/api/softswitch/rating/customer-plans/${planId}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/softswitch/rating/customer-plans", planId] });
+      setIsEditingPlanDetails(false);
+      toast({ title: "Success", description: "Plan details updated" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
 
   const handleZoneSelect = (zone: string) => {
     setAddRateForm(prev => ({ ...prev, zone }));
@@ -810,8 +858,293 @@ export default function RatingPlanDetailPage() {
         </TabsContent>
 
         <TabsContent value="plan-details">
-          <div className="py-12 text-center text-muted-foreground">
-            Plan Details configuration coming soon
+          <div className="grid grid-cols-2 gap-6 mt-4">
+            <div className="space-y-4">
+              <div className="bg-primary text-primary-foreground px-4 py-2 rounded-t-md font-medium">
+                Plan Details
+              </div>
+              <div className="space-y-3 px-2">
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Name</Label>
+                  {isEditingPlanDetails ? (
+                    <Input 
+                      value={planDetailsForm.name}
+                      onChange={(e) => setPlanDetailsForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="flex-1"
+                      data-testid="input-plan-name"
+                    />
+                  ) : (
+                    <span className="text-sm font-medium">{plan?.name}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Plan Identifier</Label>
+                  {isEditingPlanDetails ? (
+                    <Input 
+                      value={planDetailsForm.shortCode}
+                      onChange={(e) => setPlanDetailsForm(prev => ({ ...prev, shortCode: e.target.value }))}
+                      className="flex-1"
+                      data-testid="input-plan-identifier"
+                    />
+                  ) : (
+                    <span className="text-sm font-medium">{plan?.shortCode || "-"}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Currency</Label>
+                  <span className="text-sm font-medium">{plan?.currency || "USD"}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Origin Mapping Group</Label>
+                  {isEditingPlanDetails ? (
+                    <Select 
+                      value={planDetailsForm.originMappingGroupId || "none"}
+                      onValueChange={(val) => setPlanDetailsForm(prev => ({ ...prev, originMappingGroupId: val === "none" ? "" : val }))}
+                    >
+                      <SelectTrigger className="flex-1" data-testid="select-origin-mapping-group">
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">-</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="text-sm font-medium">-</span>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <span className="text-primary text-lg">ⓘ</span>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-primary text-primary-foreground px-4 py-2 rounded-t-md font-medium mt-6">
+                Margin Enforcement
+              </div>
+              <div className="space-y-3 px-2">
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Enabled</Label>
+                  {isEditingPlanDetails ? (
+                    <div className="flex items-center gap-2">
+                      <Badge className={planDetailsForm.marginEnforcementEnabled ? "bg-teal-500" : "bg-gray-500"}>
+                        {planDetailsForm.marginEnforcementEnabled ? "Yes" : "No"}
+                      </Badge>
+                      <Checkbox 
+                        checked={planDetailsForm.marginEnforcementEnabled}
+                        onCheckedChange={(checked) => setPlanDetailsForm(prev => ({ ...prev, marginEnforcementEnabled: !!checked }))}
+                        data-testid="checkbox-margin-enforcement"
+                      />
+                    </div>
+                  ) : (
+                    <Badge className={(plan as any)?.marginEnforcementEnabled !== false ? "bg-teal-500" : "bg-gray-500"}>
+                      {(plan as any)?.marginEnforcementEnabled !== false ? "Yes" : "No"}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Default Minimum Margin</Label>
+                  {isEditingPlanDetails ? (
+                    <div className="flex items-center gap-1">
+                      <Input 
+                        type="number"
+                        value={planDetailsForm.minMargin}
+                        onChange={(e) => setPlanDetailsForm(prev => ({ ...prev, minMargin: e.target.value }))}
+                        className="w-20"
+                        data-testid="input-min-margin"
+                      />
+                      <span className="text-sm">%</span>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium">{plan?.minMargin || "0"}%</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-primary text-primary-foreground px-4 py-2 rounded-t-md font-medium mt-6">
+                Minimum Rated Call Duration
+              </div>
+              <div className="space-y-3 px-2">
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Enabled</Label>
+                  {isEditingPlanDetails ? (
+                    <div className="flex items-center gap-2">
+                      <Badge className={planDetailsForm.minRatedCallDurationEnabled ? "bg-teal-500" : "bg-gray-500"}>
+                        {planDetailsForm.minRatedCallDurationEnabled ? "Yes" : "No"}
+                      </Badge>
+                      <Checkbox 
+                        checked={planDetailsForm.minRatedCallDurationEnabled}
+                        onCheckedChange={(checked) => setPlanDetailsForm(prev => ({ ...prev, minRatedCallDurationEnabled: !!checked }))}
+                        data-testid="checkbox-min-rated-call"
+                      />
+                    </div>
+                  ) : (
+                    <Badge className={(plan as any)?.minRatedCallDurationEnabled ? "bg-teal-500" : "bg-gray-500"}>
+                      {(plan as any)?.minRatedCallDurationEnabled ? "Yes" : "No"}
+                    </Badge>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <span className="text-primary text-lg">ⓘ</span>
+                  </Button>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Min. Rated Call Duration</Label>
+                  {isEditingPlanDetails ? (
+                    <div className="flex items-center gap-1">
+                      <Input 
+                        type="number"
+                        value={planDetailsForm.minRatedCallDuration}
+                        onChange={(e) => setPlanDetailsForm(prev => ({ ...prev, minRatedCallDuration: parseInt(e.target.value) || 0 }))}
+                        className="w-20"
+                        disabled={!planDetailsForm.minRatedCallDurationEnabled}
+                        data-testid="input-min-rated-duration"
+                      />
+                      <span className="text-sm">milliseconds</span>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium">{(plan as any)?.minRatedCallDurationEnabled ? `${(plan as any)?.minRatedCallDuration || 0} ms` : "-"}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-primary text-primary-foreground px-4 py-2 rounded-t-md font-medium mt-6">
+                Short Call Duration Charge
+              </div>
+              <div className="space-y-3 px-2">
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Enabled</Label>
+                  {isEditingPlanDetails ? (
+                    <div className="flex items-center gap-2">
+                      <Badge className={planDetailsForm.shortCallDurationEnabled ? "bg-teal-500" : "bg-gray-500"}>
+                        {planDetailsForm.shortCallDurationEnabled ? "Yes" : "No"}
+                      </Badge>
+                      <Checkbox 
+                        checked={planDetailsForm.shortCallDurationEnabled}
+                        onCheckedChange={(checked) => setPlanDetailsForm(prev => ({ ...prev, shortCallDurationEnabled: !!checked }))}
+                        data-testid="checkbox-short-call"
+                      />
+                    </div>
+                  ) : (
+                    <Badge className={(plan as any)?.shortCallDurationEnabled ? "bg-teal-500" : "bg-gray-500"}>
+                      {(plan as any)?.shortCallDurationEnabled ? "Yes" : "No"}
+                    </Badge>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <span className="text-primary text-lg">ⓘ</span>
+                  </Button>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Short Call Duration</Label>
+                  {isEditingPlanDetails ? (
+                    <div className="flex items-center gap-1">
+                      <Input 
+                        type="number"
+                        value={planDetailsForm.shortCallDuration}
+                        onChange={(e) => setPlanDetailsForm(prev => ({ ...prev, shortCallDuration: parseInt(e.target.value) || 0 }))}
+                        className="w-20"
+                        disabled={!planDetailsForm.shortCallDurationEnabled}
+                        data-testid="input-short-call-duration"
+                      />
+                      <span className="text-sm">seconds</span>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium">{(plan as any)?.shortCallDurationEnabled ? `${(plan as any)?.shortCallDuration || 0} seconds` : "-"}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-40 text-right text-sm text-muted-foreground">Charge</Label>
+                  {isEditingPlanDetails ? (
+                    <Input 
+                      value={planDetailsForm.shortCallCharge}
+                      onChange={(e) => setPlanDetailsForm(prev => ({ ...prev, shortCallCharge: e.target.value }))}
+                      className="w-24"
+                      disabled={!planDetailsForm.shortCallDurationEnabled}
+                      data-testid="input-short-call-charge"
+                    />
+                  ) : (
+                    <span className="text-sm font-medium">{(plan as any)?.shortCallCharge || "0.0000"}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="bg-muted px-4 py-2 rounded-t-md font-medium border">
+                Summary
+              </div>
+              <div className="space-y-3 px-2 pt-4 border-x border-b rounded-b-md pb-4">
+                <div className="flex items-center gap-4">
+                  <Label className="w-28 text-right text-sm text-muted-foreground">Assigned</Label>
+                  <Badge className={plan?.assigned ? "bg-teal-500" : "bg-gray-500"}>
+                    {plan?.assigned ? "Yes" : "No"}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-28 text-right text-sm text-muted-foreground">Rates</Label>
+                  <span className="text-sm font-medium">{rates?.length || 0}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-28 text-right text-sm text-muted-foreground">Codes</Label>
+                  <span className="text-sm font-medium">
+                    {rates?.reduce((sum, r) => sum + (r.codes?.length || 0), 0) || 0}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="w-28 text-right text-sm text-muted-foreground">Last Updated</Label>
+                  <span className="text-sm font-medium">
+                    {plan?.updatedAt ? new Date(plan.updatedAt).toLocaleString("en-GB", {
+                      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                    }) : "-"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center gap-2 mt-8 border-t pt-4">
+            {isEditingPlanDetails ? (
+              <>
+                <Button 
+                  variant="outline" 
+                  onClick={() => updatePlanDetailsMutation.mutate(planDetailsForm)}
+                  disabled={updatePlanDetailsMutation.isPending}
+                  data-testid="button-save-plan-details"
+                >
+                  {updatePlanDetailsMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Save
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditingPlanDetails(false);
+                    if (plan) {
+                      setPlanDetailsForm({
+                        name: plan.name || "",
+                        shortCode: plan.shortCode || "",
+                        currency: plan.currency || "USD",
+                        originMappingGroupId: (plan as any).originMappingGroupId || "",
+                        marginEnforcementEnabled: (plan as any).marginEnforcementEnabled ?? true,
+                        minMargin: plan.minMargin || "0",
+                        minRatedCallDurationEnabled: (plan as any).minRatedCallDurationEnabled ?? false,
+                        minRatedCallDuration: (plan as any).minRatedCallDuration || 0,
+                        shortCallDurationEnabled: (plan as any).shortCallDurationEnabled ?? false,
+                        shortCallDuration: (plan as any).shortCallDuration || 0,
+                        shortCallCharge: (plan as any).shortCallCharge || "0.0000",
+                      });
+                    }
+                  }}
+                  data-testid="button-cancel-plan-details"
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditingPlanDetails(true)}
+                data-testid="button-edit-plan-details"
+              >
+                Edit
+              </Button>
+            )}
           </div>
         </TabsContent>
 

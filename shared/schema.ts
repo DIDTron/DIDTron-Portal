@@ -572,6 +572,13 @@ export const customerRatingPlans = pgTable("customer_rating_plans", {
   selectedZones: text("selected_zones").array(),
   zonesSelect: text("zones_select").default("None"),
   assignOrigin: text("assign_origin").default("None"),
+  originMappingGroupId: varchar("origin_mapping_group_id"),
+  marginEnforcementEnabled: boolean("margin_enforcement_enabled").default(true),
+  minRatedCallDurationEnabled: boolean("min_rated_call_duration_enabled").default(false),
+  minRatedCallDuration: integer("min_rated_call_duration").default(0),
+  shortCallDurationEnabled: boolean("short_call_duration_enabled").default(false),
+  shortCallDuration: integer("short_call_duration").default(0),
+  shortCallCharge: decimal("short_call_charge", { precision: 10, scale: 4 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
