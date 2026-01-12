@@ -23,6 +23,25 @@ DIDTron Communications is developing an AI-first, white-label wholesale VoIP pla
 #### UI/UX Design
 The platform uses an "Enterprise SaaS Dashboard System" design, inspired by Stripe and Linear, featuring a VitalPBX-like double sidebar, two headers, a fixed action dock, and content tabs. It supports a native dark mode with DIDTron Blue (#2563EB) as the primary accent. The Experience Manager handles marketing, portal themes, white-labeling, design system, and documentation via a Draft/Preview/Publish workflow. All visual development adheres to a mandatory Component Library Workflow, using components from `/admin/experience-manager/component-library`. All data tables in the Super Admin portal must include the `DataTableFooter` component.
 
+#### Data Table UI Patterns
+The platform provides two data table patterns for different use cases:
+
+**Pattern 1: Standard Table** (`@/components/ui/table`)
+- Basic table with full-width scrollable container
+- Use for simple data lists with few columns
+- Components: `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell`
+
+**Pattern 2: Fixed Column Table** (`@/components/ui/fixed-column-table`)
+- First column is fixed (sticky) while remaining columns scroll horizontally
+- Use for data-dense tables with many columns (e.g., Carrier Management, Balance & Spend)
+- Matches Digitalk Carrier Cloud Manager UI pattern
+- Components: `FixedColumnTable`, `FixedColumnTableHeader`, `FixedColumnTableBody`, `FixedColumnTableRow`, `FixedColumnTableHead`, `FixedColumnTableCell`
+- Usage: Set `fixed={true}` on the first column's `FixedColumnTableHead` and `FixedColumnTableCell`
+- Dark header styling (#3d4f5f) with white text for headers
+- Alternating row backgrounds for readability
+
+Both patterns must use `DataTableFooter` component for pagination.
+
 #### Technical Implementations
 The platform includes integrated billing, a referral system, promo codes, email communications, AI-powered social media management, support tickets, webhooks, API, CMS, white-labeling, audit/compliance, and multi-currency support. VoIP products include Voice Termination, DIDs, Cloud PBX, AI Voice Agents, a Class 4 Softswitch, and a SIP Tester module. An automated metadata-driven Testing Engine ensures comprehensive testing. All data modification operations are routed through a job queue for auditing, and user actions in the Super Admin portal are logged. Soft deletion with configurable retention is implemented. Frontend pages requiring refresh functionality must use `useQuery`'s `refetch()` and `isFetching` states. New pages and tabs implement focus-safe initialization and overflow-safe cards.
 
