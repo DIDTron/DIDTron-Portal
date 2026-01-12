@@ -650,7 +650,7 @@ export function SoftswitchCarriersPage() {
                       </div>
                     ) : "-"}
                   </FixedColumnTableCell>
-                  <FixedColumnTableCell>
+                  <FixedColumnTableCell className="whitespace-normal min-w-[150px] max-w-[250px]">
                     {carrier.accountManager || "-"}
                   </FixedColumnTableCell>
                   <FixedColumnTableCell>
