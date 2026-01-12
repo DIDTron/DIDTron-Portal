@@ -123,8 +123,11 @@ export function SoftswitchCarriersPage() {
       resetForm();
       setViewMode("list");
     },
-    onError: () => {
-      toast({ title: "Failed to create carrier", variant: "destructive" });
+    onError: (error: Error) => {
+      const message = error.message.includes("duplicate key") 
+        ? "A carrier with this name/code already exists" 
+        : error.message;
+      toast({ title: "Failed to create carrier", description: message, variant: "destructive" });
     },
   });
 

@@ -1,3 +1,23 @@
+# DIDTron Agent Bootloader (MANDATORY — DO NOT EDIT OR REMOVE)
+
+This top section is governance. You are NOT allowed to rewrite, summarize, move, or delete it.
+If you need to change it, you MUST ask the user first.
+
+Before responding to any request, you MUST open and read:
+1) docs/AGENT_BRIEF.md
+2) docs/TODO.md
+3) docs/UI_SPEC.md
+4) DESIGN_SYSTEM.md
+5) docs/DB_SCHEMA.md
+6) docs/DECISIONS.md
+
+Every reply MUST start with:
+READ CHECK ✅ + list files opened, current Plan ID, TODO task ID, DOC TARGET.
+If you did not open the docs, reply only: READ CHECK ❌.
+
+No work is allowed unless it is in docs/TODO.md under the current Plan ID.
+
+
 # DIDTron Communications - White-Label Multi-Portal VoIP Platform
 
 ### Overview
