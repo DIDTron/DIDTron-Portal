@@ -41,10 +41,11 @@ export default function CarrierDetailPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [, partnersParams] = useRoute("/admin/wholesale/partners/:id");
-  const [, carriersParams] = useRoute("/admin/carriers/:id");
-  const params = partnersParams || carriersParams;
+  const [, softswitchParams] = useRoute("/admin/softswitch/carriers/:id");
+  const params = partnersParams || softswitchParams;
   const carrierId = params?.id;
   const isPartnerRoute = !!partnersParams;
+  const isSoftswitchRoute = !!softswitchParams;
 
   const [activeTab, setActiveTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
@@ -632,6 +633,7 @@ export default function CarrierDetailPage() {
             <InterconnectsTab
               interconnects={interconnects || []}
               carrierId={carrierId || ""}
+              isSoftswitchRoute={isSoftswitchRoute}
               onDelete={(id) => deleteInterconnectMutation.mutate(id)}
               onAdd={() => setShowInterconnectDialog(true)}
             />
@@ -2151,11 +2153,13 @@ function CarrierDetailsTab({
 function InterconnectsTab({
   interconnects,
   carrierId,
+  isSoftswitchRoute,
   onDelete,
   onAdd,
 }: {
   interconnects: CarrierInterconnect[];
   carrierId: string;
+  isSoftswitchRoute: boolean;
   onDelete: (id: string) => void;
   onAdd: () => void;
 }) {
@@ -2213,7 +2217,7 @@ function InterconnectsTab({
                     <TableCell>
                       <span 
                         className="font-medium text-primary cursor-pointer hover:underline"
-                        onClick={() => setLocation(`/admin/carriers/${carrierId}/interconnects/${ic.id}`)}
+                        onClick={() => setLocation(isSoftswitchRoute ? `/admin/softswitch/carriers/${carrierId}/interconnects/${ic.id}` : `/admin/wholesale/partners/${carrierId}/interconnects/${ic.id}`)}
                         data-testid={`link-interconnect-${ic.id}`}
                       >
                         {ic.name}

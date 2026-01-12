@@ -120,9 +120,12 @@ const defaultCodecs: Codec[] = [
 export default function InterconnectDetailPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [, params] = useRoute("/admin/carriers/:carrierId/interconnects/:interconnectId");
+  const [, wholesaleParams] = useRoute("/admin/wholesale/partners/:carrierId/interconnects/:interconnectId");
+  const [, softswitchParams] = useRoute("/admin/softswitch/carriers/:carrierId/interconnects/:interconnectId");
+  const params = wholesaleParams || softswitchParams;
   const carrierId = params?.carrierId;
   const interconnectId = params?.interconnectId;
+  const isSoftswitchRoute = !!softswitchParams;
 
   const [activeTab, setActiveTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
@@ -669,7 +672,7 @@ export default function InterconnectDetailPage() {
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={() => setLocation(`/admin/carriers/${carrierId}`)} 
+            onClick={() => setLocation(isSoftswitchRoute ? `/admin/softswitch/carriers/${carrierId}` : `/admin/wholesale/partners/${carrierId}`)} 
             data-testid="button-back"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -685,7 +688,7 @@ export default function InterconnectDetailPage() {
               <span>/</span>
               <span 
                 className="cursor-pointer hover:underline text-primary"
-                onClick={() => setLocation(`/admin/carriers/${carrierId}`)}
+                onClick={() => setLocation(isSoftswitchRoute ? `/admin/softswitch/carriers/${carrierId}` : `/admin/wholesale/partners/${carrierId}`)}
               >
                 {carrier?.name || "Carrier"}
               </span>

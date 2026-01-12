@@ -149,7 +149,7 @@ export function CarrierBalancesPage() {
                   {paginatedItems.map((carrier) => (
                     <TableRow key={carrier.id} data-testid={`row-carrier-${carrier.id}`}>
                       <TableCell className="font-medium">
-                        <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline">
+                        <Link href={`/admin/softswitch/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline">
                           {carrier.name}
                         </Link>
                       </TableCell>
@@ -337,7 +337,7 @@ export function TwentyFourHourSpendPage() {
                   {paginatedItems.map((carrier) => (
                     <TableRow key={carrier.id} data-testid={`row-carrier-${carrier.id}`}>
                       <TableCell className="font-medium">
-                        <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline">
+                        <Link href={`/admin/softswitch/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline">
                           {carrier.name}
                         </Link>
                       </TableCell>
