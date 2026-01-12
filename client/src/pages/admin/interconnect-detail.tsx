@@ -286,6 +286,30 @@ export default function InterconnectDetailPage() {
     enabled: !!interconnectId,
   });
 
+  // Fetch rating plans (rate cards) for the Add Service dialog
+  const { data: ratingPlansData } = useQuery<Array<{ id: string; name: string; code?: string; currencyCode?: string }>>({
+    queryKey: ["/api/rate-cards"],
+    enabled: showAddServiceDialog,
+  });
+
+  // Fetch routing plans for the Add Service dialog
+  const { data: routingPlansData } = useQuery<Array<{ id: string; name: string; code?: string }>>({
+    queryKey: ["/api/routes"],
+    enabled: showAddServiceDialog && newService.routingMethod === "routing_plan",
+  });
+
+  // Fetch supplier interconnects for Route to Interconnect option (exclude current interconnect)
+  const { data: supplierInterconnectsData } = useQuery<Array<{ id: string; name: string; carrierId: string; direction: string }>>({
+    queryKey: ["/api/carrier-interconnects"],
+    enabled: showAddServiceDialog && newService.routingMethod === "route_to_interconnect",
+  });
+
+  // Fetch match lists for Assign List option
+  const { data: matchListsData } = useQuery<Array<{ id: string; name: string; matchType: string }>>({
+    queryKey: ["/api/match-lists"],
+    enabled: showAddServiceDialog && (newService.originationMatchType === "assign_list" || newService.destinationMatchType === "assign_list"),
+  });
+
   interface ConnexCSServer {
     id: number;
     type: string;
@@ -2075,9 +2099,13 @@ export default function InterconnectDetailPage() {
                     <SelectValue placeholder="Select rating plan..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="standard">Standard Rate Plan</SelectItem>
-                    <SelectItem value="premium">Premium Rate Plan</SelectItem>
-                    <SelectItem value="wholesale">Wholesale Rate Plan</SelectItem>
+                    {ratingPlansData && ratingPlansData.length > 0 ? (
+                      ratingPlansData.map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id}>{plan.name} {plan.code ? `(${plan.code})` : ""}</SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>No rating plans available</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -2181,9 +2209,13 @@ export default function InterconnectDetailPage() {
                       <SelectValue placeholder="Select routing plan..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="lcr">LCR Routing</SelectItem>
-                      <SelectItem value="quality">Quality Routing</SelectItem>
-                      <SelectItem value="direct">Direct Routing</SelectItem>
+                      {routingPlansData && routingPlansData.length > 0 ? (
+                        routingPlansData.map((plan) => (
+                          <SelectItem key={plan.id} value={plan.id}>{plan.name} {plan.code ? `(${plan.code})` : ""}</SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>No routing plans available</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -2200,7 +2232,15 @@ export default function InterconnectDetailPage() {
                         <SelectValue placeholder="Select supplier interconnect..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="placeholder">Select from available suppliers</SelectItem>
+                        {supplierInterconnectsData && supplierInterconnectsData.length > 0 ? (
+                          supplierInterconnectsData
+                            .filter((ic) => ic.direction === "supplier" || ic.direction === "both")
+                            .map((ic) => (
+                              <SelectItem key={ic.id} value={ic.id}>{ic.name}</SelectItem>
+                            ))
+                        ) : (
+                          <SelectItem value="none" disabled>No supplier interconnects available</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -2314,7 +2354,13 @@ export default function InterconnectDetailPage() {
                       <SelectValue placeholder="Select match list..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="placeholder">No match lists available</SelectItem>
+                      {matchListsData && matchListsData.length > 0 ? (
+                        matchListsData.map((list) => (
+                          <SelectItem key={list.id} value={list.id}>{list.name}</SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>No match lists available</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -2395,7 +2441,13 @@ export default function InterconnectDetailPage() {
                       <SelectValue placeholder="Select match list..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="placeholder">No match lists available</SelectItem>
+                      {matchListsData && matchListsData.length > 0 ? (
+                        matchListsData.map((list) => (
+                          <SelectItem key={list.id} value={list.id}>{list.name}</SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>No match lists available</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
