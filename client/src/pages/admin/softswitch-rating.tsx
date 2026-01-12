@@ -951,8 +951,7 @@ const supplierRatingTabActions: Record<SupplierRatingTab, TabAction[]> = {
     { id: "import-new-plan", label: "Import Into New Plan", testId: "menu-import-new-plan" },
   ],
   "import-jobs": [
-    { id: "cancel-all-jobs", label: "Cancel All Jobs", testId: "menu-cancel-all-jobs" },
-    { id: "clear-completed", label: "Clear Completed", testId: "menu-clear-completed" },
+    { id: "export-history", label: "Export History", testId: "menu-export-history" },
   ],
   "import-summary": [
     { id: "export-summary", label: "Export Summary", testId: "menu-export-summary" },
@@ -1033,6 +1032,24 @@ interface RateInboxItem {
 
 const mockRateInboxItems: RateInboxItem[] = [];
 
+// Import Jobs types and mock data
+type ImportJobPeriod = "specify" | "today" | "yesterday" | "this-week" | "this-month" | "last-2-months" | "last-6-months" | "this-year";
+
+interface ImportJob {
+  id: string;
+  jobId: string;
+  date: string;
+  status: "Committed" | "Pending" | "Failed" | "Processing";
+  importSettings: string;
+  ratingPlan: string;
+  importType: string;
+  auto: boolean;
+  email: boolean;
+  rateChanges: number;
+}
+
+const mockImportJobs: ImportJob[] = [];
+
 const periodOptions: { value: RateInboxPeriod; label: string }[] = [
   { value: "specify", label: "Specify" },
   { value: "today", label: "Today" },
@@ -1061,6 +1078,14 @@ export function SupplierRatingPlansPage() {
   const [rateInboxExpandedItems, setRateInboxExpandedItems] = useState<string[]>([]);
   const [rateInboxCurrentPage, setRateInboxCurrentPage] = useState(1);
   const [rateInboxPageSize, setRateInboxPageSize] = useState(20);
+  
+  // Import Jobs state
+  const [importJobsPeriod, setImportJobsPeriod] = useState<ImportJobPeriod>("this-month");
+  const [importJobsFromDate, setImportJobsFromDate] = useState("2026-01-01");
+  const [importJobsToDate, setImportJobsToDate] = useState("2026-01-13");
+  const [importJobsSearchFilter, setImportJobsSearchFilter] = useState("");
+  const [importJobsCurrentPage, setImportJobsCurrentPage] = useState(1);
+  const [importJobsPageSize, setImportJobsPageSize] = useState(20);
   
   const { toast } = useToast();
 
@@ -1693,9 +1718,137 @@ export function SupplierRatingPlansPage() {
         </TabsContent>
 
         <TabsContent value="import-jobs">
-          <div className="py-12 text-center text-muted-foreground">
-            Import Jobs coming soon
+          {/* Period Filter */}
+          <div className="flex items-center gap-4 mb-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Period</span>
+              <Select value={importJobsPeriod} onValueChange={(v) => setImportJobsPeriod(v as ImportJobPeriod)}>
+                <SelectTrigger className="w-[140px]" data-testid="select-import-jobs-period">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {periodOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">From</span>
+              <Input
+                type="date"
+                value={importJobsFromDate}
+                onChange={(e) => setImportJobsFromDate(e.target.value)}
+                className="w-[140px]"
+                data-testid="input-import-jobs-from-date"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">To</span>
+              <Input
+                type="date"
+                value={importJobsToDate}
+                onChange={(e) => setImportJobsToDate(e.target.value)}
+                className="w-[140px]"
+                data-testid="input-import-jobs-to-date"
+              />
+            </div>
           </div>
+
+          {/* Search Filter */}
+          <div className="flex items-center gap-2 mb-4">
+            <Input
+              placeholder="Click to filter"
+              value={importJobsSearchFilter}
+              onChange={(e) => setImportJobsSearchFilter(e.target.value)}
+              className="max-w-md"
+              data-testid="input-import-jobs-search"
+            />
+            <Button variant="ghost" size="icon" data-testid="button-import-jobs-search">
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Import Jobs Table */}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    Import Job <ChevronDown className="h-3 w-3" />
+                  </div>
+                </TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Import Settings</TableHead>
+                <TableHead>Rating Plan</TableHead>
+                <TableHead>Import Type</TableHead>
+                <TableHead>Auto</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Rate Changes</TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mockImportJobs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                    No import jobs found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                mockImportJobs
+                  .slice((importJobsCurrentPage - 1) * importJobsPageSize, importJobsCurrentPage * importJobsPageSize)
+                  .map((job) => (
+                    <TableRow key={job.id} data-testid={`row-import-job-${job.id}`}>
+                      <TableCell>
+                        <a href="#" className="text-primary hover:underline" data-testid={`link-job-${job.id}`}>
+                          {job.jobId}
+                        </a>
+                      </TableCell>
+                      <TableCell className="text-sm">{job.date}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={job.status === "Committed" ? "default" : job.status === "Failed" ? "destructive" : "secondary"}
+                          className={job.status === "Committed" ? "bg-sky-500 hover:bg-sky-600" : ""}
+                          data-testid={`badge-status-${job.id}`}
+                        >
+                          {job.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <a href="#" className="text-primary hover:underline text-sm" data-testid={`link-import-settings-${job.id}`}>
+                          {job.importSettings}
+                        </a>
+                      </TableCell>
+                      <TableCell className="text-sm">{job.ratingPlan}</TableCell>
+                      <TableCell className="text-sm">{job.importType}</TableCell>
+                      <TableCell className="text-sm text-center">{job.auto ? "Yes" : "-"}</TableCell>
+                      <TableCell className="text-sm text-center">{job.email ? "Yes" : "-"}</TableCell>
+                      <TableCell className="text-sm text-right">{job.rateChanges.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => toast({ title: "Delete", description: `Deleting job ${job.jobId}...` })}
+                          data-testid={`button-delete-${job.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
+            </TableBody>
+          </Table>
+          <DataTableFooter
+            totalItems={mockImportJobs.length}
+            totalPages={Math.ceil(mockImportJobs.length / importJobsPageSize)}
+            pageSize={importJobsPageSize}
+            currentPage={importJobsCurrentPage}
+            onPageChange={setImportJobsCurrentPage}
+            onPageSizeChange={setImportJobsPageSize}
+          />
         </TabsContent>
 
         <TabsContent value="import-summary">
