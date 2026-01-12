@@ -749,22 +749,22 @@ export function SoftswitchCarriersPage() {
                     </Badge>
                   </FixedColumnTableCell>
                   <FixedColumnTableCell>
-                    {interconnect.supplierRatingPlan || "-"}
+                    {"-"}
                   </FixedColumnTableCell>
                   <FixedColumnTableCell>
-                    {interconnect.ingressTechPrefix || "-"}
+                    {interconnect.techPrefix || "-"}
                   </FixedColumnTableCell>
                   <FixedColumnTableCell className="whitespace-normal max-w-[150px]">
-                    {interconnect.ingressIp || "-"}
+                    {"-"}
                   </FixedColumnTableCell>
                   <FixedColumnTableCell>
-                    {interconnect.egressTechPrefix || "-"}
+                    {interconnect.techPrefix || "-"}
                   </FixedColumnTableCell>
                   <FixedColumnTableCell className="whitespace-normal max-w-[150px]">
-                    {interconnect.egressIp || "-"}
+                    {"-"}
                   </FixedColumnTableCell>
                   <FixedColumnTableCell>
-                    {interconnect.relayMediaMode || "Always"}
+                    {"Always"}
                   </FixedColumnTableCell>
                 </FixedColumnTableRow>
               );

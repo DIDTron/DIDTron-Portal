@@ -303,6 +303,8 @@ export default function AdminLayout() {
                 <Route path="/admin/ai-voice/settings" component={AiVoiceSettingsPage} />
                 <Route path="/admin/ai-voice/assignments" component={AiVoiceAssignmentsPage} />
                 <Route path="/admin/softswitch/carriers" component={SoftswitchCarriersPage} />
+                <Route path="/admin/carriers/:id/interconnects/:interconnectId" component={InterconnectDetailPage} />
+                <Route path="/admin/carriers/:id" component={CarrierDetailPage} />
                 <Route path="/admin/softswitch/rating/customer-plans" component={CustomerRatingPlansPage} />
                 <Route path="/admin/softswitch/rating/customer-plans/:id" component={RatingPlanDetailPage} />
                 <Route path="/admin/softswitch/rating/supplier-plans" component={SupplierRatingPlansPage} />
