@@ -120,6 +120,21 @@ import {
   voiceTiers as voiceTiersTable,
   codecs as codecsTable,
   channelPlans as channelPlansTable,
+  didCountries as didCountriesTable,
+  didProviders as didProvidersTable,
+  dids as didsTable,
+  sipTrunks as sipTrunksTable,
+  extensions as extensionsTable,
+  ivrs as ivrsTable,
+  ringGroups as ringGroupsTable,
+  queues as queuesTable,
+  billingTerms as billingTermsTable,
+  invoices as invoicesTable,
+  payments as paymentsTable,
+  promoCodes as promoCodesTable,
+  referrals as referralsTable,
+  tickets as ticketsTable,
+  ticketReplies as ticketRepliesTable,
   fileTemplates
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -1017,61 +1032,49 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
-  // Billing Terms
+  // Billing Terms - Persisted to PostgreSQL (FOREVER POLICY)
   async getBillingTerms(): Promise<BillingTerm[]> {
-    return Array.from(this.billingTerms.values()).sort((a, b) => a.cycleDays - b.cycleDays || a.dueDays - b.dueDays);
+    const results = await db.select().from(billingTermsTable);
+    return results.sort((a, b) => a.cycleDays - b.cycleDays || a.dueDays - b.dueDays);
   }
 
   async getBillingTerm(id: string): Promise<BillingTerm | undefined> {
-    return this.billingTerms.get(id);
+    const results = await db.select().from(billingTermsTable).where(eq(billingTermsTable.id, id));
+    return results[0];
   }
 
   async createBillingTerm(term: InsertBillingTerm): Promise<BillingTerm> {
-    const id = randomUUID();
-    const now = new Date();
-    const billingTerm: BillingTerm = {
-      id,
-      code: term.code,
-      label: term.label,
-      cycleType: term.cycleType,
-      cycleDays: term.cycleDays,
-      dueDays: term.dueDays,
-      anchorConfig: term.anchorConfig ?? null,
-      description: term.description ?? null,
-      isDefault: term.isDefault ?? false,
-      isActive: term.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.billingTerms.set(id, billingTerm);
-    return billingTerm;
+    const results = await db.insert(billingTermsTable).values(term).returning();
+    return results[0];
   }
 
   async updateBillingTerm(id: string, data: Partial<InsertBillingTerm>): Promise<BillingTerm | undefined> {
-    const term = this.billingTerms.get(id);
-    if (!term) return undefined;
-    const updated = { ...term, ...data, updatedAt: new Date() };
-    this.billingTerms.set(id, updated);
-    return updated;
+    const results = await db.update(billingTermsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(billingTermsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteBillingTerm(id: string): Promise<boolean> {
-    return this.billingTerms.delete(id);
+    const results = await db.delete(billingTermsTable).where(eq(billingTermsTable.id, id)).returning();
+    return results.length > 0;
   }
 
   async setDefaultBillingTerm(id: string): Promise<BillingTerm | undefined> {
-    const term = this.billingTerms.get(id);
-    if (!term) return undefined;
     // Remove default from all other terms
-    for (const [termId, t] of this.billingTerms) {
-      if (t.isDefault) {
-        this.billingTerms.set(termId, { ...t, isDefault: false, updatedAt: new Date() });
-      }
+    const allTerms = await db.select().from(billingTermsTable).where(eq(billingTermsTable.isDefault, true));
+    for (const t of allTerms) {
+      await db.update(billingTermsTable)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(eq(billingTermsTable.id, t.id));
     }
     // Set this one as default
-    const updated = { ...term, isDefault: true, updatedAt: new Date() };
-    this.billingTerms.set(id, updated);
-    return updated;
+    const results = await db.update(billingTermsTable)
+      .set({ isDefault: true, updatedAt: new Date() })
+      .where(eq(billingTermsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   // Customer Categories - Using PostgreSQL database
@@ -2088,577 +2091,393 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
-  // DID Countries
+  // DID Countries - Persisted to PostgreSQL (FOREVER POLICY)
   async getDidCountries(): Promise<DidCountry[]> {
-    return Array.from(this.didCountries.values()).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    const results = await db.select().from(didCountriesTable);
+    return results.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }
 
   async getDidCountry(id: string): Promise<DidCountry | undefined> {
-    return this.didCountries.get(id);
+    const results = await db.select().from(didCountriesTable).where(eq(didCountriesTable.id, id));
+    return results[0];
   }
 
   async createDidCountry(country: InsertDidCountry): Promise<DidCountry> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: DidCountry = {
-      id,
-      name: country.name,
-      isoCode: country.isoCode,
-      dialCode: country.dialCode,
-      kycRequired: country.kycRequired ?? false,
-      kycDocuments: country.kycDocuments ?? null,
-      isActive: country.isActive ?? true,
-      displayOrder: country.displayOrder ?? 0,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.didCountries.set(id, c);
-    return c;
+    const results = await db.insert(didCountriesTable).values(country).returning();
+    return results[0];
   }
 
   async updateDidCountry(id: string, data: Partial<InsertDidCountry>): Promise<DidCountry | undefined> {
-    const country = this.didCountries.get(id);
-    if (!country) return undefined;
-    const updated = { ...country, ...data, updatedAt: new Date() };
-    this.didCountries.set(id, updated);
-    return updated;
+    const results = await db.update(didCountriesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(didCountriesTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteDidCountry(id: string): Promise<boolean> {
-    return this.didCountries.delete(id);
+    const results = await db.delete(didCountriesTable).where(eq(didCountriesTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // DID Providers
+  // DID Providers - Persisted to PostgreSQL (FOREVER POLICY)
   async getDidProviders(): Promise<DidProvider[]> {
-    return Array.from(this.didProviders.values());
+    return await db.select().from(didProvidersTable);
   }
 
   async getDidProvider(id: string): Promise<DidProvider | undefined> {
-    return this.didProviders.get(id);
+    const results = await db.select().from(didProvidersTable).where(eq(didProvidersTable.id, id));
+    return results[0];
   }
 
   async createDidProvider(provider: InsertDidProvider): Promise<DidProvider> {
-    const id = randomUUID();
-    const now = new Date();
-    const p: DidProvider = {
-      id,
-      name: provider.name,
-      code: provider.code,
-      apiEndpoint: provider.apiEndpoint ?? null,
-      apiKey: provider.apiKey ?? null,
-      countryIds: provider.countryIds ?? null,
-      isActive: provider.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.didProviders.set(id, p);
-    return p;
+    const results = await db.insert(didProvidersTable).values(provider).returning();
+    return results[0];
   }
 
   async updateDidProvider(id: string, data: Partial<InsertDidProvider>): Promise<DidProvider | undefined> {
-    const provider = this.didProviders.get(id);
-    if (!provider) return undefined;
-    const updated = { ...provider, ...data, updatedAt: new Date() };
-    this.didProviders.set(id, updated);
-    return updated;
+    const results = await db.update(didProvidersTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(didProvidersTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteDidProvider(id: string): Promise<boolean> {
-    return this.didProviders.delete(id);
+    const results = await db.delete(didProvidersTable).where(eq(didProvidersTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // DIDs
+  // DIDs - Persisted to PostgreSQL (FOREVER POLICY)
   async getDids(customerId?: string): Promise<Did[]> {
-    const dids = Array.from(this.dids.values());
-    if (customerId) return dids.filter(d => d.customerId === customerId);
-    return dids;
+    if (customerId) {
+      return await db.select().from(didsTable).where(eq(didsTable.customerId, customerId));
+    }
+    return await db.select().from(didsTable);
   }
 
   async getDid(id: string): Promise<Did | undefined> {
-    return this.dids.get(id);
+    const results = await db.select().from(didsTable).where(eq(didsTable.id, id));
+    return results[0];
   }
 
   async createDid(did: InsertDid): Promise<Did> {
-    const id = randomUUID();
-    const now = new Date();
-    const d: Did = {
-      id,
-      number: did.number,
-      countryId: did.countryId ?? null,
-      providerId: did.providerId ?? null,
-      customerId: did.customerId ?? null,
-      status: did.status ?? "available",
-      monthlyPrice: did.monthlyPrice ?? null,
-      setupFee: did.setupFee ?? "0",
-      destinationType: did.destinationType ?? null,
-      destination: did.destination ?? null,
-      failoverDestination: did.failoverDestination ?? null,
-      ringTimeout: did.ringTimeout ?? 30,
-      connexcsDidId: did.connexcsDidId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.dids.set(id, d);
-    return d;
+    const results = await db.insert(didsTable).values(did).returning();
+    return results[0];
   }
 
   async updateDid(id: string, data: Partial<InsertDid>): Promise<Did | undefined> {
-    const did = this.dids.get(id);
-    if (!did) return undefined;
-    const updated = { ...did, ...data, updatedAt: new Date() };
-    this.dids.set(id, updated);
-    return updated;
+    const results = await db.update(didsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(didsTable.id, id))
+      .returning();
+    return results[0];
   }
 
-  // SIP Trunks
+  // SIP Trunks - Persisted to PostgreSQL (FOREVER POLICY)
   async getSipTrunks(customerId: string): Promise<SipTrunk[]> {
-    return Array.from(this.sipTrunks.values()).filter(t => t.customerId === customerId);
+    return await db.select().from(sipTrunksTable).where(eq(sipTrunksTable.customerId, customerId));
   }
 
   async getSipTrunk(id: string): Promise<SipTrunk | undefined> {
-    return this.sipTrunks.get(id);
+    const results = await db.select().from(sipTrunksTable).where(eq(sipTrunksTable.id, id));
+    return results[0];
   }
 
   async createSipTrunk(trunk: InsertSipTrunk): Promise<SipTrunk> {
-    const id = randomUUID();
-    const now = new Date();
-    const t: SipTrunk = {
-      id,
-      customerId: trunk.customerId,
-      name: trunk.name,
-      username: trunk.username,
-      password: trunk.password,
-      popId: trunk.popId ?? null,
-      voiceTierId: trunk.voiceTierId ?? null,
-      channelPlanId: trunk.channelPlanId ?? null,
-      ipWhitelist: trunk.ipWhitelist ?? null,
-      codecIds: trunk.codecIds ?? null,
-      authMethod: trunk.authMethod ?? "user_pass",
-      status: trunk.status ?? "active",
-      connexcsTrunkId: trunk.connexcsTrunkId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.sipTrunks.set(id, t);
-    return t;
+    const results = await db.insert(sipTrunksTable).values(trunk).returning();
+    return results[0];
   }
 
   async updateSipTrunk(id: string, data: Partial<InsertSipTrunk>): Promise<SipTrunk | undefined> {
-    const trunk = this.sipTrunks.get(id);
-    if (!trunk) return undefined;
-    const updated = { ...trunk, ...data, updatedAt: new Date() };
-    this.sipTrunks.set(id, updated);
-    return updated;
+    const results = await db.update(sipTrunksTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(sipTrunksTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteSipTrunk(id: string): Promise<boolean> {
-    return this.sipTrunks.delete(id);
+    const results = await db.delete(sipTrunksTable).where(eq(sipTrunksTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Extensions
+  // Extensions - Persisted to PostgreSQL (FOREVER POLICY)
   async getExtensions(customerId: string): Promise<Extension[]> {
-    return Array.from(this.extensions.values()).filter(e => e.customerId === customerId);
+    return await db.select().from(extensionsTable).where(eq(extensionsTable.customerId, customerId));
   }
 
   async getExtension(id: string): Promise<Extension | undefined> {
-    return this.extensions.get(id);
+    const results = await db.select().from(extensionsTable).where(eq(extensionsTable.id, id));
+    return results[0];
   }
 
   async createExtension(ext: InsertExtension): Promise<Extension> {
-    const id = randomUUID();
-    const now = new Date();
-    const e: Extension = {
-      id,
-      customerId: ext.customerId,
-      extension: ext.extension,
-      name: ext.name,
-      email: ext.email ?? null,
-      sipUsername: ext.sipUsername,
-      sipPassword: ext.sipPassword,
-      callerId: ext.callerId ?? null,
-      outboundDidId: ext.outboundDidId ?? null,
-      voicemailEnabled: ext.voicemailEnabled ?? true,
-      voicemailPin: ext.voicemailPin ?? null,
-      voicemailEmail: ext.voicemailEmail ?? null,
-      voicemailAttachAudio: ext.voicemailAttachAudio ?? true,
-      ringTimeout: ext.ringTimeout ?? 20,
-      dndEnabled: ext.dndEnabled ?? false,
-      callWaitingEnabled: ext.callWaitingEnabled ?? true,
-      forwardingEnabled: ext.forwardingEnabled ?? false,
-      forwardingDestination: ext.forwardingDestination ?? null,
-      status: ext.status ?? "active",
-      connexcsExtensionId: ext.connexcsExtensionId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.extensions.set(id, e);
-    return e;
+    const results = await db.insert(extensionsTable).values(ext).returning();
+    return results[0];
   }
 
   async updateExtension(id: string, data: Partial<InsertExtension>): Promise<Extension | undefined> {
-    const ext = this.extensions.get(id);
-    if (!ext) return undefined;
-    const updated = { ...ext, ...data, updatedAt: new Date() };
-    this.extensions.set(id, updated);
-    return updated;
+    const results = await db.update(extensionsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(extensionsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteExtension(id: string): Promise<boolean> {
-    return this.extensions.delete(id);
+    const results = await db.delete(extensionsTable).where(eq(extensionsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // IVRs
+  // IVRs - Persisted to PostgreSQL (FOREVER POLICY)
   async getIvrs(customerId: string): Promise<Ivr[]> {
-    return Array.from(this.ivrs.values()).filter(i => i.customerId === customerId);
+    return await db.select().from(ivrsTable).where(eq(ivrsTable.customerId, customerId));
   }
 
   async getIvr(id: string): Promise<Ivr | undefined> {
-    return this.ivrs.get(id);
+    const results = await db.select().from(ivrsTable).where(eq(ivrsTable.id, id));
+    return results[0];
   }
 
   async createIvr(ivr: InsertIvr): Promise<Ivr> {
-    const id = randomUUID();
-    const now = new Date();
-    const i: Ivr = {
-      id,
-      customerId: ivr.customerId,
-      name: ivr.name,
-      description: ivr.description ?? null,
-      greetingType: ivr.greetingType ?? "tts",
-      greetingText: ivr.greetingText ?? null,
-      greetingAudioUrl: ivr.greetingAudioUrl ?? null,
-      timeout: ivr.timeout ?? 10,
-      maxRetries: ivr.maxRetries ?? 3,
-      invalidDestination: ivr.invalidDestination ?? null,
-      timeoutDestination: ivr.timeoutDestination ?? null,
-      isActive: ivr.isActive ?? true,
-      connexcsIvrId: ivr.connexcsIvrId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.ivrs.set(id, i);
-    return i;
+    const results = await db.insert(ivrsTable).values(ivr).returning();
+    return results[0];
   }
 
   async updateIvr(id: string, data: Partial<InsertIvr>): Promise<Ivr | undefined> {
-    const ivr = this.ivrs.get(id);
-    if (!ivr) return undefined;
-    const updated = { ...ivr, ...data, updatedAt: new Date() };
-    this.ivrs.set(id, updated);
-    return updated;
+    const results = await db.update(ivrsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(ivrsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteIvr(id: string): Promise<boolean> {
-    return this.ivrs.delete(id);
+    const results = await db.delete(ivrsTable).where(eq(ivrsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Ring Groups
+  // Ring Groups - Persisted to PostgreSQL (FOREVER POLICY)
   async getRingGroups(customerId: string): Promise<RingGroup[]> {
-    return Array.from(this.ringGroups.values()).filter(r => r.customerId === customerId);
+    return await db.select().from(ringGroupsTable).where(eq(ringGroupsTable.customerId, customerId));
   }
 
   async getRingGroup(id: string): Promise<RingGroup | undefined> {
-    return this.ringGroups.get(id);
+    const results = await db.select().from(ringGroupsTable).where(eq(ringGroupsTable.id, id));
+    return results[0];
   }
 
   async createRingGroup(rg: InsertRingGroup): Promise<RingGroup> {
-    const id = randomUUID();
-    const now = new Date();
-    const r: RingGroup = {
-      id,
-      customerId: rg.customerId,
-      name: rg.name,
-      extension: rg.extension ?? null,
-      strategy: rg.strategy ?? "ring_all",
-      ringTimeout: rg.ringTimeout ?? 20,
-      noAnswerDestination: rg.noAnswerDestination ?? null,
-      isActive: rg.isActive ?? true,
-      connexcsRingGroupId: rg.connexcsRingGroupId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.ringGroups.set(id, r);
-    return r;
+    const results = await db.insert(ringGroupsTable).values(rg).returning();
+    return results[0];
   }
 
   async updateRingGroup(id: string, data: Partial<InsertRingGroup>): Promise<RingGroup | undefined> {
-    const rg = this.ringGroups.get(id);
-    if (!rg) return undefined;
-    const updated = { ...rg, ...data, updatedAt: new Date() };
-    this.ringGroups.set(id, updated);
-    return updated;
+    const results = await db.update(ringGroupsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(ringGroupsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteRingGroup(id: string): Promise<boolean> {
-    return this.ringGroups.delete(id);
+    const results = await db.delete(ringGroupsTable).where(eq(ringGroupsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Queues
+  // Queues - Persisted to PostgreSQL (FOREVER POLICY)
   async getQueues(customerId: string): Promise<Queue[]> {
-    return Array.from(this.queues.values()).filter(q => q.customerId === customerId);
+    return await db.select().from(queuesTable).where(eq(queuesTable.customerId, customerId));
   }
 
   async getQueue(id: string): Promise<Queue | undefined> {
-    return this.queues.get(id);
+    const results = await db.select().from(queuesTable).where(eq(queuesTable.id, id));
+    return results[0];
   }
 
   async createQueue(queue: InsertQueue): Promise<Queue> {
-    const id = randomUUID();
-    const now = new Date();
-    const q: Queue = {
-      id,
-      customerId: queue.customerId,
-      name: queue.name,
-      extension: queue.extension ?? null,
-      strategy: queue.strategy ?? "round_robin",
-      maxWaitTime: queue.maxWaitTime ?? 300,
-      announcePosition: queue.announcePosition ?? true,
-      holdMusicUrl: queue.holdMusicUrl ?? null,
-      timeoutDestination: queue.timeoutDestination ?? null,
-      isActive: queue.isActive ?? true,
-      connexcsQueueId: queue.connexcsQueueId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.queues.set(id, q);
-    return q;
+    const results = await db.insert(queuesTable).values(queue).returning();
+    return results[0];
   }
 
   async updateQueue(id: string, data: Partial<InsertQueue>): Promise<Queue | undefined> {
-    const queue = this.queues.get(id);
-    if (!queue) return undefined;
-    const updated = { ...queue, ...data, updatedAt: new Date() };
-    this.queues.set(id, updated);
-    return updated;
+    const results = await db.update(queuesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(queuesTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteQueue(id: string): Promise<boolean> {
-    return this.queues.delete(id);
+    const results = await db.delete(queuesTable).where(eq(queuesTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Tickets
+  // Tickets - Persisted to PostgreSQL (FOREVER POLICY)
   async getTickets(customerId?: string): Promise<Ticket[]> {
-    const tickets = Array.from(this.tickets.values());
-    if (customerId) return tickets.filter(t => t.customerId === customerId);
-    return tickets;
+    if (customerId) {
+      return await db.select().from(ticketsTable).where(eq(ticketsTable.customerId, customerId));
+    }
+    return await db.select().from(ticketsTable);
   }
 
   async getTicket(id: string): Promise<Ticket | undefined> {
-    return this.tickets.get(id);
+    const results = await db.select().from(ticketsTable).where(eq(ticketsTable.id, id));
+    return results[0];
   }
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
-    const id = randomUUID();
-    const now = new Date();
     const ticketNumber = `TKT${Date.now().toString(36).toUpperCase()}`;
-    const t: Ticket = {
-      id,
-      ticketNumber,
-      customerId: ticket.customerId ?? null,
-      userId: ticket.userId ?? null,
-      subject: ticket.subject,
-      description: ticket.description ?? null,
-      category: ticket.category ?? null,
-      priority: ticket.priority ?? "medium",
-      status: ticket.status ?? "open",
-      assignedTo: ticket.assignedTo ?? null,
-      resolvedAt: ticket.resolvedAt ?? null,
-      closedAt: ticket.closedAt ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.tickets.set(id, t);
-    return t;
+    const results = await db.insert(ticketsTable).values({ ...ticket, ticketNumber }).returning();
+    return results[0];
   }
 
   async updateTicket(id: string, data: Partial<InsertTicket>): Promise<Ticket | undefined> {
-    const ticket = this.tickets.get(id);
-    if (!ticket) return undefined;
-    const updated = { ...ticket, ...data, updatedAt: new Date() };
-    this.tickets.set(id, updated);
-    return updated;
+    const results = await db.update(ticketsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(ticketsTable.id, id))
+      .returning();
+    return results[0];
   }
 
-  // Ticket Replies
+  // Ticket Replies - Persisted to PostgreSQL (FOREVER POLICY)
   async getTicketReplies(ticketId: string): Promise<TicketReply[]> {
-    return Array.from(this.ticketReplies.values())
-      .filter(r => r.ticketId === ticketId)
-      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+    const results = await db.select().from(ticketRepliesTable).where(eq(ticketRepliesTable.ticketId, ticketId));
+    return results.sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
   }
 
   async createTicketReply(reply: InsertTicketReply): Promise<TicketReply> {
-    const id = randomUUID();
-    const now = new Date();
-    const r: TicketReply = {
-      id,
-      ticketId: reply.ticketId,
-      userId: reply.userId ?? null,
-      message: reply.message,
-      isInternal: reply.isInternal ?? false,
-      attachments: reply.attachments ?? null,
-      createdAt: now
-    };
-    this.ticketReplies.set(id, r);
-    return r;
+    const results = await db.insert(ticketRepliesTable).values(reply).returning();
+    return results[0];
   }
 
-  // Invoices
+  // Invoices - Persisted to PostgreSQL (FOREVER POLICY)
   async getInvoices(customerId?: string): Promise<Invoice[]> {
-    const all = Array.from(this.invoices.values());
-    if (customerId) return all.filter(i => i.customerId === customerId);
-    return all;
+    if (customerId) {
+      return await db.select().from(invoicesTable).where(eq(invoicesTable.customerId, customerId));
+    }
+    return await db.select().from(invoicesTable);
   }
+
   async getInvoice(id: string): Promise<Invoice | undefined> {
-    return this.invoices.get(id);
+    const results = await db.select().from(invoicesTable).where(eq(invoicesTable.id, id));
+    return results[0];
   }
+
   async createInvoice(invoice: Partial<Invoice>): Promise<Invoice> {
-    const id = randomUUID();
-    const now = new Date();
-    const inv: Invoice = {
-      id,
-      customerId: invoice.customerId || "",
-      invoiceNumber: invoice.invoiceNumber || `INV-${Date.now().toString(36).toUpperCase()}`,
-      amount: invoice.amount || "0",
-      tax: invoice.tax || "0",
-      total: invoice.total || "0",
-      currency: invoice.currency || "USD",
-      status: invoice.status || "pending",
-      dueDate: invoice.dueDate || null,
-      paidAt: invoice.paidAt || null,
-      pdfUrl: invoice.pdfUrl || null,
-      createdAt: now,
-    };
-    this.invoices.set(id, inv);
-    return inv;
+    const invoiceNumber = invoice.invoiceNumber || `INV-${Date.now().toString(36).toUpperCase()}`;
+    const results = await db.insert(invoicesTable).values({ ...invoice as any, invoiceNumber }).returning();
+    return results[0];
   }
+
   async updateInvoice(id: string, data: Partial<Invoice>): Promise<Invoice | undefined> {
-    const inv = this.invoices.get(id);
-    if (!inv) return undefined;
-    const updated = { ...inv, ...data };
-    this.invoices.set(id, updated);
-    return updated;
+    const results = await db.update(invoicesTable)
+      .set(data)
+      .where(eq(invoicesTable.id, id))
+      .returning();
+    return results[0];
   }
+
   async deleteInvoice(id: string): Promise<boolean> {
-    return this.invoices.delete(id);
+    const results = await db.delete(invoicesTable).where(eq(invoicesTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Payments
+  // Payments - Persisted to PostgreSQL (FOREVER POLICY)
   async getPayments(customerId?: string): Promise<Payment[]> {
-    const all = Array.from(this.payments.values());
-    if (customerId) return all.filter(p => p.customerId === customerId);
-    return all;
+    if (customerId) {
+      return await db.select().from(paymentsTable).where(eq(paymentsTable.customerId, customerId));
+    }
+    return await db.select().from(paymentsTable);
   }
+
   async getPayment(id: string): Promise<Payment | undefined> {
-    return this.payments.get(id);
+    const results = await db.select().from(paymentsTable).where(eq(paymentsTable.id, id));
+    return results[0];
   }
+
   async createPayment(payment: InsertPayment): Promise<Payment> {
-    const id = randomUUID();
-    const now = new Date();
-    const pay: Payment = {
-      id,
-      customerId: payment.customerId,
-      amount: payment.amount,
-      currency: payment.currency || "USD",
-      paymentMethod: payment.paymentMethod || null,
-      transactionId: payment.transactionId || null,
-      stripePaymentIntentId: payment.stripePaymentIntentId || null,
-      paypalTransactionId: payment.paypalTransactionId || null,
-      status: payment.status || "pending",
-      description: payment.description || null,
-      createdAt: now,
-    };
-    this.payments.set(id, pay);
-    return pay;
+    const results = await db.insert(paymentsTable).values(payment).returning();
+    return results[0];
   }
+
   async updatePayment(id: string, data: Partial<InsertPayment>): Promise<Payment | undefined> {
-    const pay = this.payments.get(id);
-    if (!pay) return undefined;
-    const updated = { ...pay, ...data };
-    this.payments.set(id, updated);
-    return updated;
+    const results = await db.update(paymentsTable)
+      .set(data)
+      .where(eq(paymentsTable.id, id))
+      .returning();
+    return results[0];
   }
+
   async deletePayment(id: string): Promise<boolean> {
-    return this.payments.delete(id);
+    const results = await db.delete(paymentsTable).where(eq(paymentsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Promo Codes
+  // Promo Codes - Persisted to PostgreSQL (FOREVER POLICY)
   async getPromoCodes(): Promise<PromoCode[]> {
-    return Array.from(this.promoCodes.values());
-  }
-  async getPromoCode(id: string): Promise<PromoCode | undefined> {
-    return this.promoCodes.get(id);
-  }
-  async getPromoCodeByCode(code: string): Promise<PromoCode | undefined> {
-    return Array.from(this.promoCodes.values()).find(p => p.code === code);
-  }
-  async createPromoCode(promoCode: InsertPromoCode): Promise<PromoCode> {
-    const id = randomUUID();
-    const now = new Date();
-    const promo: PromoCode = {
-      id,
-      code: promoCode.code,
-      description: promoCode.description || null,
-      discountType: promoCode.discountType || "percentage",
-      discountValue: promoCode.discountValue,
-      applyTo: promoCode.applyTo || "all",
-      maxUses: promoCode.maxUses || null,
-      usedCount: promoCode.usedCount || 0,
-      minPurchase: promoCode.minPurchase || null,
-      validFrom: promoCode.validFrom || null,
-      validUntil: promoCode.validUntil || null,
-      isActive: promoCode.isActive ?? true,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.promoCodes.set(id, promo);
-    return promo;
-  }
-  async updatePromoCode(id: string, data: Partial<InsertPromoCode>): Promise<PromoCode | undefined> {
-    const promo = this.promoCodes.get(id);
-    if (!promo) return undefined;
-    const updated = { ...promo, ...data, updatedAt: new Date() };
-    this.promoCodes.set(id, updated);
-    return updated;
-  }
-  async deletePromoCode(id: string): Promise<boolean> {
-    return this.promoCodes.delete(id);
+    return await db.select().from(promoCodesTable);
   }
 
-  // Referrals
+  async getPromoCode(id: string): Promise<PromoCode | undefined> {
+    const results = await db.select().from(promoCodesTable).where(eq(promoCodesTable.id, id));
+    return results[0];
+  }
+
+  async getPromoCodeByCode(code: string): Promise<PromoCode | undefined> {
+    const results = await db.select().from(promoCodesTable).where(eq(promoCodesTable.code, code));
+    return results[0];
+  }
+
+  async createPromoCode(promoCode: InsertPromoCode): Promise<PromoCode> {
+    const results = await db.insert(promoCodesTable).values(promoCode).returning();
+    return results[0];
+  }
+
+  async updatePromoCode(id: string, data: Partial<InsertPromoCode>): Promise<PromoCode | undefined> {
+    const results = await db.update(promoCodesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(promoCodesTable.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async deletePromoCode(id: string): Promise<boolean> {
+    const results = await db.delete(promoCodesTable).where(eq(promoCodesTable.id, id)).returning();
+    return results.length > 0;
+  }
+
+  // Referrals - Persisted to PostgreSQL (FOREVER POLICY)
   async getReferrals(referrerId?: string): Promise<Referral[]> {
-    const all = Array.from(this.referrals.values());
-    if (referrerId) return all.filter(r => r.referrerId === referrerId);
-    return all;
+    if (referrerId) {
+      return await db.select().from(referralsTable).where(eq(referralsTable.referrerId, referrerId));
+    }
+    return await db.select().from(referralsTable);
   }
+
   async getReferral(id: string): Promise<Referral | undefined> {
-    return this.referrals.get(id);
+    const results = await db.select().from(referralsTable).where(eq(referralsTable.id, id));
+    return results[0];
   }
+
   async createReferral(referral: Partial<Referral>): Promise<Referral> {
-    const id = randomUUID();
-    const now = new Date();
-    const ref: Referral = {
-      id,
-      referrerId: referral.referrerId || "",
-      referredId: referral.referredId || null,
-      referralCode: referral.referralCode || `REF${randomUUID().slice(0, 8).toUpperCase()}`,
-      status: referral.status || "pending",
-      tier: referral.tier || 1,
-      commission: referral.commission || "0",
-      paidAt: referral.paidAt || null,
-      createdAt: now,
-    };
-    this.referrals.set(id, ref);
-    return ref;
+    const referralCode = referral.referralCode || `REF${randomUUID().slice(0, 8).toUpperCase()}`;
+    const results = await db.insert(referralsTable).values({ ...referral as any, referralCode }).returning();
+    return results[0];
   }
+
   async updateReferral(id: string, data: Partial<Referral>): Promise<Referral | undefined> {
-    const ref = this.referrals.get(id);
-    if (!ref) return undefined;
-    const updated = { ...ref, ...data };
-    this.referrals.set(id, updated);
-    return updated;
+    const results = await db.update(referralsTable)
+      .set(data)
+      .where(eq(referralsTable.id, id))
+      .returning();
+    return results[0];
   }
+
   async deleteReferral(id: string): Promise<boolean> {
-    return this.referrals.delete(id);
+    const results = await db.delete(referralsTable).where(eq(referralsTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // Bonus Types
