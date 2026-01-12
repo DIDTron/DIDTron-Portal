@@ -32,7 +32,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronLeft, MoreVertical, Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChevronLeft, MoreVertical, Plus, Pencil, Trash2, Save, X, Info, DollarSign } from "lucide-react";
 import type { Carrier, Currency, CarrierInterconnect, CarrierContact, CarrierCreditAlert, EmailTemplate, User } from "@shared/schema";
 
 export default function CarrierDetailPage() {
@@ -49,6 +51,27 @@ export default function CarrierDetailPage() {
   const [editingInterconnect, setEditingInterconnect] = useState<CarrierInterconnect | null>(null);
   const [editingContact, setEditingContact] = useState<CarrierContact | null>(null);
   const [editingAlert, setEditingAlert] = useState<CarrierCreditAlert | null>(null);
+  const [showCustomerBalanceDialog, setShowCustomerBalanceDialog] = useState(false);
+  const [showSupplierBalanceDialog, setShowSupplierBalanceDialog] = useState(false);
+
+  const [customerBalanceForm, setCustomerBalanceForm] = useState({
+    currency: "USD",
+    adjustmentType: "credit",
+    reason: "",
+    reference: "",
+    dateApplied: new Date().toISOString().split('T')[0],
+    amount: "",
+    notes: "",
+  });
+
+  const [supplierBalanceForm, setSupplierBalanceForm] = useState({
+    currency: "USD",
+    modificationType: "credit",
+    amount: "",
+    note: "",
+  });
+
+  const [supplierBalanceError, setSupplierBalanceError] = useState("");
 
   const { data: carrier, isLoading } = useQuery<Carrier>({
     queryKey: ["/api/carriers", carrierId],
@@ -308,6 +331,107 @@ export default function CarrierDetailPage() {
     },
   });
 
+  const adjustCustomerBalanceMutation = useMutation({
+    mutationFn: async (data: typeof customerBalanceForm) => {
+      const amount = parseFloat(data.amount) || 0;
+      const currentBalance = parseFloat(carrier?.customerBalance || "0");
+      const currentSupplierBalance = parseFloat(carrier?.supplierBalance || "0");
+      let newBalance: number;
+      if (data.adjustmentType === "credit") {
+        newBalance = currentBalance + amount;
+      } else {
+        newBalance = currentBalance - amount;
+      }
+      const newBilateralBalance = newBalance - currentSupplierBalance;
+      const res = await apiRequest("PUT", `/api/carriers/${carrierId}`, {
+        customerBalance: newBalance.toFixed(4),
+        bilateralBalance: newBilateralBalance.toFixed(4),
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/carriers", carrierId] });
+      toast({ title: "Customer balance adjusted successfully" });
+      setShowCustomerBalanceDialog(false);
+      resetCustomerBalanceForm();
+    },
+    onError: () => {
+      toast({ title: "Failed to adjust customer balance", variant: "destructive" });
+    },
+  });
+
+  const adjustSupplierBalanceMutation = useMutation({
+    mutationFn: async (data: typeof supplierBalanceForm) => {
+      const amount = parseFloat(data.amount) || 0;
+      const currentBalance = parseFloat(carrier?.supplierBalance || "0");
+      const currentCustomerBalance = parseFloat(carrier?.customerBalance || "0");
+      let newBalance: number;
+      if (data.modificationType === "credit") {
+        newBalance = currentBalance + amount;
+      } else {
+        newBalance = currentBalance - amount;
+      }
+      const newBilateralBalance = currentCustomerBalance - newBalance;
+      const res = await apiRequest("PUT", `/api/carriers/${carrierId}`, {
+        supplierBalance: newBalance.toFixed(4),
+        bilateralBalance: newBilateralBalance.toFixed(4),
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/carriers", carrierId] });
+      toast({ title: "Supplier balance adjusted successfully" });
+      setShowSupplierBalanceDialog(false);
+      resetSupplierBalanceForm();
+    },
+    onError: () => {
+      toast({ title: "Failed to adjust supplier balance", variant: "destructive" });
+    },
+  });
+
+  const resetCustomerBalanceForm = () => {
+    setCustomerBalanceForm({
+      currency: "USD",
+      adjustmentType: "credit",
+      reason: "",
+      reference: "",
+      dateApplied: new Date().toISOString().split('T')[0],
+      amount: "",
+      notes: "",
+    });
+  };
+
+  const resetSupplierBalanceForm = () => {
+    setSupplierBalanceForm({
+      currency: "USD",
+      modificationType: "credit",
+      amount: "",
+      note: "",
+    });
+    setSupplierBalanceError("");
+  };
+
+  const handleSaveCustomerBalance = () => {
+    if (!customerBalanceForm.amount || parseFloat(customerBalanceForm.amount) <= 0) {
+      toast({ title: "Please enter a valid amount", variant: "destructive" });
+      return;
+    }
+    adjustCustomerBalanceMutation.mutate(customerBalanceForm);
+  };
+
+  const handleSaveSupplierBalance = () => {
+    if (!supplierBalanceForm.note?.trim()) {
+      setSupplierBalanceError("The Reason field is required.");
+      return;
+    }
+    if (!supplierBalanceForm.amount || parseFloat(supplierBalanceForm.amount) <= 0) {
+      toast({ title: "Please enter a valid amount", variant: "destructive" });
+      return;
+    }
+    setSupplierBalanceError("");
+    adjustSupplierBalanceMutation.mutate(supplierBalanceForm);
+  };
+
   const resetInterconnectForm = () => {
     setInterconnectForm({
       name: "",
@@ -447,6 +571,18 @@ export default function CarrierDetailPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
+              <DropdownMenuItem onClick={() => setShowCustomerBalanceDialog(true)} data-testid="menu-adjust-customer-balance">
+                <DollarSign className="h-4 w-4 mr-2" />
+                Adjust Customer Balance
+              </DropdownMenuItem>
+            )}
+            {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
+              <DropdownMenuItem onClick={() => setShowSupplierBalanceDialog(true)} data-testid="menu-adjust-supplier-balance">
+                <DollarSign className="h-4 w-4 mr-2" />
+                Adjust Supplier Balance
+              </DropdownMenuItem>
+            )}
             {activeTab === "interconnects" && (
               <DropdownMenuItem onClick={() => setShowInterconnectDialog(true)} data-testid="menu-add-interconnect">
                 <Plus className="h-4 w-4 mr-2" />
@@ -1237,6 +1373,221 @@ export default function CarrierDetailPage() {
               data-testid="button-save-alert"
             >
               {createAlertMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCustomerBalanceDialog} onOpenChange={setShowCustomerBalanceDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="bg-[#3d4f5f] text-white px-4 py-3 -mx-6 -mt-6 rounded-t-lg">Add Adjustment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="bg-[#00a0df] text-white px-3 py-2 text-sm font-medium rounded">
+              Customer Balance Options
+            </div>
+            <div className="grid grid-cols-[100px_1fr] items-center gap-y-3 gap-x-4">
+              <Label className="text-right text-sm">Currency</Label>
+              <Select
+                value={customerBalanceForm.currency}
+                onValueChange={(v) => setCustomerBalanceForm({ ...customerBalanceForm, currency: v })}
+              >
+                <SelectTrigger className="w-32" data-testid="select-customer-balance-currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies?.map((c) => (
+                    <SelectItem key={c.id} value={c.code}>{c.code}</SelectItem>
+                  ))}
+                  {(!currencies || currencies.length === 0) && (
+                    <SelectItem value="USD">USD</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+
+              <Label className="text-right text-sm">Adjustment Type</Label>
+              <Select
+                value={customerBalanceForm.adjustmentType}
+                onValueChange={(v) => setCustomerBalanceForm({ ...customerBalanceForm, adjustmentType: v })}
+              >
+                <SelectTrigger className="w-32" data-testid="select-customer-adjustment-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="credit">Credit</SelectItem>
+                  <SelectItem value="debit">Debit</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Label className="text-right text-sm">Reason</Label>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={customerBalanceForm.reason}
+                  onValueChange={(v) => setCustomerBalanceForm({ ...customerBalanceForm, reason: v })}
+                >
+                  <SelectTrigger className="flex-1" data-testid="select-customer-reason">
+                    <SelectValue placeholder="Select reason..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual_adjustment">Manual Adjustment</SelectItem>
+                    <SelectItem value="correction">Correction</SelectItem>
+                    <SelectItem value="goodwill">Goodwill Credit</SelectItem>
+                    <SelectItem value="refund">Refund</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Info className="h-4 w-4 text-[#00a0df]" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-xs p-3">
+                    <p className="font-semibold mb-1">Balance Adjustment</p>
+                    <p className="text-xs">Balance Adjustments will credit or debit the customer balance but the transaction will not appear on an invoice or affect the invoice total. Balance adjustments can not be assigned to invoices or credit notes and therefore should not be used for updating the balance due to payment received when DIGITALK billing is deployed.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              <Label className="text-right text-sm">Reference</Label>
+              <Input
+                value={customerBalanceForm.reference}
+                onChange={(e) => setCustomerBalanceForm({ ...customerBalanceForm, reference: e.target.value })}
+                placeholder=""
+                data-testid="input-customer-reference"
+              />
+
+              <Label className="text-right text-sm">Date Applied</Label>
+              <Input
+                type="date"
+                value={customerBalanceForm.dateApplied}
+                onChange={(e) => setCustomerBalanceForm({ ...customerBalanceForm, dateApplied: e.target.value })}
+                className="w-36"
+                data-testid="input-customer-date-applied"
+              />
+
+              <Label className="text-right text-sm">Amount (Excl Tax)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={customerBalanceForm.amount}
+                  onChange={(e) => setCustomerBalanceForm({ ...customerBalanceForm, amount: e.target.value })}
+                  className="w-24 text-right"
+                  placeholder="0.00"
+                  data-testid="input-customer-amount"
+                />
+                <span className="text-sm text-muted-foreground">{customerBalanceForm.currency}</span>
+              </div>
+            </div>
+
+            <div className="bg-[#00a0df] text-white px-3 py-2 text-sm font-medium rounded mt-4">
+              Additional Information
+            </div>
+            <div className="grid grid-cols-[100px_1fr] items-start gap-x-4">
+              <Label className="text-right text-sm pt-2">Notes</Label>
+              <Textarea
+                value={customerBalanceForm.notes}
+                onChange={(e) => setCustomerBalanceForm({ ...customerBalanceForm, notes: e.target.value })}
+                rows={3}
+                data-testid="input-customer-notes"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowCustomerBalanceDialog(false); resetCustomerBalanceForm(); }}>Cancel</Button>
+            <Button
+              onClick={handleSaveCustomerBalance}
+              disabled={adjustCustomerBalanceMutation.isPending}
+              data-testid="button-save-customer-balance"
+            >
+              {adjustCustomerBalanceMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showSupplierBalanceDialog} onOpenChange={setShowSupplierBalanceDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="bg-[#3d4f5f] text-white px-4 py-3 -mx-6 -mt-6 rounded-t-lg">Adjust Supplier Balance</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-[120px_1fr] items-center gap-y-3 gap-x-4">
+              <Label className="text-right text-sm">Currency</Label>
+              <Select
+                value={supplierBalanceForm.currency}
+                onValueChange={(v) => setSupplierBalanceForm({ ...supplierBalanceForm, currency: v })}
+              >
+                <SelectTrigger className="w-32" data-testid="select-supplier-balance-currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies?.map((c) => (
+                    <SelectItem key={c.id} value={c.code}>{c.code}</SelectItem>
+                  ))}
+                  {(!currencies || currencies.length === 0) && (
+                    <SelectItem value="USD">USD</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+
+              <Label className="text-right text-sm">Modification Type</Label>
+              <Select
+                value={supplierBalanceForm.modificationType}
+                onValueChange={(v) => setSupplierBalanceForm({ ...supplierBalanceForm, modificationType: v })}
+              >
+                <SelectTrigger className="w-32" data-testid="select-supplier-modification-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="credit">Credit</SelectItem>
+                  <SelectItem value="debit">Debit</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Label className="text-right text-sm">Amount</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={supplierBalanceForm.amount}
+                  onChange={(e) => setSupplierBalanceForm({ ...supplierBalanceForm, amount: e.target.value })}
+                  className="w-24 text-right"
+                  placeholder="0.00"
+                  data-testid="input-supplier-amount"
+                />
+                <span className="text-sm text-muted-foreground">{supplierBalanceForm.currency}</span>
+              </div>
+
+              <Label className="text-right text-sm">Note</Label>
+              <div className="space-y-1">
+                <Textarea
+                  value={supplierBalanceForm.note}
+                  onChange={(e) => {
+                    setSupplierBalanceForm({ ...supplierBalanceForm, note: e.target.value });
+                    if (e.target.value.trim()) setSupplierBalanceError("");
+                  }}
+                  rows={3}
+                  data-testid="input-supplier-note"
+                />
+                {supplierBalanceError && (
+                  <p className="text-sm text-destructive">{supplierBalanceError}</p>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowSupplierBalanceDialog(false); resetSupplierBalanceForm(); }}>Cancel</Button>
+            <Button
+              onClick={handleSaveSupplierBalance}
+              disabled={adjustSupplierBalanceMutation.isPending}
+              data-testid="button-save-supplier-balance"
+            >
+              {adjustSupplierBalanceMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
