@@ -1360,96 +1360,104 @@ export function SupplierRatingPlansPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                mockRateInboxItems.map((item) => (
-                  <>
-                    <TableRow key={item.id} data-testid={`row-rate-inbox-${item.id}`}>
-                      <TableCell>
-                        <Checkbox
-                          checked={rateInboxSelectedItems.includes(item.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setRateInboxSelectedItems([...rateInboxSelectedItems, item.id]);
-                            } else {
-                              setRateInboxSelectedItems(rateInboxSelectedItems.filter(id => id !== item.id));
-                            }
-                          }}
-                          data-testid={`checkbox-rate-inbox-${item.id}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              if (rateInboxExpandedItems.includes(item.id)) {
-                                setRateInboxExpandedItems(rateInboxExpandedItems.filter(id => id !== item.id));
+                mockRateInboxItems
+                  .slice((rateInboxCurrentPage - 1) * rateInboxPageSize, rateInboxCurrentPage * rateInboxPageSize)
+                  .flatMap((item) => {
+                    const mainRow = (
+                      <TableRow key={item.id} data-testid={`row-rate-inbox-${item.id}`}>
+                        <TableCell>
+                          <Checkbox
+                            checked={rateInboxSelectedItems.includes(item.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setRateInboxSelectedItems([...rateInboxSelectedItems, item.id]);
                               } else {
-                                setRateInboxExpandedItems([...rateInboxExpandedItems, item.id]);
+                                setRateInboxSelectedItems(rateInboxSelectedItems.filter(id => id !== item.id));
                               }
                             }}
-                            className="p-0.5 hover-elevate rounded"
-                            data-testid={`button-expand-${item.id}`}
-                          >
-                            <ChevronRight className={cn(
-                              "h-4 w-4 transition-transform",
-                              rateInboxExpandedItems.includes(item.id) && "rotate-90"
-                            )} />
-                          </button>
-                          <div>
-                            <div className="text-sm">{item.senderEmail}</div>
-                            <div className="font-medium">{item.subject}</div>
-                          </div>
-                          <span className="text-sm text-muted-foreground ml-auto">{item.receivedTime}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className={cn(
-                          "w-4 h-4 rounded-sm",
-                          item.trustLevel === "high" && "bg-orange-500",
-                          item.trustLevel === "medium" && "bg-pink-500",
-                          item.trustLevel === "low" && "bg-red-500"
-                        )} />
-                      </TableCell>
-                      <TableCell className="text-sm">{item.carrierImportSettings || "-"}</TableCell>
-                      <TableCell className="text-sm">{item.ratingPlanImportType || "-"}</TableCell>
-                      <TableCell className="text-sm max-w-[150px] truncate">{item.attachment || "-"}</TableCell>
-                      <TableCell className="text-sm">{item.importJob || "-"}</TableCell>
-                      <TableCell className="text-sm">{item.status || "-"}</TableCell>
-                      <TableCell className="text-sm max-w-[150px]">{item.processingNote || "-"}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" data-testid={`button-actions-${item.id}`}>
-                              Actions <ChevronDown className="ml-1 h-3 w-3" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              data-testid={`menu-download-${item.id}`}
-                              onClick={() => toast({ title: "Download", description: "Downloading rates file..." })}
+                            data-testid={`checkbox-rate-inbox-${item.id}`}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                if (rateInboxExpandedItems.includes(item.id)) {
+                                  setRateInboxExpandedItems(rateInboxExpandedItems.filter(id => id !== item.id));
+                                } else {
+                                  setRateInboxExpandedItems([...rateInboxExpandedItems, item.id]);
+                                }
+                              }}
+                              className="p-0.5 hover-elevate rounded"
+                              data-testid={`button-expand-${item.id}`}
                             >
-                              Download Rates File
-                            </DropdownMenuItem>
-                            {rateInboxSubTab === "carrier-assigned" && (
-                              <>
-                                <DropdownMenuItem 
-                                  data-testid={`menu-import-existing-${item.id}`}
-                                  onClick={() => toast({ title: "Import", description: "Import into existing plan..." })}
-                                >
-                                  Import Into Existing Plan
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  data-testid={`menu-import-new-${item.id}`}
-                                  onClick={() => toast({ title: "Import", description: "Import into new plan..." })}
-                                >
-                                  Import Into New Plan
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                    {rateInboxExpandedItems.includes(item.id) && (
+                              <ChevronRight className={cn(
+                                "h-4 w-4 transition-transform",
+                                rateInboxExpandedItems.includes(item.id) && "rotate-90"
+                              )} />
+                            </button>
+                            <div>
+                              <div className="text-sm">{item.senderEmail}</div>
+                              <div className="font-medium">{item.subject}</div>
+                            </div>
+                            <span className="text-sm text-muted-foreground ml-auto">{item.receivedTime}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className={cn(
+                            "w-4 h-4 rounded-sm",
+                            item.trustLevel === "high" && "bg-orange-500",
+                            item.trustLevel === "medium" && "bg-pink-500",
+                            item.trustLevel === "low" && "bg-red-500"
+                          )} />
+                        </TableCell>
+                        <TableCell className="text-sm">{item.carrierImportSettings || "-"}</TableCell>
+                        <TableCell className="text-sm">{item.ratingPlanImportType || "-"}</TableCell>
+                        <TableCell className="text-sm max-w-[150px] truncate">{item.attachment || "-"}</TableCell>
+                        <TableCell className="text-sm">{item.importJob || "-"}</TableCell>
+                        <TableCell className="text-sm">{item.status || "-"}</TableCell>
+                        <TableCell className="text-sm max-w-[150px]">{item.processingNote || "-"}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" data-testid={`button-actions-${item.id}`}>
+                                Actions <ChevronDown className="ml-1 h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                data-testid={`menu-download-${item.id}`}
+                                onClick={() => toast({ title: "Download", description: "Downloading rates file..." })}
+                              >
+                                Download Rates File
+                              </DropdownMenuItem>
+                              {rateInboxSubTab === "carrier-assigned" && (
+                                <>
+                                  <DropdownMenuItem 
+                                    data-testid={`menu-import-existing-${item.id}`}
+                                    onClick={() => toast({ title: "Import", description: "Import into existing plan..." })}
+                                  >
+                                    Import Into Existing Plan
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    data-testid={`menu-import-new-${item.id}`}
+                                    onClick={() => toast({ title: "Import", description: "Import into new plan..." })}
+                                  >
+                                    Import Into New Plan
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                    
+                    if (!rateInboxExpandedItems.includes(item.id)) {
+                      return [mainRow];
+                    }
+                    
+                    const expandedRow = (
                       <TableRow key={`${item.id}-expanded`} className="bg-muted/30">
                         <TableCell colSpan={10} className="p-6">
                           <div className="grid grid-cols-2 gap-8">
@@ -1508,9 +1516,10 @@ export function SupplierRatingPlansPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </>
-                ))
+                    );
+                    
+                    return [mainRow, expandedRow];
+                  })
               )}
             </TableBody>
           </Table>
