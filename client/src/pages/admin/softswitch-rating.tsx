@@ -1006,7 +1006,9 @@ const rateInboxSubTabActions: Record<RateInboxSubTab, TabAction[]> = {
     { id: "restore-selected", label: "Restore Selected", testId: "menu-restore-selected" },
     { id: "delete-selected", label: "Delete Selected", testId: "menu-delete-selected" },
   ],
-  "junk": [],
+  "junk": [
+    { id: "delete-selected", label: "Delete Selected", testId: "menu-delete-selected" },
+  ],
 };
 
 interface RateInboxItem {
