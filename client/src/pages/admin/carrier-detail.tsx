@@ -571,15 +571,13 @@ export default function CarrierDetailPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
+            {activeTab === "details" && (carrier.partnerType === "customer" || carrier.partnerType === "bilateral") && (
               <DropdownMenuItem onClick={() => setShowCustomerBalanceDialog(true)} data-testid="menu-adjust-customer-balance">
-                <DollarSign className="h-4 w-4 mr-2" />
                 Adjust Customer Balance
               </DropdownMenuItem>
             )}
-            {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
+            {activeTab === "details" && (carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") && (
               <DropdownMenuItem onClick={() => setShowSupplierBalanceDialog(true)} data-testid="menu-adjust-supplier-balance">
-                <DollarSign className="h-4 w-4 mr-2" />
                 Adjust Supplier Balance
               </DropdownMenuItem>
             )}
