@@ -455,6 +455,51 @@ The platform uses a dual-sidebar layout with workspace tabs:
 </div>
 ```
 
+### 3.3 Horizontal Overflow Rules
+
+**CRITICAL**: Never allow horizontal content (tabs, button groups, filter rows) to wrap awkwardly when sidebars are open.
+
+#### Tab Navigation
+Always use horizontal scrolling for tab lists with many items:
+
+```tsx
+// CORRECT: Tabs scroll horizontally, never wrap
+<Tabs value={tab} onValueChange={setTab}>
+  <div className="overflow-x-auto">
+    <TabsList className="inline-flex w-max">
+      <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+      <TabsTrigger value="tab2">Tab 2</TabsTrigger>
+      {/* More tabs... */}
+    </TabsList>
+  </div>
+</Tabs>
+
+// WRONG: Tabs wrap to multiple lines
+<TabsList className="flex-wrap">
+  {/* This causes ugly wrapping when space is limited */}
+</TabsList>
+```
+
+#### Horizontal Button Groups
+```tsx
+// CORRECT: Button groups scroll if needed
+<div className="overflow-x-auto">
+  <div className="inline-flex gap-2 w-max">
+    <Button>Action 1</Button>
+    <Button>Action 2</Button>
+    {/* More buttons... */}
+  </div>
+</div>
+```
+
+#### Filter Rows
+```tsx
+// CORRECT: Filters wrap gracefully with proper spacing
+<div className="flex items-center gap-4 flex-wrap">
+  {/* Filter controls */}
+</div>
+```
+
 ---
 
 ## 4. Page Templates
