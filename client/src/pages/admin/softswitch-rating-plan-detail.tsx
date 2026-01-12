@@ -133,6 +133,7 @@ export default function RatingPlanDetailPage() {
   const [codesText, setCodesText] = useState("");
   
   const [isEditingPlanDetails, setIsEditingPlanDetails] = useState(false);
+  const [selectedHistoryVersion, setSelectedHistoryVersion] = useState<string | null>(null);
   const [planDetailsForm, setPlanDetailsForm] = useState({
     name: "",
     shortCode: "",
@@ -510,25 +511,45 @@ export default function RatingPlanDetailPage() {
           <span className="font-medium text-foreground">{plan.name}</span>
         </div>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button data-testid="button-actions">
-              Actions <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setShowAddRateModal(true)} data-testid="menu-add-rate">
-              Add Rate
-            </DropdownMenuItem>
-            <DropdownMenuItem data-testid="menu-export-rates">Export Rates</DropdownMenuItem>
-            <DropdownMenuItem data-testid="menu-import-rates">Import Customer Rates</DropdownMenuItem>
-            <DropdownMenuItem data-testid="menu-usage-check">Usage Check</DropdownMenuItem>
-            <DropdownMenuItem data-testid="menu-update-blocking">Update Blocking</DropdownMenuItem>
-            <DropdownMenuItem data-testid="menu-update-locking">Update Locking</DropdownMenuItem>
-            <DropdownMenuItem data-testid="menu-update-margin">Update Margin</DropdownMenuItem>
-            <DropdownMenuItem data-testid="menu-apply-floor-price">Apply Floor Price</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {activeTab === "rates" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button data-testid="button-actions">
+                Actions <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowAddRateModal(true)} data-testid="menu-add-rate">
+                Add Rate
+              </DropdownMenuItem>
+              <DropdownMenuItem data-testid="menu-export-rates">Export Rates</DropdownMenuItem>
+              <DropdownMenuItem data-testid="menu-import-rates">Import Customer Rates</DropdownMenuItem>
+              <DropdownMenuItem data-testid="menu-usage-check">Usage Check</DropdownMenuItem>
+              <DropdownMenuItem data-testid="menu-update-blocking">Update Blocking</DropdownMenuItem>
+              <DropdownMenuItem data-testid="menu-update-locking">Update Locking</DropdownMenuItem>
+              <DropdownMenuItem data-testid="menu-update-margin">Update Margin</DropdownMenuItem>
+              <DropdownMenuItem data-testid="menu-apply-floor-price">Apply Floor Price</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        
+        {activeTab === "history" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button data-testid="button-actions-history">
+                Actions <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                disabled={!selectedHistoryVersion}
+                data-testid="menu-restore-version"
+              >
+                Restore Selected Version
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -1149,8 +1170,100 @@ export default function RatingPlanDetailPage() {
         </TabsContent>
 
         <TabsContent value="history">
-          <div className="py-12 text-center text-muted-foreground">
-            Rate History & Restore coming soon
+          <div className="space-y-4 mt-4">
+            <div>
+              <h3 className="font-semibold">Rating Plan Version History</h3>
+              <p className="text-sm text-muted-foreground">Select rating plan version to restore.</p>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-6">
+              <div className="col-span-2">
+                <div className="border rounded-md overflow-hidden">
+                  <div className="bg-primary text-primary-foreground px-4 py-2 grid grid-cols-5 gap-2 text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      <span className="w-4"></span>
+                      Version Date
+                    </div>
+                    <div>Update Type</div>
+                    <div>Details</div>
+                    <div>User</div>
+                    <div>Active Version</div>
+                  </div>
+                  
+                  <div className="divide-y max-h-[500px] overflow-y-auto">
+                    {(() => {
+                      const historyVersions = [
+                        { id: "v1", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: true },
+                        { id: "v2", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
+                        { id: "v3", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
+                        { id: "v4", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
+                        { id: "v5", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
+                        { id: "v6", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
+                        { id: "v7", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
+                        { id: "v8", date: "18/12/2025 09:18", type: "Manual Change", details: "-", user: "ayasamir3112@gmail.com", isActive: false },
+                      ];
+                      
+                      return historyVersions.map((version) => (
+                        <div 
+                          key={version.id}
+                          className={`px-4 py-3 grid grid-cols-5 gap-2 text-sm hover:bg-muted/50 cursor-pointer ${
+                            selectedHistoryVersion === version.id ? "bg-muted" : ""
+                          }`}
+                          onClick={() => !version.isActive && setSelectedHistoryVersion(version.id)}
+                          data-testid={`history-row-${version.id}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {!version.isActive ? (
+                              <input 
+                                type="radio" 
+                                name="historyVersion" 
+                                checked={selectedHistoryVersion === version.id}
+                                onChange={() => setSelectedHistoryVersion(version.id)}
+                                className="h-4 w-4"
+                                data-testid={`radio-version-${version.id}`}
+                              />
+                            ) : (
+                              <span className="w-4"></span>
+                            )}
+                            <span>{version.date}</span>
+                          </div>
+                          <div>{version.type}</div>
+                          <div>{version.details}</div>
+                          <div className="truncate" title={version.user}>{version.user}</div>
+                          <div>{version.isActive ? "Active" : "-"}</div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="border rounded-md p-4 bg-muted/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-6 w-6 rounded-full bg-amber-100 flex items-center justify-center">
+                      <span className="text-amber-600 text-xs">⚡</span>
+                    </div>
+                    <h4 className="font-semibold">Restore Previous Version</h4>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    A previous version of the rating plan can be restored rolling back unwanted rate changes. Imported rates, manually edited rates and previously restored rating plan versions can be rolled back.
+                  </p>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Please select the version of the rating plan that you want to restore.
+                  </p>
+                  
+                  <div className="border-t pt-4">
+                    <h5 className="font-semibold text-sm mb-2">Uncommitted Changes</h5>
+                    <p className="text-sm text-muted-foreground">
+                      It is not possible to restore a previous version of a rating plan where there are uncommitted changes. Uncommitted changes must be cancelled before restoring a previous version.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
