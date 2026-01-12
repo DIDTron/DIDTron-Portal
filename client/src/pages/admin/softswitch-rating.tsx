@@ -918,11 +918,386 @@ export function CustomerRatingPlansPage() {
   );
 }
 
+type SupplierRatingTab = 
+  | "rating-plans" 
+  | "rate-inbox" 
+  | "import-jobs" 
+  | "import-summary" 
+  | "import-settings" 
+  | "import-templates" 
+  | "import-notifications" 
+  | "routing-codes";
+
+interface TabAction {
+  id: string;
+  label: string;
+  testId: string;
+}
+
+const supplierRatingTabActions: Record<SupplierRatingTab, TabAction[]> = {
+  "rating-plans": [
+    { id: "copy-rating-plan", label: "Copy Rating Plan", testId: "menu-copy-rating-plan" },
+    { id: "import-new-rating-plan", label: "Import New Rating Plan", testId: "menu-import-new-rating-plan" },
+    { id: "export-rates", label: "Export Rates", testId: "menu-export-rates" },
+    { id: "replace-plan", label: "Replace Plan", testId: "menu-replace-plan" },
+    { id: "restore-plans", label: "Restore Plans", testId: "menu-restore-plans" },
+    { id: "delete-old-versions", label: "Delete Old Versions", testId: "menu-delete-old-versions" },
+    { id: "delete-import-templates", label: "Delete Import Templates", testId: "menu-delete-import-templates" },
+    { id: "delete-export-templates", label: "Delete Export Templates", testId: "menu-delete-export-templates" },
+  ],
+  "rate-inbox": [
+    { id: "refresh-inbox", label: "Refresh Inbox", testId: "menu-refresh-inbox" },
+    { id: "clear-inbox", label: "Clear Inbox", testId: "menu-clear-inbox" },
+  ],
+  "import-jobs": [
+    { id: "cancel-all-jobs", label: "Cancel All Jobs", testId: "menu-cancel-all-jobs" },
+    { id: "clear-completed", label: "Clear Completed", testId: "menu-clear-completed" },
+  ],
+  "import-summary": [
+    { id: "export-summary", label: "Export Summary", testId: "menu-export-summary" },
+  ],
+  "import-settings": [
+    { id: "reset-settings", label: "Reset to Defaults", testId: "menu-reset-settings" },
+  ],
+  "import-templates": [
+    { id: "add-template", label: "Add Template", testId: "menu-add-template" },
+    { id: "delete-all-templates", label: "Delete All Templates", testId: "menu-delete-all-templates" },
+  ],
+  "import-notifications": [
+    { id: "configure-notifications", label: "Configure Notifications", testId: "menu-configure-notifications" },
+    { id: "clear-notifications", label: "Clear Notifications", testId: "menu-clear-notifications" },
+  ],
+  "routing-codes": [
+    { id: "add-routing-code", label: "Add Routing Code", testId: "menu-add-routing-code" },
+    { id: "import-routing-codes", label: "Import Routing Codes", testId: "menu-import-routing-codes" },
+    { id: "export-routing-codes", label: "Export Routing Codes", testId: "menu-export-routing-codes" },
+  ],
+};
+
+interface SupplierRatingPlan {
+  id: string;
+  name: string;
+  supplier: string;
+  supplierInterconnect: string;
+  blockUnresolvableCodes: boolean;
+  currency: string;
+  creationTemplate: string;
+  uncommittedChanges: boolean;
+  lastUpdated: string;
+  inUse: boolean;
+}
+
+const mockSupplierPlans: SupplierRatingPlan[] = [
+  {
+    id: "1",
+    name: "ALLIP-SU-ATX",
+    supplier: "All IP (All IP ATX SU)",
+    supplierInterconnect: "All IP ATX SU",
+    blockUnresolvableCodes: true,
+    currency: "USD",
+    creationTemplate: "ALLIP-SU-ATX",
+    uncommittedChanges: false,
+    lastUpdated: "12/01/2026 05:30",
+    inUse: true,
+  },
+  {
+    id: "2",
+    name: "ALLIP-SU-PRM",
+    supplier: "All IP (All IP PRM SU)",
+    supplierInterconnect: "All IP PRM SU",
+    blockUnresolvableCodes: true,
+    currency: "USD",
+    creationTemplate: "ALLIP-SU-PRM",
+    uncommittedChanges: false,
+    lastUpdated: "12/01/2026 05:36",
+    inUse: true,
+  },
+  {
+    id: "3",
+    name: "ALLIP-SU-STD",
+    supplier: "All IP (All IP STD SU)",
+    supplierInterconnect: "All IP STD SU",
+    blockUnresolvableCodes: true,
+    currency: "USD",
+    creationTemplate: "ALLIP-SU-STD",
+    uncommittedChanges: false,
+    lastUpdated: "12/01/2026 05:38",
+    inUse: true,
+  },
+  {
+    id: "4",
+    name: "CKEF-ATX-A-Z",
+    supplier: "CKEF (CKEF ATX SU)",
+    supplierInterconnect: "CKEF ATX SU",
+    blockUnresolvableCodes: true,
+    currency: "USD",
+    creationTemplate: "CKEF-ATX-A-Z",
+    uncommittedChanges: false,
+    lastUpdated: "14/11/2025 11:48",
+    inUse: true,
+  },
+  {
+    id: "5",
+    name: "DEMO 2 VB",
+    supplier: "",
+    supplierInterconnect: "",
+    blockUnresolvableCodes: true,
+    currency: "USD",
+    creationTemplate: "DEMO2",
+    uncommittedChanges: true,
+    lastUpdated: "16/10/2025 14:29",
+    inUse: false,
+  },
+  {
+    id: "6",
+    name: "Egypt TDM SU",
+    supplier: "Egypt TDM (Egy TDM SU), Egypt TDM (Egypt TDM NCLI Supplier Interconnect)",
+    supplierInterconnect: "Egy TDM SU",
+    blockUnresolvableCodes: true,
+    currency: "USD",
+    creationTemplate: "Default Template",
+    uncommittedChanges: false,
+    lastUpdated: "01/01/2026 05:04",
+    inUse: true,
+  },
+  {
+    id: "7",
+    name: "Gizat Supplier Rate",
+    supplier: "Gizat Global (Gizat Global Interconnect)",
+    supplierInterconnect: "Gizat Global Interconnect",
+    blockUnresolvableCodes: true,
+    currency: "USD",
+    creationTemplate: "Gizat Rate Template",
+    uncommittedChanges: false,
+    lastUpdated: "16/10/2025 05:48",
+    inUse: true,
+  },
+];
+
 export function SupplierRatingPlansPage() {
+  const [tab, setTab] = useState<SupplierRatingTab>("rating-plans");
+  const [nameFilter, setNameFilter] = useState("");
+  const [uncommittedFilter, setUncommittedFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  
+  const { toast } = useToast();
+
+  const filteredPlans = mockSupplierPlans.filter((plan) => {
+    if (nameFilter && !plan.name.toLowerCase().includes(nameFilter.toLowerCase())) {
+      return false;
+    }
+    if (uncommittedFilter === "yes" && !plan.uncommittedChanges) {
+      return false;
+    }
+    if (uncommittedFilter === "no" && plan.uncommittedChanges) {
+      return false;
+    }
+    return true;
+  });
+
+  const totalPlans = filteredPlans.length;
+  const totalPages = Math.ceil(totalPlans / pageSize);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [nameFilter, uncommittedFilter]);
+  
+  useEffect(() => {
+    if (totalPages === 0) {
+      setCurrentPage(1);
+    } else if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+  
+  const paginatedPlans = filteredPlans.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const currentActions = supplierRatingTabActions[tab];
+
+  const handleAction = (actionId: string) => {
+    toast({ title: `Action: ${actionId}`, description: "This action is not yet implemented" });
+  };
+
+  const handleDelete = (planId: string) => {
+    toast({ title: "Delete", description: `Deleting plan ${planId} - not yet implemented` });
+  };
+
   return (
-    <div className="py-12 text-center text-muted-foreground">
-      <h1 className="text-2xl font-semibold mb-4">Supplier Rating Plans</h1>
-      <p>Supplier Rating Plans coming soon</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-2xl font-semibold">Supplier Rating</h1>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button data-testid="button-actions">
+              Actions <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {currentActions.map((action) => (
+              <DropdownMenuItem 
+                key={action.id} 
+                data-testid={action.testId}
+                onClick={() => handleAction(action.id)}
+              >
+                {action.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as SupplierRatingTab)}>
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="rating-plans" data-testid="tab-rating-plans">Rating Plans</TabsTrigger>
+          <TabsTrigger value="rate-inbox" data-testid="tab-rate-inbox">Rate Inbox</TabsTrigger>
+          <TabsTrigger value="import-jobs" data-testid="tab-import-jobs">Import Jobs</TabsTrigger>
+          <TabsTrigger value="import-summary" data-testid="tab-import-summary">Import Summary</TabsTrigger>
+          <TabsTrigger value="import-settings" data-testid="tab-import-settings">Import Settings</TabsTrigger>
+          <TabsTrigger value="import-templates" data-testid="tab-import-templates">Import Templates</TabsTrigger>
+          <TabsTrigger value="import-notifications" data-testid="tab-import-notifications">Import Notifications</TabsTrigger>
+          <TabsTrigger value="routing-codes" data-testid="tab-routing-codes">Routing Codes</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="rating-plans" className="space-y-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="nameFilter" className="text-sm">Name</Label>
+              <Input
+                id="nameFilter"
+                data-testid="input-name-filter"
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                className="w-32"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="uncommittedFilter" className="text-sm">Uncommitted Changes</Label>
+              <Select value={uncommittedFilter} onValueChange={setUncommittedFilter}>
+                <SelectTrigger data-testid="select-uncommitted-filter" className="w-32">
+                  <SelectValue placeholder="" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="yes">Yes</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="ghost" size="icon" data-testid="button-search">
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Supplier</TableHead>
+                <TableHead>Block Unresolvable Codes</TableHead>
+                <TableHead>Currency</TableHead>
+                <TableHead>Creation Template</TableHead>
+                <TableHead>Uncommitted Changes</TableHead>
+                <TableHead>Last Updated</TableHead>
+                <TableHead>In Use</TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedPlans.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    No supplier rating plans found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedPlans.map((plan) => (
+                  <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
+                    <TableCell>
+                      <a 
+                        href={`/admin/softswitch/rating/supplier-plans/${plan.id}`}
+                        className="text-primary hover:underline" 
+                        data-testid={`link-plan-${plan.id}`}
+                      >
+                        {plan.name}
+                      </a>
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={plan.supplier}>
+                      {plan.supplier || "-"}
+                    </TableCell>
+                    <TableCell>{plan.blockUnresolvableCodes ? "Yes" : "No"}</TableCell>
+                    <TableCell>{plan.currency}</TableCell>
+                    <TableCell>{plan.creationTemplate}</TableCell>
+                    <TableCell>{plan.uncommittedChanges ? "Yes" : "-"}</TableCell>
+                    <TableCell>{plan.lastUpdated}</TableCell>
+                    <TableCell>{plan.inUse ? "Yes" : "-"}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        data-testid={`button-delete-${plan.id}`}
+                        onClick={() => handleDelete(plan.id)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <DataTableFooter
+            totalItems={totalPlans}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
+        </TabsContent>
+
+        <TabsContent value="rate-inbox">
+          <div className="py-12 text-center text-muted-foreground">
+            Rate Inbox coming soon
+          </div>
+        </TabsContent>
+
+        <TabsContent value="import-jobs">
+          <div className="py-12 text-center text-muted-foreground">
+            Import Jobs coming soon
+          </div>
+        </TabsContent>
+
+        <TabsContent value="import-summary">
+          <div className="py-12 text-center text-muted-foreground">
+            Import Summary coming soon
+          </div>
+        </TabsContent>
+
+        <TabsContent value="import-settings">
+          <div className="py-12 text-center text-muted-foreground">
+            Import Settings coming soon
+          </div>
+        </TabsContent>
+
+        <TabsContent value="import-templates">
+          <div className="py-12 text-center text-muted-foreground">
+            Import Templates coming soon
+          </div>
+        </TabsContent>
+
+        <TabsContent value="import-notifications">
+          <div className="py-12 text-center text-muted-foreground">
+            Import Notifications coming soon
+          </div>
+        </TabsContent>
+
+        <TabsContent value="routing-codes">
+          <div className="py-12 text-center text-muted-foreground">
+            Routing Codes coming soon
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
