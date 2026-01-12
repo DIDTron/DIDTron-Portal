@@ -136,6 +136,9 @@ export default function RatingPlanDetailPage() {
   const [selectedHistoryVersion, setSelectedHistoryVersion] = useState<string | null>(null);
   const [showRestoreConfirmDialog, setShowRestoreConfirmDialog] = useState(false);
   const [showRestoreCompleteDialog, setShowRestoreCompleteDialog] = useState(false);
+  const [showOriginMappingInfo, setShowOriginMappingInfo] = useState(false);
+  const [showMinRatedCallInfo, setShowMinRatedCallInfo] = useState(false);
+  const [showShortCallInfo, setShowShortCallInfo] = useState(false);
   const [planDetailsForm, setPlanDetailsForm] = useState({
     name: "",
     shortCode: "",
@@ -936,8 +939,14 @@ export default function RatingPlanDetailPage() {
                   ) : (
                     <span className="text-sm font-medium">-</span>
                   )}
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <span className="text-primary text-lg">ⓘ</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={() => setShowOriginMappingInfo(true)}
+                    data-testid="button-origin-mapping-info"
+                  >
+                    <span className="text-teal-500 text-lg">ⓘ</span>
                   </Button>
                 </div>
               </div>
@@ -1006,8 +1015,14 @@ export default function RatingPlanDetailPage() {
                       {(plan as any)?.minRatedCallDurationEnabled ? "Yes" : "No"}
                     </Badge>
                   )}
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <span className="text-primary text-lg">ⓘ</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={() => setShowMinRatedCallInfo(true)}
+                    data-testid="button-min-rated-call-info"
+                  >
+                    <span className="text-teal-500 text-lg">ⓘ</span>
                   </Button>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1052,8 +1067,14 @@ export default function RatingPlanDetailPage() {
                       {(plan as any)?.shortCallDurationEnabled ? "Yes" : "No"}
                     </Badge>
                   )}
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <span className="text-primary text-lg">ⓘ</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={() => setShowShortCallInfo(true)}
+                    data-testid="button-short-call-info"
+                  >
+                    <span className="text-teal-500 text-lg">ⓘ</span>
                   </Button>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1834,6 +1855,103 @@ export default function RatingPlanDetailPage() {
               data-testid="button-restore-close"
             >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showOriginMappingInfo} onOpenChange={setShowOriginMappingInfo}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="bg-slate-700 text-white -m-6 mb-4 px-6 py-3 rounded-t-lg">
+              Information
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+                <span className="text-amber-600 text-xs">⚡</span>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Origin Mapping Group</h4>
+                <p className="text-sm text-muted-foreground">
+                  Origin Mapping Groups define which zones require Origin Rates and which Origin Sets should be applied. 
+                  When an Origin Mapping Group is assigned to the plan, you can check which Origin Rates are missing or 
+                  should be removed from the plan.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowOriginMappingInfo(false)} data-testid="button-origin-mapping-done">
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showMinRatedCallInfo} onOpenChange={setShowMinRatedCallInfo}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="bg-slate-700 text-white -m-6 mb-4 px-6 py-3 rounded-t-lg">
+              Information
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+                <span className="text-amber-600 text-xs">⚡</span>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Minimum Rated Call Duration</h4>
+                <p className="text-sm text-muted-foreground">
+                  If Minimum Rated Call Duration is enabled, calls with a duration less than or equal to the Minimum Rated 
+                  Call Duration will be zero rated and will have a rated duration of zero milliseconds for reporting and 
+                  billing purposes.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMinRatedCallInfo(false)} data-testid="button-min-rated-done">
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showShortCallInfo} onOpenChange={setShowShortCallInfo}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="bg-slate-700 text-white -m-6 mb-4 px-6 py-3 rounded-t-lg">
+              Information
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+                <span className="text-amber-600 text-xs">⚡</span>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Short Call Duration Charge</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  An alternative charge can be applied to calls with a short duration. If enabled, calls with a duration less 
+                  than or equal to the defined short call duration will have the Short Call Duration Charge applied in place 
+                  of the charge defined by the rate.
+                </p>
+                <h5 className="font-semibold mb-2">Call Detail Record</h5>
+                <p className="text-sm text-muted-foreground">
+                  The Customer Rated Duration stored in the CDR will be based on the Period defined on the rate. For 
+                  example, for a 3 second call which has a rate with a 60 second recurring period, the Rated Duration 
+                  stored in the CDR would be 60. The Customer Recurring Charge stored in the CDR will be the resolved 
+                  rate and not based on the Short Call Duration Charge.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShortCallInfo(false)} data-testid="button-short-call-done">
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>
