@@ -18,6 +18,24 @@ DIDTron Communications is developing an AI-first, white-label wholesale VoIP pla
 - Each tab has its own set of actions - actions should not appear on tabs they don't belong to
 - Do NOT use currency/dollar icons in action dropdown items - use text only
 
+### Business Model - Module Distinction
+
+**Wholesale Module** (`/admin/carriers`, `/admin/wholesale/*`)
+- The "kitchen" where DIDTron prepares managed services for retail customers
+- Target: Retail customers seeking managed VoIP services with tiered pricing
+- DIDTron manages the infrastructure, routing, and billing on behalf of customers
+- Customers get pre-packaged solutions without needing technical expertise
+- Business model: Managed services with tiered pricing tiers
+
+**Softswitch Module (Class 4)** (`/admin/softswitch/*`)
+- Self-service platform for wholesale/carrier customers
+- Target: Wholesale customers and carriers who want to rent and run their own operations
+- Customers manage their own carriers, interconnects, services, and routing
+- Full Digitalk Carrier Cloud Manager functionality
+- Business model: Self-service rental - customers rent the platform and operate independently
+
+Both modules share the same underlying carrier data but serve different customer segments with different service models.
+
 ### System Architecture
 
 #### UI/UX Design
