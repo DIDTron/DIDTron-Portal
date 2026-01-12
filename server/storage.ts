@@ -135,6 +135,18 @@ import {
   referrals as referralsTable,
   tickets as ticketsTable,
   ticketReplies as ticketRepliesTable,
+  currencies as currenciesTable,
+  fxRates as fxRatesTable,
+  sipTestConfigs as sipTestConfigsTable,
+  sipTestResults as sipTestResultsTable,
+  sipTestSchedules as sipTestSchedulesTable,
+  class4Customers as class4CustomersTable,
+  class4Carriers as class4CarriersTable,
+  class4ProviderRateCards as class4ProviderRateCardsTable,
+  class4CustomerRateCards as class4CustomerRateCardsTable,
+  rateCards as rateCardsTable,
+  rateCardRates as rateCardRatesTable,
+  routes as routesTable,
   fileTemplates
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -1952,47 +1964,32 @@ export class MemStorage implements IStorage {
     return entry;
   }
 
-  // Routes
+  // Routes - Persisted to PostgreSQL (FOREVER POLICY)
   async getRoutes(): Promise<Route[]> {
-    return Array.from(this.routes.values());
+    return await db.select().from(routesTable);
   }
 
   async getRoute(id: string): Promise<Route | undefined> {
-    return this.routes.get(id);
+    const results = await db.select().from(routesTable).where(eq(routesTable.id, id));
+    return results[0];
   }
 
   async createRoute(route: InsertRoute): Promise<Route> {
-    const id = randomUUID();
-    const now = new Date();
-    const r: Route = {
-      id,
-      name: route.name,
-      prefix: route.prefix,
-      destination: route.destination ?? null,
-      carrierId: route.carrierId ?? null,
-      voiceTierId: route.voiceTierId ?? null,
-      priority: route.priority ?? 1,
-      weight: route.weight ?? 100,
-      rate: route.rate ?? null,
-      status: route.status ?? "active",
-      connexcsRouteId: route.connexcsRouteId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.routes.set(id, r);
-    return r;
+    const results = await db.insert(routesTable).values(route).returning();
+    return results[0];
   }
 
   async updateRoute(id: string, data: Partial<InsertRoute>): Promise<Route | undefined> {
-    const route = this.routes.get(id);
-    if (!route) return undefined;
-    const updated = { ...route, ...data, updatedAt: new Date() };
-    this.routes.set(id, updated);
-    return updated;
+    const results = await db.update(routesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(routesTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteRoute(id: string): Promise<boolean> {
-    return this.routes.delete(id);
+    const results = await db.delete(routesTable).where(eq(routesTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // Monitoring Rules
@@ -2673,102 +2670,57 @@ export class MemStorage implements IStorage {
     return this.socialPosts.delete(id);
   }
 
-  // Rate Cards
+  // Rate Cards - Persisted to PostgreSQL (FOREVER POLICY)
   async getRateCards(type?: string): Promise<RateCard[]> {
-    const cards = Array.from(this.rateCards.values());
     if (type) {
-      return cards.filter(c => c.type === type);
+      return await db.select().from(rateCardsTable).where(eq(rateCardsTable.type, type));
     }
-    return cards;
+    return await db.select().from(rateCardsTable);
   }
 
   async getRateCard(id: string): Promise<RateCard | undefined> {
-    return this.rateCards.get(id);
+    const results = await db.select().from(rateCardsTable).where(eq(rateCardsTable.id, id));
+    return results[0];
   }
 
   async createRateCard(card: InsertRateCard): Promise<RateCard> {
-    const id = randomUUID();
-    const now = new Date();
-    const newCard: RateCard = {
-      id,
-      name: card.name,
-      code: card.code ?? null,
-      description: card.description ?? null,
-      type: card.type ?? "provider",
-      status: card.status ?? "active",
-      direction: card.direction ?? "outbound",
-      currency: card.currency ?? "USD",
-      carrierId: card.carrierId ?? null,
-      profitMargin: card.profitMargin ?? "0",
-      profitType: card.profitType ?? "percentage",
-      billingPrecision: card.billingPrecision ?? 6,
-      techPrefix: card.techPrefix ?? null,
-      ratesCount: card.ratesCount ?? 0,
-      revisionCount: card.revisionCount ?? 1,
-      connexcsRateCardId: card.connexcsRateCardId ?? null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.rateCards.set(id, newCard);
-    return newCard;
+    const results = await db.insert(rateCardsTable).values(card).returning();
+    return results[0];
   }
 
   async updateRateCard(id: string, data: Partial<InsertRateCard>): Promise<RateCard | undefined> {
-    const existing = this.rateCards.get(id);
-    if (!existing) return undefined;
-    const updated = { ...existing, ...data, updatedAt: new Date() };
-    this.rateCards.set(id, updated);
-    return updated;
+    const results = await db.update(rateCardsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(rateCardsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteRateCard(id: string): Promise<boolean> {
     // Also delete associated rates
-    const ratesToDelete = Array.from(this.rateCardRates.values()).filter(r => r.rateCardId === id);
-    ratesToDelete.forEach(r => this.rateCardRates.delete(r.id));
-    return this.rateCards.delete(id);
+    await db.delete(rateCardRatesTable).where(eq(rateCardRatesTable.rateCardId, id));
+    const results = await db.delete(rateCardsTable).where(eq(rateCardsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Rate Card Rates
+  // Rate Card Rates - Persisted to PostgreSQL (FOREVER POLICY)
   async getRateCardRates(rateCardId: string): Promise<RateCardRate[]> {
-    return Array.from(this.rateCardRates.values()).filter(r => r.rateCardId === rateCardId);
+    return await db.select().from(rateCardRatesTable).where(eq(rateCardRatesTable.rateCardId, rateCardId));
   }
 
   async createRateCardRate(rate: InsertRateCardRate): Promise<RateCardRate> {
-    const id = randomUUID();
-    const now = new Date();
-    const newRate: RateCardRate = {
-      id,
-      rateCardId: rate.rateCardId,
-      prefix: rate.prefix,
-      destination: rate.destination ?? null,
-      country: rate.country ?? null,
-      rate: rate.rate,
-      connectionFee: rate.connectionFee ?? "0",
-      minDuration: rate.minDuration ?? 0,
-      interval: rate.interval ?? 60,
-      asr: rate.asr ?? null,
-      acd: rate.acd ?? null,
-      pdd: rate.pdd ?? null,
-      effectiveDate: rate.effectiveDate ?? null,
-      expiryDate: rate.expiryDate ?? null,
-      createdAt: now,
-    };
-    this.rateCardRates.set(id, newRate);
-    return newRate;
+    const results = await db.insert(rateCardRatesTable).values(rate).returning();
+    return results[0];
   }
 
   async createRateCardRatesBulk(rates: InsertRateCardRate[]): Promise<RateCardRate[]> {
-    const created: RateCardRate[] = [];
-    for (const rate of rates) {
-      const newRate = await this.createRateCardRate(rate);
-      created.push(newRate);
-    }
-    return created;
+    if (rates.length === 0) return [];
+    const results = await db.insert(rateCardRatesTable).values(rates).returning();
+    return results;
   }
 
   async deleteRateCardRates(rateCardId: string): Promise<boolean> {
-    const ratesToDelete = Array.from(this.rateCardRates.values()).filter(r => r.rateCardId === rateCardId);
-    ratesToDelete.forEach(r => this.rateCardRates.delete(r.id));
+    await db.delete(rateCardRatesTable).where(eq(rateCardRatesTable.rateCardId, rateCardId));
     return true;
   }
 
@@ -2786,217 +2738,135 @@ export class MemStorage implements IStorage {
     return Array.from(stats.entries()).map(([categoryId, data]) => ({ categoryId, ...data }));
   }
 
-  // Currencies
+  // Currencies - Persisted to PostgreSQL (FOREVER POLICY)
   async getCurrencies(): Promise<Currency[]> {
-    return Array.from(this.currencies.values());
+    return await db.select().from(currenciesTable);
   }
 
   async getCurrency(id: string): Promise<Currency | undefined> {
-    return this.currencies.get(id);
+    const results = await db.select().from(currenciesTable).where(eq(currenciesTable.id, id));
+    return results[0];
   }
 
   async createCurrency(currency: InsertCurrency): Promise<Currency> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: Currency = {
-      id,
-      code: currency.code,
-      name: currency.name,
-      symbol: currency.symbol ?? null,
-      decimals: currency.decimals ?? 2,
-      markup: currency.markup ?? "0",
-      isActive: currency.isActive ?? true,
-      createdAt: now
-    };
-    this.currencies.set(id, c);
-    return c;
+    const results = await db.insert(currenciesTable).values(currency).returning();
+    return results[0];
   }
 
   async updateCurrency(id: string, data: Partial<InsertCurrency>): Promise<Currency | undefined> {
-    const existing = this.currencies.get(id);
-    if (!existing) return undefined;
-    const updated = { ...existing, ...data };
-    this.currencies.set(id, updated);
-    return updated;
+    const results = await db.update(currenciesTable)
+      .set(data)
+      .where(eq(currenciesTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCurrency(id: string): Promise<boolean> {
-    return this.currencies.delete(id);
+    const results = await db.delete(currenciesTable).where(eq(currenciesTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // FX Rates
+  // FX Rates - Persisted to PostgreSQL (FOREVER POLICY)
   async getFxRates(quoteCurrency?: string): Promise<FxRate[]> {
-    const rates = Array.from(this.fxRates.values());
-    if (quoteCurrency) return rates.filter(r => r.quoteCurrency === quoteCurrency);
-    return rates;
+    if (quoteCurrency) {
+      return await db.select().from(fxRatesTable).where(eq(fxRatesTable.quoteCurrency, quoteCurrency));
+    }
+    return await db.select().from(fxRatesTable);
   }
 
   async getLatestFxRate(quoteCurrency: string): Promise<FxRate | undefined> {
-    const rates = Array.from(this.fxRates.values())
-      .filter(r => r.quoteCurrency === quoteCurrency)
-      .sort((a, b) => (b.effectiveAt?.getTime() || 0) - (a.effectiveAt?.getTime() || 0));
-    return rates[0];
+    const rates = await db.select().from(fxRatesTable).where(eq(fxRatesTable.quoteCurrency, quoteCurrency));
+    const sorted = rates.sort((a, b) => (b.effectiveAt?.getTime() || 0) - (a.effectiveAt?.getTime() || 0));
+    return sorted[0];
   }
 
   async createFxRate(rate: InsertFxRate): Promise<FxRate> {
-    const id = randomUUID();
-    const now = new Date();
-    const r: FxRate = {
-      id,
-      baseCurrency: rate.baseCurrency ?? "USD",
-      quoteCurrency: rate.quoteCurrency,
-      rate: rate.rate,
-      source: rate.source ?? "openexchangerates",
-      effectiveAt: rate.effectiveAt ?? now,
-      createdAt: now
-    };
-    this.fxRates.set(id, r);
-    return r;
+    const results = await db.insert(fxRatesTable).values(rate).returning();
+    return results[0];
   }
 
-  // SIP Test Configs
+  // SIP Test Configs - Persisted to PostgreSQL (FOREVER POLICY)
   async getSipTestConfigs(customerId?: string): Promise<SipTestConfig[]> {
-    const configs = Array.from(this.sipTestConfigs.values());
-    if (customerId) return configs.filter(c => c.customerId === customerId);
-    return configs;
+    if (customerId) {
+      return await db.select().from(sipTestConfigsTable).where(eq(sipTestConfigsTable.customerId, customerId));
+    }
+    return await db.select().from(sipTestConfigsTable);
   }
 
   async getSharedSipTestConfigs(): Promise<SipTestConfig[]> {
-    return Array.from(this.sipTestConfigs.values()).filter(c => c.isShared === true);
+    return await db.select().from(sipTestConfigsTable).where(eq(sipTestConfigsTable.isShared, true));
   }
 
   async getSipTestConfig(id: string): Promise<SipTestConfig | undefined> {
-    return this.sipTestConfigs.get(id);
+    const results = await db.select().from(sipTestConfigsTable).where(eq(sipTestConfigsTable.id, id));
+    return results[0];
   }
 
   async createSipTestConfig(config: InsertSipTestConfig): Promise<SipTestConfig> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: SipTestConfig = {
-      id,
-      name: config.name,
-      description: config.description ?? null,
-      testType: config.testType ?? "quick",
-      destinations: config.destinations ?? null,
-      cliNumber: config.cliNumber ?? null,
-      carrierId: config.carrierId ?? null,
-      customerId: config.customerId ?? null,
-      provider: config.provider ?? "connexcs",
-      isAdvancedMode: config.isAdvancedMode ?? false,
-      advancedSettings: config.advancedSettings ?? null,
-      alertThresholds: config.alertThresholds ?? null,
-      isActive: config.isActive ?? true,
-      isShared: config.isShared ?? false,
-      createdBy: config.createdBy ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.sipTestConfigs.set(id, c);
-    return c;
+    const results = await db.insert(sipTestConfigsTable).values(config).returning();
+    return results[0];
   }
 
   async updateSipTestConfig(id: string, data: Partial<InsertSipTestConfig>): Promise<SipTestConfig | undefined> {
-    const config = this.sipTestConfigs.get(id);
-    if (!config) return undefined;
-    const updated = { ...config, ...data, updatedAt: new Date() };
-    this.sipTestConfigs.set(id, updated);
-    return updated;
+    const results = await db.update(sipTestConfigsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(sipTestConfigsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteSipTestConfig(id: string): Promise<boolean> {
-    return this.sipTestConfigs.delete(id);
+    const results = await db.delete(sipTestConfigsTable).where(eq(sipTestConfigsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // SIP Test Results
+  // SIP Test Results - Persisted to PostgreSQL (FOREVER POLICY)
   async getSipTestResults(configId?: string): Promise<SipTestResult[]> {
-    const results = Array.from(this.sipTestResults.values());
-    if (configId) return results.filter(r => r.configId === configId);
-    return results;
+    if (configId) {
+      return await db.select().from(sipTestResultsTable).where(eq(sipTestResultsTable.configId, configId));
+    }
+    return await db.select().from(sipTestResultsTable);
   }
 
   async getSipTestResult(id: string): Promise<SipTestResult | undefined> {
-    return this.sipTestResults.get(id);
+    const results = await db.select().from(sipTestResultsTable).where(eq(sipTestResultsTable.id, id));
+    return results[0];
   }
 
   async createSipTestResult(result: InsertSipTestResult): Promise<SipTestResult> {
-    const id = randomUUID();
-    const now = new Date();
-    const r: SipTestResult = {
-      id,
-      configId: result.configId ?? null,
-      scheduleId: result.scheduleId ?? null,
-      testType: result.testType,
-      destination: result.destination ?? null,
-      cliSent: result.cliSent ?? null,
-      cliReceived: result.cliReceived ?? null,
-      status: result.status ?? "pending",
-      result: result.result ?? null,
-      pddMs: result.pddMs ?? null,
-      mosScore: result.mosScore ?? null,
-      jitterMs: result.jitterMs ?? null,
-      packetLossPercent: result.packetLossPercent ?? null,
-      latencyMs: result.latencyMs ?? null,
-      sipResponseCode: result.sipResponseCode ?? null,
-      sipTrace: result.sipTrace ?? null,
-      rtpStats: result.rtpStats ?? null,
-      codecNegotiated: result.codecNegotiated ?? null,
-      dtmfResult: result.dtmfResult ?? null,
-      failoverTime: result.failoverTime ?? null,
-      errorMessage: result.errorMessage ?? null,
-      aiAnalysis: result.aiAnalysis ?? null,
-      aiSuggestions: result.aiSuggestions ?? null,
-      provider: result.provider ?? "connexcs",
-      providerTestId: result.providerTestId ?? null,
-      durationMs: result.durationMs ?? null,
-      testedAt: result.testedAt ?? now,
-      createdAt: now
-    };
-    this.sipTestResults.set(id, r);
-    return r;
+    const results = await db.insert(sipTestResultsTable).values(result).returning();
+    return results[0];
   }
 
-  // SIP Test Schedules
+  // SIP Test Schedules - Persisted to PostgreSQL (FOREVER POLICY)
   async getSipTestSchedules(configId?: string): Promise<SipTestSchedule[]> {
-    const schedules = Array.from(this.sipTestSchedules.values());
-    if (configId) return schedules.filter(s => s.configId === configId);
-    return schedules;
+    if (configId) {
+      return await db.select().from(sipTestSchedulesTable).where(eq(sipTestSchedulesTable.configId, configId));
+    }
+    return await db.select().from(sipTestSchedulesTable);
   }
 
   async getSipTestSchedule(id: string): Promise<SipTestSchedule | undefined> {
-    return this.sipTestSchedules.get(id);
+    const results = await db.select().from(sipTestSchedulesTable).where(eq(sipTestSchedulesTable.id, id));
+    return results[0];
   }
 
   async createSipTestSchedule(schedule: InsertSipTestSchedule): Promise<SipTestSchedule> {
-    const id = randomUUID();
-    const now = new Date();
-    const s: SipTestSchedule = {
-      id,
-      configId: schedule.configId,
-      name: schedule.name,
-      cronExpression: schedule.cronExpression,
-      timezone: schedule.timezone ?? "UTC",
-      portalType: schedule.portalType ?? "admin",
-      customerId: schedule.customerId ?? null,
-      isActive: schedule.isActive ?? true,
-      lastRunAt: schedule.lastRunAt ?? null,
-      nextRunAt: schedule.nextRunAt ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.sipTestSchedules.set(id, s);
-    return s;
+    const results = await db.insert(sipTestSchedulesTable).values(schedule).returning();
+    return results[0];
   }
 
   async updateSipTestSchedule(id: string, data: Partial<InsertSipTestSchedule>): Promise<SipTestSchedule | undefined> {
-    const schedule = this.sipTestSchedules.get(id);
-    if (!schedule) return undefined;
-    const updated = { ...schedule, ...data, updatedAt: new Date() };
-    this.sipTestSchedules.set(id, updated);
-    return updated;
+    const results = await db.update(sipTestSchedulesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(sipTestSchedulesTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteSipTestSchedule(id: string): Promise<boolean> {
-    return this.sipTestSchedules.delete(id);
+    const results = await db.delete(sipTestSchedulesTable).where(eq(sipTestSchedulesTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // SIP Test Audio Files
@@ -3419,173 +3289,112 @@ export class MemStorage implements IStorage {
     return this.customerApiKeys.delete(id);
   }
 
-  // Class 4 Customers
+  // Class 4 Customers - Persisted to PostgreSQL (FOREVER POLICY)
   async getClass4Customers(parentCustomerId: string): Promise<Class4Customer[]> {
-    return Array.from(this.class4Customers.values()).filter(c => c.parentCustomerId === parentCustomerId);
+    return await db.select().from(class4CustomersTable).where(eq(class4CustomersTable.parentCustomerId, parentCustomerId));
   }
 
   async getClass4Customer(id: string): Promise<Class4Customer | undefined> {
-    return this.class4Customers.get(id);
+    const results = await db.select().from(class4CustomersTable).where(eq(class4CustomersTable.id, id));
+    return results[0];
   }
 
   async createClass4Customer(customer: InsertClass4Customer): Promise<Class4Customer> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: Class4Customer = {
-      id,
-      parentCustomerId: customer.parentCustomerId,
-      name: customer.name,
-      code: customer.code,
-      companyName: customer.companyName ?? null,
-      billingEmail: customer.billingEmail ?? null,
-      technicalEmail: customer.technicalEmail ?? null,
-      balance: customer.balance ?? "0",
-      creditLimit: customer.creditLimit ?? "0",
-      billingType: customer.billingType ?? "prepaid",
-      displayCurrency: customer.displayCurrency ?? "USD",
-      status: customer.status ?? "active",
-      connexcsCustomerId: customer.connexcsCustomerId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.class4Customers.set(id, c);
-    return c;
+    const results = await db.insert(class4CustomersTable).values(customer).returning();
+    return results[0];
   }
 
   async updateClass4Customer(id: string, data: Partial<InsertClass4Customer>): Promise<Class4Customer | undefined> {
-    const customer = this.class4Customers.get(id);
-    if (!customer) return undefined;
-    const updated = { ...customer, ...data, updatedAt: new Date() };
-    this.class4Customers.set(id, updated);
-    return updated;
+    const results = await db.update(class4CustomersTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(class4CustomersTable.id, id))
+      .returning();
+    return results[0];
   }
 
-  // Class 4 Carriers
+  // Class 4 Carriers - Persisted to PostgreSQL (FOREVER POLICY)
   async getClass4Carriers(parentCustomerId: string): Promise<Class4Carrier[]> {
-    return Array.from(this.class4Carriers.values()).filter(c => c.parentCustomerId === parentCustomerId);
+    return await db.select().from(class4CarriersTable).where(eq(class4CarriersTable.parentCustomerId, parentCustomerId));
   }
 
   async getClass4Carrier(id: string): Promise<Class4Carrier | undefined> {
-    return this.class4Carriers.get(id);
+    const results = await db.select().from(class4CarriersTable).where(eq(class4CarriersTable.id, id));
+    return results[0];
   }
 
   async createClass4Carrier(carrier: InsertClass4Carrier): Promise<Class4Carrier> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: Class4Carrier = {
-      id,
-      parentCustomerId: carrier.parentCustomerId,
-      name: carrier.name,
-      code: carrier.code,
-      sipHost: carrier.sipHost ?? null,
-      sipPort: carrier.sipPort ?? 5060,
-      techPrefix: carrier.techPrefix ?? null,
-      maxChannels: carrier.maxChannels ?? null,
-      maxCps: carrier.maxCps ?? null,
-      failoverIps: carrier.failoverIps ?? null,
-      status: carrier.status ?? "active",
-      connexcsCarrierId: carrier.connexcsCarrierId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.class4Carriers.set(id, c);
-    return c;
+    const results = await db.insert(class4CarriersTable).values(carrier).returning();
+    return results[0];
   }
 
   async updateClass4Carrier(id: string, data: Partial<InsertClass4Carrier>): Promise<Class4Carrier | undefined> {
-    const carrier = this.class4Carriers.get(id);
-    if (!carrier) return undefined;
-    const updated = { ...carrier, ...data, updatedAt: new Date() };
-    this.class4Carriers.set(id, updated);
-    return updated;
+    const results = await db.update(class4CarriersTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(class4CarriersTable.id, id))
+      .returning();
+    return results[0];
   }
 
-  // Class 4 Provider Rate Cards
+  // Class 4 Provider Rate Cards - Persisted to PostgreSQL (FOREVER POLICY)
   async getClass4ProviderRateCards(carrierId?: string): Promise<Class4ProviderRateCard[]> {
-    const all = Array.from(this.class4ProviderRateCards.values());
-    if (carrierId) return all.filter(r => r.carrierId === carrierId);
-    return all;
+    if (carrierId) {
+      return await db.select().from(class4ProviderRateCardsTable).where(eq(class4ProviderRateCardsTable.carrierId, carrierId));
+    }
+    return await db.select().from(class4ProviderRateCardsTable);
   }
 
   async getClass4ProviderRateCard(id: string): Promise<Class4ProviderRateCard | undefined> {
-    return this.class4ProviderRateCards.get(id);
+    const results = await db.select().from(class4ProviderRateCardsTable).where(eq(class4ProviderRateCardsTable.id, id));
+    return results[0];
   }
 
   async createClass4ProviderRateCard(card: InsertClass4ProviderRateCard): Promise<Class4ProviderRateCard> {
-    const id = randomUUID();
-    const now = new Date();
-    const r: Class4ProviderRateCard = {
-      id,
-      parentCustomerId: card.parentCustomerId,
-      carrierId: card.carrierId,
-      name: card.name,
-      currency: card.currency ?? "USD",
-      effectiveDate: card.effectiveDate ?? null,
-      expiryDate: card.expiryDate ?? null,
-      isActive: card.isActive ?? true,
-      connexcsRateCardId: card.connexcsRateCardId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.class4ProviderRateCards.set(id, r);
-    return r;
+    const results = await db.insert(class4ProviderRateCardsTable).values(card).returning();
+    return results[0];
   }
 
   async updateClass4ProviderRateCard(id: string, data: Partial<InsertClass4ProviderRateCard>): Promise<Class4ProviderRateCard | undefined> {
-    const card = this.class4ProviderRateCards.get(id);
-    if (!card) return undefined;
-    const updated = { ...card, ...data, updatedAt: new Date() };
-    this.class4ProviderRateCards.set(id, updated);
-    return updated;
+    const results = await db.update(class4ProviderRateCardsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(class4ProviderRateCardsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteClass4ProviderRateCard(id: string): Promise<boolean> {
-    return this.class4ProviderRateCards.delete(id);
+    const results = await db.delete(class4ProviderRateCardsTable).where(eq(class4ProviderRateCardsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Class 4 Customer Rate Cards
+  // Class 4 Customer Rate Cards - Persisted to PostgreSQL (FOREVER POLICY)
   async getClass4CustomerRateCards(class4CustomerId?: string): Promise<Class4CustomerRateCard[]> {
-    const all = Array.from(this.class4CustomerRateCards.values());
-    if (class4CustomerId) return all.filter(r => r.class4CustomerId === class4CustomerId);
-    return all;
+    if (class4CustomerId) {
+      return await db.select().from(class4CustomerRateCardsTable).where(eq(class4CustomerRateCardsTable.class4CustomerId, class4CustomerId));
+    }
+    return await db.select().from(class4CustomerRateCardsTable);
   }
 
   async getClass4CustomerRateCard(id: string): Promise<Class4CustomerRateCard | undefined> {
-    return this.class4CustomerRateCards.get(id);
+    const results = await db.select().from(class4CustomerRateCardsTable).where(eq(class4CustomerRateCardsTable.id, id));
+    return results[0];
   }
 
   async createClass4CustomerRateCard(card: InsertClass4CustomerRateCard): Promise<Class4CustomerRateCard> {
-    const id = randomUUID();
-    const now = new Date();
-    const r: Class4CustomerRateCard = {
-      id,
-      parentCustomerId: card.parentCustomerId,
-      class4CustomerId: card.class4CustomerId ?? null,
-      name: card.name,
-      sourceRateCardId: card.sourceRateCardId ?? null,
-      markupType: card.markupType ?? "percentage",
-      markupValue: card.markupValue ?? "10",
-      profitAssuranceEnabled: card.profitAssuranceEnabled ?? true,
-      currency: card.currency ?? "USD",
-      isActive: card.isActive ?? true,
-      connexcsRateCardId: card.connexcsRateCardId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.class4CustomerRateCards.set(id, r);
-    return r;
+    const results = await db.insert(class4CustomerRateCardsTable).values(card).returning();
+    return results[0];
   }
 
   async updateClass4CustomerRateCard(id: string, data: Partial<InsertClass4CustomerRateCard>): Promise<Class4CustomerRateCard | undefined> {
-    const card = this.class4CustomerRateCards.get(id);
-    if (!card) return undefined;
-    const updated = { ...card, ...data, updatedAt: new Date() };
-    this.class4CustomerRateCards.set(id, updated);
-    return updated;
+    const results = await db.update(class4CustomerRateCardsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(class4CustomerRateCardsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteClass4CustomerRateCard(id: string): Promise<boolean> {
-    return this.class4CustomerRateCards.delete(id);
+    const results = await db.delete(class4CustomerRateCardsTable).where(eq(class4CustomerRateCardsTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // AI Voice Agents
