@@ -147,7 +147,28 @@ import {
   rateCards as rateCardsTable,
   rateCardRates as rateCardRatesTable,
   routes as routesTable,
-  fileTemplates
+  fileTemplates,
+  aiVoiceAgents as aiVoiceAgentsTable,
+  aiVoiceFlows as aiVoiceFlowsTable,
+  aiVoiceTrainingData as aiVoiceTrainingDataTable,
+  aiVoiceCampaigns as aiVoiceCampaignsTable,
+  aiVoiceKnowledgeBases as aiVoiceKnowledgeBasesTable,
+  aiVoiceKbSources as aiVoiceKbSourcesTable,
+  aiVoicePhonebooks as aiVoicePhonebooksTable,
+  aiVoiceContacts as aiVoiceContactsTable,
+  aiVoiceCallLogs as aiVoiceCallLogsTable,
+  crmConnections as crmConnectionsTable,
+  crmFieldMappings as crmFieldMappingsTable,
+  crmSyncSettings as crmSyncSettingsTable,
+  crmSyncLogs as crmSyncLogsTable,
+  crmContactMappings as crmContactMappingsTable,
+  cmsThemes as cmsThemesTable,
+  cmsPages as cmsPagesTable,
+  cmsMediaLibrary as cmsMediaItemsTable,
+  tenantBranding as tenantBrandingsTable,
+  portalLoginPages as portalLoginPagesTable,
+  siteSettings as siteSettingsTable,
+  websiteSections as websiteSectionsTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -3108,869 +3129,575 @@ export class MemStorage implements IStorage {
     return results.length > 0;
   }
 
-  // AI Voice Agents
+  // AI Voice Agents - Persisted to PostgreSQL (FOREVER POLICY)
   async getAiVoiceAgents(customerId: string): Promise<AiVoiceAgent[]> {
-    return Array.from(this.aiVoiceAgents.values()).filter(a => a.customerId === customerId);
+    return await db.select().from(aiVoiceAgentsTable).where(eq(aiVoiceAgentsTable.customerId, customerId));
   }
 
   async getAllAiVoiceAgents(): Promise<AiVoiceAgent[]> {
-    return Array.from(this.aiVoiceAgents.values());
+    return await db.select().from(aiVoiceAgentsTable);
   }
 
   async getAiVoiceAgent(id: string): Promise<AiVoiceAgent | undefined> {
-    return this.aiVoiceAgents.get(id);
+    const results = await db.select().from(aiVoiceAgentsTable).where(eq(aiVoiceAgentsTable.id, id));
+    return results[0];
   }
 
   async createAiVoiceAgent(agent: InsertAiVoiceAgent): Promise<AiVoiceAgent> {
-    const id = randomUUID();
-    const now = new Date();
-    const a: AiVoiceAgent = {
-      id,
-      customerId: agent.customerId,
-      name: agent.name,
-      description: agent.description ?? null,
-      type: agent.type ?? "inbound",
-      voiceId: agent.voiceId ?? null,
-      voiceProvider: agent.voiceProvider ?? "openai",
-      systemPrompt: agent.systemPrompt ?? null,
-      greetingMessage: agent.greetingMessage ?? null,
-      fallbackMessage: agent.fallbackMessage ?? null,
-      maxCallDuration: agent.maxCallDuration ?? 600,
-      status: agent.status ?? "draft",
-      didId: agent.didId ?? null,
-      webhookUrl: agent.webhookUrl ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.aiVoiceAgents.set(id, a);
-    return a;
+    const results = await db.insert(aiVoiceAgentsTable).values(agent).returning();
+    return results[0];
   }
 
   async updateAiVoiceAgent(id: string, data: Partial<InsertAiVoiceAgent>): Promise<AiVoiceAgent | undefined> {
-    const agent = this.aiVoiceAgents.get(id);
-    if (!agent) return undefined;
-    const updated = { ...agent, ...data, updatedAt: new Date() };
-    this.aiVoiceAgents.set(id, updated);
-    return updated;
+    const results = await db.update(aiVoiceAgentsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(aiVoiceAgentsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteAiVoiceAgent(id: string): Promise<boolean> {
-    return this.aiVoiceAgents.delete(id);
+    const results = await db.delete(aiVoiceAgentsTable).where(eq(aiVoiceAgentsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // AI Voice Flows
+  // AI Voice Flows - Persisted to PostgreSQL (FOREVER POLICY)
   async getAiVoiceFlows(agentId: string): Promise<AiVoiceFlow[]> {
-    return Array.from(this.aiVoiceFlows.values()).filter(f => f.agentId === agentId);
+    return await db.select().from(aiVoiceFlowsTable).where(eq(aiVoiceFlowsTable.agentId, agentId));
   }
 
   async getAiVoiceFlow(id: string): Promise<AiVoiceFlow | undefined> {
-    return this.aiVoiceFlows.get(id);
+    const results = await db.select().from(aiVoiceFlowsTable).where(eq(aiVoiceFlowsTable.id, id));
+    return results[0];
   }
 
   async createAiVoiceFlow(flow: InsertAiVoiceFlow): Promise<AiVoiceFlow> {
-    const id = randomUUID();
-    const now = new Date();
-    const f: AiVoiceFlow = {
-      id,
-      agentId: flow.agentId,
-      name: flow.name,
-      flowData: flow.flowData ?? null,
-      isDefault: flow.isDefault ?? false,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.aiVoiceFlows.set(id, f);
-    return f;
+    const results = await db.insert(aiVoiceFlowsTable).values(flow).returning();
+    return results[0];
   }
 
   async updateAiVoiceFlow(id: string, data: Partial<InsertAiVoiceFlow>): Promise<AiVoiceFlow | undefined> {
-    const flow = this.aiVoiceFlows.get(id);
-    if (!flow) return undefined;
-    const updated = { ...flow, ...data, updatedAt: new Date() };
-    this.aiVoiceFlows.set(id, updated);
-    return updated;
+    const results = await db.update(aiVoiceFlowsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(aiVoiceFlowsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteAiVoiceFlow(id: string): Promise<boolean> {
-    return this.aiVoiceFlows.delete(id);
+    const results = await db.delete(aiVoiceFlowsTable).where(eq(aiVoiceFlowsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // AI Voice Training Data
+  // AI Voice Training Data - Persisted to PostgreSQL (FOREVER POLICY)
   async getAiVoiceTrainingData(agentId: string): Promise<AiVoiceTrainingData[]> {
-    return Array.from(this.aiVoiceTrainingData.values()).filter(t => t.agentId === agentId);
+    return await db.select().from(aiVoiceTrainingDataTable).where(eq(aiVoiceTrainingDataTable.agentId, agentId));
   }
 
   async getAiVoiceTrainingDataItem(id: string): Promise<AiVoiceTrainingData | undefined> {
-    return this.aiVoiceTrainingData.get(id);
+    const results = await db.select().from(aiVoiceTrainingDataTable).where(eq(aiVoiceTrainingDataTable.id, id));
+    return results[0];
   }
 
   async createAiVoiceTrainingData(data: InsertAiVoiceTrainingData): Promise<AiVoiceTrainingData> {
-    const id = randomUUID();
-    const now = new Date();
-    const t: AiVoiceTrainingData = {
-      id,
-      agentId: data.agentId,
-      category: data.category ?? null,
-      question: data.question,
-      answer: data.answer,
-      isActive: data.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.aiVoiceTrainingData.set(id, t);
-    return t;
+    const results = await db.insert(aiVoiceTrainingDataTable).values(data).returning();
+    return results[0];
   }
 
   async updateAiVoiceTrainingData(id: string, data: Partial<InsertAiVoiceTrainingData>): Promise<AiVoiceTrainingData | undefined> {
-    const item = this.aiVoiceTrainingData.get(id);
-    if (!item) return undefined;
-    const updated = { ...item, ...data, updatedAt: new Date() };
-    this.aiVoiceTrainingData.set(id, updated);
-    return updated;
+    const results = await db.update(aiVoiceTrainingDataTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(aiVoiceTrainingDataTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteAiVoiceTrainingData(id: string): Promise<boolean> {
-    return this.aiVoiceTrainingData.delete(id);
+    const results = await db.delete(aiVoiceTrainingDataTable).where(eq(aiVoiceTrainingDataTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // AI Voice Campaigns
+  // AI Voice Campaigns - Persisted to PostgreSQL (FOREVER POLICY)
   async getAiVoiceCampaigns(customerId: string): Promise<AiVoiceCampaign[]> {
-    return Array.from(this.aiVoiceCampaigns.values()).filter(c => c.customerId === customerId);
+    return await db.select().from(aiVoiceCampaignsTable).where(eq(aiVoiceCampaignsTable.customerId, customerId));
   }
 
   async getAiVoiceCampaign(id: string): Promise<AiVoiceCampaign | undefined> {
-    return this.aiVoiceCampaigns.get(id);
+    const results = await db.select().from(aiVoiceCampaignsTable).where(eq(aiVoiceCampaignsTable.id, id));
+    return results[0];
   }
 
   async createAiVoiceCampaign(campaign: InsertAiVoiceCampaign): Promise<AiVoiceCampaign> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: AiVoiceCampaign = {
-      id,
-      customerId: campaign.customerId,
-      agentId: campaign.agentId,
-      name: campaign.name,
-      description: campaign.description ?? null,
-      contactList: campaign.contactList ?? null,
-      scheduledAt: campaign.scheduledAt ?? null,
-      maxConcurrentCalls: campaign.maxConcurrentCalls ?? 5,
-      callsCompleted: campaign.callsCompleted ?? 0,
-      callsTotal: campaign.callsTotal ?? 0,
-      status: campaign.status ?? "draft",
-      startedAt: campaign.startedAt ?? null,
-      completedAt: campaign.completedAt ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.aiVoiceCampaigns.set(id, c);
-    return c;
+    const results = await db.insert(aiVoiceCampaignsTable).values(campaign).returning();
+    return results[0];
   }
 
   async updateAiVoiceCampaign(id: string, data: Partial<InsertAiVoiceCampaign>): Promise<AiVoiceCampaign | undefined> {
-    const campaign = this.aiVoiceCampaigns.get(id);
-    if (!campaign) return undefined;
-    const updated = { ...campaign, ...data, updatedAt: new Date() };
-    this.aiVoiceCampaigns.set(id, updated);
-    return updated;
+    const results = await db.update(aiVoiceCampaignsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(aiVoiceCampaignsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteAiVoiceCampaign(id: string): Promise<boolean> {
-    return this.aiVoiceCampaigns.delete(id);
+    const results = await db.delete(aiVoiceCampaignsTable).where(eq(aiVoiceCampaignsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // AI Voice Knowledge Bases
+  // AI Voice Knowledge Bases - Persisted to PostgreSQL (FOREVER POLICY)
   async getAiVoiceKnowledgeBases(customerId?: string): Promise<AiVoiceKnowledgeBase[]> {
-    let all = Array.from(this.aiVoiceKnowledgeBases.values());
-    if (customerId) all = all.filter(kb => kb.customerId === customerId);
-    return all;
+    if (customerId) {
+      return await db.select().from(aiVoiceKnowledgeBasesTable).where(eq(aiVoiceKnowledgeBasesTable.customerId, customerId));
+    }
+    return await db.select().from(aiVoiceKnowledgeBasesTable);
   }
 
   async getAiVoiceKnowledgeBase(id: string): Promise<AiVoiceKnowledgeBase | undefined> {
-    return this.aiVoiceKnowledgeBases.get(id);
+    const results = await db.select().from(aiVoiceKnowledgeBasesTable).where(eq(aiVoiceKnowledgeBasesTable.id, id));
+    return results[0];
   }
 
   async createAiVoiceKnowledgeBase(kb: InsertAiVoiceKnowledgeBase): Promise<AiVoiceKnowledgeBase> {
-    const id = randomUUID();
-    const now = new Date();
-    const k: AiVoiceKnowledgeBase = {
-      id,
-      customerId: kb.customerId,
-      name: kb.name,
-      description: kb.description ?? null,
-      connexcsKbId: kb.connexcsKbId ?? null,
-      status: kb.status ?? "pending",
-      documentCount: kb.documentCount ?? 0,
-      totalTokens: kb.totalTokens ?? 0,
-      learnedTopics: kb.learnedTopics ?? null,
-      extractedFaqs: kb.extractedFaqs ?? null,
-      keyPhrases: kb.keyPhrases ?? null,
-      confidenceScore: kb.confidenceScore ?? null,
-      trainingSummary: kb.trainingSummary ?? null,
-      lastTrainedAt: kb.lastTrainedAt ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.aiVoiceKnowledgeBases.set(id, k);
-    return k;
+    const results = await db.insert(aiVoiceKnowledgeBasesTable).values(kb).returning();
+    return results[0];
   }
 
   async updateAiVoiceKnowledgeBase(id: string, data: Partial<InsertAiVoiceKnowledgeBase>): Promise<AiVoiceKnowledgeBase | undefined> {
-    const kb = this.aiVoiceKnowledgeBases.get(id);
-    if (!kb) return undefined;
-    const updated = { ...kb, ...data, updatedAt: new Date() };
-    this.aiVoiceKnowledgeBases.set(id, updated);
-    return updated;
+    const results = await db.update(aiVoiceKnowledgeBasesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(aiVoiceKnowledgeBasesTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteAiVoiceKnowledgeBase(id: string): Promise<boolean> {
-    return this.aiVoiceKnowledgeBases.delete(id);
+    const results = await db.delete(aiVoiceKnowledgeBasesTable).where(eq(aiVoiceKnowledgeBasesTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // AI Voice KB Sources
+  // AI Voice KB Sources - Persisted to PostgreSQL (FOREVER POLICY)
   async getAiVoiceKbSources(knowledgeBaseId: string): Promise<AiVoiceKbSource[]> {
-    return Array.from(this.aiVoiceKbSources.values()).filter(s => s.knowledgeBaseId === knowledgeBaseId);
+    return await db.select().from(aiVoiceKbSourcesTable).where(eq(aiVoiceKbSourcesTable.knowledgeBaseId, knowledgeBaseId));
   }
 
   async getAiVoiceKbSource(id: string): Promise<AiVoiceKbSource | undefined> {
-    return this.aiVoiceKbSources.get(id);
+    const results = await db.select().from(aiVoiceKbSourcesTable).where(eq(aiVoiceKbSourcesTable.id, id));
+    return results[0];
   }
 
   async createAiVoiceKbSource(source: InsertAiVoiceKbSource): Promise<AiVoiceKbSource> {
-    const id = randomUUID();
-    const now = new Date();
-    const s: AiVoiceKbSource = {
-      id,
-      knowledgeBaseId: source.knowledgeBaseId,
-      name: source.name,
-      sourceType: source.sourceType,
-      content: source.content ?? null,
-      fileUrl: source.fileUrl ?? null,
-      mimeType: source.mimeType ?? null,
-      fileSize: source.fileSize ?? null,
-      status: source.status ?? "pending",
-      tokenCount: source.tokenCount ?? 0,
-      lastIndexedAt: source.lastIndexedAt ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.aiVoiceKbSources.set(id, s);
-    return s;
+    const results = await db.insert(aiVoiceKbSourcesTable).values(source).returning();
+    return results[0];
   }
 
   async updateAiVoiceKbSource(id: string, data: Partial<InsertAiVoiceKbSource>): Promise<AiVoiceKbSource | undefined> {
-    const s = this.aiVoiceKbSources.get(id);
-    if (!s) return undefined;
-    const updated = { ...s, ...data, updatedAt: new Date() };
-    this.aiVoiceKbSources.set(id, updated);
-    return updated;
+    const results = await db.update(aiVoiceKbSourcesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(aiVoiceKbSourcesTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteAiVoiceKbSource(id: string): Promise<boolean> {
-    return this.aiVoiceKbSources.delete(id);
+    const results = await db.delete(aiVoiceKbSourcesTable).where(eq(aiVoiceKbSourcesTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // AI Voice Phonebooks
+  // AI Voice Phonebooks - Persisted to PostgreSQL (FOREVER POLICY)
   async getAiVoicePhonebooks(customerId: string): Promise<AiVoicePhonebook[]> {
-    return Array.from(this.aiVoicePhonebooks.values()).filter(p => p.customerId === customerId);
+    return await db.select().from(aiVoicePhonebooksTable).where(eq(aiVoicePhonebooksTable.customerId, customerId));
   }
 
   async getAiVoicePhonebook(id: string): Promise<AiVoicePhonebook | undefined> {
-    return this.aiVoicePhonebooks.get(id);
+    const results = await db.select().from(aiVoicePhonebooksTable).where(eq(aiVoicePhonebooksTable.id, id));
+    return results[0];
   }
 
   async createAiVoicePhonebook(phonebook: InsertAiVoicePhonebook): Promise<AiVoicePhonebook> {
-    const id = randomUUID();
-    const now = new Date();
-    const p: AiVoicePhonebook = {
-      id,
-      customerId: phonebook.customerId,
-      name: phonebook.name,
-      description: phonebook.description ?? null,
-      contactCount: phonebook.contactCount ?? 0,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.aiVoicePhonebooks.set(id, p);
-    return p;
+    const results = await db.insert(aiVoicePhonebooksTable).values(phonebook).returning();
+    return results[0];
   }
 
   async updateAiVoicePhonebook(id: string, data: Partial<InsertAiVoicePhonebook>): Promise<AiVoicePhonebook | undefined> {
-    const p = this.aiVoicePhonebooks.get(id);
-    if (!p) return undefined;
-    const updated = { ...p, ...data, updatedAt: new Date() };
-    this.aiVoicePhonebooks.set(id, updated);
-    return updated;
+    const results = await db.update(aiVoicePhonebooksTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(aiVoicePhonebooksTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteAiVoicePhonebook(id: string): Promise<boolean> {
-    return this.aiVoicePhonebooks.delete(id);
+    const results = await db.delete(aiVoicePhonebooksTable).where(eq(aiVoicePhonebooksTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // AI Voice Contacts
+  // AI Voice Contacts - Persisted to PostgreSQL (FOREVER POLICY)
   async getAiVoiceContacts(phonebookId: string): Promise<AiVoiceContact[]> {
-    return Array.from(this.aiVoiceContacts.values()).filter(c => c.phonebookId === phonebookId);
+    return await db.select().from(aiVoiceContactsTable).where(eq(aiVoiceContactsTable.phonebookId, phonebookId));
   }
 
   async getAiVoiceContact(id: string): Promise<AiVoiceContact | undefined> {
-    return this.aiVoiceContacts.get(id);
+    const results = await db.select().from(aiVoiceContactsTable).where(eq(aiVoiceContactsTable.id, id));
+    return results[0];
   }
 
   async createAiVoiceContact(contact: InsertAiVoiceContact): Promise<AiVoiceContact> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: AiVoiceContact = {
-      id,
-      phonebookId: contact.phonebookId,
-      phoneNumber: contact.phoneNumber,
-      firstName: contact.firstName ?? null,
-      lastName: contact.lastName ?? null,
-      email: contact.email ?? null,
-      company: contact.company ?? null,
-      customFields: contact.customFields ?? null,
-      isActive: contact.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.aiVoiceContacts.set(id, c);
-    return c;
+    const results = await db.insert(aiVoiceContactsTable).values(contact).returning();
+    return results[0];
   }
 
   async updateAiVoiceContact(id: string, data: Partial<InsertAiVoiceContact>): Promise<AiVoiceContact | undefined> {
-    const c = this.aiVoiceContacts.get(id);
-    if (!c) return undefined;
-    const updated = { ...c, ...data, updatedAt: new Date() };
-    this.aiVoiceContacts.set(id, updated);
-    return updated;
+    const results = await db.update(aiVoiceContactsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(aiVoiceContactsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteAiVoiceContact(id: string): Promise<boolean> {
-    return this.aiVoiceContacts.delete(id);
+    const results = await db.delete(aiVoiceContactsTable).where(eq(aiVoiceContactsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // AI Voice Call Logs
+  // AI Voice Call Logs - Persisted to PostgreSQL (FOREVER POLICY)
   async getAiVoiceCallLogs(agentId?: string, campaignId?: string): Promise<AiVoiceCallLog[]> {
-    let logs = Array.from(this.aiVoiceCallLogs.values());
+    if (agentId && campaignId) {
+      return await db.select().from(aiVoiceCallLogsTable).where(and(eq(aiVoiceCallLogsTable.agentId, agentId), eq(aiVoiceCallLogsTable.campaignId, campaignId)));
+    }
     if (agentId) {
-      logs = logs.filter(l => l.agentId === agentId);
+      return await db.select().from(aiVoiceCallLogsTable).where(eq(aiVoiceCallLogsTable.agentId, agentId));
     }
     if (campaignId) {
-      logs = logs.filter(l => l.campaignId === campaignId);
+      return await db.select().from(aiVoiceCallLogsTable).where(eq(aiVoiceCallLogsTable.campaignId, campaignId));
     }
-    return logs;
+    return await db.select().from(aiVoiceCallLogsTable);
   }
 
   async getAiVoiceCallLog(id: string): Promise<AiVoiceCallLog | undefined> {
-    return this.aiVoiceCallLogs.get(id);
+    const results = await db.select().from(aiVoiceCallLogsTable).where(eq(aiVoiceCallLogsTable.id, id));
+    return results[0];
   }
 
   async createAiVoiceCallLog(log: InsertAiVoiceCallLog): Promise<AiVoiceCallLog> {
-    const id = randomUUID();
-    const now = new Date();
-    const l: AiVoiceCallLog = {
-      id,
-      agentId: log.agentId,
-      campaignId: log.campaignId ?? null,
-      callId: log.callId ?? null,
-      callerNumber: log.callerNumber ?? null,
-      calledNumber: log.calledNumber ?? null,
-      direction: log.direction ?? null,
-      duration: log.duration ?? null,
-      transcript: log.transcript ?? null,
-      summary: log.summary ?? null,
-      sentiment: log.sentiment ?? null,
-      outcome: log.outcome ?? null,
-      tokensUsed: log.tokensUsed ?? null,
-      cost: log.cost ?? null,
-      recordingUrl: log.recordingUrl ?? null,
-      createdAt: now
-    };
-    this.aiVoiceCallLogs.set(id, l);
-    return l;
+    const results = await db.insert(aiVoiceCallLogsTable).values(log).returning();
+    return results[0];
   }
 
   async updateAiVoiceCallLog(id: string, data: Partial<InsertAiVoiceCallLog>): Promise<AiVoiceCallLog | undefined> {
-    const l = this.aiVoiceCallLogs.get(id);
-    if (!l) return undefined;
-    const updated = { ...l, ...data };
-    this.aiVoiceCallLogs.set(id, updated);
-    return updated;
+    const results = await db.update(aiVoiceCallLogsTable)
+      .set(data)
+      .where(eq(aiVoiceCallLogsTable.id, id))
+      .returning();
+    return results[0];
   }
 
-  // CRM Connections
+  // CRM Connections - Persisted to PostgreSQL (FOREVER POLICY)
   async getCrmConnections(customerId: string): Promise<CrmConnection[]> {
-    return Array.from(this.crmConnections.values()).filter(c => c.customerId === customerId);
+    return await db.select().from(crmConnectionsTable).where(eq(crmConnectionsTable.customerId, customerId));
   }
 
   async getCrmConnection(id: string): Promise<CrmConnection | undefined> {
-    return this.crmConnections.get(id);
+    const results = await db.select().from(crmConnectionsTable).where(eq(crmConnectionsTable.id, id));
+    return results[0];
   }
 
   async createCrmConnection(connection: InsertCrmConnection): Promise<CrmConnection> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: CrmConnection = {
-      id,
-      customerId: connection.customerId,
-      provider: connection.provider,
-      name: connection.name,
-      status: connection.status ?? "pending",
-      instanceUrl: connection.instanceUrl ?? null,
-      accessToken: connection.accessToken ?? null,
-      refreshToken: connection.refreshToken ?? null,
-      tokenExpiresAt: connection.tokenExpiresAt ?? null,
-      scopes: connection.scopes ?? null,
-      settings: connection.settings ?? null,
-      lastSyncAt: connection.lastSyncAt ?? null,
-      lastError: connection.lastError ?? null,
-      isActive: connection.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.crmConnections.set(id, c);
-    return c;
+    const results = await db.insert(crmConnectionsTable).values(connection).returning();
+    return results[0];
   }
 
   async updateCrmConnection(id: string, data: Partial<InsertCrmConnection>): Promise<CrmConnection | undefined> {
-    const c = this.crmConnections.get(id);
-    if (!c) return undefined;
-    const updated = { ...c, ...data, updatedAt: new Date() };
-    this.crmConnections.set(id, updated);
-    return updated;
+    const results = await db.update(crmConnectionsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(crmConnectionsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCrmConnection(id: string): Promise<boolean> {
-    return this.crmConnections.delete(id);
+    const results = await db.delete(crmConnectionsTable).where(eq(crmConnectionsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // CRM Field Mappings
+  // CRM Field Mappings - Persisted to PostgreSQL (FOREVER POLICY)
   async getCrmFieldMappings(connectionId: string): Promise<CrmFieldMapping[]> {
-    return Array.from(this.crmFieldMappings.values()).filter(m => m.connectionId === connectionId);
+    return await db.select().from(crmFieldMappingsTable).where(eq(crmFieldMappingsTable.connectionId, connectionId));
   }
 
   async createCrmFieldMapping(mapping: InsertCrmFieldMapping): Promise<CrmFieldMapping> {
-    const id = randomUUID();
-    const now = new Date();
-    const m: CrmFieldMapping = {
-      id,
-      connectionId: mapping.connectionId,
-      localEntity: mapping.localEntity,
-      localField: mapping.localField,
-      crmEntity: mapping.crmEntity,
-      crmField: mapping.crmField,
-      direction: mapping.direction ?? "bidirectional",
-      transformFunction: mapping.transformFunction ?? null,
-      isActive: mapping.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.crmFieldMappings.set(id, m);
-    return m;
+    const results = await db.insert(crmFieldMappingsTable).values(mapping).returning();
+    return results[0];
   }
 
   async updateCrmFieldMapping(id: string, data: Partial<InsertCrmFieldMapping>): Promise<CrmFieldMapping | undefined> {
-    const m = this.crmFieldMappings.get(id);
-    if (!m) return undefined;
-    const updated = { ...m, ...data, updatedAt: new Date() };
-    this.crmFieldMappings.set(id, updated);
-    return updated;
+    const results = await db.update(crmFieldMappingsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(crmFieldMappingsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCrmFieldMapping(id: string): Promise<boolean> {
-    return this.crmFieldMappings.delete(id);
+    const results = await db.delete(crmFieldMappingsTable).where(eq(crmFieldMappingsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // CRM Sync Settings
+  // CRM Sync Settings - Persisted to PostgreSQL (FOREVER POLICY)
   async getCrmSyncSettings(connectionId: string): Promise<CrmSyncSettings | undefined> {
-    return Array.from(this.crmSyncSettings.values()).find(s => s.connectionId === connectionId);
+    const results = await db.select().from(crmSyncSettingsTable).where(eq(crmSyncSettingsTable.connectionId, connectionId));
+    return results[0];
   }
 
   async upsertCrmSyncSettings(settings: InsertCrmSyncSettings): Promise<CrmSyncSettings> {
     const existing = await this.getCrmSyncSettings(settings.connectionId);
-    const now = new Date();
     if (existing) {
-      const updated = { ...existing, ...settings, updatedAt: now };
-      this.crmSyncSettings.set(existing.id, updated);
-      return updated;
+      const results = await db.update(crmSyncSettingsTable)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(crmSyncSettingsTable.id, existing.id))
+        .returning();
+      return results[0];
     }
-    const id = randomUUID();
-    const s: CrmSyncSettings = {
-      id,
-      connectionId: settings.connectionId,
-      syncCallLogs: settings.syncCallLogs ?? true,
-      syncContacts: settings.syncContacts ?? true,
-      syncCampaigns: settings.syncCampaigns ?? false,
-      syncInterval: settings.syncInterval ?? 15,
-      autoCreateContacts: settings.autoCreateContacts ?? false,
-      autoLogActivities: settings.autoLogActivities ?? true,
-      contactMatchField: settings.contactMatchField ?? "phone",
-      defaultOwnerEmail: settings.defaultOwnerEmail ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.crmSyncSettings.set(id, s);
-    return s;
+    const results = await db.insert(crmSyncSettingsTable).values(settings).returning();
+    return results[0];
   }
 
-  // CRM Sync Logs
+  // CRM Sync Logs - Persisted to PostgreSQL (FOREVER POLICY)
   async getCrmSyncLogs(connectionId: string, limit = 50): Promise<CrmSyncLog[]> {
-    const logs = Array.from(this.crmSyncLogs.values())
-      .filter(l => l.connectionId === connectionId)
-      .sort((a, b) => (b.startedAt?.getTime() || 0) - (a.startedAt?.getTime() || 0));
-    return logs.slice(0, limit);
+    const results = await db.select().from(crmSyncLogsTable)
+      .where(eq(crmSyncLogsTable.connectionId, connectionId))
+      .limit(limit);
+    return results;
   }
 
   async createCrmSyncLog(log: InsertCrmSyncLog): Promise<CrmSyncLog> {
-    const id = randomUUID();
-    const l: CrmSyncLog = {
-      id,
-      connectionId: log.connectionId,
-      syncType: log.syncType,
-      direction: log.direction,
-      status: log.status,
-      recordsProcessed: log.recordsProcessed ?? 0,
-      recordsCreated: log.recordsCreated ?? 0,
-      recordsUpdated: log.recordsUpdated ?? 0,
-      recordsFailed: log.recordsFailed ?? 0,
-      errorDetails: log.errorDetails ?? null,
-      startedAt: new Date(),
-      completedAt: log.completedAt ?? null
-    };
-    this.crmSyncLogs.set(id, l);
-    return l;
+    const results = await db.insert(crmSyncLogsTable).values(log).returning();
+    return results[0];
   }
 
   async updateCrmSyncLog(id: string, data: Partial<InsertCrmSyncLog>): Promise<CrmSyncLog | undefined> {
-    const l = this.crmSyncLogs.get(id);
-    if (!l) return undefined;
-    const updated = { ...l, ...data };
-    this.crmSyncLogs.set(id, updated);
-    return updated;
+    const results = await db.update(crmSyncLogsTable)
+      .set(data)
+      .where(eq(crmSyncLogsTable.id, id))
+      .returning();
+    return results[0];
   }
 
-  // CRM Contact Mappings
+  // CRM Contact Mappings - Persisted to PostgreSQL (FOREVER POLICY)
   async getCrmContactMappings(connectionId: string): Promise<CrmContactMapping[]> {
-    return Array.from(this.crmContactMappings.values()).filter(m => m.connectionId === connectionId);
+    return await db.select().from(crmContactMappingsTable).where(eq(crmContactMappingsTable.connectionId, connectionId));
   }
 
   async getCrmContactMappingByPhone(connectionId: string, phone: string): Promise<CrmContactMapping | undefined> {
-    const normalized = phone.replace(/\D/g, "");
-    return Array.from(this.crmContactMappings.values()).find(
-      m => m.connectionId === connectionId && m.phoneNumber?.replace(/\D/g, "") === normalized
-    );
+    const results = await db.select().from(crmContactMappingsTable)
+      .where(and(eq(crmContactMappingsTable.connectionId, connectionId), eq(crmContactMappingsTable.phoneNumber, phone)));
+    return results[0];
   }
 
   async getCrmContactMappingByEmail(connectionId: string, email: string): Promise<CrmContactMapping | undefined> {
-    return Array.from(this.crmContactMappings.values()).find(
-      m => m.connectionId === connectionId && m.email?.toLowerCase() === email.toLowerCase()
-    );
+    const results = await db.select().from(crmContactMappingsTable)
+      .where(and(eq(crmContactMappingsTable.connectionId, connectionId), eq(crmContactMappingsTable.email, email)));
+    return results[0];
   }
 
   async createCrmContactMapping(mapping: InsertCrmContactMapping): Promise<CrmContactMapping> {
-    const id = randomUUID();
-    const now = new Date();
-    const m: CrmContactMapping = {
-      id,
-      connectionId: mapping.connectionId,
-      localContactId: mapping.localContactId ?? null,
-      crmContactId: mapping.crmContactId,
-      crmContactType: mapping.crmContactType ?? "Contact",
-      phoneNumber: mapping.phoneNumber ?? null,
-      email: mapping.email ?? null,
-      fullName: mapping.fullName ?? null,
-      crmData: mapping.crmData ?? null,
-      lastSyncAt: now,
-      createdAt: now
-    };
-    this.crmContactMappings.set(id, m);
-    return m;
+    const results = await db.insert(crmContactMappingsTable).values(mapping).returning();
+    return results[0];
   }
 
   async updateCrmContactMapping(id: string, data: Partial<InsertCrmContactMapping>): Promise<CrmContactMapping | undefined> {
-    const m = this.crmContactMappings.get(id);
-    if (!m) return undefined;
-    const updated = { ...m, ...data, lastSyncAt: new Date() };
-    this.crmContactMappings.set(id, updated);
-    return updated;
+    const results = await db.update(crmContactMappingsTable)
+      .set({ ...data, lastSyncAt: new Date() })
+      .where(eq(crmContactMappingsTable.id, id))
+      .returning();
+    return results[0];
   }
 
-  // CMS Themes
+  // CMS Themes - Persisted to PostgreSQL (FOREVER POLICY)
   async getCmsThemes(): Promise<CmsTheme[]> {
-    return Array.from(this.cmsThemes.values());
+    return await db.select().from(cmsThemesTable);
   }
 
   async getCmsTheme(id: string): Promise<CmsTheme | undefined> {
-    return this.cmsThemes.get(id);
+    const results = await db.select().from(cmsThemesTable).where(eq(cmsThemesTable.id, id));
+    return results[0];
   }
 
   async createCmsTheme(theme: InsertCmsTheme): Promise<CmsTheme> {
-    const id = randomUUID();
-    const now = new Date();
-    const t: CmsTheme = {
-      id,
-      name: theme.name,
-      description: theme.description ?? null,
-      colors: theme.colors ?? null,
-      typography: theme.typography ?? null,
-      spacing: theme.spacing ?? null,
-      borderRadius: theme.borderRadius ?? "md",
-      logoUrl: theme.logoUrl ?? null,
-      faviconUrl: theme.faviconUrl ?? null,
-      isDefault: theme.isDefault ?? false,
-      customerId: theme.customerId ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.cmsThemes.set(id, t);
-    return t;
+    const results = await db.insert(cmsThemesTable).values(theme).returning();
+    return results[0];
   }
 
   async updateCmsTheme(id: string, data: Partial<InsertCmsTheme>): Promise<CmsTheme | undefined> {
-    const theme = this.cmsThemes.get(id);
-    if (!theme) return undefined;
-    const updated = { ...theme, ...data, updatedAt: new Date() };
-    this.cmsThemes.set(id, updated);
-    return updated;
+    const results = await db.update(cmsThemesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(cmsThemesTable.id, id))
+      .returning();
+    return results[0];
   }
+
   async deleteCmsTheme(id: string): Promise<boolean> {
-    return this.cmsThemes.delete(id);
+    const results = await db.delete(cmsThemesTable).where(eq(cmsThemesTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // CMS Pages
+  // CMS Pages - Persisted to PostgreSQL (FOREVER POLICY)
   async getCmsPages(): Promise<CmsPage[]> {
-    return Array.from(this.cmsPages.values());
+    return await db.select().from(cmsPagesTable);
   }
+
   async getCmsPage(id: string): Promise<CmsPage | undefined> {
-    return this.cmsPages.get(id);
+    const results = await db.select().from(cmsPagesTable).where(eq(cmsPagesTable.id, id));
+    return results[0];
   }
+
   async createCmsPage(page: InsertCmsPage): Promise<CmsPage> {
-    const id = randomUUID();
-    const now = new Date();
-    const newPage: CmsPage = {
-      id,
-      portalId: page.portalId,
-      slug: page.slug,
-      title: page.title,
-      metaDescription: page.metaDescription ?? null,
-      metaKeywords: page.metaKeywords ?? null,
-      content: page.content ?? null,
-      isPublished: page.isPublished ?? false,
-      publishedAt: page.publishedAt ?? null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.cmsPages.set(id, newPage);
-    return newPage;
+    const results = await db.insert(cmsPagesTable).values(page).returning();
+    return results[0];
   }
+
   async updateCmsPage(id: string, data: Partial<InsertCmsPage>): Promise<CmsPage | undefined> {
-    const page = this.cmsPages.get(id);
-    if (!page) return undefined;
-    const updated = { ...page, ...data, updatedAt: new Date() };
-    this.cmsPages.set(id, updated);
-    return updated;
+    const results = await db.update(cmsPagesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(cmsPagesTable.id, id))
+      .returning();
+    return results[0];
   }
+
   async deleteCmsPage(id: string): Promise<boolean> {
-    return this.cmsPages.delete(id);
+    const results = await db.delete(cmsPagesTable).where(eq(cmsPagesTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // CMS Media Library
+  // CMS Media Library - Persisted to PostgreSQL (FOREVER POLICY)
   async getCmsMediaItems(): Promise<CmsMediaItem[]> {
-    return Array.from(this.cmsMediaItems.values());
-  }
-  async getCmsMediaItem(id: string): Promise<CmsMediaItem | undefined> {
-    return this.cmsMediaItems.get(id);
-  }
-  async createCmsMediaItem(item: InsertCmsMediaItem): Promise<CmsMediaItem> {
-    const id = randomUUID();
-    const newItem: CmsMediaItem = {
-      id,
-      customerId: item.customerId ?? null,
-      name: item.name,
-      type: item.type,
-      url: item.url,
-      thumbnailUrl: item.thumbnailUrl ?? null,
-      altText: item.altText ?? null,
-      folder: item.folder ?? null,
-      size: item.size ?? null,
-      tags: item.tags ?? null,
-      createdAt: new Date(),
-    };
-    this.cmsMediaItems.set(id, newItem);
-    return newItem;
-  }
-  async updateCmsMediaItem(id: string, data: Partial<InsertCmsMediaItem>): Promise<CmsMediaItem | undefined> {
-    const item = this.cmsMediaItems.get(id);
-    if (!item) return undefined;
-    const updated = { ...item, ...data };
-    this.cmsMediaItems.set(id, updated);
-    return updated;
-  }
-  async deleteCmsMediaItem(id: string): Promise<boolean> {
-    return this.cmsMediaItems.delete(id);
+    return await db.select().from(cmsMediaItemsTable);
   }
 
-  // Tenant Branding
+  async getCmsMediaItem(id: string): Promise<CmsMediaItem | undefined> {
+    const results = await db.select().from(cmsMediaItemsTable).where(eq(cmsMediaItemsTable.id, id));
+    return results[0];
+  }
+
+  async createCmsMediaItem(item: InsertCmsMediaItem): Promise<CmsMediaItem> {
+    const results = await db.insert(cmsMediaItemsTable).values(item).returning();
+    return results[0];
+  }
+
+  async updateCmsMediaItem(id: string, data: Partial<InsertCmsMediaItem>): Promise<CmsMediaItem | undefined> {
+    const results = await db.update(cmsMediaItemsTable)
+      .set(data)
+      .where(eq(cmsMediaItemsTable.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async deleteCmsMediaItem(id: string): Promise<boolean> {
+    const results = await db.delete(cmsMediaItemsTable).where(eq(cmsMediaItemsTable.id, id)).returning();
+    return results.length > 0;
+  }
+
+  // Tenant Branding - Persisted to PostgreSQL (FOREVER POLICY)
   async listTenantBrandings(): Promise<TenantBranding[]> {
-    return Array.from(this.tenantBrandings.values());
+    return await db.select().from(tenantBrandingsTable);
   }
 
   async getTenantBranding(customerId: string): Promise<TenantBranding | undefined> {
-    return Array.from(this.tenantBrandings.values()).find(b => b.customerId === customerId);
+    const results = await db.select().from(tenantBrandingsTable).where(eq(tenantBrandingsTable.customerId, customerId));
+    return results[0];
   }
 
   async createTenantBranding(branding: InsertTenantBranding): Promise<TenantBranding> {
-    const id = randomUUID();
-    const now = new Date();
-    const b: TenantBranding = {
-      id,
-      customerId: branding.customerId,
-      companyName: branding.companyName ?? null,
-      logoUrl: branding.logoUrl ?? null,
-      faviconUrl: branding.faviconUrl ?? null,
-      primaryColor: branding.primaryColor ?? null,
-      secondaryColor: branding.secondaryColor ?? null,
-      customDomain: branding.customDomain ?? null,
-      customDomainVerified: branding.customDomainVerified ?? false,
-      emailFromName: branding.emailFromName ?? null,
-      emailFromAddress: branding.emailFromAddress ?? null,
-      footerText: branding.footerText ?? null,
-      termsUrl: branding.termsUrl ?? null,
-      privacyUrl: branding.privacyUrl ?? null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.tenantBrandings.set(id, b);
-    return b;
+    const results = await db.insert(tenantBrandingsTable).values(branding).returning();
+    return results[0];
   }
 
   async updateTenantBranding(id: string, data: Partial<InsertTenantBranding>): Promise<TenantBranding | undefined> {
-    const branding = this.tenantBrandings.get(id);
-    if (!branding) return undefined;
-    const updated = { ...branding, ...data, updatedAt: new Date() };
-    this.tenantBrandings.set(id, updated);
-    return updated;
+    const results = await db.update(tenantBrandingsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(tenantBrandingsTable.id, id))
+      .returning();
+    return results[0];
   }
 
-  // Portal Login Pages
+  // Portal Login Pages - Persisted to PostgreSQL (FOREVER POLICY)
   async getPortalLoginPages(): Promise<PortalLoginPage[]> {
-    return Array.from(this.portalLoginPages.values());
+    return await db.select().from(portalLoginPagesTable);
   }
 
   async getPortalLoginPage(portalType: string): Promise<PortalLoginPage | undefined> {
-    return Array.from(this.portalLoginPages.values()).find(p => p.portalType === portalType);
+    const results = await db.select().from(portalLoginPagesTable).where(eq(portalLoginPagesTable.portalType, portalType));
+    return results[0];
   }
 
   async createPortalLoginPage(page: InsertPortalLoginPage): Promise<PortalLoginPage> {
-    const id = randomUUID();
-    const now = new Date();
-    const p: PortalLoginPage = {
-      id,
-      portalType: page.portalType,
-      title: page.title,
-      subtitle: page.subtitle ?? null,
-      logoUrl: page.logoUrl ?? null,
-      backgroundImageUrl: page.backgroundImageUrl ?? null,
-      backgroundColor: page.backgroundColor ?? null,
-      primaryColor: page.primaryColor ?? null,
-      textColor: page.textColor ?? null,
-      welcomeMessage: page.welcomeMessage ?? null,
-      footerText: page.footerText ?? null,
-      showSocialLogin: page.showSocialLogin ?? false,
-      showRememberMe: page.showRememberMe ?? true,
-      showForgotPassword: page.showForgotPassword ?? true,
-      customCss: page.customCss ?? null,
-      isActive: page.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.portalLoginPages.set(id, p);
-    return p;
+    const results = await db.insert(portalLoginPagesTable).values(page).returning();
+    return results[0];
   }
 
   async updatePortalLoginPage(id: string, data: Partial<InsertPortalLoginPage>): Promise<PortalLoginPage | undefined> {
-    const page = this.portalLoginPages.get(id);
-    if (!page) return undefined;
-    const updated = { ...page, ...data, updatedAt: new Date() };
-    this.portalLoginPages.set(id, updated);
-    return updated;
+    const results = await db.update(portalLoginPagesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(portalLoginPagesTable.id, id))
+      .returning();
+    return results[0];
   }
 
-  // Site Settings
+  // Site Settings - Persisted to PostgreSQL (FOREVER POLICY)
   async getSiteSettings(category?: string): Promise<SiteSetting[]> {
-    const all = Array.from(this.siteSettings.values());
-    return category ? all.filter(s => s.category === category) : all;
+    if (category) {
+      return await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.category, category));
+    }
+    return await db.select().from(siteSettingsTable);
   }
 
   async getSiteSetting(key: string): Promise<SiteSetting | undefined> {
-    return Array.from(this.siteSettings.values()).find(s => s.key === key);
+    const results = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.key, key));
+    return results[0];
   }
 
   async upsertSiteSetting(setting: InsertSiteSetting): Promise<SiteSetting> {
     const existing = await this.getSiteSetting(setting.key);
-    const now = new Date();
     if (existing) {
-      const updated = { ...existing, ...setting, updatedAt: now };
-      this.siteSettings.set(existing.id, updated);
-      return updated;
+      const results = await db.update(siteSettingsTable)
+        .set({ ...setting, updatedAt: new Date() })
+        .where(eq(siteSettingsTable.id, existing.id))
+        .returning();
+      return results[0];
     }
-    const id = randomUUID();
-    const s: SiteSetting = {
-      id,
-      key: setting.key,
-      value: setting.value ?? null,
-      category: setting.category,
-      label: setting.label,
-      description: setting.description ?? null,
-      inputType: setting.inputType ?? "text",
-      isPublic: setting.isPublic ?? false,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.siteSettings.set(id, s);
-    return s;
+    const results = await db.insert(siteSettingsTable).values(setting).returning();
+    return results[0];
   }
 
-  // Website Sections
+  // Website Sections - Persisted to PostgreSQL (FOREVER POLICY)
   async getWebsiteSections(pageSlug?: string): Promise<WebsiteSection[]> {
-    const all = Array.from(this.websiteSections.values());
-    const filtered = pageSlug ? all.filter(s => s.pageSlug === pageSlug) : all;
-    return filtered.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    if (pageSlug) {
+      return await db.select().from(websiteSectionsTable).where(eq(websiteSectionsTable.pageSlug, pageSlug));
+    }
+    return await db.select().from(websiteSectionsTable);
   }
 
   async getWebsiteSection(id: string): Promise<WebsiteSection | undefined> {
-    return this.websiteSections.get(id);
+    const results = await db.select().from(websiteSectionsTable).where(eq(websiteSectionsTable.id, id));
+    return results[0];
   }
 
   async createWebsiteSection(section: InsertWebsiteSection): Promise<WebsiteSection> {
-    const id = randomUUID();
-    const now = new Date();
-    const s: WebsiteSection = {
-      id,
-      pageSlug: section.pageSlug,
-      sectionType: section.sectionType,
-      title: section.title ?? null,
-      subtitle: section.subtitle ?? null,
-      content: section.content ?? null,
-      backgroundImage: section.backgroundImage ?? null,
-      backgroundColor: section.backgroundColor ?? null,
-      displayOrder: section.displayOrder ?? 0,
-      isVisible: section.isVisible ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.websiteSections.set(id, s);
-    return s;
+    const results = await db.insert(websiteSectionsTable).values(section).returning();
+    return results[0];
   }
 
   async updateWebsiteSection(id: string, data: Partial<InsertWebsiteSection>): Promise<WebsiteSection | undefined> {
-    const section = this.websiteSections.get(id);
-    if (!section) return undefined;
-    const updated = { ...section, ...data, updatedAt: new Date() };
-    this.websiteSections.set(id, updated);
-    return updated;
+    const results = await db.update(websiteSectionsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(websiteSectionsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteWebsiteSection(id: string): Promise<boolean> {
-    return this.websiteSections.delete(id);
+    const results = await db.delete(websiteSectionsTable).where(eq(websiteSectionsTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // Integrations - delegated to database repository
