@@ -13,6 +13,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -954,7 +955,9 @@ const supplierRatingTabActions: Record<SupplierRatingTab, TabAction[]> = {
     { id: "export-history", label: "Export History", testId: "menu-export-history" },
   ],
   "import-summary": [
-    { id: "export-summary", label: "Export Summary", testId: "menu-export-summary" },
+    { id: "new-report", label: "New Report", testId: "menu-new-report" },
+    { id: "save-report", label: "Save Report", testId: "menu-save-report" },
+    { id: "export", label: "Export", testId: "menu-export" },
   ],
   "import-settings": [
     { id: "reset-settings", label: "Reset to Defaults", testId: "menu-reset-settings" },
@@ -1050,6 +1053,64 @@ interface ImportJob {
 
 const mockImportJobs: ImportJob[] = [];
 
+// Import Summary types and mock data
+type ImportSummarySubTab = "rate-changes" | "origin-changes";
+
+interface SavedReport {
+  id: string;
+  name: string;
+  isPublic: boolean;
+  createdBy: string;
+  createdAt: string;
+}
+
+interface ImportSummaryRateChange {
+  id: string;
+  zone: string;
+  code: string;
+  originSet: string;
+  timeclass: string;
+  effectiveDate: string;
+  effectiveDays: number;
+  currency: string;
+  newRate: number;
+  oldRate: number;
+  change: number;
+  changePercent: number;
+  changeType: "Increase" | "Decrease" | "New" | "Deleted";
+  plan: string;
+  supplier: string;
+  importJob: string;
+  status: "Committed" | "Pending" | "Failed";
+}
+
+interface ImportSummarySummary {
+  changes: number;
+  increases: number;
+  decreases: number;
+  new: number;
+  deleted: number;
+  blocked: number;
+  other: number;
+  brBlocked: number;
+  rejected: number;
+}
+
+interface ImportSummaryOriginSummary {
+  newOriginSets: number;
+  newOriginCodes: number;
+  deletedOriginCodes: number;
+}
+
+const mockSavedReports: SavedReport[] = [];
+const mockImportSummaryRateChanges: ImportSummaryRateChange[] = [];
+const mockImportSummarySummary: ImportSummarySummary = {
+  changes: 0, increases: 0, decreases: 0, new: 0, deleted: 0, blocked: 0, other: 0, brBlocked: 0, rejected: 0
+};
+const mockImportSummaryOriginSummary: ImportSummaryOriginSummary = {
+  newOriginSets: 0, newOriginCodes: 0, deletedOriginCodes: 0
+};
+
 const periodOptions: { value: RateInboxPeriod; label: string }[] = [
   { value: "specify", label: "Specify" },
   { value: "today", label: "Today" },
@@ -1086,6 +1147,21 @@ export function SupplierRatingPlansPage() {
   const [importJobsSearchFilter, setImportJobsSearchFilter] = useState("");
   const [importJobsCurrentPage, setImportJobsCurrentPage] = useState(1);
   const [importJobsPageSize, setImportJobsPageSize] = useState(20);
+  
+  // Import Summary state
+  const [importSummarySelectedReport, setImportSummarySelectedReport] = useState("untitled");
+  const [importSummaryPeriod, setImportSummaryPeriod] = useState<RateInboxPeriod>("this-year");
+  const [importSummaryFromDate, setImportSummaryFromDate] = useState("2026-01-01");
+  const [importSummaryToDate, setImportSummaryToDate] = useState("2026-01-13");
+  const [importSummaryMinMinutes, setImportSummaryMinMinutes] = useState(false);
+  const [importSummaryMinMinutesValue, setImportSummaryMinMinutesValue] = useState("0");
+  const [importSummarySubTab, setImportSummarySubTab] = useState<ImportSummarySubTab>("rate-changes");
+  const [importSummarySearchFilter, setImportSummarySearchFilter] = useState("");
+  const [importSummaryCurrentPage, setImportSummaryCurrentPage] = useState(1);
+  const [importSummaryPageSize, setImportSummaryPageSize] = useState(20);
+  const [showSaveReportDialog, setShowSaveReportDialog] = useState(false);
+  const [saveReportName, setSaveReportName] = useState("");
+  const [saveReportPublic, setSaveReportPublic] = useState(false);
   
   const { toast } = useToast();
 
@@ -1124,6 +1200,16 @@ export function SupplierRatingPlansPage() {
     : supplierRatingTabActions[tab];
 
   const handleAction = (actionId: string) => {
+    if (actionId === "save-report") {
+      setShowSaveReportDialog(true);
+      return;
+    }
+    if (actionId === "new-report") {
+      setImportSummarySelectedReport("untitled");
+      setSaveReportName("");
+      toast({ title: "New Report", description: "Started a new untitled report" });
+      return;
+    }
     toast({ title: `Action: ${actionId}`, description: "This action is not yet implemented" });
   };
 
@@ -1852,9 +1938,297 @@ export function SupplierRatingPlansPage() {
         </TabsContent>
 
         <TabsContent value="import-summary">
-          <div className="py-12 text-center text-muted-foreground">
-            Import Summary coming soon
+          {/* Report and Period Filters */}
+          <div className="flex items-center gap-4 mb-4 flex-wrap">
+            <Select value={importSummarySelectedReport} onValueChange={setImportSummarySelectedReport}>
+              <SelectTrigger className="w-[160px]" data-testid="select-import-summary-report">
+                <SelectValue placeholder="Untitled Report" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="untitled">Untitled Report</SelectItem>
+                {mockSavedReports.map((report) => (
+                  <SelectItem key={report.id} value={report.id}>{report.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Period</span>
+              <Select value={importSummaryPeriod} onValueChange={(v) => setImportSummaryPeriod(v as RateInboxPeriod)}>
+                <SelectTrigger className="w-[140px]" data-testid="select-import-summary-period">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {periodOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={importSummaryFromDate}
+                onChange={(e) => setImportSummaryFromDate(e.target.value)}
+                className="w-[140px]"
+                data-testid="input-import-summary-from-date"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">To</span>
+              <Input
+                type="date"
+                value={importSummaryToDate}
+                onChange={(e) => setImportSummaryToDate(e.target.value)}
+                className="w-[140px]"
+                data-testid="input-import-summary-to-date"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={importSummaryMinMinutes}
+                onCheckedChange={(checked) => setImportSummaryMinMinutes(!!checked)}
+                data-testid="checkbox-min-minutes"
+              />
+              <span className="text-sm text-muted-foreground">Min Minutes</span>
+              <Input
+                type="number"
+                value={importSummaryMinMinutesValue}
+                onChange={(e) => setImportSummaryMinMinutesValue(e.target.value)}
+                className="w-[60px]"
+                disabled={!importSummaryMinMinutes}
+                data-testid="input-min-minutes"
+              />
+            </div>
+            <span className="text-sm text-muted-foreground">(Zone: Last 7 Days)</span>
           </div>
+
+          {/* Summary Tables */}
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            {/* Summary Of Rate Changes */}
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Summary Of Rate Changes</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-[#3d4f5f]">
+                    <TableHead className="text-white text-xs">Changes</TableHead>
+                    <TableHead className="text-white text-xs">Increases</TableHead>
+                    <TableHead className="text-white text-xs">Decreases</TableHead>
+                    <TableHead className="text-white text-xs">New</TableHead>
+                    <TableHead className="text-white text-xs">Deleted</TableHead>
+                    <TableHead className="text-white text-xs">Blocked</TableHead>
+                    <TableHead className="text-white text-xs">Other</TableHead>
+                    <TableHead className="text-white text-xs">Br Blocked</TableHead>
+                    <TableHead className="text-white text-xs">Rejected</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="text-center">{mockImportSummarySummary.changes}</TableCell>
+                    <TableCell className="text-center">{mockImportSummarySummary.increases}</TableCell>
+                    <TableCell className="text-center">{mockImportSummarySummary.decreases}</TableCell>
+                    <TableCell className="text-center">{mockImportSummarySummary.new}</TableCell>
+                    <TableCell className="text-center">{mockImportSummarySummary.deleted}</TableCell>
+                    <TableCell className="text-center">{mockImportSummarySummary.blocked}</TableCell>
+                    <TableCell className="text-center">{mockImportSummarySummary.other}</TableCell>
+                    <TableCell className="text-center">{mockImportSummarySummary.brBlocked}</TableCell>
+                    <TableCell className="text-center">{mockImportSummarySummary.rejected}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Summary Of Origin Changes */}
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Summary Of Origin Changes</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-[#3d4f5f]">
+                    <TableHead className="text-white text-xs">New Origin Sets</TableHead>
+                    <TableHead className="text-white text-xs">New Origin Codes</TableHead>
+                    <TableHead className="text-white text-xs">Deleted Origin Codes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="text-center">{mockImportSummaryOriginSummary.newOriginSets}</TableCell>
+                    <TableCell className="text-center">{mockImportSummaryOriginSummary.newOriginCodes}</TableCell>
+                    <TableCell className="text-center">{mockImportSummaryOriginSummary.deletedOriginCodes}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Sub-tabs */}
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              variant={importSummarySubTab === "rate-changes" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setImportSummarySubTab("rate-changes")}
+              className={importSummarySubTab === "rate-changes" ? "bg-[#3d4f5f] hover:bg-[#4d5f6f]" : ""}
+              data-testid="button-rate-changes-tab"
+            >
+              Rate Changes
+            </Button>
+            <Button
+              variant={importSummarySubTab === "origin-changes" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setImportSummarySubTab("origin-changes")}
+              className={importSummarySubTab === "origin-changes" ? "bg-[#3d4f5f] hover:bg-[#4d5f6f]" : ""}
+              data-testid="button-origin-changes-tab"
+            >
+              Origin Changes
+            </Button>
+          </div>
+
+          {/* Search Filter Row */}
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <Input
+              placeholder="Click to filter"
+              value={importSummarySearchFilter}
+              onChange={(e) => setImportSummarySearchFilter(e.target.value)}
+              className="max-w-md"
+              data-testid="input-import-summary-search"
+            />
+            <Button variant="ghost" size="icon" data-testid="button-import-summary-search">
+              <Search className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground ml-auto">UTC</span>
+            <Button variant="outline" size="sm" data-testid="button-change-to-code-view">
+              Change to Code View
+            </Button>
+          </div>
+
+          {/* Rate Changes Table */}
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-[#3d4f5f]">
+                <TableHead className="text-white text-xs">
+                  <div className="flex items-center gap-1">Zone <ChevronDown className="h-3 w-3" /></div>
+                </TableHead>
+                <TableHead className="text-white text-xs">Code</TableHead>
+                <TableHead className="text-white text-xs">Origin Set</TableHead>
+                <TableHead className="text-white text-xs">Timeclass</TableHead>
+                <TableHead className="text-white text-xs">Effective Date</TableHead>
+                <TableHead className="text-white text-xs">$/£</TableHead>
+                <TableHead className="text-white text-xs">New Rate</TableHead>
+                <TableHead className="text-white text-xs">Old Rate</TableHead>
+                <TableHead className="text-white text-xs">Change</TableHead>
+                <TableHead className="text-white text-xs">Change Type</TableHead>
+                <TableHead className="text-white text-xs">Plan</TableHead>
+                <TableHead className="text-white text-xs">Supplier</TableHead>
+                <TableHead className="text-white text-xs">Import Job</TableHead>
+                <TableHead className="text-white text-xs">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mockImportSummaryRateChanges.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={14} className="text-center text-muted-foreground py-8">
+                    No rate changes found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                mockImportSummaryRateChanges
+                  .slice((importSummaryCurrentPage - 1) * importSummaryPageSize, importSummaryCurrentPage * importSummaryPageSize)
+                  .map((item) => (
+                    <TableRow key={item.id} data-testid={`row-rate-change-${item.id}`}>
+                      <TableCell className="text-sm">{item.zone}</TableCell>
+                      <TableCell className="text-sm">{item.code}</TableCell>
+                      <TableCell className="text-sm">{item.originSet}</TableCell>
+                      <TableCell className="text-sm">{item.timeclass}</TableCell>
+                      <TableCell className="text-sm">{item.effectiveDate} ({item.effectiveDays})</TableCell>
+                      <TableCell className="text-sm">{item.currency}</TableCell>
+                      <TableCell className="text-sm">{item.newRate.toFixed(4)}</TableCell>
+                      <TableCell className="text-sm">{item.oldRate.toFixed(4)}</TableCell>
+                      <TableCell className="text-sm">{item.change.toFixed(4)} ({item.changePercent.toFixed(2)}%)</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={item.changeType === "Increase" ? "default" : item.changeType === "Decrease" ? "secondary" : "outline"}
+                          className={item.changeType === "Increase" ? "bg-orange-500 hover:bg-orange-600" : item.changeType === "Decrease" ? "bg-blue-500 hover:bg-blue-600" : ""}
+                          data-testid={`badge-change-type-${item.id}`}
+                        >
+                          {item.changeType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{item.plan}</TableCell>
+                      <TableCell className="text-sm">{item.supplier}</TableCell>
+                      <TableCell>
+                        <a href={`/admin/softswitch/rating/import-job/${item.importJob}`} className="text-primary hover:underline text-sm" data-testid={`link-import-job-${item.id}`}>
+                          {item.importJob}
+                        </a>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={item.status === "Committed" ? "default" : "secondary"}
+                          className={item.status === "Committed" ? "bg-sky-500 hover:bg-sky-600" : ""}
+                          data-testid={`badge-status-${item.id}`}
+                        >
+                          {item.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
+            </TableBody>
+          </Table>
+          <DataTableFooter
+            totalItems={mockImportSummaryRateChanges.length}
+            totalPages={Math.ceil(mockImportSummaryRateChanges.length / importSummaryPageSize)}
+            pageSize={importSummaryPageSize}
+            currentPage={importSummaryCurrentPage}
+            onPageChange={setImportSummaryCurrentPage}
+            onPageSizeChange={setImportSummaryPageSize}
+          />
+
+          {/* Save Report Dialog */}
+          <Dialog open={showSaveReportDialog} onOpenChange={setShowSaveReportDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Save This Report</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                  <Label htmlFor="report-name">Name</Label>
+                  <Input
+                    id="report-name"
+                    value={saveReportName}
+                    onChange={(e) => setSaveReportName(e.target.value)}
+                    placeholder="Enter report name"
+                    data-testid="input-report-name"
+                  />
+                </div>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                  <Label>Available to other users</Label>
+                  <Select value={saveReportPublic ? "yes" : "no"} onValueChange={(v) => setSaveReportPublic(v === "yes")}>
+                    <SelectTrigger data-testid="select-report-public">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no">No</SelectItem>
+                      <SelectItem value="yes">Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowSaveReportDialog(false)} data-testid="button-cancel-save-report">
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    toast({ title: "Report Saved", description: `Report "${saveReportName}" saved successfully` });
+                    setShowSaveReportDialog(false);
+                    setSaveReportName("");
+                    setSaveReportPublic(false);
+                  }}
+                  data-testid="button-save-report"
+                >
+                  Save
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="import-settings">

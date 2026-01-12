@@ -58,6 +58,14 @@ DIDTron Communications is developing an AI-first, white-label wholesale VoIP pla
 
 Both modules share the same underlying carrier data but serve different customer segments with different service models.
 
+**Digitalk Report/Filter Saving System (Private/Public)**
+- All reports, filters, and saved views in Digitalk support a Private/Public visibility system
+- When saving a report or filter, users can choose "Available to other users: Yes/No"
+- Private (No): Only the creator can see and use the saved report/filter
+- Public (Yes): All platform users can see and use the saved report/filter
+- This system applies to: Import Summary reports, Rate Inbox filters, and any other saved search/filter configurations
+- DIDTron will implement this same behavior for all saveable reports and filters
+
 ### System Architecture
 
 #### UI/UX Design
