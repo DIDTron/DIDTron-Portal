@@ -646,7 +646,6 @@ export function SoftswitchCarriersPage() {
                       </div>
                     ) : "-"}
                   </FixedColumnTableCell>
-                  <FixedColumnTableCell></FixedColumnTableCell>
                   <FixedColumnTableCell>
                     {carrier.accountManager || "-"}
                   </FixedColumnTableCell>
