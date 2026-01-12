@@ -5471,7 +5471,10 @@ export async function registerRoutes(
   app.post("/api/carriers", async (req, res) => {
     try {
       const parsed = insertCarrierSchema.safeParse(req.body);
-      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      if (!parsed.success) {
+        console.error("[Carriers] Validation error:", JSON.stringify(parsed.error.errors, null, 2));
+        return res.status(400).json({ error: parsed.error.errors });
+      }
       const carrier = await storage.createCarrier(parsed.data);
       await storage.createAuditLog({
         userId: req.session?.userId,
@@ -5488,8 +5491,6 @@ export async function registerRoutes(
           const syncResult = await connexcs.syncCarrier({
             id: carrier.id,
             name: carrier.name,
-            sipHost: carrier.sipHost,
-            sipPort: carrier.sipPort,
           });
           if (syncResult.connexcsId) {
             await storage.updateCarrier(carrier.id, { connexcsCarrierId: syncResult.connexcsId });
@@ -5502,7 +5503,8 @@ export async function registerRoutes(
       
       res.status(201).json(carrier);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create carrier" });
+      console.error("[Carriers] Create error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create carrier" });
     }
   });
 
@@ -8275,8 +8277,6 @@ export async function registerRoutes(
       const result = await connexcs.syncCarrier({
         id: carrier.id,
         name: carrier.name,
-        sipHost: carrier.sipHost,
-        sipPort: carrier.sipPort,
       });
       if (result.synced) {
         await storage.updateCarrier(carrier.id, { connexcsCarrierId: result.connexcsId });
