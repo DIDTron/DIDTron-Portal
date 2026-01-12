@@ -695,59 +695,82 @@ export function SoftswitchCarriersPage() {
     }
     return (
       <>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Carrier</TableHead>
-              <TableHead>Direction</TableHead>
-              <TableHead>Currency</TableHead>
-              <TableHead>Protocol</TableHead>
-              <TableHead>Capacity</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <FixedColumnTable>
+          <FixedColumnTableHeader>
+            <FixedColumnTableRow>
+              <FixedColumnTableHead fixed={true} className="min-w-[120px]">Name</FixedColumnTableHead>
+              <FixedColumnTableHead>Interconnect</FixedColumnTableHead>
+              <FixedColumnTableHead>Type</FixedColumnTableHead>
+              <FixedColumnTableHead>$/£</FixedColumnTableHead>
+              <FixedColumnTableHead>Enabled</FixedColumnTableHead>
+              <FixedColumnTableHead>Supplier Rating Plan</FixedColumnTableHead>
+              <FixedColumnTableHead>Ingress Tech Prefix</FixedColumnTableHead>
+              <FixedColumnTableHead>Ingress IP</FixedColumnTableHead>
+              <FixedColumnTableHead>Egress Tech Prefix</FixedColumnTableHead>
+              <FixedColumnTableHead>Egress IP</FixedColumnTableHead>
+              <FixedColumnTableHead>Relay Media Mode</FixedColumnTableHead>
+            </FixedColumnTableRow>
+          </FixedColumnTableHeader>
+          <FixedColumnTableBody>
             {interconnectsPagination.paginatedItems.map((interconnect) => {
               const carrier = carriers?.find(c => c.id === interconnect.carrierId);
+              const isCustomer = interconnect.direction === "ingress" || interconnect.direction === "both";
+              const isSupplier = interconnect.direction === "egress" || interconnect.direction === "both";
               return (
-                <TableRow key={interconnect.id} data-testid={`row-interconnect-${interconnect.id}`}>
-                  <TableCell className="font-medium">
-                    <Link href={`/admin/interconnects/${interconnect.shortCode || interconnect.id}`} className="text-primary hover:underline" data-testid={`link-interconnect-${interconnect.id}`}>
-                      {interconnect.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
+                <FixedColumnTableRow key={interconnect.id} data-testid={`row-interconnect-${interconnect.id}`}>
+                  <FixedColumnTableCell fixed={true} className="font-medium min-w-[120px]">
                     <Link href={`/admin/carriers/${carrier?.code || interconnect.carrierId}`} className="text-primary hover:underline">
                       {carrier?.name || interconnect.carrierName || "-"}
                     </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      interconnect.direction === "ingress" ? "outline" :
-                      interconnect.direction === "egress" ? "secondary" : "default"
-                    }>
-                      {interconnect.direction === "ingress" ? "Ingress" :
-                       interconnect.direction === "egress" ? "Egress" : "Both"}
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell>
+                    <Link href={`/admin/interconnects/${interconnect.shortCode || interconnect.id}`} className="text-primary hover:underline" data-testid={`link-interconnect-${interconnect.id}`}>
+                      {interconnect.name}
+                    </Link>
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell>
+                    <Badge 
+                      className={
+                        isSupplier && !isCustomer ? "bg-amber-500 text-white hover:bg-amber-600" : 
+                        "bg-purple-500 text-white hover:bg-purple-600"
+                      }
+                    >
+                      {isSupplier && !isCustomer ? "S" : "C"}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {interconnect.currencyCode || "-"}
-                  </TableCell>
-                  <TableCell>{interconnect.protocol || "SIP"}</TableCell>
-                  <TableCell>
-                    {interconnect.capacityMode === "unrestricted" ? "Unrestricted" : interconnect.capacityLimit || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={interconnect.isActive ? "default" : "secondary"}>
-                      {interconnect.isActive ? "Active" : "Inactive"}
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell>
+                    {interconnect.currencyCode || "USD"}
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell>
+                    <Badge 
+                      className={interconnect.isActive ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-rose-500 text-white hover:bg-rose-600"}
+                    >
+                      {interconnect.isActive ? "Yes" : "No"}
                     </Badge>
-                  </TableCell>
-                </TableRow>
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell>
+                    {interconnect.supplierRatingPlan || "-"}
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell>
+                    {interconnect.ingressTechPrefix || "-"}
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell className="whitespace-normal max-w-[150px]">
+                    {interconnect.ingressIp || "-"}
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell>
+                    {interconnect.egressTechPrefix || "-"}
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell className="whitespace-normal max-w-[150px]">
+                    {interconnect.egressIp || "-"}
+                  </FixedColumnTableCell>
+                  <FixedColumnTableCell>
+                    {interconnect.relayMediaMode || "Always"}
+                  </FixedColumnTableCell>
+                </FixedColumnTableRow>
               );
             })}
-          </TableBody>
-        </Table>
+          </FixedColumnTableBody>
+        </FixedColumnTable>
         <DataTableFooter
           currentPage={interconnectsPagination.currentPage}
           totalPages={interconnectsPagination.totalPages}
