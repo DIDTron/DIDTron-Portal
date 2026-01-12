@@ -814,12 +814,7 @@ export class MemStorage implements IStorage {
   private ivrs: Map<string, Ivr>;
   private ringGroups: Map<string, RingGroup>;
   private queues: Map<string, Queue>;
-  private tickets: Map<string, Ticket>;
-  private ticketReplies: Map<string, TicketReply>;
-  private invoices: Map<string, Invoice>;
-  private payments: Map<string, Payment>;
-  private promoCodes: Map<string, PromoCode>;
-  private referrals: Map<string, Referral>;
+  // Stage 5-6: tickets, ticketReplies, invoices, payments, promoCodes, referrals - MIGRATED TO POSTGRESQL
   private currencies: Map<string, Currency>;
   private fxRates: Map<string, FxRate>;
   private sipTestConfigs: Map<string, SipTestConfig>;
@@ -862,7 +857,7 @@ export class MemStorage implements IStorage {
   private docArticles: Map<string, DocArticle>;
   private webhooks: Map<string, Webhook>;
   private customerApiKeys: Map<string, CustomerApiKey>;
-  private billingTerms: Map<string, BillingTerm>;
+  // billingTerms - MIGRATED TO POSTGRESQL
 
   constructor() {
     this.users = new Map();
@@ -891,12 +886,7 @@ export class MemStorage implements IStorage {
     this.ivrs = new Map();
     this.ringGroups = new Map();
     this.queues = new Map();
-    this.tickets = new Map();
-    this.ticketReplies = new Map();
-    this.invoices = new Map();
-    this.payments = new Map();
-    this.promoCodes = new Map();
-    this.referrals = new Map();
+    // Stage 5-6: tickets, ticketReplies, invoices, payments, promoCodes, referrals - now in PostgreSQL
     this.currencies = new Map();
     this.fxRates = new Map();
     this.sipTestConfigs = new Map();
@@ -939,7 +929,7 @@ export class MemStorage implements IStorage {
     this.docArticles = new Map();
     this.webhooks = new Map();
     this.customerApiKeys = new Map();
-    this.billingTerms = new Map();
+    // billingTerms - now in PostgreSQL
 
     this.seedDefaultData();
   }
