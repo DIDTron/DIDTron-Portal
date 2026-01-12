@@ -946,7 +946,9 @@ const supplierRatingTabActions: Record<SupplierRatingTab, TabAction[]> = {
     { id: "delete-export-templates", label: "Delete Export Templates", testId: "menu-delete-export-templates" },
   ],
   "rate-inbox": [
-    { id: "delete-selected", label: "Delete Selected", testId: "menu-delete-selected" },
+    { id: "download-rates-file", label: "Download Rates File", testId: "menu-download-rates-file" },
+    { id: "import-existing-plan", label: "Import Into Existing Plan", testId: "menu-import-existing-plan" },
+    { id: "import-new-plan", label: "Import Into New Plan", testId: "menu-import-new-plan" },
   ],
   "import-jobs": [
     { id: "cancel-all-jobs", label: "Cancel All Jobs", testId: "menu-cancel-all-jobs" },
@@ -990,6 +992,22 @@ const mockSupplierPlans: SupplierRatingPlan[] = [];
 
 type RateInboxSubTab = "action-required" | "carrier-assigned" | "deleted" | "junk";
 type RateInboxPeriod = "specify" | "today" | "yesterday" | "this-week" | "this-month" | "last-2-months" | "last-6-months" | "this-year";
+
+const rateInboxSubTabActions: Record<RateInboxSubTab, TabAction[]> = {
+  "action-required": [
+    { id: "download-rates-file", label: "Download Rates File", testId: "menu-download-rates-file" },
+  ],
+  "carrier-assigned": [
+    { id: "download-rates-file", label: "Download Rates File", testId: "menu-download-rates-file" },
+    { id: "import-existing-plan", label: "Import Into Existing Plan", testId: "menu-import-existing-plan" },
+    { id: "import-new-plan", label: "Import Into New Plan", testId: "menu-import-new-plan" },
+  ],
+  "deleted": [
+    { id: "restore-selected", label: "Restore Selected", testId: "menu-restore-selected" },
+    { id: "delete-selected", label: "Delete Selected", testId: "menu-delete-selected" },
+  ],
+  "junk": [],
+};
 
 interface RateInboxItem {
   id: string;
@@ -1074,7 +1092,9 @@ export function SupplierRatingPlansPage() {
   
   const paginatedPlans = filteredPlans.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const currentActions = supplierRatingTabActions[tab];
+  const currentActions = tab === "rate-inbox" 
+    ? rateInboxSubTabActions[rateInboxSubTab] 
+    : supplierRatingTabActions[tab];
 
   const handleAction = (actionId: string) => {
     toast({ title: `Action: ${actionId}`, description: "This action is not yet implemented" });
@@ -1307,55 +1327,189 @@ export function SupplierRatingPlansPage() {
             </Button>
           </div>
 
-          {/* Data Table */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={mockRateInboxItems.length > 0 && rateInboxSelectedItems.length === mockRateInboxItems.length}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setRateInboxSelectedItems(mockRateInboxItems.map(item => item.id));
-                      } else {
-                        setRateInboxSelectedItems([]);
+          {/* Data Table - Structure varies by sub-tab */}
+          {rateInboxSubTab === "junk" ? (
+            /* Junk Tab - Simplified table with fewer columns */
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={mockRateInboxItems.length > 0 && rateInboxSelectedItems.length === mockRateInboxItems.length}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setRateInboxSelectedItems(mockRateInboxItems.map(item => item.id));
+                        } else {
+                          setRateInboxSelectedItems([]);
+                        }
+                      }}
+                      data-testid="checkbox-select-all-rate-inbox"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      Email <ChevronDown className="h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div>Trust</div>
+                    <div className="text-xs text-muted-foreground font-normal">Level</div>
+                  </TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockRateInboxItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      No junk items found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  mockRateInboxItems
+                    .slice((rateInboxCurrentPage - 1) * rateInboxPageSize, rateInboxCurrentPage * rateInboxPageSize)
+                    .flatMap((item) => {
+                      const mainRow = (
+                        <TableRow key={item.id} data-testid={`row-rate-inbox-${item.id}`}>
+                          <TableCell>
+                            <Checkbox
+                              checked={rateInboxSelectedItems.includes(item.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setRateInboxSelectedItems([...rateInboxSelectedItems, item.id]);
+                                } else {
+                                  setRateInboxSelectedItems(rateInboxSelectedItems.filter(id => id !== item.id));
+                                }
+                              }}
+                              data-testid={`checkbox-rate-inbox-${item.id}`}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  if (rateInboxExpandedItems.includes(item.id)) {
+                                    setRateInboxExpandedItems(rateInboxExpandedItems.filter(id => id !== item.id));
+                                  } else {
+                                    setRateInboxExpandedItems([...rateInboxExpandedItems, item.id]);
+                                  }
+                                }}
+                                className="p-0.5 hover-elevate rounded"
+                                data-testid={`button-expand-${item.id}`}
+                              >
+                                <ChevronRight className={cn(
+                                  "h-4 w-4 transition-transform",
+                                  rateInboxExpandedItems.includes(item.id) && "rotate-90"
+                                )} />
+                              </button>
+                              <div>
+                                <div className="text-sm">{item.senderEmail}</div>
+                                <div className="font-medium">{item.subject}</div>
+                              </div>
+                              <span className="text-sm text-muted-foreground ml-auto">{item.receivedTime}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className={cn(
+                              "w-4 h-4 rounded-sm",
+                              item.trustLevel === "high" && "bg-orange-500",
+                              item.trustLevel === "medium" && "bg-pink-500",
+                              item.trustLevel === "low" && "bg-red-500"
+                            )} />
+                          </TableCell>
+                          <TableCell className="text-sm">{item.status || "-"}</TableCell>
+                        </TableRow>
+                      );
+                      
+                      if (!rateInboxExpandedItems.includes(item.id)) {
+                        return [mainRow];
                       }
-                    }}
-                    data-testid="checkbox-select-all-rate-inbox"
-                  />
-                </TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-1">
-                    Email <ChevronDown className="h-3 w-3" />
-                  </div>
-                  <div className="text-xs text-muted-foreground font-normal">Validated to Import Settings</div>
-                </TableHead>
-                <TableHead>
-                  <div>Trust</div>
-                  <div className="text-xs text-muted-foreground font-normal">Level</div>
-                </TableHead>
-                <TableHead>
-                  <div>Carrier</div>
-                  <div className="text-xs text-muted-foreground font-normal">Import Settings</div>
-                </TableHead>
-                <TableHead>
-                  <div>Attachment Processing</div>
-                  <div className="text-xs text-muted-foreground font-normal">Rating Plan/Import Type</div>
-                </TableHead>
-                <TableHead>Attachment</TableHead>
-                <TableHead>
-                  <div>Import</div>
-                  <div className="text-xs text-muted-foreground font-normal">Job</div>
-                </TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Processing Note</TableHead>
-                <TableHead className="w-24"></TableHead>
-              </TableRow>
-            </TableHeader>
+                      
+                      const expandedRow = (
+                        <TableRow key={`${item.id}-expanded`} className="bg-muted/30">
+                          <TableCell colSpan={4} className="p-6">
+                            <div className="grid grid-cols-2 gap-8">
+                              <div className="space-y-3">
+                                <h4 className="font-semibold">Email Details</h4>
+                                <div className="grid grid-cols-[80px_1fr] gap-y-2 text-sm">
+                                  <span className="text-muted-foreground">ID</span>
+                                  <span>{item.id}</span>
+                                  <span className="text-muted-foreground">Received</span>
+                                  <span>{item.receivedDate} {item.receivedTime}</span>
+                                  <span className="text-muted-foreground">From</span>
+                                  <span>{item.senderName} &lt;{item.senderEmail}&gt;</span>
+                                  <span className="text-muted-foreground">Subject</span>
+                                  <span>{item.subject}</span>
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                <h4 className="font-semibold">Message</h4>
+                                <div className="text-sm whitespace-pre-wrap bg-background p-4 rounded-md border max-h-64 overflow-y-auto">
+                                  {item.emailBody}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                      
+                      return [mainRow, expandedRow];
+                    })
+                )}
+              </TableBody>
+            </Table>
+          ) : (
+            /* Action Required, Carrier Assigned, Deleted - Full table */
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={mockRateInboxItems.length > 0 && rateInboxSelectedItems.length === mockRateInboxItems.length}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setRateInboxSelectedItems(mockRateInboxItems.map(item => item.id));
+                        } else {
+                          setRateInboxSelectedItems([]);
+                        }
+                      }}
+                      data-testid="checkbox-select-all-rate-inbox"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      Email <ChevronDown className="h-3 w-3" />
+                    </div>
+                    <div className="text-xs text-muted-foreground font-normal">Validated to Import Settings</div>
+                  </TableHead>
+                  <TableHead>
+                    <div>Trust</div>
+                    <div className="text-xs text-muted-foreground font-normal">Level</div>
+                  </TableHead>
+                  <TableHead>
+                    <div>Carrier</div>
+                    <div className="text-xs text-muted-foreground font-normal">Import Settings</div>
+                  </TableHead>
+                  <TableHead>
+                    <div>Attachment Processing</div>
+                    <div className="text-xs text-muted-foreground font-normal">Rating Plan/Import Type</div>
+                  </TableHead>
+                  <TableHead>Attachment</TableHead>
+                  <TableHead>
+                    <div>Import</div>
+                    <div className="text-xs text-muted-foreground font-normal">Job</div>
+                  </TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Processing Note</TableHead>
+                  {(rateInboxSubTab === "action-required" || rateInboxSubTab === "carrier-assigned") && (
+                    <TableHead className="w-24"></TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {mockRateInboxItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={rateInboxSubTab === "deleted" ? 9 : 10} className="text-center text-muted-foreground py-8">
                     No rate inbox items found
                   </TableCell>
                 </TableRow>
@@ -1417,39 +1571,41 @@ export function SupplierRatingPlansPage() {
                         <TableCell className="text-sm">{item.importJob || "-"}</TableCell>
                         <TableCell className="text-sm">{item.status || "-"}</TableCell>
                         <TableCell className="text-sm max-w-[150px]">{item.processingNote || "-"}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm" data-testid={`button-actions-${item.id}`}>
-                                Actions <ChevronDown className="ml-1 h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                data-testid={`menu-download-${item.id}`}
-                                onClick={() => toast({ title: "Download", description: "Downloading rates file..." })}
-                              >
-                                Download Rates File
-                              </DropdownMenuItem>
-                              {rateInboxSubTab === "carrier-assigned" && (
-                                <>
-                                  <DropdownMenuItem 
-                                    data-testid={`menu-import-existing-${item.id}`}
-                                    onClick={() => toast({ title: "Import", description: "Import into existing plan..." })}
-                                  >
-                                    Import Into Existing Plan
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    data-testid={`menu-import-new-${item.id}`}
-                                    onClick={() => toast({ title: "Import", description: "Import into new plan..." })}
-                                  >
-                                    Import Into New Plan
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                        {(rateInboxSubTab === "action-required" || rateInboxSubTab === "carrier-assigned") && (
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" data-testid={`button-actions-${item.id}`}>
+                                  Actions <ChevronDown className="ml-1 h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  data-testid={`menu-download-${item.id}`}
+                                  onClick={() => toast({ title: "Download", description: "Downloading rates file..." })}
+                                >
+                                  Download Rates File
+                                </DropdownMenuItem>
+                                {rateInboxSubTab === "carrier-assigned" && (
+                                  <>
+                                    <DropdownMenuItem 
+                                      data-testid={`menu-import-existing-${item.id}`}
+                                      onClick={() => toast({ title: "Import", description: "Import into existing plan..." })}
+                                    >
+                                      Import Into Existing Plan
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      data-testid={`menu-import-new-${item.id}`}
+                                      onClick={() => toast({ title: "Import", description: "Import into new plan..." })}
+                                    >
+                                      Import Into New Plan
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                     
@@ -1459,7 +1615,7 @@ export function SupplierRatingPlansPage() {
                     
                     const expandedRow = (
                       <TableRow key={`${item.id}-expanded`} className="bg-muted/30">
-                        <TableCell colSpan={10} className="p-6">
+                        <TableCell colSpan={rateInboxSubTab === "deleted" ? 9 : 10} className="p-6">
                           <div className="grid grid-cols-2 gap-8">
                             {/* Email Details */}
                             <div className="space-y-3">
@@ -1523,6 +1679,7 @@ export function SupplierRatingPlansPage() {
               )}
             </TableBody>
           </Table>
+          )}
           <DataTableFooter
             totalItems={mockRateInboxItems.length}
             totalPages={Math.ceil(mockRateInboxItems.length / rateInboxPageSize)}
