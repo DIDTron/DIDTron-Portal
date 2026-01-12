@@ -66,6 +66,7 @@ import { SoftswitchCarriersPage } from "./softswitch";
 import { CustomerRatingPlansPage, SupplierRatingPlansPage, PeriodExceptionsPage, CDRReratingPage, RatingZoneNamePage } from "./softswitch-rating";
 import { CarrierBalancesPage, TwentyFourHourSpendPage, BalanceTotalsPage } from "./softswitch-balance";
 import RatingPlanDetailPage from "./softswitch-rating-plan-detail";
+import ImportJobDetailPage from "./import-job-detail";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
 import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization, GlobalSettingsAZDatabase } from "./global-settings";
@@ -311,6 +312,7 @@ export default function AdminLayout() {
                 <Route path="/admin/softswitch/rating/period-exceptions" component={PeriodExceptionsPage} />
                 <Route path="/admin/softswitch/rating/cdr-rerating" component={CDRReratingPage} />
                 <Route path="/admin/softswitch/rating/zone-name" component={RatingZoneNamePage} />
+                <Route path="/admin/softswitch/rating/import-job/:jobId" component={ImportJobDetailPage} />
                 <Route path="/admin/softswitch/routing">{() => <PlaceholderPage title="Routing" />}</Route>
                 <Route path="/admin/softswitch/balance/carrier-balances" component={CarrierBalancesPage} />
                 <Route path="/admin/softswitch/balance/24h-spend" component={TwentyFourHourSpendPage} />
