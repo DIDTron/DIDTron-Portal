@@ -17,13 +17,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  FixedColumnTable,
+  FixedColumnTableHeader,
+  FixedColumnTableBody,
+  FixedColumnTableRow,
+  FixedColumnTableHead,
+  FixedColumnTableCell,
+} from "@/components/ui/fixed-column-table";
 import { Plus, Building2, Pencil, Trash2, ChevronLeft, Lightbulb, X, Save } from "lucide-react";
 import { Link } from "wouter";
 import type { Carrier, Currency } from "@shared/schema";
@@ -501,61 +501,63 @@ export default function CarriersPage() {
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
           ) : carriers && carriers.length > 0 ? (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Currency</TableHead>
-                    <TableHead className="text-right">Customer Balance</TableHead>
-                    <TableHead className="text-right">Supplier Balance</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-24">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <FixedColumnTable>
+                <FixedColumnTableHeader>
+                  <FixedColumnTableRow>
+                    <FixedColumnTableHead fixed={true}>Name</FixedColumnTableHead>
+                    <FixedColumnTableHead>Type</FixedColumnTableHead>
+                    <FixedColumnTableHead>Currency</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-right">Customer Balance</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-right">Supplier Balance</FixedColumnTableHead>
+                    <FixedColumnTableHead>Status</FixedColumnTableHead>
+                    <FixedColumnTableHead>Actions</FixedColumnTableHead>
+                  </FixedColumnTableRow>
+                </FixedColumnTableHeader>
+                <FixedColumnTableBody>
                   {paginatedCarriers.map((carrier) => (
-                    <TableRow 
+                    <FixedColumnTableRow 
                       key={carrier.id} 
                       data-testid={`row-carrier-${carrier.id}`}
                     >
-                      <TableCell className="font-medium">
+                      <FixedColumnTableCell fixed={true} className="font-medium">
                         <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
                           {carrier.name}
                         </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          carrier.partnerType === "bilateral" ? "default" :
-                          carrier.partnerType === "supplier" ? "secondary" : "outline"
-                        }>
+                      </FixedColumnTableCell>
+                      <FixedColumnTableCell>
+                        <Badge 
+                          className={
+                            carrier.partnerType === "bilateral" ? "bg-cyan-500 text-white" :
+                            carrier.partnerType === "supplier" ? "bg-yellow-500 text-white" : "bg-blue-500 text-white"
+                          }
+                        >
                           {carrier.partnerType === "bilateral" ? "Bilateral" :
                            carrier.partnerType === "supplier" ? "Supplier" : "Customer"}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
+                      </FixedColumnTableCell>
+                      <FixedColumnTableCell>
                         {currencies?.find(c => c.id === carrier.primaryCurrencyId)?.code || "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
+                      </FixedColumnTableCell>
+                      <FixedColumnTableCell className="text-right font-mono">
                         {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") ? (
-                          <span className={parseFloat(carrier.customerBalance || "0") >= 0 ? "text-green-600" : "text-red-600"}>
+                          <span className={`inline-block px-2 py-1 rounded text-white ${parseFloat(carrier.customerBalance || "0") >= 0 ? "bg-emerald-500" : "bg-rose-500"}`}>
                             {parseFloat(carrier.customerBalance || "0").toFixed(2)}
                           </span>
                         ) : "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
+                      </FixedColumnTableCell>
+                      <FixedColumnTableCell className="text-right font-mono">
                         {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") ? (
-                          <span className={parseFloat(carrier.supplierBalance || "0") <= 0 ? "text-green-600" : "text-red-600"}>
+                          <span className={`inline-block px-2 py-1 rounded text-white ${parseFloat(carrier.supplierBalance || "0") >= 0 ? "bg-emerald-500" : "bg-rose-500"}`}>
                             {parseFloat(carrier.supplierBalance || "0").toFixed(2)}
                           </span>
                         ) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={carrier.status === "active" ? "default" : "secondary"}>
+                      </FixedColumnTableCell>
+                      <FixedColumnTableCell>
+                        <Badge className={carrier.status === "active" ? "bg-green-500 text-white" : "bg-gray-400 text-white"}>
                           {carrier.status}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
+                      </FixedColumnTableCell>
+                      <FixedColumnTableCell>
                         <div className="flex items-center gap-1">
                           <Button size="icon" variant="ghost" onClick={() => handleEdit(carrier)} data-testid={`button-edit-${carrier.id}`}>
                             <Pencil className="h-4 w-4" />
@@ -564,11 +566,11 @@ export default function CarriersPage() {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </FixedColumnTableCell>
+                    </FixedColumnTableRow>
                   ))}
-                </TableBody>
-              </Table>
+                </FixedColumnTableBody>
+              </FixedColumnTable>
               <DataTableFooter
                 currentPage={currentPage}
                 totalPages={totalPages}
