@@ -196,9 +196,34 @@ export default function InterconnectDetailPage() {
 
   const [newService, setNewService] = useState({
     name: "",
-    customerRatingPlan: "",
-    routingPlan: "",
-    capacity: "unrestricted",
+    ratingPlanId: "",
+    timeClass: "AnyDay",
+    capacityMode: "unrestricted" as "unrestricted" | "capped",
+    capacityLimit: "",
+    allowTranscoding: false,
+    enforcementPolicy: "",
+    routingMethod: "routing_plan" as "routing_plan" | "route_to_interconnect",
+    routingPlanId: "",
+    routeToInterconnectId: "",
+    useTranslationFromSupplier: false,
+    originationTranslation: "",
+    destinationTranslation: "",
+    originationMatchType: "any" as "any" | "define_matches" | "assign_list",
+    originationIncludeExclude: "including" as "including" | "excluding",
+    originationMatches: "",
+    originationMinDigits: "0",
+    originationMaxDigits: "0",
+    originationMatchListId: "",
+    destinationMatchType: "any" as "any" | "define_matches" | "assign_list",
+    destinationIncludeExclude: "including" as "including" | "excluding",
+    destinationMatches: "",
+    destinationMinDigits: "0",
+    destinationMaxDigits: "0",
+    destinationMatchListId: "",
+    originationBlacklistId: "",
+    originationExceptionsId: "",
+    destinationBlacklistId: "",
+    destinationExceptionsId: "",
   });
 
   const [newIP, setNewIP] = useState({
@@ -626,20 +651,95 @@ export default function InterconnectDetailPage() {
     }
   };
 
+  const createServiceMutation = useMutation({
+    mutationFn: async () => {
+      const serviceData = {
+        name: newService.name,
+        carrierId: carrierId,
+        interconnectId: interconnectId,
+        ratingPlanId: newService.ratingPlanId || null,
+        routingPlanId: newService.routingPlanId || null,
+        timeClass: newService.timeClass,
+        capacityMode: newService.capacityMode,
+        capacityLimit: newService.capacityMode === "capped" ? parseInt(newService.capacityLimit) || null : null,
+        allowTranscoding: newService.allowTranscoding,
+        enforcementPolicy: newService.enforcementPolicy || null,
+        routingMethod: newService.routingMethod,
+        routeToInterconnectId: newService.routingMethod === "route_to_interconnect" ? newService.routeToInterconnectId || null : null,
+        useTranslationFromSupplier: newService.useTranslationFromSupplier,
+        originationTranslation: newService.originationTranslation || null,
+        destinationTranslation: newService.destinationTranslation || null,
+        originationMatchType: newService.originationMatchType,
+        originationMatchListId: newService.originationMatchType === "assign_list" ? newService.originationMatchListId || null : null,
+        originationMatchConfig: newService.originationMatchType === "define_matches" ? {
+          includeExclude: newService.originationIncludeExclude,
+          matches: newService.originationMatches,
+          minDigits: parseInt(newService.originationMinDigits) || 0,
+          maxDigits: parseInt(newService.originationMaxDigits) || 0,
+        } : null,
+        destinationMatchType: newService.destinationMatchType,
+        destinationMatchListId: newService.destinationMatchType === "assign_list" ? newService.destinationMatchListId || null : null,
+        destinationMatchConfig: newService.destinationMatchType === "define_matches" ? {
+          includeExclude: newService.destinationIncludeExclude,
+          matches: newService.destinationMatches,
+          minDigits: parseInt(newService.destinationMinDigits) || 0,
+          maxDigits: parseInt(newService.destinationMaxDigits) || 0,
+        } : null,
+        originationBlacklistId: newService.originationBlacklistId || null,
+        originationExceptionsId: newService.originationExceptionsId || null,
+        destinationBlacklistId: newService.destinationBlacklistId || null,
+        destinationExceptionsId: newService.destinationExceptionsId || null,
+      };
+      const res = await apiRequest("POST", `/api/carriers/${carrierId}/services`, serviceData);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "services"] });
+      setShowAddServiceDialog(false);
+      resetNewService();
+      toast({ title: "Service added successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create service", variant: "destructive" });
+    },
+  });
+
+  const resetNewService = () => {
+    setNewService({
+      name: "",
+      ratingPlanId: "",
+      timeClass: "AnyDay",
+      capacityMode: "unrestricted",
+      capacityLimit: "",
+      allowTranscoding: false,
+      enforcementPolicy: "",
+      routingMethod: "routing_plan",
+      routingPlanId: "",
+      routeToInterconnectId: "",
+      useTranslationFromSupplier: false,
+      originationTranslation: "",
+      destinationTranslation: "",
+      originationMatchType: "any",
+      originationIncludeExclude: "including",
+      originationMatches: "",
+      originationMinDigits: "0",
+      originationMaxDigits: "0",
+      originationMatchListId: "",
+      destinationMatchType: "any",
+      destinationIncludeExclude: "including",
+      destinationMatches: "",
+      destinationMinDigits: "0",
+      destinationMaxDigits: "0",
+      destinationMatchListId: "",
+      originationBlacklistId: "",
+      originationExceptionsId: "",
+      destinationBlacklistId: "",
+      destinationExceptionsId: "",
+    });
+  };
+
   const handleAddService = () => {
-    const newSvc: Service = {
-      id: crypto.randomUUID(),
-      name: newService.name,
-      customerRatingPlan: newService.customerRatingPlan,
-      routingPlan: newService.routingPlan,
-      currency: interconnect?.currencyCode || "USD",
-      capacity: newService.capacity,
-      status: "active",
-    };
-    setServices([...services, newSvc]);
-    setShowAddServiceDialog(false);
-    setNewService({ name: "", customerRatingPlan: "", routingPlan: "", capacity: "unrestricted" });
-    toast({ title: "Service added successfully" });
+    createServiceMutation.mutate();
   };
 
   const handleDeleteService = (id: string) => {
@@ -1942,76 +2042,429 @@ export default function InterconnectDetailPage() {
         </div>
       </Tabs>
 
-      {/* Add Service Dialog */}
+      {/* Add Service Dialog - Digitalk Style */}
       <Dialog open={showAddServiceDialog} onOpenChange={setShowAddServiceDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Service</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-              <span className="text-sm font-medium">Name</span>
-              <Input
-                value={newService.name}
-                onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                placeholder="Enter service name"
-                data-testid="input-service-name"
-              />
+          <div className="grid grid-cols-2 gap-8 py-4">
+            {/* Left Column - Service Details */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm border-b pb-2">Service Details</h4>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Name</span>
+                <Input
+                  value={newService.name}
+                  onChange={(e) => setNewService({ ...newService, name: e.target.value })}
+                  placeholder="Enter service name"
+                  data-testid="input-service-name"
+                />
+              </div>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Customer Rating Plan</span>
+                <Select
+                  value={newService.ratingPlanId}
+                  onValueChange={(v) => setNewService({ ...newService, ratingPlanId: v })}
+                >
+                  <SelectTrigger data-testid="select-rating-plan">
+                    <SelectValue placeholder="Select rating plan..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Standard Rate Plan</SelectItem>
+                    <SelectItem value="premium">Premium Rate Plan</SelectItem>
+                    <SelectItem value="wholesale">Wholesale Rate Plan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Time Class</span>
+                <Select
+                  value={newService.timeClass}
+                  onValueChange={(v) => setNewService({ ...newService, timeClass: v })}
+                >
+                  <SelectTrigger data-testid="select-time-class">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AnyDay">AnyDay</SelectItem>
+                    <SelectItem value="Weekday">Weekday</SelectItem>
+                    <SelectItem value="Weekend">Weekend</SelectItem>
+                    <SelectItem value="PeakHours">Peak Hours</SelectItem>
+                    <SelectItem value="OffPeak">Off Peak</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Capacity</span>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={newService.capacityLimit}
+                    onChange={(e) => setNewService({ ...newService, capacityLimit: e.target.value, capacityMode: e.target.value ? "capped" : "unrestricted" })}
+                    placeholder="Channels"
+                    className="w-24"
+                    disabled={newService.capacityMode === "unrestricted"}
+                    data-testid="input-capacity-limit"
+                  />
+                  <label className="flex items-center gap-1 text-sm">
+                    <Checkbox
+                      checked={newService.capacityMode === "unrestricted"}
+                      onCheckedChange={(checked) => setNewService({ ...newService, capacityMode: checked ? "unrestricted" : "capped", capacityLimit: checked ? "" : newService.capacityLimit })}
+                      data-testid="checkbox-unrestricted"
+                    />
+                    Unrestricted
+                  </label>
+                </div>
+              </div>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Allow Transcoding</span>
+                <Select
+                  value={newService.allowTranscoding ? "yes" : "no"}
+                  onValueChange={(v) => setNewService({ ...newService, allowTranscoding: v === "yes" })}
+                >
+                  <SelectTrigger data-testid="select-transcoding">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="yes">Yes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Enforcement Policy</span>
+                <Select
+                  value={newService.enforcementPolicy || "none"}
+                  onValueChange={(v) => setNewService({ ...newService, enforcementPolicy: v === "none" ? "" : v })}
+                >
+                  <SelectTrigger data-testid="select-enforcement">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="strict">Strict</SelectItem>
+                    <SelectItem value="relaxed">Relaxed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Routing Section */}
+              <h4 className="font-semibold text-sm border-b pb-2 mt-6">Routing</h4>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Routing Method</span>
+                <Select
+                  value={newService.routingMethod}
+                  onValueChange={(v: "routing_plan" | "route_to_interconnect") => setNewService({ ...newService, routingMethod: v })}
+                >
+                  <SelectTrigger data-testid="select-routing-method">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="routing_plan">Routing Plan</SelectItem>
+                    <SelectItem value="route_to_interconnect">Route to Interconnect</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {newService.routingMethod === "routing_plan" && (
+                <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Routing Plan</span>
+                  <Select
+                    value={newService.routingPlanId}
+                    onValueChange={(v) => setNewService({ ...newService, routingPlanId: v })}
+                  >
+                    <SelectTrigger data-testid="select-routing-plan">
+                      <SelectValue placeholder="Select routing plan..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="lcr">LCR Routing</SelectItem>
+                      <SelectItem value="quality">Quality Routing</SelectItem>
+                      <SelectItem value="direct">Direct Routing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {newService.routingMethod === "route_to_interconnect" && (
+                <>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Carrier Interconnect</span>
+                    <Select
+                      value={newService.routeToInterconnectId}
+                      onValueChange={(v) => setNewService({ ...newService, routeToInterconnectId: v })}
+                    >
+                      <SelectTrigger data-testid="select-carrier-interconnect">
+                        <SelectValue placeholder="Select supplier interconnect..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="placeholder">Select from available suppliers</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground"></span>
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={newService.useTranslationFromSupplier}
+                        onCheckedChange={(checked) => setNewService({ ...newService, useTranslationFromSupplier: !!checked })}
+                        data-testid="checkbox-use-translation"
+                      />
+                      Use Translation From Supplier
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Origination Translation</span>
+                    <Input
+                      value={newService.originationTranslation}
+                      onChange={(e) => setNewService({ ...newService, originationTranslation: e.target.value })}
+                      placeholder="%"
+                      data-testid="input-orig-translation"
+                    />
+                  </div>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Destination Translation</span>
+                    <Input
+                      value={newService.destinationTranslation}
+                      onChange={(e) => setNewService({ ...newService, destinationTranslation: e.target.value })}
+                      placeholder="%"
+                      data-testid="input-dest-translation"
+                    />
+                  </div>
+                </>
+              )}
             </div>
-            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-              <span className="text-sm font-medium">Rating Plan</span>
-              <Select
-                value={newService.customerRatingPlan}
-                onValueChange={(v) => setNewService({ ...newService, customerRatingPlan: v })}
-              >
-                <SelectTrigger data-testid="select-rating-plan">
-                  <SelectValue placeholder="Select rating plan..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="standard">Standard Rate Plan</SelectItem>
-                  <SelectItem value="premium">Premium Rate Plan</SelectItem>
-                  <SelectItem value="wholesale">Wholesale Rate Plan</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-              <span className="text-sm font-medium">Routing Plan</span>
-              <Select
-                value={newService.routingPlan}
-                onValueChange={(v) => setNewService({ ...newService, routingPlan: v })}
-              >
-                <SelectTrigger data-testid="select-routing-plan">
-                  <SelectValue placeholder="Select routing plan..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lcr">LCR Routing</SelectItem>
-                  <SelectItem value="quality">Quality Routing</SelectItem>
-                  <SelectItem value="direct">Direct Routing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-              <span className="text-sm font-medium">Capacity</span>
-              <Select
-                value={newService.capacity}
-                onValueChange={(v) => setNewService({ ...newService, capacity: v })}
-              >
-                <SelectTrigger data-testid="select-service-capacity">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unrestricted">Unrestricted</SelectItem>
-                  <SelectItem value="10">10 Channels</SelectItem>
-                  <SelectItem value="50">50 Channels</SelectItem>
-                  <SelectItem value="100">100 Channels</SelectItem>
-                </SelectContent>
-              </Select>
+
+            {/* Right Column - Matching */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm border-b pb-2">Origination Matching</h4>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Origination</span>
+                <Select
+                  value={newService.originationMatchType}
+                  onValueChange={(v: "any" | "define_matches" | "assign_list") => setNewService({ ...newService, originationMatchType: v })}
+                >
+                  <SelectTrigger data-testid="select-orig-match-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any</SelectItem>
+                    <SelectItem value="define_matches">Define Matches</SelectItem>
+                    <SelectItem value="assign_list">Assign List</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {newService.originationMatchType === "define_matches" && (
+                <>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground"></span>
+                    <Select
+                      value={newService.originationIncludeExclude}
+                      onValueChange={(v: "including" | "excluding") => setNewService({ ...newService, originationIncludeExclude: v })}
+                    >
+                      <SelectTrigger data-testid="select-orig-include-exclude">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="including">Including</SelectItem>
+                        <SelectItem value="excluding">Excluding</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-[130px_1fr] items-start gap-2">
+                    <span className="text-sm text-muted-foreground pt-2">Matches</span>
+                    <textarea
+                      value={newService.originationMatches}
+                      onChange={(e) => setNewService({ ...newService, originationMatches: e.target.value })}
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      placeholder="Enter patterns, one per line"
+                      data-testid="textarea-orig-matches"
+                    />
+                  </div>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Min Digits</span>
+                    <Input
+                      type="number"
+                      value={newService.originationMinDigits}
+                      onChange={(e) => setNewService({ ...newService, originationMinDigits: e.target.value })}
+                      data-testid="input-orig-min-digits"
+                    />
+                  </div>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Max Digits</span>
+                    <Input
+                      type="number"
+                      value={newService.originationMaxDigits}
+                      onChange={(e) => setNewService({ ...newService, originationMaxDigits: e.target.value })}
+                      data-testid="input-orig-max-digits"
+                    />
+                  </div>
+                </>
+              )}
+              {newService.originationMatchType === "assign_list" && (
+                <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Matches</span>
+                  <Select
+                    value={newService.originationMatchListId}
+                    onValueChange={(v) => setNewService({ ...newService, originationMatchListId: v })}
+                  >
+                    <SelectTrigger data-testid="select-orig-match-list">
+                      <SelectValue placeholder="Select match list..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="placeholder">No match lists available</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <h4 className="font-semibold text-sm border-b pb-2 mt-6">Destination Matching</h4>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Destination Matching</span>
+                <Select
+                  value={newService.destinationMatchType}
+                  onValueChange={(v: "any" | "define_matches" | "assign_list") => setNewService({ ...newService, destinationMatchType: v })}
+                >
+                  <SelectTrigger data-testid="select-dest-match-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any</SelectItem>
+                    <SelectItem value="define_matches">Define Matches</SelectItem>
+                    <SelectItem value="assign_list">Assign List</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {newService.destinationMatchType === "define_matches" && (
+                <>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground"></span>
+                    <Select
+                      value={newService.destinationIncludeExclude}
+                      onValueChange={(v: "including" | "excluding") => setNewService({ ...newService, destinationIncludeExclude: v })}
+                    >
+                      <SelectTrigger data-testid="select-dest-include-exclude">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="including">Including</SelectItem>
+                        <SelectItem value="excluding">Excluding</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-[130px_1fr] items-start gap-2">
+                    <span className="text-sm text-muted-foreground pt-2">Matches</span>
+                    <textarea
+                      value={newService.destinationMatches}
+                      onChange={(e) => setNewService({ ...newService, destinationMatches: e.target.value })}
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      placeholder="Enter patterns, one per line"
+                      data-testid="textarea-dest-matches"
+                    />
+                  </div>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Min Digits</span>
+                    <Input
+                      type="number"
+                      value={newService.destinationMinDigits}
+                      onChange={(e) => setNewService({ ...newService, destinationMinDigits: e.target.value })}
+                      data-testid="input-dest-min-digits"
+                    />
+                  </div>
+                  <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Max Digits</span>
+                    <Input
+                      type="number"
+                      value={newService.destinationMaxDigits}
+                      onChange={(e) => setNewService({ ...newService, destinationMaxDigits: e.target.value })}
+                      data-testid="input-dest-max-digits"
+                    />
+                  </div>
+                </>
+              )}
+              {newService.destinationMatchType === "assign_list" && (
+                <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Matches</span>
+                  <Select
+                    value={newService.destinationMatchListId}
+                    onValueChange={(v) => setNewService({ ...newService, destinationMatchListId: v })}
+                  >
+                    <SelectTrigger data-testid="select-dest-match-list">
+                      <SelectValue placeholder="Select match list..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="placeholder">No match lists available</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Blacklisting Section */}
+              <h4 className="font-semibold text-sm border-b pb-2 mt-6">Blacklisting</h4>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Global Blacklist</span>
+                <span className="text-sm font-medium">None</span>
+              </div>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Origination Blacklist</span>
+                <Select
+                  value={newService.originationBlacklistId || "none"}
+                  onValueChange={(v) => setNewService({ ...newService, originationBlacklistId: v === "none" ? "" : v })}
+                >
+                  <SelectTrigger data-testid="select-orig-blacklist">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Origination Exceptions</span>
+                <Select
+                  value={newService.originationExceptionsId || "none"}
+                  onValueChange={(v) => setNewService({ ...newService, originationExceptionsId: v === "none" ? "" : v })}
+                >
+                  <SelectTrigger data-testid="select-orig-exceptions">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Destination Blacklist</span>
+                <Select
+                  value={newService.destinationBlacklistId || "none"}
+                  onValueChange={(v) => setNewService({ ...newService, destinationBlacklistId: v === "none" ? "" : v })}
+                >
+                  <SelectTrigger data-testid="select-dest-blacklist">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-[130px_1fr] items-center gap-2">
+                <span className="text-sm text-muted-foreground">Destination Exceptions</span>
+                <Select
+                  value={newService.destinationExceptionsId || "none"}
+                  onValueChange={(v) => setNewService({ ...newService, destinationExceptionsId: v === "none" ? "" : v })}
+                >
+                  <SelectTrigger data-testid="select-dest-exceptions">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddServiceDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddService} disabled={!newService.name} data-testid="button-save-service">
-              Save
+            <Button variant="outline" onClick={() => { setShowAddServiceDialog(false); resetNewService(); }}>Cancel</Button>
+            <Button onClick={handleAddService} disabled={!newService.name || createServiceMutation.isPending} data-testid="button-save-service">
+              {createServiceMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

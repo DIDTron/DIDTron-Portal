@@ -26,6 +26,7 @@ import {
   insertCarrierAssignmentSchema,
   insertCarrierInterconnectSchema,
   insertCarrierServiceSchema,
+  insertServiceMatchListSchema,
   insertCarrierContactSchema,
   insertCarrierCreditAlertSchema,
   insertRouteSchema,
@@ -6103,6 +6104,48 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete carrier service" });
+    }
+  });
+
+  // Supplier Interconnects - for "Route to Interconnect" dropdown
+  app.get("/api/interconnects/supplier", async (req, res) => {
+    try {
+      const excludeCarrierId = req.query.excludeCarrierId as string | undefined;
+      const interconnects = await storage.getSupplierInterconnects(excludeCarrierId);
+      res.json(interconnects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch supplier interconnects" });
+    }
+  });
+
+  // Customer Rating Plans - for service rating plan dropdown
+  app.get("/api/rating-plans", async (req, res) => {
+    try {
+      const rateCards = await storage.getRateCards("customer");
+      res.json(rateCards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rating plans" });
+    }
+  });
+
+  // Service Match Lists - for "Assign List" dropdown
+  app.get("/api/match-lists", async (req, res) => {
+    try {
+      const matchLists = await storage.getAllServiceMatchLists();
+      res.json(matchLists);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch match lists" });
+    }
+  });
+
+  app.post("/api/match-lists", async (req, res) => {
+    try {
+      const parsed = insertServiceMatchListSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const matchList = await storage.createServiceMatchList(parsed.data);
+      res.status(201).json(matchList);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create match list" });
     }
   });
 

@@ -57,6 +57,10 @@ export const creditTypeEnum = pgEnum("credit_type", ["prepaid", "postpaid"]);
 
 export const capacityModeEnum = pgEnum("capacity_mode", ["unrestricted", "capped"]);
 
+export const serviceRoutingMethodEnum = pgEnum("service_routing_method", ["routing_plan", "route_to_interconnect"]);
+
+export const serviceMatchTypeEnum = pgEnum("service_match_type", ["any", "define_matches", "assign_list"]);
+
 // ==================== BILLING TERMS ====================
 
 export const billingTerms = pgTable("billing_terms", {
@@ -395,6 +399,37 @@ export const carrierServices = pgTable("carrier_services", {
   enforcementPolicy: text("enforcement_policy"),
   scriptForgeId: text("script_forge_id"),
   connexcsServiceId: text("connexcs_service_id"),
+  timeClass: text("time_class").default("AnyDay"),
+  allowTranscoding: boolean("allow_transcoding").default(false),
+  routingMethod: serviceRoutingMethodEnum("routing_method").default("routing_plan"),
+  routeToInterconnectId: varchar("route_to_interconnect_id").references(() => carrierInterconnects.id),
+  useTranslationFromSupplier: boolean("use_translation_from_supplier").default(false),
+  originationTranslation: text("origination_translation"),
+  destinationTranslation: text("destination_translation"),
+  originationMatchType: serviceMatchTypeEnum("origination_match_type").default("any"),
+  originationMatchListId: varchar("origination_match_list_id"),
+  originationMatchConfig: jsonb("origination_match_config"),
+  destinationMatchType: serviceMatchTypeEnum("destination_match_type").default("any"),
+  destinationMatchListId: varchar("destination_match_list_id"),
+  destinationMatchConfig: jsonb("destination_match_config"),
+  originationBlacklistId: varchar("origination_blacklist_id"),
+  originationExceptionsId: varchar("origination_exceptions_id"),
+  destinationBlacklistId: varchar("destination_blacklist_id"),
+  destinationExceptionsId: varchar("destination_exceptions_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const serviceMatchLists = pgTable("service_match_lists", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  matchType: text("match_type").default("origination"),
+  includeExclude: text("include_exclude").default("including"),
+  matches: text("matches").array(),
+  minDigits: integer("min_digits").default(0),
+  maxDigits: integer("max_digits").default(0),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -2814,6 +2849,7 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({ id: tru
 export const insertCarrierSchema = createInsertSchema(carriers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierInterconnectSchema = createInsertSchema(carrierInterconnects).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierServiceSchema = createInsertSchema(carrierServices).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertServiceMatchListSchema = createInsertSchema(serviceMatchLists).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierContactSchema = createInsertSchema(carrierContacts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierCreditAlertSchema = createInsertSchema(carrierCreditAlerts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierAssignmentSchema = createInsertSchema(carrierAssignments).omit({ id: true, createdAt: true });
@@ -2876,6 +2912,8 @@ export type InsertCarrierInterconnect = z.infer<typeof insertCarrierInterconnect
 export type CarrierInterconnect = typeof carrierInterconnects.$inferSelect;
 export type InsertCarrierService = z.infer<typeof insertCarrierServiceSchema>;
 export type CarrierService = typeof carrierServices.$inferSelect;
+export type InsertServiceMatchList = z.infer<typeof insertServiceMatchListSchema>;
+export type ServiceMatchList = typeof serviceMatchLists.$inferSelect;
 export type InsertCarrierContact = z.infer<typeof insertCarrierContactSchema>;
 export type CarrierContact = typeof carrierContacts.$inferSelect;
 export type InsertCarrierCreditAlert = z.infer<typeof insertCarrierCreditAlertSchema>;

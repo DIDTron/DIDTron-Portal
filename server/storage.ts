@@ -91,6 +91,7 @@ import {
   type BillingTerm, type InsertBillingTerm,
   type CarrierInterconnect, type InsertCarrierInterconnect,
   type CarrierService, type InsertCarrierService,
+  type ServiceMatchList, type InsertServiceMatchList,
   type CarrierContact, type InsertCarrierContact,
   type CarrierCreditAlert, type InsertCarrierCreditAlert,
   type InterconnectIpAddress, type InsertInterconnectIpAddress,
@@ -111,6 +112,7 @@ import {
   carriers as carriersTable,
   carrierInterconnects as carrierInterconnectsTable,
   carrierServices as carrierServicesTable,
+  serviceMatchLists as serviceMatchListsTable,
   carrierContacts as carrierContactsTable,
   carrierCreditAlerts as carrierCreditAlertsTable,
   carrierAssignments as carrierAssignmentsTable,
@@ -180,7 +182,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, ilike } from "drizzle-orm";
+import { eq, and, or, ne, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -309,6 +311,14 @@ export interface IStorage {
   createCarrierService(service: InsertCarrierService): Promise<CarrierService>;
   updateCarrierService(id: string, data: Partial<InsertCarrierService>): Promise<CarrierService | undefined>;
   deleteCarrierService(id: string): Promise<boolean>;
+  getSupplierInterconnects(excludeCarrierId?: string): Promise<CarrierInterconnect[]>;
+
+  // Service Match Lists
+  getAllServiceMatchLists(): Promise<ServiceMatchList[]>;
+  getServiceMatchList(id: string): Promise<ServiceMatchList | undefined>;
+  createServiceMatchList(matchList: InsertServiceMatchList): Promise<ServiceMatchList>;
+  updateServiceMatchList(id: string, data: Partial<InsertServiceMatchList>): Promise<ServiceMatchList | undefined>;
+  deleteServiceMatchList(id: string): Promise<boolean>;
 
   // Carrier Contacts
   getCarrierContacts(carrierId: string): Promise<CarrierContact[]>;
@@ -1639,6 +1649,51 @@ export class MemStorage implements IStorage {
 
   async deleteCarrierService(id: string): Promise<boolean> {
     const results = await db.delete(carrierServicesTable).where(eq(carrierServicesTable.id, id)).returning();
+    return results.length > 0;
+  }
+
+  async getSupplierInterconnects(excludeCarrierId?: string): Promise<CarrierInterconnect[]> {
+    const allInterconnects = await db
+      .select({
+        interconnect: carrierInterconnectsTable,
+        carrier: carriersTable,
+      })
+      .from(carrierInterconnectsTable)
+      .innerJoin(carriersTable, eq(carrierInterconnectsTable.carrierId, carriersTable.id))
+      .where(
+        and(
+          or(
+            eq(carriersTable.partnerType, "supplier"),
+            eq(carriersTable.partnerType, "bilateral")
+          ),
+          excludeCarrierId ? ne(carriersTable.id, excludeCarrierId) : undefined
+        )
+      );
+    return allInterconnects.map(row => row.interconnect);
+  }
+
+  // Service Match Lists - Persisted to Database
+  async getAllServiceMatchLists(): Promise<ServiceMatchList[]> {
+    return await db.select().from(serviceMatchListsTable);
+  }
+
+  async getServiceMatchList(id: string): Promise<ServiceMatchList | undefined> {
+    const results = await db.select().from(serviceMatchListsTable).where(eq(serviceMatchListsTable.id, id));
+    return results[0];
+  }
+
+  async createServiceMatchList(matchList: InsertServiceMatchList): Promise<ServiceMatchList> {
+    const results = await db.insert(serviceMatchListsTable).values(matchList).returning();
+    return results[0];
+  }
+
+  async updateServiceMatchList(id: string, data: Partial<InsertServiceMatchList>): Promise<ServiceMatchList | undefined> {
+    const results = await db.update(serviceMatchListsTable).set({ ...data, updatedAt: new Date() }).where(eq(serviceMatchListsTable.id, id)).returning();
+    return results[0];
+  }
+
+  async deleteServiceMatchList(id: string): Promise<boolean> {
+    const results = await db.delete(serviceMatchListsTable).where(eq(serviceMatchListsTable.id, id)).returning();
     return results.length > 0;
   }
 
