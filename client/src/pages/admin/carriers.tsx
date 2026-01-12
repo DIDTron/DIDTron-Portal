@@ -24,7 +24,7 @@ import {
   FixedColumnTableHead,
   FixedColumnTableCell,
 } from "@/components/ui/fixed-column-table";
-import { Plus, Building2, Pencil, Trash2, ChevronLeft, Lightbulb, X, Save } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2, ChevronLeft, Lightbulb, X, Save, ChevronUp, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import type { Carrier, Currency } from "@shared/schema";
 
@@ -34,6 +34,7 @@ export default function CarriersPage() {
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   
   const [formData, setFormData] = useState({
     name: "",
@@ -59,6 +60,11 @@ export default function CarriersPage() {
     queryKey: ["/api/currencies"],
   });
 
+  const sortedCarriers = [...(carriers || [])].sort((a, b) => {
+    const compare = a.name.localeCompare(b.name);
+    return sortOrder === "asc" ? compare : -compare;
+  });
+
   const {
     currentPage,
     pageSize,
@@ -67,7 +73,7 @@ export default function CarriersPage() {
     paginatedItems: paginatedCarriers,
     onPageChange,
     onPageSizeChange,
-  } = useDataTablePagination(carriers || []);
+  } = useDataTablePagination(sortedCarriers);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -504,25 +510,34 @@ export default function CarriersPage() {
               <FixedColumnTable>
                 <FixedColumnTableHeader>
                   <FixedColumnTableRow>
-                    <FixedColumnTableHead fixed={true} className="border-b-0">Carrier</FixedColumnTableHead>
-                    <FixedColumnTableHead className="border-b-0">Type</FixedColumnTableHead>
-                    <FixedColumnTableHead className="text-center bg-[#00a0df] border-b-0" colSpan={2}>Customer</FixedColumnTableHead>
-                    <FixedColumnTableHead className="text-center bg-[#e91e63] border-b-0" colSpan={2}>Supplier</FixedColumnTableHead>
-                    <FixedColumnTableHead className="text-center bg-[#009688] border-b-0" colSpan={2}>Bilateral</FixedColumnTableHead>
-                    <FixedColumnTableHead className="border-b-0">Account Manager</FixedColumnTableHead>
-                    <FixedColumnTableHead className="border-b-0"></FixedColumnTableHead>
+                    <FixedColumnTableHead 
+                      fixed={true} 
+                      rowSpan={2}
+                      className="cursor-pointer select-none"
+                      onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                    >
+                      <div className="flex items-center gap-1">
+                        Carrier
+                        {sortOrder === "asc" ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                      </div>
+                    </FixedColumnTableHead>
+                    <FixedColumnTableHead rowSpan={2}>Type</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-center text-white bg-[#00a0df] border-b-0" colSpan={2}>Customer</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-center text-white bg-[#e91e63] border-b-0" colSpan={2}>Supplier</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-center text-white bg-[#009688] border-b-0">Bilateral</FixedColumnTableHead>
+                    <FixedColumnTableHead rowSpan={2}>Account Manager</FixedColumnTableHead>
+                    <FixedColumnTableHead rowSpan={2}></FixedColumnTableHead>
                   </FixedColumnTableRow>
                   <FixedColumnTableRow>
-                    <FixedColumnTableHead fixed={true}></FixedColumnTableHead>
-                    <FixedColumnTableHead></FixedColumnTableHead>
                     <FixedColumnTableHead>Credit Type</FixedColumnTableHead>
                     <FixedColumnTableHead>Balance</FixedColumnTableHead>
                     <FixedColumnTableHead>Credit Type</FixedColumnTableHead>
                     <FixedColumnTableHead>Balance</FixedColumnTableHead>
                     <FixedColumnTableHead>Balance</FixedColumnTableHead>
-                    <FixedColumnTableHead></FixedColumnTableHead>
-                    <FixedColumnTableHead></FixedColumnTableHead>
-                    <FixedColumnTableHead></FixedColumnTableHead>
                   </FixedColumnTableRow>
                 </FixedColumnTableHeader>
                 <FixedColumnTableBody>

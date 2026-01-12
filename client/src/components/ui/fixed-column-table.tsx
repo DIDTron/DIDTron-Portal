@@ -27,6 +27,8 @@ interface FixedColumnTableHeadProps {
   className?: string;
   fixed?: boolean;
   colSpan?: number;
+  rowSpan?: number;
+  onClick?: () => void;
 }
 
 interface FixedColumnTableCellProps {
@@ -101,14 +103,17 @@ const FixedColumnTableRow = React.forwardRef<HTMLTableRowElement, FixedColumnTab
 FixedColumnTableRow.displayName = "FixedColumnTableRow";
 
 const FixedColumnTableHead = React.forwardRef<HTMLTableCellElement, FixedColumnTableHeadProps>(
-  ({ children, className, fixed = false, colSpan }, ref) => {
+  ({ children, className, fixed = false, colSpan, rowSpan, onClick }, ref) => {
     return (
       <th 
         ref={ref}
         colSpan={colSpan}
+        rowSpan={rowSpan}
+        onClick={onClick}
         className={cn(
           "px-4 py-3 text-left font-medium whitespace-nowrap",
           fixed && "sticky left-0 z-20 bg-[#3d4f5f] after:absolute after:right-0 after:top-0 after:h-full after:w-px after:bg-white/20",
+          onClick && "cursor-pointer",
           className
         )}
       >
