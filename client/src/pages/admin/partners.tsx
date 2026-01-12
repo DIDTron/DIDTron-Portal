@@ -341,14 +341,14 @@ export default function PartnersPage() {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label>{formData.customerCreditType === "postpaid" ? "Postpaid" : "Prepaid"} Credit Limit</Label>
+                      <Label>Postpaid Credit Limit</Label>
                       <div className="flex items-center gap-3">
                         <Input
                           type="number"
                           step="0.01"
                           value={formData.customerCreditLimit}
                           onChange={(e) => setFormData({ ...formData, customerCreditLimit: e.target.value })}
-                          disabled={formData.customerCreditUnlimited}
+                          disabled={formData.customerCreditType === "prepaid" || formData.customerCreditUnlimited}
                           className="w-32"
                           data-testid="input-customer-credit-limit"
                         />
@@ -357,6 +357,7 @@ export default function PartnersPage() {
                             id="customerCreditUnlimited"
                             checked={formData.customerCreditUnlimited}
                             onCheckedChange={(checked) => setFormData({ ...formData, customerCreditUnlimited: !!checked })}
+                            disabled={formData.customerCreditType === "prepaid"}
                             data-testid="checkbox-customer-unlimited"
                           />
                           <Label htmlFor="customerCreditUnlimited" className="text-sm font-normal">Unlimited</Label>
@@ -406,14 +407,14 @@ export default function PartnersPage() {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label>{formData.supplierCreditType === "postpaid" ? "Postpaid" : "Prepaid"} Credit Limit</Label>
+                      <Label>Postpaid Credit Limit</Label>
                       <div className="flex items-center gap-3">
                         <Input
                           type="number"
                           step="0.01"
                           value={formData.supplierCreditLimit}
                           onChange={(e) => setFormData({ ...formData, supplierCreditLimit: e.target.value })}
-                          disabled={formData.supplierCreditUnlimited}
+                          disabled={formData.supplierCreditType === "prepaid" || formData.supplierCreditUnlimited}
                           className="w-32"
                           data-testid="input-supplier-credit-limit"
                         />
@@ -422,6 +423,7 @@ export default function PartnersPage() {
                             id="supplierCreditUnlimited"
                             checked={formData.supplierCreditUnlimited}
                             onCheckedChange={(checked) => setFormData({ ...formData, supplierCreditUnlimited: !!checked })}
+                            disabled={formData.supplierCreditType === "prepaid"}
                             data-testid="checkbox-supplier-unlimited"
                           />
                           <Label htmlFor="supplierCreditUnlimited" className="text-sm font-normal">Unlimited</Label>
