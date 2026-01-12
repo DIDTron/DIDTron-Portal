@@ -995,6 +995,7 @@ async function seedBillingTerms() {
 (async () => {
   await configureSessionMiddleware();
   await seedSuperAdmin();
+  await storage.seedReferenceDataToPostgres(); // Seed customer categories/groups to PostgreSQL
   await seedDocumentation();
   await seedExperienceManager();
   await seedIntegrations();

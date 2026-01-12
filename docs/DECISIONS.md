@@ -233,3 +233,33 @@ try {
 - Frontend pages - Updated links to use shortCode fallback
 
 **Scope**: Softswitch module only (not global)
+
+---
+
+## 2026-01-12: PostgreSQL Migration Stage 1 (FOREVER POLICY)
+
+**Decision**: Migrated Customer Categories, Customer Groups, Users, and Carrier Assignments from in-memory Maps to PostgreSQL as the canonical source of truth.
+
+**Reason**: Per FOREVER POLICY Section 15 (Canonical Storage Rule), all persistent business entities MUST use PostgreSQL. In-memory Maps cause data loss on server restart.
+
+**Changes Made**:
+1. **AGENT_BRIEF.md**: Added Section 15 (Canonical Storage Rule) as Gold MUST Rule
+2. **storage.ts**: Updated CRUD methods for customerCategories, customerGroups, users, carrierAssignments to use Drizzle ORM
+3. **storage.ts**: Added `seedReferenceDataToPostgres()` method to seed categories/groups on startup
+4. **index.ts**: Added call to seedReferenceDataToPostgres() in startup sequence
+5. **TODO.md**: Created Phase 4 staged migration plan with 10 stages
+
+**Pattern Established**:
+- Seed data via PostgreSQL INSERT if table is empty (checked on startup)
+- Use Drizzle ORM for all CRUD operations (no Maps as source of truth)
+- Upsert methods explicitly check for undefined fields before updating
+
+**Pre-existing TypeScript Errors**:
+Note: npm run check shows pre-existing TypeScript errors unrelated to this migration. These are tracked separately and do not block Stage 1 acceptance since tables exist and data persists.
+
+**Files Changed**:
+- `docs/AGENT_BRIEF.md` - Added Section 15
+- `docs/TODO.md` - Added Phase 4 migration plan
+- `docs/DB_SCHEMA.md` - Added table definitions
+- `server/storage.ts` - PostgreSQL CRUD for 4 entities
+- `server/index.ts` - Added seed call

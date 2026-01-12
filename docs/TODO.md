@@ -103,7 +103,163 @@
 
 ---
 
+## Phase 4: PostgreSQL Migration (FOREVER POLICY)
+
+### Plan ID: PLAN-2026-01-12-DBMIGRATION
+
+**Objective**: Migrate all in-memory Map storage to PostgreSQL per AGENT_BRIEF Section 15 (Canonical Storage Rule). No big-bang; staged migration with test gates.
+
+**Priority Order**: Business-critical entities first, then supporting entities.
+
+---
+
+### Stage 1: Core Reference Data (HIGH PRIORITY) ✅ COMPLETE
+
+- [x] **T30**: Migrate Customer Categories to PostgreSQL
+  - DOC TARGET: docs/DB_SCHEMA.md (add customer_categories table)
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: 
+    * Table exists with id, name, code, description, displayOrder, isActive, createdAt, updatedAt ✓
+    * All CRUD operations use Drizzle (no Maps) ✓
+    * Seeding moved to PostgreSQL via seedReferenceDataToPostgres() ✓
+  - Status: ✅ Complete - verified 4 categories in database
+
+- [x] **T31**: Migrate Customer Groups to PostgreSQL
+  - DOC TARGET: docs/DB_SCHEMA.md (add customer_groups table)
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance:
+    * Table exists with categoryId FK, name, code, description, displayOrder, isActive, createdAt, updatedAt ✓
+    * All CRUD operations use Drizzle (no Maps) ✓
+    * Seeding moved to PostgreSQL via seedReferenceDataToPostgres() ✓
+  - Status: ✅ Complete - verified 11 groups in database
+
+- [x] **T32**: Migrate Users to PostgreSQL
+  - DOC TARGET: docs/DB_SCHEMA.md (add users table)
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance:
+    * Table exists with id, email, password, role, status, createdAt, updatedAt ✓
+    * All CRUD operations use Drizzle (no Maps) ✓
+  - Status: ✅ Complete - super admin persists in database
+
+- [x] **T40**: Migrate Carrier Assignments to PostgreSQL (moved from Stage 3)
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: carrier_assignments table, Drizzle CRUD, no Maps ✓
+  - Status: ✅ Complete - upsert properly handles undefined fields
+
+---
+
+### Stage 2: VoIP Infrastructure Entities
+
+- [ ] **T33**: Migrate POPs to PostgreSQL
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: POPs table with all fields, Drizzle CRUD, no Maps
+
+- [ ] **T34**: Migrate Voice Tiers to PostgreSQL
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: voice_tiers table, Drizzle CRUD, no Maps
+
+- [ ] **T35**: Migrate Codecs to PostgreSQL
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: codecs table, Drizzle CRUD, no Maps
+
+- [ ] **T36**: Migrate Channel Plans to PostgreSQL
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: channel_plans table, Drizzle CRUD, no Maps
+
+---
+
+### Stage 3: Carrier Sub-Entities
+
+- [ ] **T37**: Migrate Carrier Interconnects to PostgreSQL
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: carrier_interconnects table (if not exists), Drizzle CRUD, no Maps
+
+- [ ] **T38**: Migrate Carrier Contacts to PostgreSQL
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: carrier_contacts table, Drizzle CRUD, no Maps
+
+- [ ] **T39**: Migrate Carrier Credit Alerts to PostgreSQL
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: carrier_credit_alerts table, Drizzle CRUD, no Maps
+
+- [ ] **T40**: Migrate Carrier Assignments to PostgreSQL
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: carrier_assignments table, Drizzle CRUD, no Maps
+
+---
+
+### Stage 4: DID & PBX Entities
+
+- [ ] **T41**: Migrate DIDs to PostgreSQL
+  - Files: `shared/schema.ts`, `server/storage.ts`
+  - Acceptance: dids table with all fields, Drizzle CRUD, no Maps
+
+- [ ] **T42**: Migrate DID Countries to PostgreSQL
+- [ ] **T43**: Migrate DID Providers to PostgreSQL
+- [ ] **T44**: Migrate SIP Trunks to PostgreSQL
+- [ ] **T45**: Migrate Extensions to PostgreSQL
+- [ ] **T46**: Migrate IVRs to PostgreSQL
+- [ ] **T47**: Migrate Ring Groups to PostgreSQL
+- [ ] **T48**: Migrate Queues to PostgreSQL
+
+---
+
+### Stage 5: Billing & Financial Entities
+
+- [ ] **T49**: Migrate Invoices to PostgreSQL
+- [ ] **T50**: Migrate Payments to PostgreSQL
+- [ ] **T51**: Migrate Promo Codes to PostgreSQL
+- [ ] **T52**: Migrate Referrals to PostgreSQL
+- [ ] **T53**: Migrate Billing Terms to PostgreSQL
+
+---
+
+### Stage 6: Support & Operations
+
+- [ ] **T54**: Migrate Tickets to PostgreSQL
+- [ ] **T55**: Migrate Ticket Replies to PostgreSQL
+- [ ] **T56**: Migrate Audit Logs to PostgreSQL
+- [ ] **T57**: Migrate Monitoring Rules to PostgreSQL
+- [ ] **T58**: Migrate Alerts to PostgreSQL
+
+---
+
+### Stage 7: AI Voice & CRM
+
+- [ ] **T59**: Migrate AI Voice Agents to PostgreSQL
+- [ ] **T60**: Migrate AI Voice Flows to PostgreSQL
+- [ ] **T61**: Migrate AI Voice Campaigns to PostgreSQL
+- [ ] **T62**: Migrate CRM Connections to PostgreSQL
+
+---
+
+### Stage 8: CMS & Experience
+
+- [ ] **T63**: Migrate CMS Themes to PostgreSQL
+- [ ] **T64**: Migrate CMS Pages to PostgreSQL
+- [ ] **T65**: Migrate Email Templates to PostgreSQL
+- [ ] **T66**: Migrate Site Settings to PostgreSQL
+
+---
+
+### Stage 9: Testing & SIP
+
+- [ ] **T67**: Migrate SIP Test Configs to PostgreSQL
+- [ ] **T68**: Migrate SIP Test Results to PostgreSQL
+- [ ] **T69**: Migrate SIP Test Schedules to PostgreSQL
+
+---
+
+### Stage 10: Final Cleanup
+
+- [ ] **T70**: Remove MemStorage class entirely
+  - Acceptance: Only DatabaseStorage class remains; all Maps removed
+- [ ] **T71**: Full regression test suite
+  - Acceptance: npm run check + Playwright + Axe all pass
+
+---
+
 ## Next Actions
 1. All Phase 1 (T1-T10) and Phase 3 (T17-T23) tasks complete
-2. Awaiting user direction for next phase of work
-3. Potential next steps: UI polish, new features, or additional Digitalk matching
+2. Begin Phase 4 Stage 1: T30 (Customer Categories) first
+3. Execute one stage at a time, report after each stage

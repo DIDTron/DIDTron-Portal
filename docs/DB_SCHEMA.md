@@ -209,6 +209,69 @@ earlyMediaEnabled: boolean
 releaseCauseMapping: jsonb
 ```
 
+### Customer Categories (customer_categories)
+Core reference data - seeded on startup, migrated to PostgreSQL per FOREVER POLICY
+```
+id: varchar (UUID)
+name: text
+code: text (unique)
+description: text
+icon: text
+displayOrder: integer
+isActive: boolean
+showOnWebsite: boolean
+defaultBillingType: text (prepaid | postpaid)
+createdAt: timestamp
+updatedAt: timestamp
+```
+
+### Customer Groups (customer_groups)
+Core reference data - seeded on startup, migrated to PostgreSQL per FOREVER POLICY
+```
+id: varchar (UUID)
+categoryId: FK → customer_categories
+name: text
+code: text (unique)
+description: text
+displayOrder: integer
+isActive: boolean
+createdAt: timestamp
+updatedAt: timestamp
+```
+
+### Users (users)
+All users including super admins, customers, and carriers - migrated to PostgreSQL per FOREVER POLICY
+```
+id: varchar (UUID)
+email: text (unique)
+password: text (hashed)
+firstName: text
+lastName: text
+phone: text
+role: text
+status: text (pending | active | suspended)
+emailVerified: boolean
+twoFactorEnabled: boolean
+twoFactorSecret: text
+customerId: FK → customers
+carrierId: FK → carriers
+lastLoginAt: timestamp
+createdAt: timestamp
+updatedAt: timestamp
+```
+
+### Carrier Assignments (carrier_assignments)
+Controls which customers can use which carriers - migrated to PostgreSQL per FOREVER POLICY
+```
+id: varchar (UUID)
+carrierId: FK → carriers
+assignmentType: text (all | categories | groups | customers)
+categoryIds: jsonb (array of category IDs)
+groupIds: jsonb (array of group IDs)
+customerIds: jsonb (array of customer IDs)
+createdAt: timestamp
+```
+
 ## Enums
 - `carrier_partner_type`: customer | supplier | bilateral
 - `credit_type`: prepaid | postpaid

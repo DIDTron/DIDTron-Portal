@@ -112,6 +112,10 @@ import {
   carrierServices as carrierServicesTable,
   carrierContacts as carrierContactsTable,
   carrierCreditAlerts as carrierCreditAlertsTable,
+  carrierAssignments as carrierAssignmentsTable,
+  customerCategories as customerCategoriesTable,
+  customerGroups as customerGroupsTable,
+  users as usersTable,
   fileTemplates
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -922,66 +926,68 @@ export class MemStorage implements IStorage {
   }
 
   private seedDefaultData() {
-    const now = new Date();
-
-    // Seed default customer categories
-    const categories: CustomerCategory[] = [
-      { id: randomUUID(), name: "SIP Trunk", code: "sip-trunk", description: "Wholesale SIP termination services", icon: "phone", displayOrder: 1, isActive: true, showOnWebsite: true, defaultBillingType: "prepaid", createdAt: now, updatedAt: now },
-      { id: randomUUID(), name: "Enterprise", code: "enterprise", description: "Business PBX and unified communications", icon: "building", displayOrder: 2, isActive: true, showOnWebsite: true, defaultBillingType: "postpaid", createdAt: now, updatedAt: now },
-      { id: randomUUID(), name: "Call Center", code: "call-center", description: "Inbound/outbound call center solutions", icon: "headphones", displayOrder: 3, isActive: true, showOnWebsite: true, defaultBillingType: "postpaid", createdAt: now, updatedAt: now },
-      { id: randomUUID(), name: "Individual", code: "individual", description: "Personal VoIP services", icon: "user", displayOrder: 4, isActive: true, showOnWebsite: true, defaultBillingType: "prepaid", createdAt: now, updatedAt: now },
-    ];
-    categories.forEach(cat => this.customerCategories.set(cat.id, cat));
-
-    // Seed default groups for each category
-    const sipTrunkCat = categories[0];
-    const enterpriseCat = categories[1];
-    const callCenterCat = categories[2];
-    const individualCat = categories[3];
-
-    const groups: CustomerGroup[] = [
-      { id: randomUUID(), categoryId: sipTrunkCat.id, name: "Standard", code: "sip-standard", description: "Standard SIP trunk customers", displayOrder: 1, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: sipTrunkCat.id, name: "Premium", code: "sip-premium", description: "Premium SIP trunk customers", displayOrder: 2, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: sipTrunkCat.id, name: "Wholesale", code: "sip-wholesale", description: "Wholesale partners", displayOrder: 3, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: enterpriseCat.id, name: "Small Business", code: "ent-smb", description: "Small business customers", displayOrder: 1, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: enterpriseCat.id, name: "Mid-Market", code: "ent-mid", description: "Mid-market enterprises", displayOrder: 2, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: enterpriseCat.id, name: "Large Enterprise", code: "ent-large", description: "Large enterprise accounts", displayOrder: 3, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: callCenterCat.id, name: "Inbound", code: "cc-inbound", description: "Inbound call centers", displayOrder: 1, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: callCenterCat.id, name: "Outbound", code: "cc-outbound", description: "Outbound call centers", displayOrder: 2, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: callCenterCat.id, name: "Blended", code: "cc-blended", description: "Blended call centers", displayOrder: 3, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: individualCat.id, name: "Basic", code: "ind-basic", description: "Basic individual users", displayOrder: 1, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), categoryId: individualCat.id, name: "Power User", code: "ind-power", description: "Power users", displayOrder: 2, isActive: true, createdAt: now, updatedAt: now },
-    ];
-    groups.forEach(grp => this.customerGroups.set(grp.id, grp));
-
-    // Seed default currencies
-    const defaultCurrencies: Currency[] = [
-      { id: randomUUID(), code: "USD", name: "US Dollar", symbol: "$", exchangeRate: "1.000000", decimalPlaces: 2, isBase: true, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), code: "EUR", name: "Euro", symbol: "€", exchangeRate: "0.920000", decimalPlaces: 2, isBase: false, isActive: true, createdAt: now, updatedAt: now },
-      { id: randomUUID(), code: "GBP", name: "British Pound", symbol: "£", exchangeRate: "0.790000", decimalPlaces: 2, isBase: false, isActive: true, createdAt: now, updatedAt: now },
-    ];
-    defaultCurrencies.forEach(cur => this.currencies.set(cur.id, cur));
-
-    // Integrations are now seeded in PostgreSQL via seedIntegrations() in index.ts
+    // Customer categories, groups, and currencies are now seeded via PostgreSQL
+    // See seedReferenceData() function which runs on app startup
+    // Only seed entities that still use in-memory storage here
   }
 
-  // Users
+  // Seed reference data to PostgreSQL - called from server startup
+  async seedReferenceDataToPostgres(): Promise<void> {
+    // Check if categories already exist
+    const existingCategories = await db.select().from(customerCategoriesTable);
+    if (existingCategories.length === 0) {
+      console.log("[Seed] Seeding customer categories to PostgreSQL...");
+      const sipTrunkId = randomUUID();
+      const enterpriseId = randomUUID();
+      const callCenterId = randomUUID();
+      const individualId = randomUUID();
+      
+      await db.insert(customerCategoriesTable).values([
+        { id: sipTrunkId, name: "SIP Trunk", code: "sip-trunk", description: "Wholesale SIP termination services", icon: "phone", displayOrder: 1, isActive: true, showOnWebsite: true, defaultBillingType: "prepaid" },
+        { id: enterpriseId, name: "Enterprise", code: "enterprise", description: "Business PBX and unified communications", icon: "building", displayOrder: 2, isActive: true, showOnWebsite: true, defaultBillingType: "postpaid" },
+        { id: callCenterId, name: "Call Center", code: "call-center", description: "Inbound/outbound call center solutions", icon: "headphones", displayOrder: 3, isActive: true, showOnWebsite: true, defaultBillingType: "postpaid" },
+        { id: individualId, name: "Individual", code: "individual", description: "Personal VoIP services", icon: "user", displayOrder: 4, isActive: true, showOnWebsite: true, defaultBillingType: "prepaid" },
+      ]);
+
+      // Seed groups after categories
+      const existingGroups = await db.select().from(customerGroupsTable);
+      if (existingGroups.length === 0) {
+        console.log("[Seed] Seeding customer groups to PostgreSQL...");
+        await db.insert(customerGroupsTable).values([
+          { id: randomUUID(), categoryId: sipTrunkId, name: "Standard", code: "sip-standard", description: "Standard SIP trunk customers", displayOrder: 1, isActive: true },
+          { id: randomUUID(), categoryId: sipTrunkId, name: "Premium", code: "sip-premium", description: "Premium SIP trunk customers", displayOrder: 2, isActive: true },
+          { id: randomUUID(), categoryId: sipTrunkId, name: "Wholesale", code: "sip-wholesale", description: "Wholesale partners", displayOrder: 3, isActive: true },
+          { id: randomUUID(), categoryId: enterpriseId, name: "Small Business", code: "ent-smb", description: "Small business customers", displayOrder: 1, isActive: true },
+          { id: randomUUID(), categoryId: enterpriseId, name: "Mid-Market", code: "ent-mid", description: "Mid-market enterprises", displayOrder: 2, isActive: true },
+          { id: randomUUID(), categoryId: enterpriseId, name: "Large Enterprise", code: "ent-large", description: "Large enterprise accounts", displayOrder: 3, isActive: true },
+          { id: randomUUID(), categoryId: callCenterId, name: "Inbound", code: "cc-inbound", description: "Inbound call centers", displayOrder: 1, isActive: true },
+          { id: randomUUID(), categoryId: callCenterId, name: "Outbound", code: "cc-outbound", description: "Outbound call centers", displayOrder: 2, isActive: true },
+          { id: randomUUID(), categoryId: callCenterId, name: "Blended", code: "cc-blended", description: "Blended call centers", displayOrder: 3, isActive: true },
+          { id: randomUUID(), categoryId: individualId, name: "Basic", code: "ind-basic", description: "Basic individual users", displayOrder: 1, isActive: true },
+          { id: randomUUID(), categoryId: individualId, name: "Power User", code: "ind-power", description: "Power users", displayOrder: 2, isActive: true },
+        ]);
+      }
+    }
+  }
+
+  // Users - Using PostgreSQL database
   async getUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(usersTable);
   }
 
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const results = await db.select().from(usersTable).where(eq(usersTable.id, id));
+    return results[0];
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const results = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    return results[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const now = new Date();
-    const user: User = { 
+    const results = await db.insert(usersTable).values({
       id,
       email: insertUser.email,
       password: insertUser.password,
@@ -995,20 +1001,16 @@ export class MemStorage implements IStorage {
       twoFactorSecret: insertUser.twoFactorSecret ?? null,
       customerId: insertUser.customerId ?? null,
       carrierId: insertUser.carrierId ?? null,
-      lastLoginAt: null,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.users.set(id, user);
-    return user;
+    }).returning();
+    return results[0];
   }
 
   async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    const updated = { ...user, ...data, updatedAt: new Date() };
-    this.users.set(id, updated);
-    return updated;
+    const results = await db.update(usersTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(usersTable.id, id))
+      .returning();
+    return results[0];
   }
 
   // Billing Terms
@@ -1068,19 +1070,20 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
-  // Customer Categories
+  // Customer Categories - Using PostgreSQL database
   async getCustomerCategories(): Promise<CustomerCategory[]> {
-    return Array.from(this.customerCategories.values()).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    const results = await db.select().from(customerCategoriesTable);
+    return results.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }
 
   async getCustomerCategory(id: string): Promise<CustomerCategory | undefined> {
-    return this.customerCategories.get(id);
+    const results = await db.select().from(customerCategoriesTable).where(eq(customerCategoriesTable.id, id));
+    return results[0];
   }
 
   async createCustomerCategory(category: InsertCustomerCategory): Promise<CustomerCategory> {
     const id = randomUUID();
-    const now = new Date();
-    const cat: CustomerCategory = {
+    const results = await db.insert(customerCategoriesTable).values({
       id,
       name: category.name,
       code: category.code,
@@ -1090,42 +1093,41 @@ export class MemStorage implements IStorage {
       isActive: category.isActive ?? true,
       showOnWebsite: category.showOnWebsite ?? true,
       defaultBillingType: category.defaultBillingType ?? "prepaid",
-      createdAt: now,
-      updatedAt: now
-    };
-    this.customerCategories.set(id, cat);
-    return cat;
+    }).returning();
+    return results[0];
   }
 
   async updateCustomerCategory(id: string, data: Partial<InsertCustomerCategory>): Promise<CustomerCategory | undefined> {
-    const cat = this.customerCategories.get(id);
-    if (!cat) return undefined;
-    const updated = { ...cat, ...data, updatedAt: new Date() };
-    this.customerCategories.set(id, updated);
-    return updated;
+    const results = await db.update(customerCategoriesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(customerCategoriesTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCustomerCategory(id: string): Promise<boolean> {
-    return this.customerCategories.delete(id);
+    const results = await db.delete(customerCategoriesTable).where(eq(customerCategoriesTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Customer Groups
+  // Customer Groups - Using PostgreSQL database
   async getCustomerGroups(categoryId?: string): Promise<CustomerGroup[]> {
-    const groups = Array.from(this.customerGroups.values());
     if (categoryId) {
-      return groups.filter(g => g.categoryId === categoryId).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      const results = await db.select().from(customerGroupsTable).where(eq(customerGroupsTable.categoryId, categoryId));
+      return results.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
     }
-    return groups.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    const results = await db.select().from(customerGroupsTable);
+    return results.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }
 
   async getCustomerGroup(id: string): Promise<CustomerGroup | undefined> {
-    return this.customerGroups.get(id);
+    const results = await db.select().from(customerGroupsTable).where(eq(customerGroupsTable.id, id));
+    return results[0];
   }
 
   async createCustomerGroup(group: InsertCustomerGroup): Promise<CustomerGroup> {
     const id = randomUUID();
-    const now = new Date();
-    const grp: CustomerGroup = {
+    const results = await db.insert(customerGroupsTable).values({
       id,
       categoryId: group.categoryId ?? null,
       name: group.name,
@@ -1133,23 +1135,21 @@ export class MemStorage implements IStorage {
       description: group.description ?? null,
       displayOrder: group.displayOrder ?? 0,
       isActive: group.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.customerGroups.set(id, grp);
-    return grp;
+    }).returning();
+    return results[0];
   }
 
   async updateCustomerGroup(id: string, data: Partial<InsertCustomerGroup>): Promise<CustomerGroup | undefined> {
-    const grp = this.customerGroups.get(id);
-    if (!grp) return undefined;
-    const updated = { ...grp, ...data, updatedAt: new Date() };
-    this.customerGroups.set(id, updated);
-    return updated;
+    const results = await db.update(customerGroupsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(customerGroupsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCustomerGroup(id: string): Promise<boolean> {
-    return this.customerGroups.delete(id);
+    const results = await db.delete(customerGroupsTable).where(eq(customerGroupsTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // Customers - Using PostgreSQL database
@@ -1645,31 +1645,39 @@ export class MemStorage implements IStorage {
     return results[0]?.destination ?? null;
   }
 
-  // Carrier Assignments
+  // Carrier Assignments - Using PostgreSQL database
   async getCarrierAssignment(carrierId: string): Promise<CarrierAssignment | undefined> {
-    return Array.from(this.carrierAssignments.values()).find(a => a.carrierId === carrierId);
+    const results = await db.select().from(carrierAssignmentsTable).where(eq(carrierAssignmentsTable.carrierId, carrierId));
+    return results[0];
   }
 
   async upsertCarrierAssignment(assignment: InsertCarrierAssignment): Promise<CarrierAssignment> {
-    const existing = Array.from(this.carrierAssignments.values()).find(a => a.carrierId === assignment.carrierId);
+    const existingResults = await db.select().from(carrierAssignmentsTable).where(eq(carrierAssignmentsTable.carrierId, assignment.carrierId));
+    const existing = existingResults[0];
     if (existing) {
-      const updated: CarrierAssignment = { ...existing, ...assignment };
-      this.carrierAssignments.set(existing.id, updated);
-      return updated;
+      // Only update fields that are explicitly provided
+      const updateData: Partial<CarrierAssignment> = {};
+      if (assignment.assignmentType !== undefined) updateData.assignmentType = assignment.assignmentType;
+      if (assignment.categoryIds !== undefined) updateData.categoryIds = assignment.categoryIds;
+      if (assignment.groupIds !== undefined) updateData.groupIds = assignment.groupIds;
+      if (assignment.customerIds !== undefined) updateData.customerIds = assignment.customerIds;
+      
+      const results = await db.update(carrierAssignmentsTable)
+        .set(updateData)
+        .where(eq(carrierAssignmentsTable.id, existing.id))
+        .returning();
+      return results[0];
     }
     const id = randomUUID();
-    const now = new Date();
-    const a: CarrierAssignment = {
+    const results = await db.insert(carrierAssignmentsTable).values({
       id,
       carrierId: assignment.carrierId,
       assignmentType: assignment.assignmentType ?? "all",
       categoryIds: assignment.categoryIds ?? null,
       groupIds: assignment.groupIds ?? null,
       customerIds: assignment.customerIds ?? null,
-      createdAt: now,
-    };
-    this.carrierAssignments.set(id, a);
-    return a;
+    }).returning();
+    return results[0];
   }
 
   // Carrier Interconnects - Persisted to Database

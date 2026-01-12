@@ -245,7 +245,41 @@ Rules:
 9) Done requires regression tests proving large dataset actions cannot crash the app.
 
 ────────────────────────────────────────────────────────────
-15) REQUEST INTAKE + TODO HYGIENE — GOLD MUST RULE (MANDATORY)
+15) CANONICAL STORAGE RULE — GOLD MUST RULE (FOREVER POLICY)
+────────────────────────────────────────────────────────────
+PostgreSQL is the ONLY source of truth for all persistent business entities.
+
+Rules:
+1) Postgres canonical storage:
+   - All persistent business entities MUST be stored in PostgreSQL: users, tenants, services, rates, destinations, CDR/CRD, invoices, audit logs, configs, carriers, interconnects, customers, categories, groups, tickets, DIDs, payments, etc.
+   - Drizzle ORM is the ONLY DB access layer. No raw SQL queries scattered in codebase.
+   - Schema changes require Drizzle migrations; no direct DDL.
+
+2) In-memory Maps/RAM allowed ONLY for:
+   - Temporary per-request processing
+   - Short-lived UI caches (e.g., dropdown values cached for 5 mins)
+   - Per-batch processing within DataQueue jobs
+   - NEVER for canonical storage of business entities
+
+3) Upstash Redis is NOT canonical storage. Redis is ONLY for:
+   - Sessions (connect-redis store)
+   - DataQueue queue/progress tracking
+   - Distributed locks (cron/scheduled tasks)
+   - Rate limiting
+   - Small ephemeral cache (FX rates, config refresh)
+
+4) If any entity is found using in-memory Map as source of truth:
+   - STOP
+   - Add migration task to docs/TODO.md
+   - Migrate to PostgreSQL before that feature is considered production-ready
+
+5) Done requires:
+   - All CRUD operations use Drizzle against PostgreSQL
+   - No Maps storing business entities
+   - Tests verify data persists across server restarts
+
+────────────────────────────────────────────────────────────
+16) REQUEST INTAKE + TODO HYGIENE — GOLD MUST RULE (MANDATORY)
 ────────────────────────────────────────────────────────────
 My messages (even casual talk) must be converted into tracked work. No work allowed unless represented in docs/TODO.md under current Plan ID.
 
@@ -272,7 +306,7 @@ Rules:
    - Every work response must include Plan ID + task ID + whether it existed or was created + which tasks were checked off.
 
 ────────────────────────────────────────────────────────────
-16) PRE-TASK VERIFICATION — MANDATORY EXISTENCE CHECK
+17) PRE-TASK VERIFICATION — MANDATORY EXISTENCE CHECK
 ────────────────────────────────────────────────────────────
 Before starting ANY task from docs/TODO.md, you MUST verify if the feature/page/component already exists in the codebase.
 
@@ -290,7 +324,7 @@ Mandatory steps:
 This prevents duplicate work and ensures accurate TODO tracking.
 
 ────────────────────────────────────────────────────────────
-17) EMERGENCY STOP (WHEN DRIFT IS DETECTED)
+18) EMERGENCY STOP (WHEN DRIFT IS DETECTED)
 ────────────────────────────────────────────────────────────
 If user says “EMERGENCY STOP”:
 - Stop coding immediately.
@@ -303,7 +337,7 @@ If user says “EMERGENCY STOP”:
 - Do not change files until those 4 items are output.
 
 ────────────────────────────────────────────────────────────
-18) REQUIRED OUTPUT FORMAT (SO USER CAN POLICE DRIFT)
+19) REQUIRED OUTPUT FORMAT (SO USER CAN POLICE DRIFT)
 ────────────────────────────────────────────────────────────
 Before coding, output:
 1) READ CHECK ✅ and list files opened
