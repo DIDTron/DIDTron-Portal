@@ -147,11 +147,13 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
       },
 
       toggleBothSidebars: () => {
-        const { primarySidebarCollapsed } = get();
+        const { primarySidebarOpen, secondarySidebarOpen } = get();
+        // If either sidebar is open, close both; otherwise open both
+        const shouldClose = primarySidebarOpen || secondarySidebarOpen;
         set({ 
-          primarySidebarCollapsed: !primarySidebarCollapsed,
-          primarySidebarOpen: true,
-          secondarySidebarOpen: true
+          primarySidebarOpen: !shouldClose,
+          secondarySidebarOpen: !shouldClose,
+          primarySidebarCollapsed: false
         });
       },
 
