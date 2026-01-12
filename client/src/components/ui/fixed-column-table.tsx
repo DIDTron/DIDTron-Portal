@@ -111,7 +111,7 @@ const FixedColumnTableHead = React.forwardRef<HTMLTableCellElement, FixedColumnT
         rowSpan={rowSpan}
         onClick={onClick}
         className={cn(
-          "px-4 py-3 text-left font-medium whitespace-nowrap border-r border-white/20",
+          "px-4 py-3 text-left font-medium border-r border-white/20",
           fixed && "sticky left-0 z-20 bg-[#3d4f5f]",
           onClick && "cursor-pointer",
           className
@@ -130,7 +130,7 @@ const FixedColumnTableCell = React.forwardRef<HTMLTableCellElement, FixedColumnT
       <td 
         ref={ref}
         className={cn(
-          "px-4 py-3 whitespace-nowrap border-r border-border/50",
+          "px-4 py-3 border-r border-border/50",
           fixed && "sticky left-0 z-10 bg-background",
           className
         )}
