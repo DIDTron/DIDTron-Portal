@@ -5837,8 +5837,10 @@ export async function registerRoutes(
   // Carrier Assignments
   app.get("/api/carriers/:id/assignment", async (req, res) => {
     try {
-      const assignment = await storage.getCarrierAssignment(req.params.id);
-      res.json(assignment || { carrierId: req.params.id, assignmentType: "all", categoryIds: [], groupIds: [], customerIds: [] });
+      const carrier = await storage.resolveCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      const assignment = await storage.getCarrierAssignment(carrier.id);
+      res.json(assignment || { carrierId: carrier.id, assignmentType: "all", categoryIds: [], groupIds: [], customerIds: [] });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch carrier assignment" });
     }
@@ -5846,14 +5848,17 @@ export async function registerRoutes(
 
   app.put("/api/carriers/:id/assignment", async (req, res) => {
     try {
-      const parsed = insertCarrierAssignmentSchema.safeParse({ ...req.body, carrierId: req.params.id });
+      const carrier = await storage.resolveCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      
+      const parsed = insertCarrierAssignmentSchema.safeParse({ ...req.body, carrierId: carrier.id });
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const assignment = await storage.upsertCarrierAssignment(parsed.data);
       await storage.createAuditLog({
         userId: req.session?.userId,
         action: "update_assignment",
         tableName: "carrier_assignments",
-        recordId: req.params.id,
+        recordId: carrier.id,
         newValues: assignment,
       });
       res.json(assignment);
@@ -5874,7 +5879,9 @@ export async function registerRoutes(
 
   app.get("/api/carriers/:id/interconnects", async (req, res) => {
     try {
-      const interconnects = await storage.getCarrierInterconnects(req.params.id);
+      const carrier = await storage.resolveCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      const interconnects = await storage.getCarrierInterconnects(carrier.id);
       res.json(interconnects);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch carrier interconnects" });
@@ -5965,7 +5972,9 @@ export async function registerRoutes(
 
   app.get("/api/carriers/:id/services", async (req, res) => {
     try {
-      const services = await storage.getCarrierServices(req.params.id);
+      const carrier = await storage.resolveCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      const services = await storage.getCarrierServices(carrier.id);
       res.json(services);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch carrier services" });
@@ -5983,7 +5992,11 @@ export async function registerRoutes(
 
   app.post("/api/carriers/:carrierId/services", async (req, res) => {
     try {
-      const parsed = insertCarrierServiceSchema.safeParse({ ...req.body, carrierId: req.params.carrierId });
+      // Resolve carrier by ID or code
+      const carrier = await storage.resolveCarrier(req.params.carrierId);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      
+      const parsed = insertCarrierServiceSchema.safeParse({ ...req.body, carrierId: carrier.id });
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       
       // DIGITALK HIERARCHY VALIDATION: Verify interconnect belongs to this carrier
@@ -5992,7 +6005,7 @@ export async function registerRoutes(
         if (!interconnect) {
           return res.status(400).json({ error: "Interconnect not found" });
         }
-        if (interconnect.carrierId !== req.params.carrierId) {
+        if (interconnect.carrierId !== carrier.id) {
           return res.status(400).json({ error: "Interconnect does not belong to this carrier - violates Carrier → Interconnect → Service hierarchy" });
         }
         // Validate direction compatibility: Service direction should align with interconnect
@@ -6094,7 +6107,9 @@ export async function registerRoutes(
   // Carrier Contacts
   app.get("/api/carriers/:id/contacts", async (req, res) => {
     try {
-      const contacts = await storage.getCarrierContacts(req.params.id);
+      const carrier = await storage.resolveCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      const contacts = await storage.getCarrierContacts(carrier.id);
       res.json(contacts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch carrier contacts" });
@@ -6103,7 +6118,10 @@ export async function registerRoutes(
 
   app.post("/api/carriers/:id/contacts", async (req, res) => {
     try {
-      const parsed = insertCarrierContactSchema.safeParse({ ...req.body, carrierId: req.params.id });
+      const carrier = await storage.resolveCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      
+      const parsed = insertCarrierContactSchema.safeParse({ ...req.body, carrierId: carrier.id });
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const contact = await storage.createCarrierContact(parsed.data);
       await storage.createAuditLog({
@@ -6161,7 +6179,9 @@ export async function registerRoutes(
   // Carrier Credit Alerts
   app.get("/api/carriers/:id/credit-alerts", async (req, res) => {
     try {
-      const alerts = await storage.getCarrierCreditAlerts(req.params.id);
+      const carrier = await storage.resolveCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      const alerts = await storage.getCarrierCreditAlerts(carrier.id);
       res.json(alerts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch carrier credit alerts" });
@@ -6170,7 +6190,10 @@ export async function registerRoutes(
 
   app.post("/api/carriers/:id/credit-alerts", async (req, res) => {
     try {
-      const parsed = insertCarrierCreditAlertSchema.safeParse({ ...req.body, carrierId: req.params.id });
+      const carrier = await storage.resolveCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      
+      const parsed = insertCarrierCreditAlertSchema.safeParse({ ...req.body, carrierId: carrier.id });
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const alert = await storage.createCarrierCreditAlert(parsed.data);
       await storage.createAuditLog({
