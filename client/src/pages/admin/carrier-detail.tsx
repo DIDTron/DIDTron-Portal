@@ -40,7 +40,7 @@ import type { Carrier, Currency, CarrierInterconnect, CarrierContact, CarrierCre
 export default function CarrierDetailPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [, partnersParams] = useRoute("/admin/partners/:id");
+  const [, partnersParams] = useRoute("/admin/wholesale/partners/:id");
   const [, carriersParams] = useRoute("/admin/carriers/:id");
   const params = partnersParams || carriersParams;
   const carrierId = params?.id;
@@ -559,7 +559,7 @@ export default function CarrierDetailPage() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between gap-4 p-4 border-b bg-muted/30">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setLocation(isPartnerRoute ? "/admin/partners" : "/admin/softswitch/carriers")} data-testid="button-back">
+          <Button variant="ghost" size="icon" onClick={() => setLocation(isPartnerRoute ? "/admin/wholesale/partners" : "/admin/softswitch/carriers")} data-testid="button-back">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div>

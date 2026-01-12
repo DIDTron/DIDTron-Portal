@@ -52,7 +52,7 @@ export const sectionConfigs: Record<string, SectionConfig> = {
   "wholesale-partners": {
     title: "Partner Management",
     items: [
-      { id: "wholesale-partners", label: "Partners", route: "/admin/partners", icon: Building2 },
+      { id: "wholesale-partners", label: "Partners", route: "/admin/wholesale/partners", icon: Building2 },
       { id: "wholesale-customers", label: "Customers", route: "/admin/wholesale/customers", icon: Users },
       { id: "wholesale-customer-rates", label: "Customer Rates", route: "/admin/wholesale/customer-rates", icon: CreditCard },
       { id: "wholesale-did-countries", label: "DID Countries", route: "/admin/wholesale/did-countries", icon: Globe },

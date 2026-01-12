@@ -142,7 +142,7 @@ export default function AdminDashboard() {
           value={carriers?.length?.toString() || "0"} 
           description="Wholesale partners" 
           testId="stat-partners"
-          onClick={() => handleQuickAction("wholesale-partners", "wholesale-partners", "Partners", "/admin/partners")}
+          onClick={() => handleQuickAction("wholesale-partners", "wholesale-partners", "Partners", "/admin/wholesale/partners")}
         />
         <StatCard 
           icon={Route} 
@@ -218,7 +218,7 @@ export default function AdminDashboard() {
                 title="Add more partners for USA routes"
                 description="Your USA termination has only 1 partner. Adding 2 more partners would improve redundancy and potentially reduce costs by 15%."
                 action="Add Partner"
-                onAction={() => handleQuickAction("wholesale-partners", "wholesale-partners", "Partners", "/admin/partners")}
+                onAction={() => handleQuickAction("wholesale-partners", "wholesale-partners", "Partners", "/admin/wholesale/partners")}
               />
               <InsightItem
                 type="alert"

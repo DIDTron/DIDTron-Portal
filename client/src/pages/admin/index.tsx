@@ -102,7 +102,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/voice-tiers": { section: "voip", subItem: "voice-tiers" },
   "/admin/codecs": { section: "voip", subItem: "codecs" },
   "/admin/channel-plans": { section: "voip", subItem: "channel-plans" },
-  "/admin/partners": { section: "wholesale-partners", subItem: "wholesale-partners" },
+  "/admin/wholesale/partners": { section: "wholesale-partners", subItem: "wholesale-partners" },
   "/admin/routes": { section: "voip", subItem: "routes" },
   "/admin/rate-cards/customer": { section: "rate-cards", subItem: "customer-rates" },
   "/admin/rate-cards/carrier": { section: "rate-cards", subItem: "carrier-rates" },
@@ -254,9 +254,9 @@ export default function AdminLayout() {
                 <Route path="/admin/voice-tiers" component={VoiceTiersPage} />
                 <Route path="/admin/codecs" component={CodecsPage} />
                 <Route path="/admin/channel-plans" component={ChannelPlansPage} />
-                <Route path="/admin/partners" component={PartnersPage} />
-                <Route path="/admin/partners/:partnerId/interconnects/:interconnectId" component={InterconnectDetailPage} />
-                <Route path="/admin/partners/:id" component={CarrierDetailPage} />
+                <Route path="/admin/wholesale/partners" component={PartnersPage} />
+                <Route path="/admin/wholesale/partners/:partnerId/interconnects/:interconnectId" component={InterconnectDetailPage} />
+                <Route path="/admin/wholesale/partners/:id" component={CarrierDetailPage} />
                 <Route path="/admin/rate-cards/customer" component={CustomerRatesPage} />
                 <Route path="/admin/rate-cards/carrier" component={CarrierRatesPage} />
                 <Route path="/admin/routes" component={RoutesPage} />

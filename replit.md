@@ -20,7 +20,7 @@ DIDTron Communications is developing an AI-first, white-label wholesale VoIP pla
 
 ### Business Model - Module Distinction
 
-**Wholesale Module - Partner Management** (`/admin/partners`, `/admin/wholesale/*`)
+**Wholesale Module - Partner Management** (`/admin/wholesale/partners`, `/admin/wholesale/*`)
 - The "kitchen" where DIDTron prepares managed services for retail customers
 - Target: Retail customers seeking managed VoIP services with tiered pricing
 - DIDTron manages the infrastructure, routing, and billing on behalf of customers
