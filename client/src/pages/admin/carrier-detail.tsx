@@ -1445,7 +1445,7 @@ export default function CarrierDetailPage() {
                   </TooltipTrigger>
                   <TooltipContent side="right" className="max-w-xs p-3">
                     <p className="font-semibold mb-1">Balance Adjustment</p>
-                    <p className="text-xs">Balance Adjustments will credit or debit the customer balance but the transaction will not appear on an invoice or affect the invoice total. Balance adjustments can not be assigned to invoices or credit notes and therefore should not be used for updating the balance due to payment received when DIGITALK billing is deployed.</p>
+                    <p className="text-xs">Balance Adjustments will credit or debit the customer balance but the transaction will not appear on an invoice or affect the invoice total. Balance adjustments can not be assigned to invoices or credit notes and therefore should not be used for updating the balance due to payment received when DIDTron billing is deployed.</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
