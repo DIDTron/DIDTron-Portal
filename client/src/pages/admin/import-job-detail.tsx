@@ -53,7 +53,6 @@ const mockNotifications: Notification[] = [];
 export default function ImportJobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const [, navigate] = useLocation();
-  const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<ImportJobDetailTab>("rate-analysis");
   const [rateIncreasesOpen, setRateIncreasesOpen] = useState(true);
