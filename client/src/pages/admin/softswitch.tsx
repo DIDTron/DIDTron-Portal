@@ -555,19 +555,21 @@ export function SoftswitchCarriersPage() {
               <FixedColumnTableHead 
                 fixed={true} 
                 rowSpan={2}
-                className="cursor-pointer select-none"
+                className="cursor-pointer select-none min-w-[200px]"
                 onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
               >
-                <div className="flex items-center gap-1">
-                  Carrier
-                  {sortOrder === "asc" ? (
-                    <ChevronUp className="h-3 w-3" />
-                  ) : (
-                    <ChevronDown className="h-3 w-3" />
-                  )}
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-1">
+                    Carrier
+                    {sortOrder === "asc" ? (
+                      <ChevronUp className="h-3 w-3" />
+                    ) : (
+                      <ChevronDown className="h-3 w-3" />
+                    )}
+                  </div>
+                  <span className="font-normal">Type</span>
                 </div>
               </FixedColumnTableHead>
-              <FixedColumnTableHead rowSpan={2}>Type</FixedColumnTableHead>
               <FixedColumnTableHead className="text-center text-white bg-[#00a0df] border-b-0" colSpan={2}>Customer</FixedColumnTableHead>
               <FixedColumnTableHead className="text-center text-white bg-[#e91e63] border-b-0" colSpan={2}>Supplier</FixedColumnTableHead>
               <FixedColumnTableHead className="text-center text-white bg-[#009688] border-b-0">Bilateral</FixedColumnTableHead>
@@ -592,21 +594,21 @@ export function SoftswitchCarriersPage() {
               
               return (
                 <FixedColumnTableRow key={carrier.id} data-testid={`row-carrier-${carrier.id}`}>
-                  <FixedColumnTableCell fixed={true} className="font-medium">
-                    <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
-                      {carrier.name}
-                    </Link>
-                  </FixedColumnTableCell>
-                  <FixedColumnTableCell>
-                    <Badge 
-                      className={
-                        carrier.partnerType === "bilateral" ? "bg-cyan-500 text-white hover:bg-cyan-600" :
-                        carrier.partnerType === "supplier" ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-purple-500 text-white hover:bg-purple-600"
-                      }
-                    >
-                      {carrier.partnerType === "bilateral" ? "B" :
-                       carrier.partnerType === "supplier" ? "S" : "C"}
-                    </Badge>
+                  <FixedColumnTableCell fixed={true} className="font-medium min-w-[200px]">
+                    <div className="flex items-center justify-between w-full">
+                      <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                        {carrier.name}
+                      </Link>
+                      <Badge 
+                        className={
+                          carrier.partnerType === "bilateral" ? "bg-cyan-500 text-white hover:bg-cyan-600" :
+                          carrier.partnerType === "supplier" ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-purple-500 text-white hover:bg-purple-600"
+                        }
+                      >
+                        {carrier.partnerType === "bilateral" ? "B" :
+                         carrier.partnerType === "supplier" ? "S" : "C"}
+                      </Badge>
+                    </div>
                   </FixedColumnTableCell>
                   <FixedColumnTableCell>
                     {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") 
