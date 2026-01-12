@@ -1063,16 +1063,18 @@ export function SupplierRatingPlansPage() {
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as SupplierRatingTab)}>
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="rating-plans" data-testid="tab-rating-plans">Rating Plans</TabsTrigger>
-          <TabsTrigger value="rate-inbox" data-testid="tab-rate-inbox">Rate Inbox</TabsTrigger>
-          <TabsTrigger value="import-jobs" data-testid="tab-import-jobs">Import Jobs</TabsTrigger>
-          <TabsTrigger value="import-summary" data-testid="tab-import-summary">Import Summary</TabsTrigger>
-          <TabsTrigger value="import-settings" data-testid="tab-import-settings">Import Settings</TabsTrigger>
-          <TabsTrigger value="import-templates" data-testid="tab-import-templates">Import Templates</TabsTrigger>
-          <TabsTrigger value="import-notifications" data-testid="tab-import-notifications">Import Notifications</TabsTrigger>
-          <TabsTrigger value="routing-codes" data-testid="tab-routing-codes">Routing Codes</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="inline-flex w-max">
+            <TabsTrigger value="rating-plans" data-testid="tab-rating-plans">Rating Plans</TabsTrigger>
+            <TabsTrigger value="rate-inbox" data-testid="tab-rate-inbox">Rate Inbox</TabsTrigger>
+            <TabsTrigger value="import-jobs" data-testid="tab-import-jobs">Import Jobs</TabsTrigger>
+            <TabsTrigger value="import-summary" data-testid="tab-import-summary">Import Summary</TabsTrigger>
+            <TabsTrigger value="import-settings" data-testid="tab-import-settings">Import Settings</TabsTrigger>
+            <TabsTrigger value="import-templates" data-testid="tab-import-templates">Import Templates</TabsTrigger>
+            <TabsTrigger value="import-notifications" data-testid="tab-import-notifications">Import Notifications</TabsTrigger>
+            <TabsTrigger value="routing-codes" data-testid="tab-routing-codes">Routing Codes</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="rating-plans" className="space-y-4">
           <div className="flex items-center gap-4 flex-wrap">
