@@ -1162,6 +1162,7 @@ export function SupplierRatingPlansPage() {
   const [showSaveReportDialog, setShowSaveReportDialog] = useState(false);
   const [saveReportName, setSaveReportName] = useState("");
   const [saveReportPublic, setSaveReportPublic] = useState(false);
+  const [importSummaryViewMode, setImportSummaryViewMode] = useState<"zone" | "code">("zone");
   
   const { toast } = useToast();
 
@@ -1208,6 +1209,10 @@ export function SupplierRatingPlansPage() {
       setImportSummarySelectedReport("untitled");
       setSaveReportName("");
       toast({ title: "New Report", description: "Started a new untitled report" });
+      return;
+    }
+    if (actionId === "export") {
+      toast({ title: "Export", description: "Exporting report to CSV..." });
       return;
     }
     toast({ title: `Action: ${actionId}`, description: "This action is not yet implemented" });
@@ -1999,7 +2004,7 @@ export function SupplierRatingPlansPage() {
                 data-testid="input-min-minutes"
               />
             </div>
-            <span className="text-sm text-muted-foreground">(Zone: Last 7 Days)</span>
+            <span className="text-sm text-muted-foreground">({importSummaryViewMode === "zone" ? "Zone" : "Code"}: Last 7 Days)</span>
           </div>
 
           {/* Summary Tables */}
@@ -2094,8 +2099,13 @@ export function SupplierRatingPlansPage() {
               <Search className="h-4 w-4" />
             </Button>
             <span className="text-sm text-muted-foreground ml-auto">UTC</span>
-            <Button variant="outline" size="sm" data-testid="button-change-to-code-view">
-              Change to Code View
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setImportSummaryViewMode(importSummaryViewMode === "zone" ? "code" : "zone")}
+              data-testid="button-toggle-view-mode"
+            >
+              {importSummaryViewMode === "zone" ? "Change to Code View" : "Change to Zone View"}
             </Button>
           </div>
 
