@@ -168,7 +168,9 @@ import {
   tenantBranding as tenantBrandingsTable,
   portalLoginPages as portalLoginPagesTable,
   siteSettings as siteSettingsTable,
-  websiteSections as websiteSectionsTable
+  websiteSections as websiteSectionsTable,
+  docCategories as docCategoriesTable,
+  docArticles as docArticlesTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -821,156 +823,17 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private customerCategories: Map<string, CustomerCategory>;
-  private customerGroups: Map<string, CustomerGroup>;
-  private customers: Map<string, Customer>;
-  private customerKyc: Map<string, CustomerKyc>;
-  private pops: Map<string, Pop>;
-  private voiceTiers: Map<string, VoiceTier>;
-  private codecs: Map<string, Codec>;
-  private channelPlans: Map<string, ChannelPlan>;
-  private carriers: Map<string, Carrier>;
-  private carrierInterconnects: Map<string, CarrierInterconnect>;
-  private carrierContacts: Map<string, CarrierContact>;
-  private carrierCreditAlerts: Map<string, CarrierCreditAlert>;
-  private carrierAssignments: Map<string, CarrierAssignment>;
-  private auditLogs: Map<string, AuditLog>;
-  private routes: Map<string, Route>;
-  private monitoringRules: Map<string, MonitoringRule>;
-  private alerts: Map<string, Alert>;
-  private didCountries: Map<string, DidCountry>;
-  private didProviders: Map<string, DidProvider>;
-  private dids: Map<string, Did>;
-  private sipTrunks: Map<string, SipTrunk>;
-  private extensions: Map<string, Extension>;
-  private ivrs: Map<string, Ivr>;
-  private ringGroups: Map<string, RingGroup>;
-  private queues: Map<string, Queue>;
-  // Stage 5-6: tickets, ticketReplies, invoices, payments, promoCodes, referrals - MIGRATED TO POSTGRESQL
-  private currencies: Map<string, Currency>;
-  private fxRates: Map<string, FxRate>;
-  private sipTestConfigs: Map<string, SipTestConfig>;
-  private sipTestResults: Map<string, SipTestResult>;
-  private sipTestSchedules: Map<string, SipTestSchedule>;
-  private class4Customers: Map<string, Class4Customer>;
-  private class4Carriers: Map<string, Class4Carrier>;
-  private class4ProviderRateCards: Map<string, Class4ProviderRateCard>;
-  private class4CustomerRateCards: Map<string, Class4CustomerRateCard>;
-  private aiVoiceAgents: Map<string, AiVoiceAgent>;
-  private aiVoiceFlows: Map<string, AiVoiceFlow>;
-  private aiVoiceTrainingData: Map<string, AiVoiceTrainingData>;
-  private aiVoiceCampaigns: Map<string, AiVoiceCampaign>;
-  private aiVoiceKnowledgeBases: Map<string, AiVoiceKnowledgeBase>;
-  private aiVoiceKbSources: Map<string, AiVoiceKbSource>;
-  private aiVoicePhonebooks: Map<string, AiVoicePhonebook>;
-  private aiVoiceContacts: Map<string, AiVoiceContact>;
-  private aiVoiceCallLogs: Map<string, AiVoiceCallLog>;
-  private crmConnections: Map<string, CrmConnection>;
-  private crmFieldMappings: Map<string, CrmFieldMapping>;
-  private crmSyncSettings: Map<string, CrmSyncSettings>;
-  private crmSyncLogs: Map<string, CrmSyncLog>;
-  private crmContactMappings: Map<string, CrmContactMapping>;
-  private cmsThemes: Map<string, CmsTheme>;
-  private cmsPages: Map<string, CmsPage>;
-  private cmsMediaItems: Map<string, CmsMediaItem>;
-  private tenantBrandings: Map<string, TenantBranding>;
-  private portalLoginPages: Map<string, PortalLoginPage>;
-  private siteSettings: Map<string, SiteSetting>;
-  private websiteSections: Map<string, WebsiteSection>;
-  // integrations are stored in PostgreSQL via integrationsRepository
-  private bonusTypes: Map<string, BonusType>;
-  private emailTemplates: Map<string, EmailTemplate>;
-  private emailLogs: Map<string, EmailLog>;
-  private socialAccounts: Map<string, SocialAccount>;
-  private socialPosts: Map<string, SocialPost>;
-  private rateCards: Map<string, RateCard>;
-  private rateCardRates: Map<string, RateCardRate>;
-  private docCategories: Map<string, DocCategory>;
-  private docArticles: Map<string, DocArticle>;
-  private webhooks: Map<string, Webhook>;
-  private customerApiKeys: Map<string, CustomerApiKey>;
-  // billingTerms - MIGRATED TO POSTGRESQL
+  // All business entities are now stored in PostgreSQL via Drizzle ORM
+  // This class implements IStorage interface with database operations
+  // See docs/DECISIONS.md for migration details
 
   constructor() {
-    this.users = new Map();
-    this.customerCategories = new Map();
-    this.customerGroups = new Map();
-    this.customers = new Map();
-    this.customerKyc = new Map();
-    this.pops = new Map();
-    this.voiceTiers = new Map();
-    this.codecs = new Map();
-    this.channelPlans = new Map();
-    this.carriers = new Map();
-    this.carrierInterconnects = new Map();
-    this.carrierContacts = new Map();
-    this.carrierCreditAlerts = new Map();
-    this.carrierAssignments = new Map();
-    this.auditLogs = new Map();
-    this.routes = new Map();
-    this.monitoringRules = new Map();
-    this.alerts = new Map();
-    this.didCountries = new Map();
-    this.didProviders = new Map();
-    this.dids = new Map();
-    this.sipTrunks = new Map();
-    this.extensions = new Map();
-    this.ivrs = new Map();
-    this.ringGroups = new Map();
-    this.queues = new Map();
-    // Stage 5-6: tickets, ticketReplies, invoices, payments, promoCodes, referrals - now in PostgreSQL
-    this.currencies = new Map();
-    this.fxRates = new Map();
-    this.sipTestConfigs = new Map();
-    this.sipTestResults = new Map();
-    this.sipTestSchedules = new Map();
-    this.class4Customers = new Map();
-    this.class4Carriers = new Map();
-    this.class4ProviderRateCards = new Map();
-    this.class4CustomerRateCards = new Map();
-    this.aiVoiceAgents = new Map();
-    this.aiVoiceFlows = new Map();
-    this.aiVoiceTrainingData = new Map();
-    this.aiVoiceCampaigns = new Map();
-    this.aiVoiceKnowledgeBases = new Map();
-    this.aiVoiceKbSources = new Map();
-    this.aiVoicePhonebooks = new Map();
-    this.aiVoiceContacts = new Map();
-    this.aiVoiceCallLogs = new Map();
-    this.crmConnections = new Map();
-    this.crmFieldMappings = new Map();
-    this.crmSyncSettings = new Map();
-    this.crmSyncLogs = new Map();
-    this.crmContactMappings = new Map();
-    this.cmsThemes = new Map();
-    this.cmsPages = new Map();
-    this.cmsMediaItems = new Map();
-    this.tenantBrandings = new Map();
-    this.portalLoginPages = new Map();
-    this.siteSettings = new Map();
-    this.websiteSections = new Map();
-    // integrations are now stored in PostgreSQL via integrationsRepository
-    this.bonusTypes = new Map();
-    this.emailTemplates = new Map();
-    this.emailLogs = new Map();
-    this.socialAccounts = new Map();
-    this.socialPosts = new Map();
-    this.rateCards = new Map();
-    this.rateCardRates = new Map();
-    this.docCategories = new Map();
-    this.docArticles = new Map();
-    this.webhooks = new Map();
-    this.customerApiKeys = new Map();
-    // billingTerms - now in PostgreSQL
-
     this.seedDefaultData();
   }
 
   private seedDefaultData() {
     // Customer categories, groups, and currencies are now seeded via PostgreSQL
     // See seedReferenceData() function which runs on app startup
-    // Only seed entities that still use in-memory storage here
   }
 
   // Seed reference data to PostgreSQL - called from server startup
@@ -3733,94 +3596,66 @@ export class MemStorage implements IStorage {
 
   // Documentation Categories
   async getDocCategories(): Promise<DocCategory[]> {
-    return Array.from(this.docCategories.values()).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    const results = await db.select().from(docCategoriesTable);
+    return results.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }
 
   async getDocCategory(id: string): Promise<DocCategory | undefined> {
-    return this.docCategories.get(id);
+    const results = await db.select().from(docCategoriesTable).where(eq(docCategoriesTable.id, id));
+    return results[0];
   }
 
   async createDocCategory(category: InsertDocCategory): Promise<DocCategory> {
     const id = randomUUID();
-    const now = new Date();
-    const c: DocCategory = {
-      id,
-      name: category.name,
-      slug: category.slug,
-      description: category.description ?? null,
-      icon: category.icon ?? null,
-      displayOrder: category.displayOrder ?? 0,
-      isPublished: category.isPublished ?? true,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.docCategories.set(id, c);
-    return c;
+    const results = await db.insert(docCategoriesTable).values({ id, ...category }).returning();
+    return results[0];
   }
 
   async updateDocCategory(id: string, data: Partial<InsertDocCategory>): Promise<DocCategory | undefined> {
-    const category = this.docCategories.get(id);
-    if (!category) return undefined;
-    const updated = { ...category, ...data, updatedAt: new Date() };
-    this.docCategories.set(id, updated);
-    return updated;
+    const results = await db.update(docCategoriesTable).set({ ...data, updatedAt: new Date() }).where(eq(docCategoriesTable.id, id)).returning();
+    return results[0];
   }
 
   async deleteDocCategory(id: string): Promise<boolean> {
-    return this.docCategories.delete(id);
+    const results = await db.delete(docCategoriesTable).where(eq(docCategoriesTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // Documentation Articles
   async getDocArticles(categoryId?: string): Promise<DocArticle[]> {
-    const articles = Array.from(this.docArticles.values());
-    const filtered = categoryId ? articles.filter(a => a.categoryId === categoryId) : articles;
-    return filtered.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    const results = categoryId
+      ? await db.select().from(docArticlesTable).where(eq(docArticlesTable.categoryId, categoryId))
+      : await db.select().from(docArticlesTable);
+    return results.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }
 
   async getDocArticle(id: string): Promise<DocArticle | undefined> {
-    return this.docArticles.get(id);
+    const results = await db.select().from(docArticlesTable).where(eq(docArticlesTable.id, id));
+    return results[0];
   }
 
   async getDocArticleBySlug(categorySlug: string, articleSlug: string): Promise<DocArticle | undefined> {
-    const category = Array.from(this.docCategories.values()).find(c => c.slug === categorySlug);
+    const categoryResults = await db.select().from(docCategoriesTable).where(eq(docCategoriesTable.slug, categorySlug));
+    const category = categoryResults[0];
     if (!category) return undefined;
-    return Array.from(this.docArticles.values()).find(a => a.categoryId === category.id && a.slug === articleSlug);
+    const results = await db.select().from(docArticlesTable).where(and(eq(docArticlesTable.categoryId, category.id), eq(docArticlesTable.slug, articleSlug)));
+    return results[0];
   }
 
   async createDocArticle(article: InsertDocArticle): Promise<DocArticle> {
     const id = randomUUID();
-    const now = new Date();
-    const a: DocArticle = {
-      id,
-      categoryId: article.categoryId,
-      title: article.title,
-      slug: article.slug,
-      excerpt: article.excerpt ?? null,
-      content: article.content ?? null,
-      author: article.author ?? null,
-      tags: article.tags ?? null,
-      displayOrder: article.displayOrder ?? 0,
-      isPublished: article.isPublished ?? false,
-      publishedAt: article.publishedAt ?? null,
-      viewCount: article.viewCount ?? 0,
-      helpfulCount: article.helpfulCount ?? 0,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.docArticles.set(id, a);
-    return a;
+    const results = await db.insert(docArticlesTable).values({ id, ...article }).returning();
+    return results[0];
   }
 
   async updateDocArticle(id: string, data: Partial<InsertDocArticle>): Promise<DocArticle | undefined> {
-    const article = this.docArticles.get(id);
-    if (!article) return undefined;
-    const updated = { ...article, ...data, updatedAt: new Date() };
-    this.docArticles.set(id, updated);
-    return updated;
+    const results = await db.update(docArticlesTable).set({ ...data, updatedAt: new Date() }).where(eq(docArticlesTable.id, id)).returning();
+    return results[0];
   }
 
   async deleteDocArticle(id: string): Promise<boolean> {
-    return this.docArticles.delete(id);
+    const results = await db.delete(docArticlesTable).where(eq(docArticlesTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // A-Z Destinations (delegated to database repository)
