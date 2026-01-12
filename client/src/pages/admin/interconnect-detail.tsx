@@ -653,24 +653,28 @@ export default function InterconnectDetailPage() {
 
   const createServiceMutation = useMutation({
     mutationFn: async () => {
+      // Helper to check if a value is a valid UUID (real ID) vs placeholder text
+      const isValidUUID = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+      const toNullIfPlaceholder = (val: string | null | undefined) => (val && isValidUUID(val)) ? val : null;
+      
       const serviceData = {
         name: newService.name,
         carrierId: carrierId,
         interconnectId: interconnectId,
-        ratingPlanId: newService.ratingPlanId || null,
-        routingPlanId: newService.routingPlanId || null,
+        ratingPlanId: toNullIfPlaceholder(newService.ratingPlanId),
+        routingPlanId: toNullIfPlaceholder(newService.routingPlanId),
         timeClass: newService.timeClass,
         capacityMode: newService.capacityMode,
         capacityLimit: newService.capacityMode === "capped" ? parseInt(newService.capacityLimit) || null : null,
         allowTranscoding: newService.allowTranscoding,
         enforcementPolicy: newService.enforcementPolicy || null,
         routingMethod: newService.routingMethod,
-        routeToInterconnectId: newService.routingMethod === "route_to_interconnect" ? newService.routeToInterconnectId || null : null,
+        routeToInterconnectId: newService.routingMethod === "route_to_interconnect" ? toNullIfPlaceholder(newService.routeToInterconnectId) : null,
         useTranslationFromSupplier: newService.useTranslationFromSupplier,
         originationTranslation: newService.originationTranslation || null,
         destinationTranslation: newService.destinationTranslation || null,
         originationMatchType: newService.originationMatchType,
-        originationMatchListId: newService.originationMatchType === "assign_list" ? newService.originationMatchListId || null : null,
+        originationMatchListId: newService.originationMatchType === "assign_list" ? toNullIfPlaceholder(newService.originationMatchListId) : null,
         originationMatchConfig: newService.originationMatchType === "define_matches" ? {
           includeExclude: newService.originationIncludeExclude,
           matches: newService.originationMatches,
@@ -678,17 +682,17 @@ export default function InterconnectDetailPage() {
           maxDigits: parseInt(newService.originationMaxDigits) || 0,
         } : null,
         destinationMatchType: newService.destinationMatchType,
-        destinationMatchListId: newService.destinationMatchType === "assign_list" ? newService.destinationMatchListId || null : null,
+        destinationMatchListId: newService.destinationMatchType === "assign_list" ? toNullIfPlaceholder(newService.destinationMatchListId) : null,
         destinationMatchConfig: newService.destinationMatchType === "define_matches" ? {
           includeExclude: newService.destinationIncludeExclude,
           matches: newService.destinationMatches,
           minDigits: parseInt(newService.destinationMinDigits) || 0,
           maxDigits: parseInt(newService.destinationMaxDigits) || 0,
         } : null,
-        originationBlacklistId: newService.originationBlacklistId || null,
-        originationExceptionsId: newService.originationExceptionsId || null,
-        destinationBlacklistId: newService.destinationBlacklistId || null,
-        destinationExceptionsId: newService.destinationExceptionsId || null,
+        originationBlacklistId: toNullIfPlaceholder(newService.originationBlacklistId),
+        originationExceptionsId: toNullIfPlaceholder(newService.originationExceptionsId),
+        destinationBlacklistId: toNullIfPlaceholder(newService.destinationBlacklistId),
+        destinationExceptionsId: toNullIfPlaceholder(newService.destinationExceptionsId),
       };
       const res = await apiRequest("POST", `/api/carriers/${carrierId}/services`, serviceData);
       return res.json();
