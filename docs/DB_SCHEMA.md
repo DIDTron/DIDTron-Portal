@@ -272,6 +272,77 @@ customerIds: jsonb (array of customer IDs)
 createdAt: timestamp
 ```
 
+### POPs (pops)
+Points of Presence - migrated to PostgreSQL per FOREVER POLICY
+```
+id: varchar (UUID)
+name: text
+code: text (unique)
+fqdn: text
+ipAddress: text
+region: text
+country: text
+city: text
+description: text
+isActive: boolean
+displayOrder: integer
+connexcsPopId: text
+status: text (active | paused | disabled)
+createdAt: timestamp
+updatedAt: timestamp
+```
+
+### Voice Tiers (voice_tiers)
+Quality tiers for voice termination - migrated to PostgreSQL per FOREVER POLICY
+```
+id: varchar (UUID)
+name: text
+code: text (unique)
+description: text
+asrPercent: decimal
+acdSeconds: integer
+pddMs: integer
+baseRate: decimal
+displayOrder: integer
+isActive: boolean
+showOnWebsite: boolean
+status: text
+createdAt: timestamp
+updatedAt: timestamp
+```
+
+### Codecs (codecs)
+Audio codecs - migrated to PostgreSQL per FOREVER POLICY
+```
+id: varchar (UUID)
+name: text
+code: text (unique)
+description: text
+priority: integer
+isActive: boolean
+createdAt: timestamp
+updatedAt: timestamp
+```
+
+### Channel Plans (channel_plans)
+SIP channel packages - migrated to PostgreSQL per FOREVER POLICY
+```
+id: varchar (UUID)
+name: text
+code: text (unique)
+description: text
+channels: integer
+cps: integer
+monthlyPrice: decimal
+setupFee: decimal
+displayOrder: integer
+isActive: boolean
+showOnWebsite: boolean
+status: text
+createdAt: timestamp
+updatedAt: timestamp
+```
+
 ## Enums
 - `carrier_partner_type`: customer | supplier | bilateral
 - `credit_type`: prepaid | postpaid

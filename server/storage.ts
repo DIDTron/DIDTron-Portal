@@ -116,6 +116,10 @@ import {
   customerCategories as customerCategoriesTable,
   customerGroups as customerGroupsTable,
   users as usersTable,
+  pops as popsTable,
+  voiceTiers as voiceTiersTable,
+  codecs as codecsTable,
+  channelPlans as channelPlansTable,
   fileTemplates
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -1280,175 +1284,120 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
-  // POPs
+  // POPs - Persisted to PostgreSQL (FOREVER POLICY)
   async getPops(): Promise<Pop[]> {
-    return Array.from(this.pops.values()).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    const results = await db.select().from(popsTable);
+    return results.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }
 
   async getPop(id: string): Promise<Pop | undefined> {
-    return this.pops.get(id);
+    const results = await db.select().from(popsTable).where(eq(popsTable.id, id));
+    return results[0];
   }
 
   async createPop(pop: InsertPop): Promise<Pop> {
-    const id = randomUUID();
-    const now = new Date();
-    const p: Pop = {
-      id,
-      name: pop.name,
-      code: pop.code,
-      fqdn: pop.fqdn,
-      ipAddress: pop.ipAddress ?? null,
-      region: pop.region ?? null,
-      country: pop.country ?? null,
-      city: pop.city ?? null,
-      description: pop.description ?? null,
-      isActive: pop.isActive ?? true,
-      displayOrder: pop.displayOrder ?? 0,
-      connexcsPopId: pop.connexcsPopId ?? null,
-      status: pop.status ?? "active",
-      createdAt: now,
-      updatedAt: now
-    };
-    this.pops.set(id, p);
-    return p;
+    const results = await db.insert(popsTable).values(pop).returning();
+    return results[0];
   }
 
   async updatePop(id: string, data: Partial<InsertPop>): Promise<Pop | undefined> {
-    const pop = this.pops.get(id);
-    if (!pop) return undefined;
-    const updated = { ...pop, ...data, updatedAt: new Date() };
-    this.pops.set(id, updated);
-    return updated;
+    const results = await db.update(popsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(popsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deletePop(id: string): Promise<boolean> {
-    return this.pops.delete(id);
+    const results = await db.delete(popsTable).where(eq(popsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Voice Tiers
+  // Voice Tiers - Persisted to PostgreSQL (FOREVER POLICY)
   async getVoiceTiers(): Promise<VoiceTier[]> {
-    return Array.from(this.voiceTiers.values()).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    const results = await db.select().from(voiceTiersTable);
+    return results.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }
 
   async getVoiceTier(id: string): Promise<VoiceTier | undefined> {
-    return this.voiceTiers.get(id);
+    const results = await db.select().from(voiceTiersTable).where(eq(voiceTiersTable.id, id));
+    return results[0];
   }
 
   async createVoiceTier(tier: InsertVoiceTier): Promise<VoiceTier> {
-    const id = randomUUID();
-    const now = new Date();
-    const t: VoiceTier = {
-      id,
-      name: tier.name,
-      code: tier.code,
-      description: tier.description ?? null,
-      asrPercent: tier.asrPercent ?? null,
-      acdSeconds: tier.acdSeconds ?? null,
-      pddMs: tier.pddMs ?? null,
-      baseRate: tier.baseRate ?? null,
-      displayOrder: tier.displayOrder ?? 0,
-      isActive: tier.isActive ?? true,
-      showOnWebsite: tier.showOnWebsite ?? true,
-      status: tier.status ?? "active",
-      createdAt: now,
-      updatedAt: now
-    };
-    this.voiceTiers.set(id, t);
-    return t;
+    const results = await db.insert(voiceTiersTable).values(tier).returning();
+    return results[0];
   }
 
   async updateVoiceTier(id: string, data: Partial<InsertVoiceTier>): Promise<VoiceTier | undefined> {
-    const tier = this.voiceTiers.get(id);
-    if (!tier) return undefined;
-    const updated = { ...tier, ...data, updatedAt: new Date() };
-    this.voiceTiers.set(id, updated);
-    return updated;
+    const results = await db.update(voiceTiersTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(voiceTiersTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteVoiceTier(id: string): Promise<boolean> {
-    return this.voiceTiers.delete(id);
+    const results = await db.delete(voiceTiersTable).where(eq(voiceTiersTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Codecs
+  // Codecs - Persisted to PostgreSQL (FOREVER POLICY)
   async getCodecs(): Promise<Codec[]> {
-    return Array.from(this.codecs.values()).sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
+    const results = await db.select().from(codecsTable);
+    return results.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
   }
 
   async getCodec(id: string): Promise<Codec | undefined> {
-    return this.codecs.get(id);
+    const results = await db.select().from(codecsTable).where(eq(codecsTable.id, id));
+    return results[0];
   }
 
   async createCodec(codec: InsertCodec): Promise<Codec> {
-    const id = randomUUID();
-    const now = new Date();
-    const c: Codec = {
-      id,
-      name: codec.name,
-      code: codec.code,
-      description: codec.description ?? null,
-      priority: codec.priority ?? 0,
-      isActive: codec.isActive ?? true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.codecs.set(id, c);
-    return c;
+    const results = await db.insert(codecsTable).values(codec).returning();
+    return results[0];
   }
 
   async updateCodec(id: string, data: Partial<InsertCodec>): Promise<Codec | undefined> {
-    const codec = this.codecs.get(id);
-    if (!codec) return undefined;
-    const updated = { ...codec, ...data, updatedAt: new Date() };
-    this.codecs.set(id, updated);
-    return updated;
+    const results = await db.update(codecsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(codecsTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteCodec(id: string): Promise<boolean> {
-    return this.codecs.delete(id);
+    const results = await db.delete(codecsTable).where(eq(codecsTable.id, id)).returning();
+    return results.length > 0;
   }
 
-  // Channel Plans
+  // Channel Plans - Persisted to PostgreSQL (FOREVER POLICY)
   async getChannelPlans(): Promise<ChannelPlan[]> {
-    return Array.from(this.channelPlans.values()).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    const results = await db.select().from(channelPlansTable);
+    return results.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }
 
   async getChannelPlan(id: string): Promise<ChannelPlan | undefined> {
-    return this.channelPlans.get(id);
+    const results = await db.select().from(channelPlansTable).where(eq(channelPlansTable.id, id));
+    return results[0];
   }
 
   async createChannelPlan(plan: InsertChannelPlan): Promise<ChannelPlan> {
-    const id = randomUUID();
-    const now = new Date();
-    const p: ChannelPlan = {
-      id,
-      name: plan.name,
-      code: plan.code,
-      description: plan.description ?? null,
-      channels: plan.channels,
-      cps: plan.cps,
-      monthlyPrice: plan.monthlyPrice ?? null,
-      setupFee: plan.setupFee ?? "0",
-      displayOrder: plan.displayOrder ?? 0,
-      isActive: plan.isActive ?? true,
-      showOnWebsite: plan.showOnWebsite ?? true,
-      status: plan.status ?? "active",
-      createdAt: now,
-      updatedAt: now
-    };
-    this.channelPlans.set(id, p);
-    return p;
+    const results = await db.insert(channelPlansTable).values(plan).returning();
+    return results[0];
   }
 
   async updateChannelPlan(id: string, data: Partial<InsertChannelPlan>): Promise<ChannelPlan | undefined> {
-    const plan = this.channelPlans.get(id);
-    if (!plan) return undefined;
-    const updated = { ...plan, ...data, updatedAt: new Date() };
-    this.channelPlans.set(id, updated);
-    return updated;
+    const results = await db.update(channelPlansTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(channelPlansTable.id, id))
+      .returning();
+    return results[0];
   }
 
   async deleteChannelPlan(id: string): Promise<boolean> {
-    return this.channelPlans.delete(id);
+    const results = await db.delete(channelPlansTable).where(eq(channelPlansTable.id, id)).returning();
+    return results.length > 0;
   }
 
   // Carriers (Wholesale Partners) - Persisted to Database

@@ -148,23 +148,27 @@
 
 ---
 
-### Stage 2: VoIP Infrastructure Entities
+### Stage 2: VoIP Infrastructure Entities ✅ COMPLETE
 
-- [ ] **T33**: Migrate POPs to PostgreSQL
+- [x] **T33**: Migrate POPs to PostgreSQL
   - Files: `shared/schema.ts`, `server/storage.ts`
-  - Acceptance: POPs table with all fields, Drizzle CRUD, no Maps
+  - Acceptance: pops table exists, Drizzle CRUD ✓
+  - Status: ✅ Complete
 
-- [ ] **T34**: Migrate Voice Tiers to PostgreSQL
+- [x] **T34**: Migrate Voice Tiers to PostgreSQL
   - Files: `shared/schema.ts`, `server/storage.ts`
-  - Acceptance: voice_tiers table, Drizzle CRUD, no Maps
+  - Acceptance: voice_tiers table exists, Drizzle CRUD ✓
+  - Status: ✅ Complete
 
-- [ ] **T35**: Migrate Codecs to PostgreSQL
+- [x] **T35**: Migrate Codecs to PostgreSQL
   - Files: `shared/schema.ts`, `server/storage.ts`
-  - Acceptance: codecs table, Drizzle CRUD, no Maps
+  - Acceptance: codecs table exists, Drizzle CRUD ✓
+  - Status: ✅ Complete
 
-- [ ] **T36**: Migrate Channel Plans to PostgreSQL
+- [x] **T36**: Migrate Channel Plans to PostgreSQL
   - Files: `shared/schema.ts`, `server/storage.ts`
-  - Acceptance: channel_plans table, Drizzle CRUD, no Maps
+  - Acceptance: channel_plans table exists, Drizzle CRUD ✓
+  - Status: ✅ Complete
 
 ---
 
