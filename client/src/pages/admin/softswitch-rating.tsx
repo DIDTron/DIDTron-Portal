@@ -1427,9 +1427,24 @@ export function SupplierRatingPlansPage() {
                               data-testid={`menu-download-${item.id}`}
                               onClick={() => toast({ title: "Download", description: "Downloading rates file..." })}
                             >
-                              <Download className="h-4 w-4 mr-2" />
                               Download Rates File
                             </DropdownMenuItem>
+                            {rateInboxSubTab === "carrier-assigned" && (
+                              <>
+                                <DropdownMenuItem 
+                                  data-testid={`menu-import-existing-${item.id}`}
+                                  onClick={() => toast({ title: "Import", description: "Import into existing plan..." })}
+                                >
+                                  Import Into Existing Plan
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  data-testid={`menu-import-new-${item.id}`}
+                                  onClick={() => toast({ title: "Import", description: "Import into new plan..." })}
+                                >
+                                  Import Into New Plan
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

@@ -1,0 +1,169 @@
+Email Details
+ID
+203
+Received
+25/12/2025 15:56
+From
+All IP Rates <rates@allip-telecom.com>
+Sender
+Subject
+All IP A-Z Rates notification January 01, 2026
+To
+rates@voice-blow.com
+CC
+bogdan.aleksic@allip-telecom.com, smith@voice-blow.com
+Attachments
+📎
+AllIP_Rates_Voice_Blow_Technologies_FZ-LLC_Platinum_January_01_2026.xlsx
+Message
+Price List
+        
+        
+        html, body {
+            font-family: Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif;
+            font-size: 15px;
+        }
+        address {
+            font-size: 14px;
+            font-style: normal;
+        }
+        
+        
+    
+    
+        
+        Dear Partner,
+        
+        
+        Please find attached ALL IP price list for ATX rates offered to Voice Blow Technologies FZ-LLC Platinum.
+        
+        
+        Price List Date: January 01, 2026
+        Price List Content: A to Z
+        Currency: USD
+                All rates are billed 1/1 except for the following destinations:
+ - Mexico All is billed 60/60
+ - Haiti All is billed 60/60
+ - Nauru All is billed 60/60
+ - Niue All is billed 60/60
+ - New Caledonia All is billed 60/60
+ - Vanuatu All is billed 60/60
+ - Papua New Guinea All is billed 60/60
+ - Samoa All is billed 60/60
+ - Tonga All is billed 60/60
+ - Kiribati All is billed 60/60
+ - Suriname All is billed 60/60
+ - Cook Islands All is billed 60/60
+ - Tokelau All is billed 60/60
+ - Solomon Islands All is billed 60/60
+ - American Samoa All is billed 60/60
+ - French Polynesia All is billed 60/60
+ - Lesotho All is billed 60/60
+ - International Networks All is billed 60/60
+ - Fiji All is billed 60/60
+ - Maldives All is billed 60/60
+ - Tuvalu All is billed 60/60
+ - India All is billed 60/60
+ - Sri Lanka All is billed 60/60
+ - Palau All is billed 60/60
+ - Inmarsat All is billed 60/60
+ - Micronesia All is billed 60/60
+ - Comoros All is billed 60/60
+ - Nepal All is billed 60/60
+ - Myanmar All is billed 60/60
+ - Qatar All is billed 60/60
+ - Mali All is billed 60/60
+ - Diego Garcia All is billed 60/60
+ - Anguilla All is billed 60/60
+ - Saint Helena All is billed 60/60
+ - Sao Tome and Principe All is billed 60/60
+ - Sudan All is billed 60/60
+ - Mauritania All is billed 60/60
+ - Norfolk Island All is billed 60/60
+ - Azerbaijan All is billed 60/60
+ - Afghanistan Mobile AWCC All is billed 60/1
+ - China All is billed 60/1
+ - Viet Nam All is billed 60/1
+ - New Zealand All is billed 60/1
+ - Indonesia All is billed 60/1
+ - Korea All is billed 60/1
+ - Algeria Mobile Ooredoo All is billed 60/1
+ - Algeria Mobile Algerie Telecom All is billed 60/1
+ - Algeria Mobile Orascom All is billed 60/1
+ - Ethiopia All is billed 60/1
+ - Thailand All is billed 60/1
+ - Brunei Darussalam All is billed 60/1
+ - Philippines All is billed 60/1
+ - Cambodia All is billed 60/1
+ - Macao All is billed 60/1
+ - Saint Lucia All is billed 60/1
+ - Uruguay All is billed 60/1
+ - Gambia All is billed 60/1
+ - Malaysia All is billed 60/1
+ - Kazakhstan All is billed 60/1
+ - Kyrgyzstan All is billed 60/1
+ - Tajikistan All is billed 60/1
+ - Turkmenistan All is billed 60/1
+ - Uzbekistan All is billed 60/1
+ - Venezuela Mobile Digitel All is billed 60/1
+ - Brazil All is billed 30/6
+
+
+ALLIP would like to inform you about a new obligation based on the German Telecommunications Law.
+
+The German Telecommunications Law, TeleKommunikations Gesetz (TKG) in its version from 23. June 2021, published in the Federal Law Gazette (Bundesgesetzblatt), Volume 2021, Section I, No. 35, Bonn on 28. June 2021, sets out the following new requirement for German carriers in clause 120, chapter 4:
+
+German Network operators must anonymize all German incoming traffic on interconnection trunks coming from outside of Germany which carry a German A-Number:
+ - In this case the P-Asserted-Identity will be suppressed by a &ldquo;Privacy Header&rdquo; and the FROM will be set to &ldquo;anonymous&rdquo;.
+
+Affected by &sect; 120 TKG:
+ - Calls with PAI/FROM for 110 and 112, including variations, such as +49, 0049 and NDC (National Dial Code).
+
+This procedure will be implemented starting on 1 December 2022 at the latest.
+
+                
+        
+        You are kindly requested to acknowledge receipt of this message and update your records 
+        accordingly.
+        
+        
+        This is an automatically generated e-mail, if you have any questions please kindly don’t hesitate 
+        to contact your account manager.
+        
+        
+        With kind regards,
+        
+        
+        Rates department
+        
+                
+                
+        
+            
+            All IP telecom
+            Tošin bunar 274v/3
+            11070 Beograd, Srbija
+            
+            
+            rates@allip-telecom.com
+            www.allip-telecom.com
+            
+        
+        
+        Note:
+        
+        
+        A to Z price lists include all of the destinations for every country offered by a Supplier to a Customer.
+        FULL COUNTRY price lists don’t contain all of the countries offered by a Supplier, however each country 
+         included in the offer has a complete set of destinations. 
+        
+        
+        All of the rates previously provided by the Supplier are replaced by the content of the new price list, 
+        and if any destinations are missing in the new price list compared to previous price list, the missing 
+        destinations would NOT be considered in effect starting with the price list date.
+        
+        
+        PARTIAL price lists can include multiple destinations belonging to multiple countries, however not all 
+        the countries and destinations offered by a Suplier are fully defined. The rates for the missing 
+        destinations in the price list are still considered in effect. All of the rates for the missing destinations 
+        in the price list are still considered in effect.
