@@ -513,22 +513,24 @@ export default function CarriersPage() {
                     <FixedColumnTableHead 
                       fixed={true} 
                       rowSpan={2}
-                      className="cursor-pointer select-none"
+                      className="cursor-pointer select-none min-w-[180px]"
                       onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
                     >
-                      <div className="flex items-center gap-1">
-                        Carrier
-                        {sortOrder === "asc" ? (
-                          <ChevronUp className="h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3" />
-                        )}
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-1">
+                          Carrier
+                          {sortOrder === "asc" ? (
+                            <ChevronUp className="h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" />
+                          )}
+                        </div>
+                        <span>Type</span>
                       </div>
                     </FixedColumnTableHead>
-                    <FixedColumnTableHead rowSpan={2}>Type</FixedColumnTableHead>
-                    <FixedColumnTableHead className="text-center text-white bg-[#00a0df] border-b-0" colSpan={2}>Customer</FixedColumnTableHead>
-                    <FixedColumnTableHead className="text-center text-white bg-[#e91e63] border-b-0" colSpan={2}>Supplier</FixedColumnTableHead>
-                    <FixedColumnTableHead className="text-center text-white bg-[#009688] border-b-0">Bilateral</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-center text-white bg-[#0ea5e9] border-b-0" colSpan={2}>Customer</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-center text-white bg-[#ec4899] border-b-0" colSpan={2}>Supplier</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-center text-white bg-[#14b8a6] border-b-0">Bilateral</FixedColumnTableHead>
                     <FixedColumnTableHead rowSpan={2}>Account Manager</FixedColumnTableHead>
                     <FixedColumnTableHead rowSpan={2}></FixedColumnTableHead>
                   </FixedColumnTableRow>
@@ -553,21 +555,21 @@ export default function CarriersPage() {
                         key={carrier.id} 
                         data-testid={`row-carrier-${carrier.id}`}
                       >
-                        <FixedColumnTableCell fixed={true} className="font-medium">
-                          <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
-                            {carrier.name}
-                          </Link>
-                        </FixedColumnTableCell>
-                        <FixedColumnTableCell>
-                          <Badge 
-                            className={
-                              carrier.partnerType === "bilateral" ? "bg-cyan-500 text-white hover:bg-cyan-600" :
-                              carrier.partnerType === "supplier" ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-purple-500 text-white hover:bg-purple-600"
-                            }
-                          >
-                            {carrier.partnerType === "bilateral" ? "B" :
-                             carrier.partnerType === "supplier" ? "S" : "C"}
-                          </Badge>
+                        <FixedColumnTableCell fixed={true} className="font-medium min-w-[180px]">
+                          <div className="flex items-center justify-between gap-4">
+                            <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                              {carrier.name}
+                            </Link>
+                            <Badge 
+                              className={
+                                carrier.partnerType === "bilateral" ? "bg-[#14b8a6] text-white hover:bg-[#0d9488]" :
+                                carrier.partnerType === "supplier" ? "bg-[#f59e0b] text-white hover:bg-[#d97706]" : "bg-[#8b5cf6] text-white hover:bg-[#7c3aed]"
+                              }
+                            >
+                              {carrier.partnerType === "bilateral" ? "B" :
+                               carrier.partnerType === "supplier" ? "S" : "C"}
+                            </Badge>
+                          </div>
                         </FixedColumnTableCell>
                         <FixedColumnTableCell>
                           {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") 
