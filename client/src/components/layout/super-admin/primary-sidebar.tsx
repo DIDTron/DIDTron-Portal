@@ -19,7 +19,7 @@ export interface NavSection {
 export const navSections: NavSection[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, defaultRoute: "/admin" },
   { id: "voip", label: "VoIP", icon: Phone, defaultRoute: "/admin/pops" },
-  { id: "wholesale-partners", label: "Wholesale", icon: Building2, defaultRoute: "/admin/carriers" },
+  { id: "wholesale-partners", label: "Wholesale", icon: Building2, defaultRoute: "/admin/partners" },
   { id: "rate-cards", label: "Rate Cards", icon: Receipt, defaultRoute: "/admin/rate-cards/customer" },
   { id: "did", label: "DID", icon: Globe, defaultRoute: "/admin/did-countries" },
   { id: "customers", label: "Customers", icon: Users, defaultRoute: "/admin/customers" },

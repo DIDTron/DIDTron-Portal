@@ -138,11 +138,11 @@ export default function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           icon={Building2} 
-          title="Carriers" 
+          title="Partners" 
           value={carriers?.length?.toString() || "0"} 
-          description="Active carriers" 
-          testId="stat-carriers"
-          onClick={() => handleQuickAction("voip", "carriers", "Carriers", "/admin/carriers")}
+          description="Wholesale partners" 
+          testId="stat-partners"
+          onClick={() => handleQuickAction("wholesale-partners", "wholesale-partners", "Partners", "/admin/partners")}
         />
         <StatCard 
           icon={Route} 
@@ -215,10 +215,10 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <InsightItem
                 type="recommendation"
-                title="Add more carriers for USA routes"
-                description="Your USA termination has only 1 carrier. Adding 2 more carriers would improve redundancy and potentially reduce costs by 15%."
-                action="Add Carrier"
-                onAction={() => handleQuickAction("voip", "carriers", "Carriers", "/admin/carriers")}
+                title="Add more partners for USA routes"
+                description="Your USA termination has only 1 partner. Adding 2 more partners would improve redundancy and potentially reduce costs by 15%."
+                action="Add Partner"
+                onAction={() => handleQuickAction("wholesale-partners", "wholesale-partners", "Partners", "/admin/partners")}
               />
               <InsightItem
                 type="alert"

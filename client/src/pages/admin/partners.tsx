@@ -30,7 +30,7 @@ import type { Carrier, Currency } from "@shared/schema";
 
 type ViewMode = "list" | "add";
 
-export default function CarriersPage() {
+export default function PartnersPage() {
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
@@ -492,12 +492,12 @@ export default function CarriersPage() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-carriers-title">Carrier Management</h1>
-          <p className="text-muted-foreground">Manage carrier connections for the Class 4 Softswitch</p>
+          <h1 className="text-2xl font-bold" data-testid="text-partners-title">Partner Management</h1>
+          <p className="text-muted-foreground">Manage wholesale partners for managed VoIP services</p>
         </div>
-        <Button onClick={handleAdd} data-testid="button-add-carrier">
+        <Button onClick={handleAdd} data-testid="button-add-partner">
           <Plus className="h-4 w-4 mr-2" />
-          Add Carrier
+          Add Partner
         </Button>
       </div>
 
@@ -518,7 +518,7 @@ export default function CarriersPage() {
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-1">
-                          Carrier
+                          Partner
                           {sortOrder === "asc" ? (
                             <ChevronUp className="h-3 w-3" />
                           ) : (
@@ -557,7 +557,7 @@ export default function CarriersPage() {
                       >
                         <FixedColumnTableCell fixed={true} className="font-medium min-w-[180px]">
                           <div className="flex items-center justify-between gap-4">
-                            <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                            <Link href={`/admin/partners/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-partner-${carrier.id}`}>
                               {carrier.name}
                             </Link>
                             <Badge 

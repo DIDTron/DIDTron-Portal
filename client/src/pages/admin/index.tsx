@@ -16,7 +16,7 @@ import VoiceTiersPage from "./voice-tiers";
 import CodecsPage from "./codecs";
 import ChannelPlansPage from "./channel-plans";
 import DIDCountriesPage from "./did-countries";
-import CarriersPage from "./carriers";
+import PartnersPage from "./partners";
 import CarrierDetailPage from "./carrier-detail";
 import InterconnectDetailPage from "./interconnect-detail";
 import RoutesPage from "./routes";
@@ -102,7 +102,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/voice-tiers": { section: "voip", subItem: "voice-tiers" },
   "/admin/codecs": { section: "voip", subItem: "codecs" },
   "/admin/channel-plans": { section: "voip", subItem: "channel-plans" },
-  "/admin/carriers": { section: "carriers", subItem: "carriers" },
+  "/admin/partners": { section: "wholesale-partners", subItem: "wholesale-partners" },
   "/admin/routes": { section: "voip", subItem: "routes" },
   "/admin/rate-cards/customer": { section: "rate-cards", subItem: "customer-rates" },
   "/admin/rate-cards/carrier": { section: "rate-cards", subItem: "carrier-rates" },
@@ -254,9 +254,9 @@ export default function AdminLayout() {
                 <Route path="/admin/voice-tiers" component={VoiceTiersPage} />
                 <Route path="/admin/codecs" component={CodecsPage} />
                 <Route path="/admin/channel-plans" component={ChannelPlansPage} />
-                <Route path="/admin/carriers" component={CarriersPage} />
-                <Route path="/admin/carriers/:carrierId/interconnects/:interconnectId" component={InterconnectDetailPage} />
-                <Route path="/admin/carriers/:id" component={CarrierDetailPage} />
+                <Route path="/admin/partners" component={PartnersPage} />
+                <Route path="/admin/partners/:partnerId/interconnects/:interconnectId" component={InterconnectDetailPage} />
+                <Route path="/admin/partners/:id" component={CarrierDetailPage} />
                 <Route path="/admin/rate-cards/customer" component={CustomerRatesPage} />
                 <Route path="/admin/rate-cards/carrier" component={CarrierRatesPage} />
                 <Route path="/admin/routes" component={RoutesPage} />

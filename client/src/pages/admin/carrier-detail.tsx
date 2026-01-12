@@ -40,8 +40,11 @@ import type { Carrier, Currency, CarrierInterconnect, CarrierContact, CarrierCre
 export default function CarrierDetailPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [, params] = useRoute("/admin/carriers/:id");
+  const [, partnersParams] = useRoute("/admin/partners/:id");
+  const [, carriersParams] = useRoute("/admin/carriers/:id");
+  const params = partnersParams || carriersParams;
   const carrierId = params?.id;
+  const isPartnerRoute = !!partnersParams;
 
   const [activeTab, setActiveTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
@@ -556,11 +559,11 @@ export default function CarrierDetailPage() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between gap-4 p-4 border-b bg-muted/30">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/admin/carriers")} data-testid="button-back">
+          <Button variant="ghost" size="icon" onClick={() => setLocation(isPartnerRoute ? "/admin/partners" : "/admin/softswitch/carriers")} data-testid="button-back">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div>
-            <div className="text-sm text-muted-foreground">Carrier Management</div>
+            <div className="text-sm text-muted-foreground">{isPartnerRoute ? "Partner Management" : "Carrier Management"}</div>
             <h1 className="text-lg font-semibold" data-testid="text-carrier-name">{carrier.name}</h1>
           </div>
         </div>
