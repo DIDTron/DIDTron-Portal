@@ -100,7 +100,7 @@ export function SoftswitchCarriersPage() {
     mutationFn: async (data: typeof formData) => {
       const res = await apiRequest("POST", "/api/carriers", {
         name: data.name,
-        code: data.name.toUpperCase().replace(/\s+/g, "_").slice(0, 10),
+        code: data.name.toUpperCase().replace(/\s+/g, "_").slice(0, 20),
         partnerType: data.partnerType,
         primaryCurrencyId: data.primaryCurrencyId || null,
         capacityMode: data.capacityUnrestricted ? "unrestricted" : "capped",
