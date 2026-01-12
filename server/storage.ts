@@ -170,7 +170,12 @@ import {
   siteSettings as siteSettingsTable,
   websiteSections as websiteSectionsTable,
   docCategories as docCategoriesTable,
-  docArticles as docArticlesTable
+  docArticles as docArticlesTable,
+  emContentItems as emContentItemsTable,
+  emContentVersions as emContentVersionsTable,
+  emValidationResults as emValidationResultsTable,
+  emPublishHistory as emPublishHistoryTable,
+  devTests as devTestsTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -3714,188 +3719,101 @@ export class MemStorage implements IStorage {
     return azDestinationsRepository.normalizeCode(dialCode);
   }
 
-  // Experience Manager (delegated to database repository)
-  private emContentItems: Map<string, EmContentItem> = new Map();
-  private emContentVersions: Map<string, EmContentVersion> = new Map();
-  private emValidationResults: Map<string, EmValidationResult> = new Map();
-  private emPublishHistory: Map<string, EmPublishHistory> = new Map();
-
+  // Experience Manager (PostgreSQL)
   async getAllEmContentItems(): Promise<EmContentItem[]> {
-    return Array.from(this.emContentItems.values());
+    return await db.select().from(emContentItemsTable);
   }
 
   async getEmContentItem(section: string, entityType: string, slug: string): Promise<EmContentItem | undefined> {
-    const items = Array.from(this.emContentItems.values());
-    for (const item of items) {
-      if (item.section === section && item.entityType === entityType && item.slug === slug) {
-        return item;
-      }
-    }
-    return undefined;
+    const results = await db.select().from(emContentItemsTable).where(
+      and(
+        eq(emContentItemsTable.section, section),
+        eq(emContentItemsTable.entityType, entityType),
+        eq(emContentItemsTable.slug, slug)
+      )
+    );
+    return results[0];
   }
 
   async getEmContentItemById(id: string): Promise<EmContentItem | undefined> {
-    return this.emContentItems.get(id);
+    const results = await db.select().from(emContentItemsTable).where(eq(emContentItemsTable.id, id));
+    return results[0];
   }
 
   async createEmContentItem(item: InsertEmContentItem): Promise<EmContentItem> {
     const id = randomUUID();
-    const now = new Date();
-    const contentItem: EmContentItem = {
-      id,
-      section: item.section,
-      entityType: item.entityType,
-      slug: item.slug,
-      name: item.name,
-      status: item.status ?? "draft",
-      draftVersionId: item.draftVersionId ?? null,
-      previewVersionId: item.previewVersionId ?? null,
-      publishedVersionId: item.publishedVersionId ?? null,
-      previewToken: item.previewToken ?? null,
-      previewExpiresAt: item.previewExpiresAt ?? null,
-      lastPublishedAt: item.lastPublishedAt ?? null,
-      lastPublishedBy: item.lastPublishedBy ?? null,
-      createdBy: item.createdBy ?? null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.emContentItems.set(id, contentItem);
-    return contentItem;
+    const results = await db.insert(emContentItemsTable).values({ id, ...item }).returning();
+    return results[0];
   }
 
   async updateEmContentItem(id: string, data: Partial<InsertEmContentItem>): Promise<EmContentItem | undefined> {
-    const item = this.emContentItems.get(id);
-    if (!item) return undefined;
-    const updated = { ...item, ...data, updatedAt: new Date() };
-    this.emContentItems.set(id, updated as EmContentItem);
-    return updated as EmContentItem;
+    const results = await db.update(emContentItemsTable).set({ ...data, updatedAt: new Date() }).where(eq(emContentItemsTable.id, id)).returning();
+    return results[0];
   }
 
   async getEmContentVersion(id: string): Promise<EmContentVersion | undefined> {
-    return this.emContentVersions.get(id);
+    const results = await db.select().from(emContentVersionsTable).where(eq(emContentVersionsTable.id, id));
+    return results[0];
   }
 
   async getLatestEmContentVersion(contentItemId: string): Promise<EmContentVersion | undefined> {
-    let latest: EmContentVersion | undefined;
-    const versions = Array.from(this.emContentVersions.values());
-    for (const version of versions) {
-      if (version.contentItemId === contentItemId) {
-        if (!latest || version.version > latest.version) {
-          latest = version;
-        }
-      }
-    }
-    return latest;
+    const results = await db.select().from(emContentVersionsTable)
+      .where(eq(emContentVersionsTable.contentItemId, contentItemId));
+    if (results.length === 0) return undefined;
+    return results.reduce((latest, current) => 
+      current.version > latest.version ? current : latest
+    );
   }
 
   async createEmContentVersion(version: InsertEmContentVersion): Promise<EmContentVersion> {
     const id = randomUUID();
-    const now = new Date();
-    const contentVersion: EmContentVersion = {
-      id,
-      contentItemId: version.contentItemId,
-      version: version.version,
-      data: version.data,
-      changeDescription: version.changeDescription ?? null,
-      createdBy: version.createdBy ?? null,
-      createdAt: now,
-    };
-    this.emContentVersions.set(id, contentVersion);
-    return contentVersion;
+    const results = await db.insert(emContentVersionsTable).values({ id, ...version }).returning();
+    return results[0];
   }
 
   async createEmValidationResult(result: InsertEmValidationResult): Promise<EmValidationResult> {
     const id = randomUUID();
-    const now = new Date();
-    const validationResult: EmValidationResult = {
-      id,
-      contentItemId: result.contentItemId,
-      versionId: result.versionId,
-      validationType: result.validationType,
-      passed: result.passed,
-      errors: result.errors ?? null,
-      warnings: result.warnings ?? null,
-      createdAt: now,
-    };
-    this.emValidationResults.set(id, validationResult);
-    return validationResult;
+    const results = await db.insert(emValidationResultsTable).values({ id, ...result }).returning();
+    return results[0];
   }
 
   async getEmPublishHistory(contentItemId: string): Promise<EmPublishHistory[]> {
-    const history: EmPublishHistory[] = [];
-    const entries = Array.from(this.emPublishHistory.values());
-    for (const entry of entries) {
-      if (entry.contentItemId === contentItemId) {
-        history.push(entry);
-      }
-    }
-    return history.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+    const results = await db.select().from(emPublishHistoryTable)
+      .where(eq(emPublishHistoryTable.contentItemId, contentItemId));
+    return results.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
   }
 
   async createEmPublishHistory(entry: InsertEmPublishHistory): Promise<EmPublishHistory> {
     const id = randomUUID();
-    const now = new Date();
-    const publishHistory: EmPublishHistory = {
-      id,
-      contentItemId: entry.contentItemId,
-      fromVersionId: entry.fromVersionId ?? null,
-      toVersionId: entry.toVersionId,
-      action: entry.action,
-      publishedBy: entry.publishedBy ?? null,
-      note: entry.note ?? null,
-      createdAt: now,
-    };
-    this.emPublishHistory.set(id, publishHistory);
-    return publishHistory;
+    const results = await db.insert(emPublishHistoryTable).values({ id, ...entry }).returning();
+    return results[0];
   }
 
-  // Dev Tests
-  private devTests: Map<string, DevTest> = new Map();
-
+  // Dev Tests (PostgreSQL)
   async getDevTests(): Promise<DevTest[]> {
-    return Array.from(this.devTests.values()).sort((a, b) => 
-      new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-    );
+    const results = await db.select().from(devTestsTable);
+    return results.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
   }
 
   async getDevTest(id: string): Promise<DevTest | undefined> {
-    return this.devTests.get(id);
+    const results = await db.select().from(devTestsTable).where(eq(devTestsTable.id, id));
+    return results[0];
   }
 
   async createDevTest(test: InsertDevTest): Promise<DevTest> {
     const id = randomUUID();
-    const now = new Date();
-    const devTest: DevTest = {
-      id,
-      name: test.name,
-      description: test.description ?? null,
-      module: test.module,
-      testSteps: test.testSteps ?? null,
-      expectedResult: test.expectedResult ?? null,
-      actualResult: test.actualResult ?? null,
-      status: test.status,
-      duration: test.duration ?? null,
-      errorMessage: test.errorMessage ?? null,
-      createdTestData: test.createdTestData ?? null,
-      cleanedUp: test.cleanedUp ?? false,
-      testedBy: test.testedBy ?? null,
-      testedAt: test.testedAt ?? now,
-      createdAt: now,
-    };
-    this.devTests.set(id, devTest);
-    return devTest;
+    const results = await db.insert(devTestsTable).values({ id, ...test }).returning();
+    return results[0];
   }
 
   async updateDevTest(id: string, data: Partial<InsertDevTest>): Promise<DevTest | undefined> {
-    const test = this.devTests.get(id);
-    if (!test) return undefined;
-    const updated = { ...test, ...data };
-    this.devTests.set(id, updated as DevTest);
-    return updated as DevTest;
+    const results = await db.update(devTestsTable).set(data).where(eq(devTestsTable.id, id)).returning();
+    return results[0];
   }
 
   async deleteDevTest(id: string): Promise<boolean> {
-    return this.devTests.delete(id);
+    const results = await db.delete(devTestsTable).where(eq(devTestsTable.id, id)).returning();
+    return results.length > 0;
   }
 }
 
