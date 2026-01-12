@@ -486,8 +486,8 @@ export default function CarriersPage() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-carriers-title">Wholesale Partners</h1>
-          <p className="text-muted-foreground">Manage carrier connections for voice routing</p>
+          <h1 className="text-2xl font-bold" data-testid="text-carriers-title">Carrier Management</h1>
+          <p className="text-muted-foreground">Manage carrier connections for the Class 4 Softswitch</p>
         </div>
         <Button onClick={handleAdd} data-testid="button-add-carrier">
           <Plus className="h-4 w-4 mr-2" />
@@ -504,71 +504,113 @@ export default function CarriersPage() {
               <FixedColumnTable>
                 <FixedColumnTableHeader>
                   <FixedColumnTableRow>
-                    <FixedColumnTableHead fixed={true}>Name</FixedColumnTableHead>
-                    <FixedColumnTableHead>Type</FixedColumnTableHead>
-                    <FixedColumnTableHead>Currency</FixedColumnTableHead>
-                    <FixedColumnTableHead className="text-right">Customer Balance</FixedColumnTableHead>
-                    <FixedColumnTableHead className="text-right">Supplier Balance</FixedColumnTableHead>
-                    <FixedColumnTableHead>Status</FixedColumnTableHead>
-                    <FixedColumnTableHead>Actions</FixedColumnTableHead>
+                    <FixedColumnTableHead fixed={true} className="border-b-0">Carrier</FixedColumnTableHead>
+                    <FixedColumnTableHead className="border-b-0">Type</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-center bg-[#00a0df] border-b-0" colSpan={2}>Customer</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-center bg-[#e91e63] border-b-0" colSpan={2}>Supplier</FixedColumnTableHead>
+                    <FixedColumnTableHead className="text-center bg-[#009688] border-b-0" colSpan={2}>Bilateral</FixedColumnTableHead>
+                    <FixedColumnTableHead className="border-b-0">Account Manager</FixedColumnTableHead>
+                    <FixedColumnTableHead className="border-b-0"></FixedColumnTableHead>
+                  </FixedColumnTableRow>
+                  <FixedColumnTableRow>
+                    <FixedColumnTableHead fixed={true}></FixedColumnTableHead>
+                    <FixedColumnTableHead></FixedColumnTableHead>
+                    <FixedColumnTableHead>Credit Type</FixedColumnTableHead>
+                    <FixedColumnTableHead>Balance</FixedColumnTableHead>
+                    <FixedColumnTableHead>Credit Type</FixedColumnTableHead>
+                    <FixedColumnTableHead>Balance</FixedColumnTableHead>
+                    <FixedColumnTableHead>Balance</FixedColumnTableHead>
+                    <FixedColumnTableHead></FixedColumnTableHead>
+                    <FixedColumnTableHead></FixedColumnTableHead>
+                    <FixedColumnTableHead></FixedColumnTableHead>
                   </FixedColumnTableRow>
                 </FixedColumnTableHeader>
                 <FixedColumnTableBody>
-                  {paginatedCarriers.map((carrier) => (
-                    <FixedColumnTableRow 
-                      key={carrier.id} 
-                      data-testid={`row-carrier-${carrier.id}`}
-                    >
-                      <FixedColumnTableCell fixed={true} className="font-medium">
-                        <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
-                          {carrier.name}
-                        </Link>
-                      </FixedColumnTableCell>
-                      <FixedColumnTableCell>
-                        <Badge 
-                          className={
-                            carrier.partnerType === "bilateral" ? "bg-cyan-500 text-white" :
-                            carrier.partnerType === "supplier" ? "bg-yellow-500 text-white" : "bg-blue-500 text-white"
-                          }
-                        >
-                          {carrier.partnerType === "bilateral" ? "Bilateral" :
-                           carrier.partnerType === "supplier" ? "Supplier" : "Customer"}
-                        </Badge>
-                      </FixedColumnTableCell>
-                      <FixedColumnTableCell>
-                        {currencies?.find(c => c.id === carrier.primaryCurrencyId)?.code || "-"}
-                      </FixedColumnTableCell>
-                      <FixedColumnTableCell className="text-right font-mono">
-                        {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") ? (
-                          <span className={`inline-block px-2 py-1 rounded text-white ${parseFloat(carrier.customerBalance || "0") >= 0 ? "bg-emerald-500" : "bg-rose-500"}`}>
-                            {parseFloat(carrier.customerBalance || "0").toFixed(2)}
-                          </span>
-                        ) : "-"}
-                      </FixedColumnTableCell>
-                      <FixedColumnTableCell className="text-right font-mono">
-                        {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") ? (
-                          <span className={`inline-block px-2 py-1 rounded text-white ${parseFloat(carrier.supplierBalance || "0") >= 0 ? "bg-emerald-500" : "bg-rose-500"}`}>
-                            {parseFloat(carrier.supplierBalance || "0").toFixed(2)}
-                          </span>
-                        ) : "-"}
-                      </FixedColumnTableCell>
-                      <FixedColumnTableCell>
-                        <Badge className={carrier.status === "active" ? "bg-green-500 text-white" : "bg-gray-400 text-white"}>
-                          {carrier.status}
-                        </Badge>
-                      </FixedColumnTableCell>
-                      <FixedColumnTableCell>
-                        <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => handleEdit(carrier)} data-testid={`button-edit-${carrier.id}`}>
-                            <Pencil className="h-4 w-4" />
+                  {paginatedCarriers.map((carrier) => {
+                    const currency = currencies?.find(c => c.id === carrier.primaryCurrencyId);
+                    const currencyCode = currency?.code || "USD";
+                    const customerBalance = parseFloat(carrier.customerBalance || "0");
+                    const supplierBalance = parseFloat(carrier.supplierBalance || "0");
+                    const bilateralBalance = customerBalance - supplierBalance;
+                    
+                    return (
+                      <FixedColumnTableRow 
+                        key={carrier.id} 
+                        data-testid={`row-carrier-${carrier.id}`}
+                      >
+                        <FixedColumnTableCell fixed={true} className="font-medium">
+                          <Link href={`/admin/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                            {carrier.name}
+                          </Link>
+                        </FixedColumnTableCell>
+                        <FixedColumnTableCell>
+                          <Badge 
+                            className={
+                              carrier.partnerType === "bilateral" ? "bg-cyan-500 text-white hover:bg-cyan-600" :
+                              carrier.partnerType === "supplier" ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-purple-500 text-white hover:bg-purple-600"
+                            }
+                          >
+                            {carrier.partnerType === "bilateral" ? "B" :
+                             carrier.partnerType === "supplier" ? "S" : "C"}
+                          </Badge>
+                        </FixedColumnTableCell>
+                        <FixedColumnTableCell>
+                          {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") 
+                            ? (carrier.customerCreditType === "prepaid" ? "Prepaid" : "Postpaid")
+                            : "-"}
+                        </FixedColumnTableCell>
+                        <FixedColumnTableCell className="font-mono">
+                          {(carrier.partnerType === "customer" || carrier.partnerType === "bilateral") ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-block px-2 py-1 rounded text-white min-w-[80px] text-right ${customerBalance >= 0 ? "bg-emerald-500" : "bg-rose-500"}`}>
+                                {customerBalance.toFixed(2)}
+                              </span>
+                              <span className="text-muted-foreground text-xs">{currencyCode}</span>
+                            </div>
+                          ) : "-"}
+                        </FixedColumnTableCell>
+                        <FixedColumnTableCell>
+                          {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") 
+                            ? (carrier.supplierCreditType === "prepaid" ? "Prepaid" : "Postpaid")
+                            : "-"}
+                        </FixedColumnTableCell>
+                        <FixedColumnTableCell className="font-mono">
+                          {(carrier.partnerType === "supplier" || carrier.partnerType === "bilateral") ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-block px-2 py-1 rounded text-white min-w-[80px] text-right ${supplierBalance >= 0 ? "bg-rose-500" : "bg-emerald-500"}`}>
+                                {supplierBalance.toFixed(2)}
+                              </span>
+                              <span className="text-muted-foreground text-xs">{currencyCode}</span>
+                            </div>
+                          ) : "-"}
+                        </FixedColumnTableCell>
+                        <FixedColumnTableCell className="font-mono">
+                          {carrier.partnerType === "bilateral" ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-block px-2 py-1 rounded text-white min-w-[80px] text-right ${bilateralBalance >= 0 ? "bg-emerald-500" : "bg-rose-500"}`}>
+                                {bilateralBalance.toFixed(2)}
+                              </span>
+                              <span className="text-muted-foreground text-xs">{currencyCode}</span>
+                            </div>
+                          ) : "-"}
+                        </FixedColumnTableCell>
+                        <FixedColumnTableCell></FixedColumnTableCell>
+                        <FixedColumnTableCell>
+                          {carrier.accountManager || "-"}
+                        </FixedColumnTableCell>
+                        <FixedColumnTableCell>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => deleteMutation.mutate(carrier.id)} 
+                            data-testid={`button-delete-${carrier.id}`}
+                          >
+                            Delete
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(carrier.id)} data-testid={`button-delete-${carrier.id}`}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </FixedColumnTableCell>
-                    </FixedColumnTableRow>
-                  ))}
+                        </FixedColumnTableCell>
+                      </FixedColumnTableRow>
+                    );
+                  })}
                 </FixedColumnTableBody>
               </FixedColumnTable>
               <DataTableFooter
