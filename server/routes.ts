@@ -5883,7 +5883,11 @@ export async function registerRoutes(
 
   app.post("/api/carriers/:id/interconnects", async (req, res) => {
     try {
-      const parsed = insertCarrierInterconnectSchema.safeParse({ ...req.body, carrierId: req.params.id });
+      // Resolve carrier by ID or code
+      const carrier = await storage.resolveCarrier(req.params.id);
+      if (!carrier) return res.status(404).json({ error: "Carrier not found" });
+      
+      const parsed = insertCarrierInterconnectSchema.safeParse({ ...req.body, carrierId: carrier.id });
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const interconnect = await storage.createCarrierInterconnect(parsed.data);
       await storage.createAuditLog({
@@ -5895,6 +5899,7 @@ export async function registerRoutes(
       });
       res.status(201).json(interconnect);
     } catch (error) {
+      console.error("Failed to create carrier interconnect:", error);
       res.status(500).json({ error: "Failed to create carrier interconnect" });
     }
   });
