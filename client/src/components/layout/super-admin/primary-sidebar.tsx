@@ -248,8 +248,14 @@ export function PrimarySidebar() {
                 className="flex items-center justify-center p-2 rounded-md cursor-pointer text-sidebar-foreground hover-elevate"
                 data-testid="nav-section-system-status"
                 onClick={() => {
-                  const monitoringSection = navSections.find(s => s.id === "monitoring");
-                  if (monitoringSection) handleSectionClick(monitoringSection);
+                  setActiveSection("system-status");
+                  setActiveSubItem("system-status");
+                  openTab({
+                    id: "system-status",
+                    label: "System Status",
+                    route: "/admin/system-status",
+                  });
+                  setLocation("/admin/system-status");
                 }}
               >
                 <Server className="h-5 w-5" />
@@ -264,8 +270,14 @@ export function PrimarySidebar() {
             className="flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer text-sidebar-foreground hover-elevate"
             data-testid="nav-section-system-status"
             onClick={() => {
-              const monitoringSection = navSections.find(s => s.id === "monitoring");
-              if (monitoringSection) handleSectionClick(monitoringSection);
+              setActiveSection("system-status");
+              setActiveSubItem("system-status");
+              openTab({
+                id: "system-status",
+                label: "System Status",
+                route: "/admin/system-status",
+              });
+              setLocation("/admin/system-status");
             }}
           >
             <Server className="h-5 w-5 shrink-0" />

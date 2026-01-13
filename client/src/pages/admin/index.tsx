@@ -42,6 +42,7 @@ import TrashPage from "./trash";
 import SettingsPage from "./settings";
 import LiveActivityPage from "./live-activity";
 import MetricsPage from "./metrics";
+import SystemStatusPage from "./system-status";
 import AlertsPage from "./alerts";
 import MonitoringRulesPage from "./monitoring-rules";
 import RolesPage from "./roles";
@@ -310,6 +311,7 @@ export default function AdminLayout() {
                 <Route path="/admin/social-posts" component={SocialPostsPage} />
                 <Route path="/admin/email-templates" component={EmailTemplatesPage} />
                 <Route path="/admin/metrics" component={MetricsPage} />
+                <Route path="/admin/system-status" component={SystemStatusPage} />
                 <Route path="/admin/cdrs" component={CdrsPage} />
                 <Route path="/admin/alerts" component={AlertsPage} />
                 <Route path="/admin/rules" component={MonitoringRulesPage} />
