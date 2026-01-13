@@ -9730,6 +9730,225 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== PERIOD EXCEPTIONS API ====================
+
+  app.get("/api/period-exceptions", async (req, res) => {
+    try {
+      const { searchType, query, limit = "50", offset = "0" } = req.query;
+      const limitNum = Math.min(parseInt(limit as string) || 50, 500);
+      const offsetNum = parseInt(offset as string) || 0;
+      
+      let whereClause = "";
+      if (searchType && query) {
+        const searchQuery = (query as string).replace(/'/g, "''");
+        if (searchType === 'prefix') {
+          whereClause = `WHERE prefix ILIKE '${searchQuery}'`;
+        } else if (searchType === 'zone') {
+          whereClause = `WHERE zone_name ILIKE '${searchQuery}'`;
+        } else if (searchType === 'country') {
+          whereClause = `WHERE country_name ILIKE '${searchQuery}'`;
+        }
+      }
+      
+      const dataResult = await db.execute(sql.raw(
+        `SELECT id, prefix, zone_name as "zoneName", country_name as "countryName", 
+         initial_interval as "initialInterval", recurring_interval as "recurringInterval",
+         az_destination_id as "azDestinationId", interval_hash as "intervalHash",
+         synced_at as "syncedAt", created_at as "createdAt", updated_at as "updatedAt"
+         FROM period_exceptions ${whereClause} ORDER BY prefix LIMIT ${limitNum} OFFSET ${offsetNum}`
+      ));
+      
+      const totalResult = await db.execute(sql.raw(
+        `SELECT COUNT(*) as count FROM period_exceptions ${whereClause}`
+      ));
+      const total = parseInt((totalResult.rows[0] as any)?.count || "0");
+      
+      res.json({
+        data: dataResult.rows,
+        total,
+        limit: limitNum,
+        offset: offsetNum,
+      });
+    } catch (error: any) {
+      console.error("Failed to get period exceptions:", error);
+      res.status(500).json({ error: "Failed to get period exceptions", details: error.message });
+    }
+  });
+
+  app.get("/api/period-exceptions/history", async (req, res) => {
+    try {
+      const { limit = "50", offset = "0", periodExceptionId } = req.query;
+      const limitNum = Math.min(parseInt(limit as string) || 50, 500);
+      const offsetNum = parseInt(offset as string) || 0;
+      
+      let whereClause = "";
+      if (periodExceptionId) {
+        const safeId = (periodExceptionId as string).replace(/'/g, "''");
+        whereClause = `WHERE period_exception_id = '${safeId}'`;
+      }
+      
+      const dataResult = await db.execute(sql.raw(
+        `SELECT id, period_exception_id as "periodExceptionId", prefix, zone_name as "zoneName",
+         change_type as "changeType", previous_initial_interval as "previousInitialInterval",
+         previous_recurring_interval as "previousRecurringInterval", new_initial_interval as "newInitialInterval",
+         new_recurring_interval as "newRecurringInterval", changed_by_user_id as "changedByUserId",
+         changed_by_email as "changedByEmail", change_source as "changeSource", created_at as "createdAt"
+         FROM period_exception_history ${whereClause} ORDER BY created_at DESC LIMIT ${limitNum} OFFSET ${offsetNum}`
+      ));
+      
+      const totalResult = await db.execute(sql.raw(
+        `SELECT COUNT(*) as count FROM period_exception_history ${whereClause}`
+      ));
+      const total = parseInt((totalResult.rows[0] as any)?.count || "0");
+      
+      res.json({
+        data: dataResult.rows,
+        total,
+        limit: limitNum,
+        offset: offsetNum,
+      });
+    } catch (error: any) {
+      console.error("Failed to get period exception history:", error);
+      res.status(500).json({ error: "Failed to get period exception history", details: error.message });
+    }
+  });
+
+  app.get("/api/period-exceptions/export/csv", async (req, res) => {
+    try {
+      const { searchType, query } = req.query;
+      
+      let whereClause = "";
+      let params: string[] = [];
+      
+      if (searchType && query) {
+        const searchQuery = (query as string).replace(/'/g, "''");
+        if (searchType === 'prefix') {
+          whereClause = `WHERE prefix ILIKE '${searchQuery}'`;
+        } else if (searchType === 'zone') {
+          whereClause = `WHERE zone_name ILIKE '${searchQuery}'`;
+        } else if (searchType === 'country') {
+          whereClause = `WHERE country_name ILIKE '${searchQuery}'`;
+        }
+      }
+      
+      const result = await db.execute(sql.raw(`SELECT * FROM period_exceptions ${whereClause} ORDER BY prefix`));
+      const exceptions = result.rows as any[];
+      
+      const escapeCSV = (val: string | null | undefined): string => {
+        const str = val == null ? "" : String(val);
+        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+      
+      const header = "prefix,zone_name,country_name,initial_interval,recurring_interval\n";
+      const rows = exceptions.map(e => 
+        [e.prefix, e.zone_name, e.country_name, e.initial_interval, e.recurring_interval]
+          .map(escapeCSV)
+          .join(",")
+      ).join("\n");
+      
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="period-exceptions-${new Date().toISOString().split("T")[0]}.csv"`);
+      res.send(header + rows);
+    } catch (error: any) {
+      console.error("Failed to export period exceptions:", error);
+      res.status(500).json({ error: "Failed to export period exceptions", details: error.message });
+    }
+  });
+
+  app.post("/api/period-exceptions/sync-from-az", async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      const user = userId ? await storage.getUser(userId) : null;
+      
+      const azResult = await db.execute(sql`
+        SELECT * FROM az_destinations 
+        WHERE billing_increment IS NOT NULL 
+        AND billing_increment != '1/1'
+        AND is_active = true
+      `);
+      
+      const azDestinations = azResult.rows as any[];
+      const validAzIds = new Set(azDestinations.map(az => az.id));
+      
+      let added = 0;
+      let updated = 0;
+      let removed = 0;
+      
+      for (const az of azDestinations) {
+        const intervalParts = az.billing_increment.split('/');
+        const initialInterval = parseInt(intervalParts[0]) || 1;
+        const recurringInterval = parseInt(intervalParts[1]) || 1;
+        const intervalHash = `${initialInterval}/${recurringInterval}`;
+        
+        const existing = await db.execute(sql`
+          SELECT * FROM period_exceptions WHERE az_destination_id = ${az.id}
+        `);
+        
+        if (existing.rows.length === 0) {
+          const insertResult = await db.execute(sql`
+            INSERT INTO period_exceptions (prefix, zone_name, country_name, initial_interval, recurring_interval, az_destination_id, interval_hash)
+            VALUES (${az.code}, ${az.destination}, ${az.region}, ${initialInterval}, ${recurringInterval}, ${az.id}, ${intervalHash})
+            RETURNING id
+          `);
+          
+          await db.execute(sql`
+            INSERT INTO period_exception_history (period_exception_id, prefix, zone_name, change_type, new_initial_interval, new_recurring_interval, changed_by_user_id, changed_by_email, change_source)
+            VALUES (${(insertResult.rows[0] as any).id}, ${az.code}, ${az.destination}, 'added', ${initialInterval}, ${recurringInterval}, ${userId}, ${user?.email}, 'sync')
+          `);
+          
+          added++;
+        } else {
+          const existingRecord = existing.rows[0] as any;
+          if (existingRecord.interval_hash !== intervalHash) {
+            await db.execute(sql`
+              UPDATE period_exceptions 
+              SET initial_interval = ${initialInterval}, 
+                  recurring_interval = ${recurringInterval}, 
+                  interval_hash = ${intervalHash},
+                  synced_at = NOW(),
+                  updated_at = NOW()
+              WHERE id = ${existingRecord.id}
+            `);
+            
+            await db.execute(sql`
+              INSERT INTO period_exception_history (period_exception_id, prefix, zone_name, change_type, previous_initial_interval, previous_recurring_interval, new_initial_interval, new_recurring_interval, changed_by_user_id, changed_by_email, change_source)
+              VALUES (${existingRecord.id}, ${az.code}, ${az.destination}, 'updated', ${existingRecord.initial_interval}, ${existingRecord.recurring_interval}, ${initialInterval}, ${recurringInterval}, ${userId}, ${user?.email}, 'sync')
+            `);
+            
+            updated++;
+          }
+        }
+      }
+      
+      const existingExceptions = await db.execute(sql`
+        SELECT * FROM period_exceptions WHERE az_destination_id IS NOT NULL
+      `);
+      
+      for (const exception of existingExceptions.rows as any[]) {
+        if (!validAzIds.has(exception.az_destination_id)) {
+          await db.execute(sql`
+            INSERT INTO period_exception_history (period_exception_id, prefix, zone_name, change_type, previous_initial_interval, previous_recurring_interval, changed_by_user_id, changed_by_email, change_source)
+            VALUES (${exception.id}, ${exception.prefix}, ${exception.zone_name}, 'removed', ${exception.initial_interval}, ${exception.recurring_interval}, ${userId}, ${user?.email}, 'sync')
+          `);
+          
+          await db.execute(sql`
+            DELETE FROM period_exceptions WHERE id = ${exception.id}
+          `);
+          
+          removed++;
+        }
+      }
+      
+      res.json({ success: true, added, updated, removed, total: azDestinations.length });
+    } catch (error: any) {
+      console.error("Failed to sync period exceptions:", error);
+      res.status(500).json({ error: "Failed to sync period exceptions", details: error.message });
+    }
+  });
+
   // ==================== EXPERIENCE MANAGER API ====================
 
   app.get("/api/em/content-items", async (req, res) => {

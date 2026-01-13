@@ -62,7 +62,7 @@ const InterconnectDetailPage = lazy(() => import("./interconnect-detail"));
 const SoftswitchCarriersPage = lazy(() => import("./softswitch").then(m => ({ default: m.SoftswitchCarriersPage })));
 const CustomerRatingPlansPage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.CustomerRatingPlansPage })));
 const SupplierRatingPlansPage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.SupplierRatingPlansPage })));
-const PeriodExceptionsPage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.PeriodExceptionsPage })));
+const PeriodExceptionsPage = lazy(() => import("./period-exceptions"));
 const CDRReratingPage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.CDRReratingPage })));
 const RatingZoneNamePage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.RatingZoneNamePage })));
 const CarrierBalancesPage = lazy(() => import("./softswitch-balance").then(m => ({ default: m.CarrierBalancesPage })));

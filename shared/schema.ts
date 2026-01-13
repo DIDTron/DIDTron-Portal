@@ -1914,6 +1914,70 @@ export const insertAzDestinationSchema = createInsertSchema(azDestinations).omit
 export type InsertAzDestination = z.infer<typeof insertAzDestinationSchema>;
 export type AzDestination = typeof azDestinations.$inferSelect;
 
+// ==================== PERIOD EXCEPTIONS ====================
+
+export const periodExceptionChangeTypeEnum = pgEnum("period_exception_change_type", [
+  "added", "updated", "removed"
+]);
+
+export const periodExceptionChangeSourceEnum = pgEnum("period_exception_change_source", [
+  "sync", "manual"
+]);
+
+export const periodExceptions = pgTable("period_exceptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  prefix: text("prefix").notNull(),
+  zoneName: text("zone_name").notNull(),
+  countryName: text("country_name"),
+  initialInterval: integer("initial_interval").notNull(),
+  recurringInterval: integer("recurring_interval").notNull(),
+  azDestinationId: varchar("az_destination_id").references(() => azDestinations.id),
+  intervalHash: text("interval_hash"),
+  syncedAt: timestamp("synced_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_period_exceptions_prefix").on(table.prefix),
+  index("idx_period_exceptions_zone").on(table.zoneName),
+  index("idx_period_exceptions_country").on(table.countryName),
+]);
+
+export const periodExceptionHistory = pgTable("period_exception_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  periodExceptionId: varchar("period_exception_id").references(() => periodExceptions.id),
+  prefix: text("prefix").notNull(),
+  zoneName: text("zone_name").notNull(),
+  changeType: periodExceptionChangeTypeEnum("change_type").notNull(),
+  previousInitialInterval: integer("previous_initial_interval"),
+  previousRecurringInterval: integer("previous_recurring_interval"),
+  newInitialInterval: integer("new_initial_interval"),
+  newRecurringInterval: integer("new_recurring_interval"),
+  changedByUserId: varchar("changed_by_user_id").references(() => users.id),
+  changedByEmail: text("changed_by_email"),
+  changeSource: periodExceptionChangeSourceEnum("change_source").default("sync"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_period_exception_history_exception").on(table.periodExceptionId),
+  index("idx_period_exception_history_created").on(table.createdAt),
+]);
+
+export const insertPeriodExceptionSchema = createInsertSchema(periodExceptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  syncedAt: true,
+});
+
+export const insertPeriodExceptionHistorySchema = createInsertSchema(periodExceptionHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPeriodException = z.infer<typeof insertPeriodExceptionSchema>;
+export type PeriodException = typeof periodExceptions.$inferSelect;
+export type InsertPeriodExceptionHistory = z.infer<typeof insertPeriodExceptionHistorySchema>;
+export type PeriodExceptionHistory = typeof periodExceptionHistory.$inferSelect;
+
 // ==================== SIP TESTER ====================
 
 export const sipTestTypeEnum = pgEnum("sip_test_type", [
