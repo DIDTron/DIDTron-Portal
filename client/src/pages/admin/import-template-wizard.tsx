@@ -265,9 +265,11 @@ export function ImportTemplateWizardPage() {
     placeholderData: keepPreviousData,
   });
 
-  const supplierCarriers = carriers.filter(
-    (c) => c.carrierType === "supplier" || c.carrierType === "bilateral"
-  );
+  const supplierCarriers = Array.isArray(carriers)
+    ? carriers.filter(
+        (c) => c.carrierType === "supplier" || c.carrierType === "bilateral"
+      )
+    : [];
 
   const { data: interconnects = [], isLoading: isLoadingInterconnects } = useQuery<Interconnect[]>({
     queryKey: ["/api/carrier-interconnects"],
