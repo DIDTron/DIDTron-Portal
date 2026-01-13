@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -15,8 +15,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ChevronLeft, Loader2, Upload, FileSpreadsheet, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
+import { Badge } from "@/components/ui/badge";
 
 interface Carrier {
   id: string;
@@ -98,6 +110,26 @@ const COLUMN_MAPPING_VARIABLES = {
   ],
 };
 
+const ALL_MAPPING_VARIABLES = [
+  ...COLUMN_MAPPING_VARIABLES.destOrig,
+  ...COLUMN_MAPPING_VARIABLES.effective,
+  ...COLUMN_MAPPING_VARIABLES.rates,
+  ...COLUMN_MAPPING_VARIABLES.other,
+];
+
+const getVariableLabel = (variableId: string): string | null => {
+  const variable = ALL_MAPPING_VARIABLES.find((v) => v.id === variableId);
+  return variable?.label || null;
+};
+
+const getVariableCategory = (variableId: string): string | null => {
+  if (COLUMN_MAPPING_VARIABLES.destOrig.some((v) => v.id === variableId)) return "destOrig";
+  if (COLUMN_MAPPING_VARIABLES.effective.some((v) => v.id === variableId)) return "effective";
+  if (COLUMN_MAPPING_VARIABLES.rates.some((v) => v.id === variableId)) return "rates";
+  if (COLUMN_MAPPING_VARIABLES.other.some((v) => v.id === variableId)) return "other";
+  return null;
+};
+
 export function ImportTemplateWizardPage() {
   const params = useParams<{ id?: string }>();
   const [, navigate] = useLocation();
@@ -128,6 +160,104 @@ export function ImportTemplateWizardPage() {
     delimiter: ",",
     columnMappings: {} as Record<string, string>,
   });
+
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [parsedData, setParsedData] = useState<string[][]>([]);
+  const [isParsingFile, setIsParsingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const parseFile = async (file: File) => {
+    setIsParsingFile(true);
+    try {
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      const buffer = await file.arrayBuffer();
+      
+      if (extension === "csv") {
+        const delimiter = formData.delimiter || ",";
+        const workbook = XLSX.read(buffer, { 
+          type: "array",
+          FS: delimiter,
+          raw: true
+        });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<string[]>(worksheet, { 
+          header: 1, 
+          defval: "",
+          raw: false
+        });
+        setParsedData((jsonData as string[][]).filter((row) => row.some((cell) => cell !== "")));
+      } else if (extension === "xlsx" || extension === "xls") {
+        const workbook = XLSX.read(buffer, { type: "array" });
+        const sheetIndex = Math.max(0, (formData.sheetNumber || 1) - 1);
+        const sheetName = workbook.SheetNames[sheetIndex] || workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1, defval: "" });
+        setParsedData(jsonData as string[][]);
+      } else {
+        toast({
+          title: "Unsupported file format",
+          description: "Please upload a CSV, XLSX, or XLS file",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "File parsed successfully",
+        description: `Loaded ${file.name}`,
+      });
+    } catch (error) {
+      console.error("Error parsing file:", error);
+      toast({
+        title: "Error parsing file",
+        description: "Please check the file format and try again",
+        variant: "destructive",
+      });
+      setParsedData([]);
+    } finally {
+      setIsParsingFile(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    const expectedFormat = formData.fileFormat.toLowerCase();
+    
+    if (extension !== expectedFormat) {
+      toast({
+        title: "File format mismatch",
+        description: `Expected ${formData.fileFormat} but got ${extension?.toUpperCase()}. The file will still be parsed.`,
+      });
+    }
+    
+    setUploadedFile(file);
+    await parseFile(file);
+  };
+
+  const clearUploadedFile = () => {
+    setUploadedFile(null);
+    setParsedData([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const getColumnLetter = (index: number): string => {
+    let letter = "";
+    while (index >= 0) {
+      letter = String.fromCharCode((index % 26) + 65) + letter;
+      index = Math.floor(index / 26) - 1;
+    }
+    return letter;
+  };
+
+  const maxColumns = Math.max(11, ...parsedData.map((row) => row.length));
+  const displayColumns = Array.from({ length: maxColumns }, (_, i) => getColumnLetter(i));
+  const displayRows = parsedData.length > 0 ? parsedData.slice(0, 50) : Array(5).fill([]);
 
   const { data: carriers = [], isLoading: isLoadingCarriers } = useQuery<Carrier[]>({
     queryKey: ["/api/carriers"],
@@ -221,6 +351,38 @@ export function ImportTemplateWizardPage() {
     if (field === "carrierId") {
       setFormData((prev) => ({ ...prev, interconnectId: "" }));
     }
+  };
+
+  const assignColumnMapping = (column: string, variableId: string) => {
+    setFormData((prev) => {
+      const newMappings = { ...prev.columnMappings };
+      Object.keys(newMappings).forEach((key) => {
+        if (newMappings[key] === variableId) {
+          delete newMappings[key];
+        }
+      });
+      newMappings[column] = variableId;
+      return { ...prev, columnMappings: newMappings };
+    });
+  };
+
+  const removeColumnMapping = (column: string) => {
+    setFormData((prev) => {
+      const newMappings = { ...prev.columnMappings };
+      delete newMappings[column];
+      return { ...prev, columnMappings: newMappings };
+    });
+  };
+
+  const getColumnMapping = (column: string): string | null => {
+    return formData.columnMappings[column] || null;
+  };
+
+  const isVariableMapped = (variableId: string): string | null => {
+    for (const [col, varId] of Object.entries(formData.columnMappings)) {
+      if (varId === variableId) return col;
+    }
+    return null;
   };
 
   const PARENT_ROUTE = "/admin/softswitch/rating?tab=import-templates";
@@ -606,46 +768,112 @@ export function ImportTemplateWizardPage() {
               </div>
 
               <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Column Mapping Variables</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Column Mapping Variables</h3>
+                  {Object.keys(formData.columnMappings).length > 0 && (
+                    <Badge variant="secondary">
+                      {Object.keys(formData.columnMappings).length} mapped
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Right-click on column headers in the preview below to assign these variables to columns.
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div>
                     <h4 className="text-sm font-medium text-primary mb-2">Dest/Orig</h4>
                     <div className="space-y-1">
-                      {COLUMN_MAPPING_VARIABLES.destOrig.map((v) => (
-                        <div key={v.id} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">
-                          {v.label}
-                        </div>
-                      ))}
+                      {COLUMN_MAPPING_VARIABLES.destOrig.map((v) => {
+                        const mappedColumn = isVariableMapped(v.id);
+                        return (
+                          <div 
+                            key={v.id} 
+                            className={cn(
+                              "text-sm flex items-center justify-between",
+                              mappedColumn ? "text-foreground" : "text-muted-foreground"
+                            )}
+                          >
+                            <span>{v.label}</span>
+                            {mappedColumn && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                                {mappedColumn}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-primary mb-2">Effective</h4>
                     <div className="space-y-1">
-                      {COLUMN_MAPPING_VARIABLES.effective.map((v) => (
-                        <div key={v.id} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">
-                          {v.label}
-                        </div>
-                      ))}
+                      {COLUMN_MAPPING_VARIABLES.effective.map((v) => {
+                        const mappedColumn = isVariableMapped(v.id);
+                        return (
+                          <div 
+                            key={v.id} 
+                            className={cn(
+                              "text-sm flex items-center justify-between",
+                              mappedColumn ? "text-foreground" : "text-muted-foreground"
+                            )}
+                          >
+                            <span>{v.label}</span>
+                            {mappedColumn && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                                {mappedColumn}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-primary mb-2">Rates</h4>
                     <div className="space-y-1">
-                      {COLUMN_MAPPING_VARIABLES.rates.map((v) => (
-                        <div key={v.id} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">
-                          {v.label}
-                        </div>
-                      ))}
+                      {COLUMN_MAPPING_VARIABLES.rates.map((v) => {
+                        const mappedColumn = isVariableMapped(v.id);
+                        return (
+                          <div 
+                            key={v.id} 
+                            className={cn(
+                              "text-sm flex items-center justify-between",
+                              mappedColumn ? "text-foreground" : "text-muted-foreground"
+                            )}
+                          >
+                            <span>{v.label}</span>
+                            {mappedColumn && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                                {mappedColumn}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-primary mb-2">Other</h4>
                     <div className="space-y-1">
-                      {COLUMN_MAPPING_VARIABLES.other.map((v) => (
-                        <div key={v.id} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">
-                          {v.label}
-                        </div>
-                      ))}
+                      {COLUMN_MAPPING_VARIABLES.other.map((v) => {
+                        const mappedColumn = isVariableMapped(v.id);
+                        return (
+                          <div 
+                            key={v.id} 
+                            className={cn(
+                              "text-sm flex items-center justify-between",
+                              mappedColumn ? "text-foreground" : "text-muted-foreground"
+                            )}
+                          >
+                            <span>{v.label}</span>
+                            {mappedColumn && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                                {mappedColumn}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -653,59 +881,232 @@ export function ImportTemplateWizardPage() {
 
               <div className="border-t pt-6">
                 <div className="space-y-2">
-                  <Label>Select files...</Label>
-                  <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                    <input
-                      type="file"
-                      accept=".csv,.xlsx,.xls"
-                      className="hidden"
-                      id="file-upload"
-                      data-testid="input-file-upload"
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer inline-block px-4 py-2 bg-card border rounded hover:bg-muted transition-colors"
-                    >
-                      Select files...
-                    </label>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Upload a rate file to preview and map columns
-                    </p>
-                  </div>
+                  <Label>Upload Rate File</Label>
+                  {uploadedFile ? (
+                    <div className="border rounded-lg p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileSpreadsheet className="h-8 w-8 text-primary" />
+                        <div>
+                          <p className="font-medium">{uploadedFile.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(uploadedFile.size / 1024).toFixed(1)} KB
+                            {parsedData.length > 0 && ` - ${parsedData.length} rows`}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={clearUploadedFile}
+                        data-testid="button-clear-file"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,.xlsx,.xls"
+                        className="hidden"
+                        id="file-upload"
+                        onChange={handleFileUpload}
+                        data-testid="input-file-upload"
+                      />
+                      <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                      <label
+                        htmlFor="file-upload"
+                        className="cursor-pointer inline-block px-4 py-2 bg-card border rounded hover:bg-muted transition-colors"
+                      >
+                        {isParsingFile ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                            Parsing...
+                          </>
+                        ) : (
+                          "Select file..."
+                        )}
+                      </label>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Upload a {formData.fileFormat} file to preview and map columns
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="border rounded-lg overflow-hidden">
-                <div className="bg-muted px-2 py-1 text-xs font-medium border-b">
-                  Preview
+                <div className="bg-muted px-2 py-1 text-xs font-medium border-b flex items-center justify-between">
+                  <span>Preview {parsedData.length > 0 && `(${parsedData.length} rows)`}</span>
+                  <div className="flex items-center gap-2">
+                    {parsedData.length > 50 && (
+                      <span className="text-muted-foreground">Showing first 50 rows</span>
+                    )}
+                    <span className="text-muted-foreground">Right-click column headers to assign mappings</span>
+                  </div>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                   <table className="w-full text-sm">
-                    <thead>
+                    <thead className="sticky top-0 z-10">
                       <tr className="bg-muted/50">
-                        <th className="w-8 px-2 py-2 text-left font-medium border-r"></th>
-                        {["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"].map((col) => (
-                          <th
-                            key={col}
-                            className="min-w-[100px] px-3 py-2 text-left font-medium border-r"
-                          >
-                            {col}
-                          </th>
-                        ))}
+                        <th className="w-10 px-2 py-2 text-left font-medium border-r bg-muted/50"></th>
+                        {displayColumns.map((col) => {
+                          const mapping = getColumnMapping(col);
+                          const mappingLabel = mapping ? getVariableLabel(mapping) : null;
+                          return (
+                            <ContextMenu key={col}>
+                              <ContextMenuTrigger asChild>
+                                <th
+                                  className={cn(
+                                    "min-w-[100px] px-3 py-1 text-left font-medium border-r bg-muted/50 cursor-context-menu",
+                                    formData.startingColumn === col && "bg-primary/20",
+                                    mapping && "bg-accent/30"
+                                  )}
+                                >
+                                  <div className="flex flex-col gap-0.5">
+                                    <span>{col}</span>
+                                    {mappingLabel && (
+                                      <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 font-normal">
+                                        {mappingLabel}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </th>
+                              </ContextMenuTrigger>
+                              <ContextMenuContent className="w-56">
+                                <ContextMenuItem onClick={() => updateField("startingColumn", col)}>
+                                  Set as Starting Column
+                                  {formData.startingColumn === col && <Check className="ml-auto h-4 w-4" />}
+                                </ContextMenuItem>
+                                <ContextMenuSeparator />
+                                <ContextMenuSub>
+                                  <ContextMenuSubTrigger>Dest/Orig</ContextMenuSubTrigger>
+                                  <ContextMenuSubContent className="w-48">
+                                    {COLUMN_MAPPING_VARIABLES.destOrig.map((v) => (
+                                      <ContextMenuItem
+                                        key={v.id}
+                                        onClick={() => assignColumnMapping(col, v.id)}
+                                      >
+                                        {v.label}
+                                        {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
+                                      </ContextMenuItem>
+                                    ))}
+                                  </ContextMenuSubContent>
+                                </ContextMenuSub>
+                                <ContextMenuSub>
+                                  <ContextMenuSubTrigger>Effective</ContextMenuSubTrigger>
+                                  <ContextMenuSubContent className="w-48">
+                                    {COLUMN_MAPPING_VARIABLES.effective.map((v) => (
+                                      <ContextMenuItem
+                                        key={v.id}
+                                        onClick={() => assignColumnMapping(col, v.id)}
+                                      >
+                                        {v.label}
+                                        {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
+                                      </ContextMenuItem>
+                                    ))}
+                                  </ContextMenuSubContent>
+                                </ContextMenuSub>
+                                <ContextMenuSub>
+                                  <ContextMenuSubTrigger>Rates</ContextMenuSubTrigger>
+                                  <ContextMenuSubContent className="w-48">
+                                    {COLUMN_MAPPING_VARIABLES.rates.map((v) => (
+                                      <ContextMenuItem
+                                        key={v.id}
+                                        onClick={() => assignColumnMapping(col, v.id)}
+                                      >
+                                        {v.label}
+                                        {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
+                                      </ContextMenuItem>
+                                    ))}
+                                  </ContextMenuSubContent>
+                                </ContextMenuSub>
+                                <ContextMenuSub>
+                                  <ContextMenuSubTrigger>Other</ContextMenuSubTrigger>
+                                  <ContextMenuSubContent className="w-48">
+                                    {COLUMN_MAPPING_VARIABLES.other.map((v) => (
+                                      <ContextMenuItem
+                                        key={v.id}
+                                        onClick={() => assignColumnMapping(col, v.id)}
+                                      >
+                                        {v.label}
+                                        {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
+                                      </ContextMenuItem>
+                                    ))}
+                                  </ContextMenuSubContent>
+                                </ContextMenuSub>
+                                {mapping && (
+                                  <>
+                                    <ContextMenuSeparator />
+                                    <ContextMenuItem
+                                      onClick={() => removeColumnMapping(col)}
+                                      className="text-destructive"
+                                    >
+                                      Remove Mapping
+                                    </ContextMenuItem>
+                                  </>
+                                )}
+                              </ContextMenuContent>
+                            </ContextMenu>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody>
-                      {[1, 2, 3, 4, 5].map((row) => (
-                        <tr key={row} className="border-t">
-                          <td className="px-2 py-2 text-muted-foreground border-r bg-muted/30 font-medium">
-                            {row}
-                          </td>
-                          {["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"].map((col) => (
-                            <td key={col} className="px-3 py-2 border-r">
+                      {displayRows.length === 0 || displayRows.every((row) => !row.length) ? (
+                        Array.from({ length: 5 }, (_, i) => i + 1).map((rowNum) => (
+                          <tr key={rowNum} className="border-t">
+                            <td 
+                              className="px-2 py-2 text-muted-foreground border-r bg-muted/30 font-medium cursor-pointer hover:bg-primary/10"
+                              onClick={() => updateField("startingRow", rowNum)}
+                            >
+                              {rowNum}
                             </td>
-                          ))}
-                        </tr>
-                      ))}
+                            {displayColumns.map((col) => (
+                              <td key={col} className="px-3 py-2 border-r h-8"></td>
+                            ))}
+                          </tr>
+                        ))
+                      ) : (
+                        displayRows.map((rowData, rowIndex) => {
+                          const rowNum = rowIndex + 1;
+                          const isStartingRow = formData.startingRow === rowNum;
+                          return (
+                            <tr 
+                              key={rowNum} 
+                              className={cn(
+                                "border-t",
+                                isStartingRow && "bg-primary/10"
+                              )}
+                            >
+                              <td 
+                                className={cn(
+                                  "px-2 py-2 text-muted-foreground border-r bg-muted/30 font-medium cursor-pointer hover:bg-primary/10",
+                                  isStartingRow && "bg-primary/20 text-primary"
+                                )}
+                                onClick={() => updateField("startingRow", rowNum)}
+                                title="Click to set as starting row"
+                              >
+                                {rowNum}
+                              </td>
+                              {displayColumns.map((col, colIndex) => (
+                                <td 
+                                  key={col} 
+                                  className={cn(
+                                    "px-3 py-2 border-r max-w-[200px] truncate",
+                                    formData.startingColumn === col && "bg-primary/10",
+                                    isStartingRow && formData.startingColumn === col && "bg-primary/20"
+                                  )}
+                                  title={rowData[colIndex] || ""}
+                                >
+                                  {rowData[colIndex] || ""}
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
