@@ -676,6 +676,77 @@ export const insertCustomerRatingPlanRateSchema = createInsertSchema(customerRat
 export type InsertCustomerRatingPlanRate = z.infer<typeof insertCustomerRatingPlanRateSchema>;
 export type CustomerRatingPlanRate = typeof customerRatingPlanRates.$inferSelect;
 
+// ==================== SUPPLIER RATING PLANS ====================
+
+export const supplierRatingPlans = pgTable("supplier_rating_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortCode: text("short_code").unique(),
+  name: text("name").notNull(),
+  carrierId: varchar("carrier_id").references(() => carriers.id),
+  interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id),
+  blockUnresolvableCodes: boolean("block_unresolvable_codes").default(false),
+  currency: text("currency").notNull().default("USD"),
+  creationTemplate: text("creation_template"),
+  uncommittedChanges: boolean("uncommitted_changes").default(false),
+  inUse: boolean("in_use").default(false),
+  timeZone: text("time_zone").default("UTC"),
+  carrierTimeZone: text("carrier_time_zone"),
+  defaultRates: text("default_rates").default("Define Later"),
+  effectiveDate: timestamp("effective_date"),
+  initialInterval: integer("initial_interval").default(0),
+  recurringInterval: integer("recurring_interval").default(1),
+  periodExceptionTemplate: text("period_exception_template"),
+  template: text("template"),
+  selectedTimeClasses: text("selected_time_classes").array(),
+  selectedZones: text("selected_zones").array(),
+  zonesSelect: text("zones_select").default("None"),
+  assignOrigin: text("assign_origin").default("None"),
+  originMappingGroupId: varchar("origin_mapping_group_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  carrierIdIdx: index("idx_supplier_rating_plans_carrier_id").on(table.carrierId),
+  interconnectIdIdx: index("idx_supplier_rating_plans_interconnect_id").on(table.interconnectId),
+  nameIdx: index("idx_supplier_rating_plans_name").on(table.name),
+}));
+
+export const insertSupplierRatingPlanSchema = createInsertSchema(supplierRatingPlans).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSupplierRatingPlan = z.infer<typeof insertSupplierRatingPlanSchema>;
+export type SupplierRatingPlan = typeof supplierRatingPlans.$inferSelect;
+
+// ==================== SUPPLIER RATING PLAN RATES ====================
+
+export const supplierRatingPlanRates = pgTable("supplier_rating_plan_rates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ratingPlanId: varchar("rating_plan_id").references(() => supplierRatingPlans.id, { onDelete: "cascade" }).notNull(),
+  zone: text("zone").notNull(),
+  codes: text("codes").array().notNull(),
+  originSet: text("origin_set"),
+  timeClassId: varchar("time_class_id"),
+  timeClassName: text("time_class_name").default("AnyDay"),
+  effectiveDate: timestamp("effective_date").notNull(),
+  endDate: timestamp("end_date"),
+  effectiveStatus: effectiveStatusEnum("effective_status").default("pending"),
+  connectionCharge: decimal("connection_charge", { precision: 10, scale: 4 }).default("0"),
+  initialCharge: decimal("initial_charge", { precision: 10, scale: 4 }).default("0"),
+  initialInterval: integer("initial_interval").default(1),
+  recurringCharge: decimal("recurring_charge", { precision: 10, scale: 4 }).notNull(),
+  recurringInterval: integer("recurring_interval").default(1),
+  advancedOptions: text("advanced_options"),
+  blocked: boolean("blocked").default(false),
+  locked: boolean("locked").default(false),
+  currency: text("currency").default("USD"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  ratingPlanIdIdx: index("idx_supplier_rating_plan_rates_plan_id").on(table.ratingPlanId),
+  zoneIdx: index("idx_supplier_rating_plan_rates_zone").on(table.zone),
+}));
+
+export const insertSupplierRatingPlanRateSchema = createInsertSchema(supplierRatingPlanRates).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSupplierRatingPlanRate = z.infer<typeof insertSupplierRatingPlanRateSchema>;
+export type SupplierRatingPlanRate = typeof supplierRatingPlanRates.$inferSelect;
+
 // ==================== BUSINESS RULES (Import Rate Validation) ====================
 
 export const businessRules = pgTable("business_rules", {
