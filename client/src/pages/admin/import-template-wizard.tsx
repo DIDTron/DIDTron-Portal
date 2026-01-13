@@ -101,6 +101,7 @@ const COLUMN_MAPPING_VARIABLES = {
   ],
   other: [
     { id: "timeClass", label: "Time Class" },
+    { id: "interval", label: "Interval" },
     { id: "deleteStatus", label: "Delete Status" },
     { id: "blockedStatus", label: "Blocked Status" },
     { id: "rateMatching", label: "Rate Matching" },
@@ -231,21 +232,31 @@ export function ImportTemplateWizardPage() {
     const extension = file.name.split(".").pop()?.toLowerCase();
     
     const isExcelExtension = extension === "xlsx" || extension === "xls";
+    const isCsvExtension = extension === "csv";
     const currentFormat = formData.fileFormat.toLowerCase();
     const currentIsExcel = currentFormat === "excel" || currentFormat === "xlsx" || currentFormat === "xls";
     const currentIsCsv = currentFormat === "csv";
     
-    const needsUpdate = (isExcelExtension && !currentIsExcel) || (extension === "csv" && !currentIsCsv);
+    let formatChanged = false;
+    let newFileFormat = formData.fileFormat;
+    const oldFileFormat = formData.fileFormat;
     
-    if (extension && needsUpdate) {
-      const newFileFormat = isExcelExtension ? "Excel" : "CSV";
-      
-      toast({
-        title: "File format auto-detected",
-        description: `File type updated to ${newFileFormat} based on uploaded file.`,
-      });
-      
+    if (isExcelExtension && !currentIsExcel) {
+      formatChanged = true;
+      newFileFormat = "Excel";
       updateField("fileFormat", newFileFormat);
+    } else if (isCsvExtension && !currentIsCsv) {
+      formatChanged = true;
+      newFileFormat = "CSV";
+      updateField("fileFormat", newFileFormat);
+    }
+    
+    if (formatChanged) {
+      toast({
+        title: "File format mismatch detected",
+        description: `Expected ${oldFileFormat} but uploaded ${extension?.toUpperCase()} file. Format changed to ${newFileFormat}.`,
+        variant: "default",
+      });
     }
     
     setUploadedFile(file);
@@ -389,7 +400,7 @@ export function ImportTemplateWizardPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplier-import-templates"] });
       toast({ title: "Success", description: `Import template ${isEditing ? "updated" : "created"} successfully` });
-      navigate("/admin/softswitch/rating/supplier-rating/import-templates");
+      navigate("/admin/softswitch/rating/supplier-plans?tab=import-templates");
     },
     onError: () => {
       toast({ title: "Error", description: `Failed to ${isEditing ? "update" : "create"} import template`, variant: "destructive" });
@@ -443,7 +454,7 @@ export function ImportTemplateWizardPage() {
     return null;
   };
 
-  const PARENT_ROUTE = "/admin/softswitch/rating/supplier-rating/import-templates";
+  const PARENT_ROUTE = "/admin/softswitch/rating/supplier-plans?tab=import-templates";
 
   if (isEditing && isLoadingTemplate) {
     return (
