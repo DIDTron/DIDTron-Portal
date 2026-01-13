@@ -928,33 +928,92 @@ export const rateCardAssignments = pgTable("rate_card_assignments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ==================== RATE IMPORT TEMPLATE ENUMS ====================
+
+export const templateSheetTypeEnum = pgEnum("template_sheet_type", [
+  "rates1", "rates2", "codes", "origin_codes"
+]);
+
+export const templateFieldTypeEnum = pgEnum("template_field_type", [
+  // Dest/Orig category
+  "zone", "zone_area", "code", "code_area", "origin_set", "origin_set_area", "origin_code", "location",
+  // Effective category
+  "effective_date_time", "effective_time", "end_date_time", "end_time_only", 
+  "origin_code_effective_date", "origin_code_end_date",
+  // Rates category
+  "recurring_charge", "recurring_period", "initial_charge", "initial_period", "connection_charge",
+  // Other category
+  "time_class", "delete_status", "blocked_status", "rate_matching", "missing_invalid", "omit_rates"
+]);
+
 // ==================== SUPPLIER IMPORT TEMPLATES ====================
 
 export const supplierImportTemplates = pgTable("supplier_import_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
+  
+  // Section 1: Global Settings (Digitalk style)
+  defaultTimeClass: text("default_time_class").default("AnyDay"),
+  timeZone: text("time_zone").default("UTC"),
+  periodExceptions: text("period_exceptions"),
+  allowZeroCharges: boolean("allow_zero_charges").default(false),
+  decimalSeparator: text("decimal_separator").default("."),
+  normaliseZones: boolean("normalise_zones").default(false),
+  applyCodeSheetTo: text("apply_code_sheet_to").default("Rates 1 Sheet"),
+  
+  // Legacy fields (for backward compatibility)
   fileFormat: text("file_format").default("CSV"),
-  headerRow: integer("header_row").default(1),
-  dataStartRow: integer("data_start_row").default(2),
-  delimiter: text("delimiter").default(","),
-  prefixColumn: integer("prefix_column"),
-  destinationColumn: integer("destination_column"),
-  rateColumn: integer("rate_column"),
-  effectiveDateColumn: integer("effective_date_column"),
-  expiryDateColumn: integer("expiry_date_column"),
-  connectionFeeColumn: integer("connection_fee_column"),
-  billingIncrementColumn: integer("billing_increment_column"),
   dateFormat: text("date_format").default("YYYY-MM-DD"),
   defaultCurrency: text("default_currency").default("USD"),
   ignorePatterns: text("ignore_patterns").array(),
-  columnMappings: jsonb("column_mappings"),
   isDefault: boolean("is_default").default(false),
+  isAssigned: boolean("is_assigned").default(false),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Section 2: Worksheet Settings
+export const supplierImportTemplateSheets = pgTable("supplier_import_template_sheets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  templateId: varchar("template_id").references(() => supplierImportTemplates.id, { onDelete: "cascade" }).notNull(),
+  sheetType: templateSheetTypeEnum("sheet_type").notNull(),
+  isEnabled: boolean("is_enabled").default(false),
+  worksheetName: text("worksheet_name"),
+  headerRows: integer("header_rows").default(1),
+  footerRows: integer("footer_rows").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Section 3: Field Mappings (Column to Field assignments)
+export const supplierImportTemplateFields = pgTable("supplier_import_template_fields", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  templateId: varchar("template_id").references(() => supplierImportTemplates.id, { onDelete: "cascade" }).notNull(),
+  sheetType: templateSheetTypeEnum("sheet_type").notNull(),
+  columnLetter: text("column_letter").notNull(),
+  fieldType: templateFieldTypeEnum("field_type").notNull(),
+  importOptions: jsonb("import_options"),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Zod schemas for insert
 export const insertSupplierImportTemplateSchema = createInsertSchema(supplierImportTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSupplierImportTemplateSheetSchema = createInsertSchema(supplierImportTemplateSheets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSupplierImportTemplateFieldSchema = createInsertSchema(supplierImportTemplateFields).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -962,6 +1021,10 @@ export const insertSupplierImportTemplateSchema = createInsertSchema(supplierImp
 
 export type InsertSupplierImportTemplate = z.infer<typeof insertSupplierImportTemplateSchema>;
 export type SupplierImportTemplate = typeof supplierImportTemplates.$inferSelect;
+export type InsertSupplierImportTemplateSheet = z.infer<typeof insertSupplierImportTemplateSheetSchema>;
+export type SupplierImportTemplateSheet = typeof supplierImportTemplateSheets.$inferSelect;
+export type InsertSupplierImportTemplateField = z.infer<typeof insertSupplierImportTemplateFieldSchema>;
+export type SupplierImportTemplateField = typeof supplierImportTemplateFields.$inferSelect;
 
 // ==================== ROUTE QUALITY MONITORING ====================
 
