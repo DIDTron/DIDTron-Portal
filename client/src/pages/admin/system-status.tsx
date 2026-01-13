@@ -162,8 +162,11 @@ function KPICard({
   );
 }
 
-function StaleBanner({ lastUpdated }: { lastUpdated: string | null | undefined }) {
-  if (!lastUpdated) {
+function StaleBanner({ lastUpdated, dataUpdatedAt }: { lastUpdated?: string | null; dataUpdatedAt?: number }) {
+  // Use API's lastUpdated if available, otherwise fall back to query's dataUpdatedAt
+  const timestamp = lastUpdated || (dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null);
+  
+  if (!timestamp) {
     return (
       <div className="px-4 py-2 rounded-md mb-4 flex items-center gap-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400" data-testid="stale-banner">
         <AlertTriangle className="h-4 w-4" />
@@ -173,7 +176,7 @@ function StaleBanner({ lastUpdated }: { lastUpdated: string | null | undefined }
   }
 
   const now = new Date();
-  const updated = new Date(lastUpdated);
+  const updated = new Date(timestamp);
   const ageMs = now.getTime() - updated.getTime();
   const ageMinutes = ageMs / 60000;
 
@@ -420,9 +423,7 @@ function ApiErrorsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
-      </div>
+      <StaleBanner dataUpdatedAt={dataUpdatedAt} />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard title="Requests (15m)" value={data?.requestCount15m || 0} icon={Globe} />
         <KPICard title="API p95" value={data?.p95Latency || 0} unit="ms" icon={Zap} />
@@ -554,9 +555,7 @@ function PerformanceTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
-      </div>
+      <StaleBanner dataUpdatedAt={dataUpdatedAt} />
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle>Performance Budgets (SLO)</CardTitle>
@@ -669,25 +668,27 @@ function HealthTab() {
   const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <CardTitle>Health Checks</CardTitle>
-        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Component</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Latency</TableHead>
-              <TableHead>Last Checked</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data?.checks?.map((check, i) => (
-              <TableRow key={i}>
-                <TableCell className="font-medium">{check.component}</TableCell>
+    <div className="space-y-6">
+      <StaleBanner dataUpdatedAt={dataUpdatedAt} />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <CardTitle>Health Checks</CardTitle>
+          <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Component</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Latency</TableHead>
+                <TableHead>Last Checked</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data?.checks?.map((check, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-medium">{check.component}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {check.status === "pass" ? (
@@ -708,6 +709,7 @@ function HealthTab() {
         </Table>
       </CardContent>
     </Card>
+    </div>
   );
 }
 
@@ -731,17 +733,19 @@ function AlertsTab() {
   const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <div className="flex items-center gap-4">
-          <CardTitle>System Alerts</CardTitle>
-          <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
-        </div>
-        <div className="flex gap-2">
-          <Badge variant="destructive">{data?.stats?.criticalCount || 0} Critical</Badge>
-          <Badge variant="secondary">{data?.stats?.warningCount || 0} Warning</Badge>
-        </div>
-      </CardHeader>
+    <div className="space-y-6">
+      <StaleBanner dataUpdatedAt={dataUpdatedAt} />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-4">
+            <CardTitle>System Alerts</CardTitle>
+            <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+          </div>
+          <div className="flex gap-2">
+            <Badge variant="destructive">{data?.stats?.criticalCount || 0} Critical</Badge>
+            <Badge variant="secondary">{data?.stats?.warningCount || 0} Warning</Badge>
+          </div>
+        </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
@@ -784,6 +788,7 @@ function AlertsTab() {
         </Table>
       </CardContent>
     </Card>
+    </div>
   );
 }
 
@@ -806,24 +811,26 @@ function IntegrationsTab() {
   const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <CardTitle>Integration Health</CardTitle>
-        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Integration</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>p95 Latency</TableHead>
-              <TableHead>Error Rate</TableHead>
-              <TableHead>Last Success</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data?.integrations?.map((int) => (
+    <div className="space-y-6">
+      <StaleBanner dataUpdatedAt={dataUpdatedAt} />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <CardTitle>Integration Health</CardTitle>
+          <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Integration</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>p95 Latency</TableHead>
+                <TableHead>Error Rate</TableHead>
+                <TableHead>Last Success</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data?.integrations?.map((int) => (
               <TableRow key={int.name}>
                 <TableCell className="font-medium capitalize">{int.name}</TableCell>
                 <TableCell>
@@ -849,6 +856,7 @@ function IntegrationsTab() {
         </Table>
       </CardContent>
     </Card>
+    </div>
   );
 }
 
@@ -873,9 +881,7 @@ function JobsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
-      </div>
+      <StaleBanner dataUpdatedAt={dataUpdatedAt} />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard title="Queued Jobs" value={data?.queuedJobs || 0} icon={Layers} />
         <KPICard title="Running Jobs" value={data?.runningJobs || 0} icon={Play} />
@@ -925,9 +931,7 @@ function DatabaseTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
-      </div>
+      <StaleBanner dataUpdatedAt={dataUpdatedAt} />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard title="Query p95" value={data?.p95Latency || 0} unit="ms" icon={Database} />
         <KPICard title="Query p99" value={data?.p99Latency || 0} unit="ms" icon={Database} />
@@ -997,9 +1001,7 @@ function CacheTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
-      </div>
+      <StaleBanner dataUpdatedAt={dataUpdatedAt} />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard 
           title="Redis p95" 
@@ -1176,13 +1178,15 @@ function AuditTab() {
   const eventTypes = ["all", "deployment", "migration", "config_change", "admin_action"];
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Audit Events</CardTitle>
-            <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
-          </div>
+    <div className="space-y-6">
+      <StaleBanner dataUpdatedAt={dataUpdatedAt} />
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Audit Events</CardTitle>
+              <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+            </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Period:</span>
@@ -1278,6 +1282,7 @@ function AuditTab() {
         onPageSizeChange={onPageSizeChange}
       />
     </Card>
+    </div>
   );
 }
 

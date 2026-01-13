@@ -545,8 +545,13 @@ All performance optimization stages completed:
       - CacheTab: Replit Storage Usage, Redis, R2 Object Storage
       - AuditTab: Recent Audit Events
 
-- [ ] **T146**: Add stale data banners (2m yellow, 5m red)
+- [x] **T146**: Add stale data banners (2m yellow, 5m red) ✅ COMPLETE
   - Acceptance: Banners appear when snapshot is older than thresholds
+  - **Completion Note (2026-01-13)**:
+    - `StaleBanner` component updated to accept both `lastUpdated` (API) and `dataUpdatedAt` (react-query)
+    - Thresholds: <2m no banner, 2-5m yellow "Stale data", >=5m red "Data collection stalled"
+    - Fallback: "No data collected yet" when no timestamp available
+    - Added to ALL tabs: Overview, API Errors, Performance, Health, Alerts, Integrations, Jobs, Database, Cache, Audit
 
 - [ ] **T147**: Update sidebar System Status widget with alert count badge
   - Files: client/src/components/layout/super-admin/primary-sidebar.tsx

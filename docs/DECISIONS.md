@@ -342,3 +342,20 @@ Note: npm run check shows pre-existing TypeScript errors unrelated to this migra
 - AuditTab: Recent Audit Events
 
 Pattern: Each useQuery now captures `dataUpdatedAt` and displays via `formatAsOf(new Date(dataUpdatedAt).toISOString())` in each Card header.
+
+### T146: Stale Data Banners (2026-01-13)
+
+**Decision**: Add visual warnings when System Status data is stale.
+
+**Implementation**:
+- `StaleBanner` component displays at top of each tab
+- Accepts both `lastUpdated` (API timestamp) and `dataUpdatedAt` (react-query fetch time)
+- Thresholds:
+  - <2 minutes: No banner
+  - 2-5 minutes: Yellow warning "Stale data - Last updated X minutes ago"
+  - >=5 minutes: Red alert "Data collection stalled - Last updated X minutes ago"
+  - No data: Yellow warning "No data collected yet"
+
+**Rationale**: Global users need clear visibility into data freshness, especially when monitoring production systems across time zones.
+
+**Files Changed**: `client/src/pages/admin/system-status.tsx`
