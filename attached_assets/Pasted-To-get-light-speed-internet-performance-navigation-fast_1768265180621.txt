@@ -1,0 +1,160 @@
+To get “light-speed” internet performance + navigation + fast task creation, you don’t need one magic tool — you need a tight set of rules + integrations + patterns across frontend, backend, DB, and caching. Do these, in this order:
+
+1) Frontend “instant” navigation
+A) Don’t refetch everything on every click
+
+Use TanStack Query correctly:
+
+staleTime for pages that don’t change every second
+
+keepPreviousData for paginated lists
+
+prefetch next route data on hover (sidebar items, table row hover)
+
+B) Route-level code splitting
+
+Lazy load big modules (softswitch, billing, reports).
+
+Keep the shell (sidebars, headers) always mounted.
+
+C) Virtualize big tables
+
+For any list above ~200 rows:
+
+virtualized rendering (only render visible rows)
+
+infinite scroll or cursor pagination
+
+Never render 10k rows in the DOM.
+
+D) Optimistic UI for “Create task”
+
+For task creation/edits:
+
+optimistic update (UI updates instantly, then confirms server)
+
+show failure rollback cleanly
+
+2) Backend “fast by default”
+A) Cursor pagination everywhere
+
+Every list API should be: limit + cursor
+
+Enforce max limit server-side
+
+B) Only return what UI needs
+
+Avoid returning huge nested objects
+
+Add “list vs detail” endpoints
+
+C) Background jobs for heavy work (DataQueue)
+
+Imports/exports, CDR sync, bulk updates → DataQueue
+
+API returns a jobId, UI shows progress
+
+3) Database speed (the real bottleneck)
+A) Indexes, indexes, indexes
+
+Every “where” filter and ordering must have indexes:
+
+(tenant_id, created_at)
+
+(tenant_id, status)
+
+(tenant_id, name) for search
+
+For tasks: indexes on (tenant_id, status, updated_at)
+
+B) Use proper search strategy
+
+If you need “type-ahead search”:
+
+start with ILIKE + indexes where possible
+
+if it grows: Postgres full-text / trigram index
+
+4) Redis caching where it matters (Upstash)
+
+Use Redis for:
+
+session store (already)
+
+small hot caches:
+
+sidebar counts
+
+“my tasks summary”
+
+feature flags / permissions snapshot
+
+distributed locks (cron safety)
+
+Never cache whole tables.
+
+5) R2 for files so you don’t block the app
+
+All uploads/imports/exports:
+
+upload to R2
+
+enqueue a DataQueue job
+
+store progress in Redis
+
+store final result in Postgres
+
+6) “Fast task creation” UX (what users feel)
+
+To make tasks feel instant:
+
+single global “Quick Create” (keyboard shortcut)
+
+minimal required fields (title, priority, assignee)
+
+background enrichment (AI summary, tags) via DataQueue
+
+open task detail after create without refetching the list
+
+7) The performance “guardrails” (so speed doesn’t decay)
+
+Add these mandatory checks:
+
+Playwright perf smoke: “dashboard loads under X seconds”
+
+API timing logs for slow endpoints
+
+DB query log sampling for slow queries
+
+CI rule: no endpoint without pagination
+
+What to embed/integrate (short list)
+
+If you implement only these, you’ll feel the “light speed”:
+
+TanStack Query prefetch + keepPreviousData
+
+Cursor pagination + max limits on every list API
+
+Virtualized tables for big lists
+
+Indexes for all filters/order (tenant + timestamps + status)
+
+Redis small caching (counts, permissions snapshot, summaries)
+
+DataQueue for every heavy operation
+
+R2 for all files/imports/exports
+
+What to tell your AI agent (one block)
+Create a performance plan as TODO tasks (no coding yet):
+
+- Frontend: prefetch routes, TanStack Query caching rules, code splitting, virtualized tables
+- Backend: cursor pagination everywhere, strict max limits, list vs detail endpoints
+- DB: add required indexes and search strategy for typeahead
+- Redis: small hot caches + locks only
+- Jobs: all heavy work via DataQueue; R2 for files
+- Add performance + pagination guardrails to tests and logs
+
+Write tasks into docs/TODO.md with acceptance criteria like “navigation feels instant” measured by 
