@@ -247,11 +247,35 @@ export default function CarrierDetailPage() {
 
   const createInterconnectMutation = useMutation({
     mutationFn: async (data: typeof interconnectForm) => {
-      // Exclude copySettings and copyFromId since copy feature is not yet implemented
       const { copySettings, copyFromId, ...interconnectData } = data;
+      
+      // Find the source interconnect if copying settings
+      let copiedSettings: Record<string, unknown> = {};
+      if (copyFromId && interconnects) {
+        const sourceInterconnect = interconnects.find(ic => ic.id === copyFromId);
+        if (sourceInterconnect) {
+          // Copy media settings
+          if (copySettings.media) {
+            copiedSettings.codec = sourceInterconnect.codec;
+          }
+          // Copy signalling settings
+          if (copySettings.signalling) {
+            copiedSettings.sipPort = sourceInterconnect.sipPort;
+            copiedSettings.protocol = sourceInterconnect.protocol;
+          }
+          // Copy supplier-specific settings
+          if (copySettings.supplierRatingPlan) {
+            copiedSettings.supplierBuyRates = sourceInterconnect.supplierBuyRates;
+          }
+        }
+      }
+      
       const res = await apiRequest("POST", `/api/carriers/${carrierId}/interconnects`, {
         ...interconnectData,
+        ...copiedSettings,
         capacityLimit: data.capacityMode === "unrestricted" ? null : parseInt(data.capacityLimit) || null,
+        copyFromId: copyFromId || undefined,
+        copySettings: copyFromId ? copySettings : undefined,
       });
       return res.json();
     },
@@ -779,14 +803,12 @@ export default function CarrierDetailPage() {
 
             <div>
               <h4 className="text-sm font-medium mb-3">Copy existing interconnect setting</h4>
-              <p className="text-xs text-muted-foreground mb-3">Copy settings feature is planned for a future release. Currently these selections are UI-only and do not affect interconnect creation.</p>
-              <div className="space-y-4 opacity-50">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Interconnect</Label>
                   <Select
                     value={interconnectForm.copyFromId || "none"}
                     onValueChange={(v) => setInterconnectForm({ ...interconnectForm, copyFromId: v === "none" ? "" : v })}
-                    disabled
                   >
                     <SelectTrigger data-testid="select-copy-from">
                       <SelectValue placeholder="None" />
