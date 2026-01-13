@@ -560,14 +560,14 @@ export function ImportTemplateWizardPage() {
                 <div className="space-y-2">
                   <Label>Business Rules</Label>
                   <Select
-                    value={formData.businessRuleId}
-                    onValueChange={(v) => updateField("businessRuleId", v)}
+                    value={formData.businessRuleId || "none"}
+                    onValueChange={(v) => updateField("businessRuleId", v === "none" ? "" : v)}
                   >
                     <SelectTrigger data-testid="select-business-rules">
                       <SelectValue placeholder="Select Business Rule" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {isLoadingBusinessRules ? (
                         <SelectItem value="loading" disabled>Loading...</SelectItem>
                       ) : (
@@ -584,14 +584,14 @@ export function ImportTemplateWizardPage() {
                 <div className="space-y-2">
                   <Label>Period Exception</Label>
                   <Select
-                    value={formData.periodExceptionId}
-                    onValueChange={(v) => updateField("periodExceptionId", v)}
+                    value={formData.periodExceptionId || "none"}
+                    onValueChange={(v) => updateField("periodExceptionId", v === "none" ? "" : v)}
                   >
                     <SelectTrigger data-testid="select-period-exception">
                       <SelectValue placeholder="Select Period Exception" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
