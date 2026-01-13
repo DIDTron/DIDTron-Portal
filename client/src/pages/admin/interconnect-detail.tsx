@@ -350,10 +350,13 @@ export default function InterconnectDetailPage() {
 
   // Fetch supplier rate cards for Supplier Buy Rates dropdown
   const { data: supplierRateCardsData } = useQuery<Array<{ id: string; name: string; code?: string; currencyCode?: string; type?: string }>>({
-    queryKey: ["/api/rate-cards", { type: "provider" }],
+    queryKey: ["/api/rate-cards"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
   });
+  
+  // Filter to only show provider/supplier rate cards
+  const providerRateCards = supplierRateCardsData?.filter(rc => rc.type === "provider") || [];
 
   const [formData, setFormData] = useState({
     name: "",
@@ -995,7 +998,7 @@ export default function InterconnectDetailPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">-</SelectItem>
-                            {supplierRateCardsData?.map((rc) => (
+                            {(providerRateCards.length > 0 ? providerRateCards : supplierRateCardsData || []).map((rc) => (
                               <SelectItem key={rc.id} value={rc.name || rc.id}>
                                 {rc.name} {rc.currencyCode && `(${rc.currencyCode})`}
                               </SelectItem>
