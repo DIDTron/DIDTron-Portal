@@ -15,7 +15,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, Loader2, Upload, FileSpreadsheet, X, Check, Info } from "lucide-react";
+import { ChevronLeft, Loader2, Upload, FileSpreadsheet, X, Check, Info, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
 import {
@@ -1068,7 +1078,7 @@ export function ImportTemplateWizardPage() {
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".csv,.xlsx,.xls"
+                        accept=".csv,.xlsx,.xls,.xlsb"
                         className="hidden"
                         id="file-upload"
                         onChange={handleFileUpload}
@@ -1103,14 +1113,30 @@ export function ImportTemplateWizardPage() {
                     {parsedData.length > 50 && (
                       <span className="text-muted-foreground">Showing first 50 rows</span>
                     )}
-                    <span className="text-muted-foreground">Right-click column headers to assign mappings</span>
+                    <span className="text-muted-foreground">Right-click headers to set starting point, use dropdowns on data row to map columns</span>
                   </div>
                 </div>
                 <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-muted/50">
-                        <th className="w-10 px-2 py-2 text-left font-medium border-r bg-muted/50"></th>
+                        <th className="w-10 px-2 py-2 text-left font-medium border-r bg-muted/50 cursor-context-menu">
+                          <ContextMenu>
+                            <ContextMenuTrigger asChild>
+                              <div className="w-full h-full min-h-[1rem]"></div>
+                            </ContextMenuTrigger>
+                            <ContextMenuContent className="w-48">
+                              <ContextMenuItem onClick={() => setStartingRow(1)}>
+                                Set as Starting Row
+                                {startingRowExplicitlySet && formData.startingRow === 1 && <Check className="ml-auto h-4 w-4" />}
+                              </ContextMenuItem>
+                              <ContextMenuItem onClick={() => setStartingColumn("A")}>
+                                Set as Starting Column
+                                {startingColumnExplicitlySet && formData.startingColumn === "A" && <Check className="ml-auto h-4 w-4" />}
+                              </ContextMenuItem>
+                            </ContextMenuContent>
+                          </ContextMenu>
+                        </th>
                         {displayColumns.map((col) => {
                           const mapping = getColumnMapping(col);
                           const mappingLabel = mapping ? getVariableLabel(mapping) : null;
@@ -1139,74 +1165,6 @@ export function ImportTemplateWizardPage() {
                                     Set as Starting Column
                                     {startingColumnExplicitlySet && formData.startingColumn === col && <Check className="ml-auto h-4 w-4" />}
                                   </ContextMenuItem>
-                                  <ContextMenuSeparator />
-                                  <ContextMenuSub>
-                                    <ContextMenuSubTrigger>Dest/Orig</ContextMenuSubTrigger>
-                                    <ContextMenuSubContent className="w-48">
-                                      {COLUMN_MAPPING_VARIABLES.destOrig.map((v) => (
-                                        <ContextMenuItem
-                                          key={v.id}
-                                          onClick={() => assignColumnMapping(col, v.id)}
-                                        >
-                                          {v.label}
-                                          {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
-                                        </ContextMenuItem>
-                                      ))}
-                                    </ContextMenuSubContent>
-                                  </ContextMenuSub>
-                                  <ContextMenuSub>
-                                    <ContextMenuSubTrigger>Effective</ContextMenuSubTrigger>
-                                    <ContextMenuSubContent className="w-48">
-                                      {COLUMN_MAPPING_VARIABLES.effective.map((v) => (
-                                        <ContextMenuItem
-                                          key={v.id}
-                                          onClick={() => assignColumnMapping(col, v.id)}
-                                        >
-                                          {v.label}
-                                          {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
-                                        </ContextMenuItem>
-                                      ))}
-                                    </ContextMenuSubContent>
-                                  </ContextMenuSub>
-                                  <ContextMenuSub>
-                                    <ContextMenuSubTrigger>Rates</ContextMenuSubTrigger>
-                                    <ContextMenuSubContent className="w-48">
-                                      {COLUMN_MAPPING_VARIABLES.rates.map((v) => (
-                                        <ContextMenuItem
-                                          key={v.id}
-                                          onClick={() => assignColumnMapping(col, v.id)}
-                                        >
-                                          {v.label}
-                                          {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
-                                        </ContextMenuItem>
-                                      ))}
-                                    </ContextMenuSubContent>
-                                  </ContextMenuSub>
-                                  <ContextMenuSub>
-                                    <ContextMenuSubTrigger>Other</ContextMenuSubTrigger>
-                                    <ContextMenuSubContent className="w-48">
-                                      {COLUMN_MAPPING_VARIABLES.other.map((v) => (
-                                        <ContextMenuItem
-                                          key={v.id}
-                                          onClick={() => assignColumnMapping(col, v.id)}
-                                        >
-                                          {v.label}
-                                          {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
-                                        </ContextMenuItem>
-                                      ))}
-                                    </ContextMenuSubContent>
-                                  </ContextMenuSub>
-                                  {mapping && (
-                                    <>
-                                      <ContextMenuSeparator />
-                                      <ContextMenuItem
-                                        onClick={() => removeColumnMapping(col)}
-                                        className="text-destructive"
-                                      >
-                                        Remove Mapping
-                                      </ContextMenuItem>
-                                    </>
-                                  )}
                                 </ContextMenuContent>
                               </ContextMenu>
                             </th>
@@ -1234,22 +1192,8 @@ export function ImportTemplateWizardPage() {
                               </ContextMenu>
                             </td>
                             {displayColumns.map((col) => (
-                              <td key={col} className="px-3 py-2 border-r h-8 cursor-context-menu">
-                                <ContextMenu>
-                                  <ContextMenuTrigger asChild>
-                                    <div className="w-full h-full min-h-[1rem]"></div>
-                                  </ContextMenuTrigger>
-                                  <ContextMenuContent className="w-48">
-                                    <ContextMenuItem onClick={() => setStartingRow(rowNum)}>
-                                      Set as Starting Row
-                                      {startingRowExplicitlySet && formData.startingRow === rowNum && <Check className="ml-auto h-4 w-4" />}
-                                    </ContextMenuItem>
-                                    <ContextMenuItem onClick={() => setStartingColumn(col)}>
-                                      Set as Starting Column
-                                      {startingColumnExplicitlySet && formData.startingColumn === col && <Check className="ml-auto h-4 w-4" />}
-                                    </ContextMenuItem>
-                                  </ContextMenuContent>
-                                </ContextMenu>
+                              <td key={col} className="px-3 py-2 border-r h-8">
+                                <div className="w-full h-full min-h-[1rem]"></div>
                               </td>
                             ))}
                           </tr>
@@ -1288,33 +1232,109 @@ export function ImportTemplateWizardPage() {
                               </td>
                               {displayColumns.map((col, colIndex) => {
                                 const isStartingCol = startingColumnExplicitlySet && formData.startingColumn === col;
+                                const cellValue = rowData[colIndex] || "";
+                                const hasData = cellValue.trim() !== "";
+                                const mapping = getColumnMapping(col);
+                                
                                 return (
                                   <td 
                                     key={col}
                                     className={cn(
-                                      "px-3 py-2 border-r max-w-[200px] truncate cursor-context-menu",
+                                      "px-1 py-1 border-r max-w-[200px]",
                                       isStartingCol && "bg-primary/10",
                                       isStartingRow && isStartingCol && "bg-primary/20"
                                     )}
-                                    title={rowData[colIndex] || ""}
+                                    title={cellValue}
                                   >
-                                    <ContextMenu>
-                                      <ContextMenuTrigger asChild>
-                                        <div className="w-full h-full">
-                                          {rowData[colIndex] || ""}
-                                        </div>
-                                      </ContextMenuTrigger>
-                                      <ContextMenuContent className="w-48">
-                                        <ContextMenuItem onClick={() => setStartingRow(rowNum)}>
-                                          Set as Starting Row
-                                          {isStartingRow && <Check className="ml-auto h-4 w-4" />}
-                                        </ContextMenuItem>
-                                        <ContextMenuItem onClick={() => setStartingColumn(col)}>
-                                          Set as Starting Column
-                                          {isStartingCol && <Check className="ml-auto h-4 w-4" />}
-                                        </ContextMenuItem>
-                                      </ContextMenuContent>
-                                    </ContextMenu>
+                                    {isStartingRow && hasData ? (
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <button
+                                            className={cn(
+                                              "w-full flex items-center justify-between px-2 py-1 rounded text-left text-sm hover:bg-muted/50 transition-colors",
+                                              mapping && "bg-accent/30"
+                                            )}
+                                            data-testid={`dropdown-col-${col}`}
+                                          >
+                                            <span className="truncate">{cellValue}</span>
+                                            <ChevronDown className="h-3 w-3 ml-1 flex-shrink-0 text-muted-foreground" />
+                                          </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start" className="w-48">
+                                          <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger>Dest/Orig</DropdownMenuSubTrigger>
+                                            <DropdownMenuSubContent className="w-48">
+                                              {COLUMN_MAPPING_VARIABLES.destOrig.map((v) => (
+                                                <DropdownMenuItem
+                                                  key={v.id}
+                                                  onClick={() => assignColumnMapping(col, v.id)}
+                                                >
+                                                  {v.label}
+                                                  {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
+                                                </DropdownMenuItem>
+                                              ))}
+                                            </DropdownMenuSubContent>
+                                          </DropdownMenuSub>
+                                          <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger>Effective</DropdownMenuSubTrigger>
+                                            <DropdownMenuSubContent className="w-48">
+                                              {COLUMN_MAPPING_VARIABLES.effective.map((v) => (
+                                                <DropdownMenuItem
+                                                  key={v.id}
+                                                  onClick={() => assignColumnMapping(col, v.id)}
+                                                >
+                                                  {v.label}
+                                                  {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
+                                                </DropdownMenuItem>
+                                              ))}
+                                            </DropdownMenuSubContent>
+                                          </DropdownMenuSub>
+                                          <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger>Rates</DropdownMenuSubTrigger>
+                                            <DropdownMenuSubContent className="w-48">
+                                              {COLUMN_MAPPING_VARIABLES.rates.map((v) => (
+                                                <DropdownMenuItem
+                                                  key={v.id}
+                                                  onClick={() => assignColumnMapping(col, v.id)}
+                                                >
+                                                  {v.label}
+                                                  {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
+                                                </DropdownMenuItem>
+                                              ))}
+                                            </DropdownMenuSubContent>
+                                          </DropdownMenuSub>
+                                          <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger>Other</DropdownMenuSubTrigger>
+                                            <DropdownMenuSubContent className="w-48">
+                                              {COLUMN_MAPPING_VARIABLES.other.map((v) => (
+                                                <DropdownMenuItem
+                                                  key={v.id}
+                                                  onClick={() => assignColumnMapping(col, v.id)}
+                                                >
+                                                  {v.label}
+                                                  {mapping === v.id && <Check className="ml-auto h-4 w-4" />}
+                                                </DropdownMenuItem>
+                                              ))}
+                                            </DropdownMenuSubContent>
+                                          </DropdownMenuSub>
+                                          {mapping && (
+                                            <>
+                                              <DropdownMenuSeparator />
+                                              <DropdownMenuItem
+                                                onClick={() => removeColumnMapping(col)}
+                                                className="text-destructive"
+                                              >
+                                                Remove Mapping
+                                              </DropdownMenuItem>
+                                            </>
+                                          )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    ) : (
+                                      <div className="px-2 py-1 truncate">
+                                        {cellValue}
+                                      </div>
+                                    )}
                                   </td>
                                 );
                               })}
