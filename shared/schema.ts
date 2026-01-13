@@ -928,6 +928,41 @@ export const rateCardAssignments = pgTable("rate_card_assignments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ==================== SUPPLIER IMPORT TEMPLATES ====================
+
+export const supplierImportTemplates = pgTable("supplier_import_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  fileFormat: text("file_format").default("CSV"),
+  headerRow: integer("header_row").default(1),
+  dataStartRow: integer("data_start_row").default(2),
+  delimiter: text("delimiter").default(","),
+  prefixColumn: integer("prefix_column"),
+  destinationColumn: integer("destination_column"),
+  rateColumn: integer("rate_column"),
+  effectiveDateColumn: integer("effective_date_column"),
+  expiryDateColumn: integer("expiry_date_column"),
+  connectionFeeColumn: integer("connection_fee_column"),
+  billingIncrementColumn: integer("billing_increment_column"),
+  dateFormat: text("date_format").default("YYYY-MM-DD"),
+  defaultCurrency: text("default_currency").default("USD"),
+  ignorePatterns: text("ignore_patterns").array(),
+  columnMappings: jsonb("column_mappings"),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSupplierImportTemplateSchema = createInsertSchema(supplierImportTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSupplierImportTemplate = z.infer<typeof insertSupplierImportTemplateSchema>;
+export type SupplierImportTemplate = typeof supplierImportTemplates.$inferSelect;
+
 // ==================== ROUTE QUALITY MONITORING ====================
 
 export const monitoringRules = pgTable("monitoring_rules", {
