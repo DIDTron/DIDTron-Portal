@@ -1,6 +1,7 @@
 import { useState, KeyboardEvent } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { Search, Bell, LogOut, Cloud, CloudOff, Loader2, Menu } from "lucide-react";
 import { useBrandingStore } from "@/stores/branding-store";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,8 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
 
   const { data: connexcsStatus, isLoading: statusLoading } = useQuery<ConnexCSStatus>({
     queryKey: ["/api/connexcs/status"],
-    staleTime: 5 * 60 * 1000, // 5 minutes - prevent refetching on remount
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
     refetchInterval: 60000,
   });
 

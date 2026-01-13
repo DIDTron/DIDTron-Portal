@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -237,77 +237,96 @@ export default function InterconnectDetailPage() {
   const { data: carrier } = useQuery<Carrier>({
     queryKey: ["/api/carriers", carrierId],
     enabled: !!carrierId,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   const { data: interconnect, isLoading } = useQuery<CarrierInterconnect>({
     queryKey: ["/api/interconnects", interconnectId],
     enabled: !!interconnectId,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   // Fetch IP addresses from backend
   const { data: ipAddressesData } = useQuery<Array<{ id: string; interconnectId: string; ipAddress: string; isRange: boolean; rangeEnd?: string; addressType: string; includeLastVia: boolean; isActive: boolean }>>({
     queryKey: ["/api/interconnects", interconnectId, "ip-addresses"],
     enabled: !!interconnectId,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch validation settings from backend
   const { data: validationSettingsData } = useQuery<Record<string, any>>({
     queryKey: ["/api/interconnects", interconnectId, "validation-settings"],
     enabled: !!interconnectId,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   // Fetch translation settings from backend
   const { data: translationSettingsData } = useQuery<Record<string, any>>({
     queryKey: ["/api/interconnects", interconnectId, "translation-settings"],
     enabled: !!interconnectId,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   // Fetch media settings from backend
   const { data: mediaSettingsData } = useQuery<Record<string, any>>({
     queryKey: ["/api/interconnects", interconnectId, "media-settings"],
     enabled: !!interconnectId,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   // Fetch signalling settings from backend
   const { data: signallingSettingsData } = useQuery<Record<string, any>>({
     queryKey: ["/api/interconnects", interconnectId, "signalling-settings"],
     enabled: !!interconnectId,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   // Fetch monitoring settings from backend
   const { data: monitoringSettingsData } = useQuery<Record<string, any>>({
     queryKey: ["/api/interconnects", interconnectId, "monitoring-settings"],
     enabled: !!interconnectId,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   // Fetch codecs from backend
   const { data: codecsData } = useQuery<Array<{ id: string; interconnectId: string; codecName: string; allowed: boolean; relayOnly: boolean; vad: boolean; ptime: number; sortOrder: number }>>({
     queryKey: ["/api/interconnects", interconnectId, "codecs"],
     enabled: !!interconnectId,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch rating plans (rate cards) for the Add Service dialog
   const { data: ratingPlansData } = useQuery<Array<{ id: string; name: string; code?: string; currencyCode?: string }>>({
     queryKey: ["/api/rate-cards"],
     enabled: showAddServiceDialog,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch routing plans for the Add Service dialog
   const { data: routingPlansData } = useQuery<Array<{ id: string; name: string; code?: string }>>({
     queryKey: ["/api/routes"],
     enabled: showAddServiceDialog && newService.routingMethod === "routing_plan",
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch supplier interconnects for Route to Interconnect option (exclude current interconnect)
   const { data: supplierInterconnectsData } = useQuery<Array<{ id: string; name: string; carrierId: string; direction: string }>>({
     queryKey: ["/api/carrier-interconnects"],
     enabled: showAddServiceDialog && newService.routingMethod === "route_to_interconnect",
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch match lists for Assign List option
   const { data: matchListsData } = useQuery<Array<{ id: string; name: string; matchType: string }>>({
     queryKey: ["/api/match-lists"],
     enabled: showAddServiceDialog && (newService.originationMatchType === "assign_list" || newService.destinationMatchType === "assign_list"),
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   interface ConnexCSServer {
@@ -325,6 +344,8 @@ export default function InterconnectDetailPage() {
   
   const { data: serversData } = useQuery<{ success: boolean; data: ConnexCSServer[]; count: number; mockMode: boolean }>({
     queryKey: ["/api/connexcs/servers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const [formData, setFormData] = useState({

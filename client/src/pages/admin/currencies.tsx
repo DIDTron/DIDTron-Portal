@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { 
   Plus, Loader2, DollarSign, RefreshCw, TrendingUp, TrendingDown,
   Globe, Settings, Search, Check
@@ -51,10 +51,14 @@ export default function CurrenciesPage() {
 
   const { data: currencies = [], isLoading: currenciesLoading } = useQuery<Currency[]>({
     queryKey: ["/api/admin/currencies"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const { data: fxRates = [], isLoading: ratesLoading } = useQuery<FxRate[]>({
     queryKey: ["/api/admin/fx-rates"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const createCurrency = useMutation({
@@ -113,9 +117,10 @@ export default function CurrenciesPage() {
 
   const syncCurrencies = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/admin/currencies/sync");
+      const response = await apiRequest("POST", "/api/admin/currencies/sync");
+      return response.json() as Promise<{ added: number; total: number; message: string }>;
     },
-    onSuccess: (data: { added: number; total: number; message: string }) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/currencies"] });
       toast({ title: "Currencies synced", description: data.message || `Synced ${data.total} currencies` });
     },

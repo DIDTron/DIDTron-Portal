@@ -446,6 +446,17 @@ export function SecondarySidebar() {
     })
   );
 
+  const prefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleHoverPrefetch = useCallback((route: string) => {
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+    }
+    prefetchTimeoutRef.current = setTimeout(() => {
+      prefetchRouteData(route);
+    }, 100);
+  }, []);
+
   const orderedItems = useMemo(() => {
     if (!config || !activeSection) return [];
     const savedOrder = sectionItemOrder[activeSection];
@@ -497,17 +508,6 @@ export function SecondarySidebar() {
     openTab(tab);
     setLocation(item.route);
   };
-
-  const prefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleHoverPrefetch = useCallback((route: string) => {
-    if (prefetchTimeoutRef.current) {
-      clearTimeout(prefetchTimeoutRef.current);
-    }
-    prefetchTimeoutRef.current = setTimeout(() => {
-      prefetchRouteData(route);
-    }, 100);
-  }, []);
 
   return (
     <div className="flex flex-col h-full w-48 border-r bg-sidebar shrink-0">

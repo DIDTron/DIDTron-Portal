@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +74,8 @@ export default function FlowDesignerPage() {
 
   const { data: agents = [] } = useQuery<{ id: string; name: string }[]>({
     queryKey: ["/api/my/ai-voice/agents"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const saveMutation = useMutation({

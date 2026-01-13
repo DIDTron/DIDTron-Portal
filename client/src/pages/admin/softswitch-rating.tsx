@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -686,6 +686,8 @@ export function CustomerRatingPlansPage() {
   
   const { data: plans = [], isLoading, isFetching, refetch, isError } = useQuery<APICustomerRatingPlan[]>({
     queryKey: ["/api/softswitch/rating/customer-plans"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   useEffect(() => {
@@ -1251,7 +1253,8 @@ export function SupplierRatingPlansPage() {
   // Fetch business rules from database
   const { data: businessRulesData = [], refetch: refetchBusinessRules } = useQuery<BusinessRuleAPI[]>({
     queryKey: ["/api/softswitch/rating/business-rules"],
-    staleTime: 30 * 1000, // 30 seconds - prevent refetching on tab switch
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const filteredPlans = mockSupplierPlans.filter((plan) => {

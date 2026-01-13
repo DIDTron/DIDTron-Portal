@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -160,16 +160,22 @@ export default function PortalAiAgentsPage() {
   // Queries
   const { data: agents = [], isLoading: agentsLoading } = useQuery<AiVoiceAgent[]>({
     queryKey: ["/api/my/ai-voice/agents"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: trainingData = [] } = useQuery<AiVoiceTrainingData[]>({
     queryKey: ["/api/my/ai-voice/agents", selectedAgentId, "training"],
     enabled: !!selectedAgentId && mainTab === "training",
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: campaigns = [] } = useQuery<AiVoiceCampaign[]>({
     queryKey: ["/api/my/ai-voice/campaigns"],
     enabled: mainTab === "campaigns",
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   // Agent mutations

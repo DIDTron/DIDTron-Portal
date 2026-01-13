@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -173,11 +173,14 @@ export default function RatingPlanDetailPage() {
   const { data: plan, isLoading: planLoading } = useQuery<CustomerRatingPlan>({
     queryKey: [`/api/softswitch/rating/customer-plans/${planId}`],
     enabled: !!planId,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   const { data: rates = [], isLoading: ratesLoading, refetch: refetchRates } = useQuery<CustomerRatingPlanRate[]>({
     queryKey: [`/api/softswitch/rating/customer-plans/${planId}/rates`],
     enabled: !!planId,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const createRateMutation = useMutation({

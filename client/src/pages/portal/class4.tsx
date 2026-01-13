@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 
 interface RateCard {
   id: number;
@@ -56,18 +56,25 @@ export default function Class4Page() {
     avgMargin: string;
   }>({
     queryKey: ["/api/my/class4/stats"],
+    staleTime: STALE_TIME.DETAIL,
   });
 
   const { data: rateCards, isLoading: rateCardsLoading } = useQuery<RateCard[]>({
     queryKey: ["/api/my/class4/rate-cards"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: lcrRules, isLoading: lcrLoading } = useQuery<LcrRule[]>({
     queryKey: ["/api/my/class4/lcr-rules"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: margins, isLoading: marginsLoading } = useQuery<MarginData[]>({
     queryKey: ["/api/my/class4/margins"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const statCards = [

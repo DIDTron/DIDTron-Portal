@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -60,6 +61,8 @@ export default function EMWhiteLabelPage() {
 
   const { data: contentItems = [], isLoading } = useQuery<EmContentItem[]>({
     queryKey: ["/api/em/content-items"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const whiteLabelItems = contentItems.filter(item => item.section === "white_label");

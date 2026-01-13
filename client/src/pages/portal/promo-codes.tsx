@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 
 interface RedeemedCode {
   id: string;
@@ -40,10 +40,14 @@ export default function PromoCodesPage() {
 
   const { data: redeemedCodes, isLoading: loadingCodes } = useQuery<RedeemedCode[]>({
     queryKey: ["/api/my/promo-codes"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: bonuses, isLoading: loadingBonuses } = useQuery<AvailableBonus[]>({
     queryKey: ["/api/my/bonuses"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const redeemMutation = useMutation({

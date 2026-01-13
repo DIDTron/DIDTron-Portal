@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import {
   Form,
   FormControl,
@@ -144,6 +144,8 @@ export default function AIVoiceWizard() {
 
   const { data: knowledgeBases = [] } = useQuery<any[]>({
     queryKey: ["/api/my/ai-voice/knowledge-bases"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const createAgentMutation = useMutation({

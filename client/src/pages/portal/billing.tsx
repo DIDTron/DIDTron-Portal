@@ -15,7 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import type { Customer, Payment } from "@shared/schema";
 
 export default function BillingPage() {
@@ -32,10 +32,13 @@ export default function BillingPage() {
 
   const { data: profile, isLoading: profileLoading } = useQuery<Customer>({
     queryKey: ["/api/my/profile"],
+    staleTime: STALE_TIME.DETAIL,
   });
 
   const { data: payments = [], isLoading: paymentsLoading } = useQuery<Payment[]>({
     queryKey: ["/api/my/payments"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const addFundsMutation = useMutation({

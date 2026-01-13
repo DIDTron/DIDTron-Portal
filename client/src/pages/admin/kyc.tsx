@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { 
   Search, CheckCircle2, XCircle, Clock, FileText, User, 
   AlertTriangle, Loader2, Eye, ThumbsUp, ThumbsDown, Shield
@@ -44,10 +44,14 @@ export default function KycPage() {
 
   const { data: kycRequests = [], isLoading } = useQuery<CustomerKyc[]>({
     queryKey: ["/api/kyc"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const approveKyc = useMutation({

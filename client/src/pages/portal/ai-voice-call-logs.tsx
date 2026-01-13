@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,8 @@ export default function CustomerCallLogsPage() {
 
   const { data: callLogs = [], isLoading } = useQuery<CallLog[]>({
     queryKey: ["/api/my/ai-voice/call-logs"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const filteredLogs = callLogs.filter((log) => {

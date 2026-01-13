@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -107,10 +108,14 @@ export default function CdrsPage() {
       if (!res.ok) throw new Error('Failed to fetch CDRs');
       return res.json();
     },
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: stats } = useQuery<CdrStats>({
     queryKey: ['/api/cdrs/stats/summary'],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const formatDuration = (seconds: number) => {

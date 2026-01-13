@@ -7,7 +7,7 @@ import {
   Building2, Route, Phone, Sparkles, RefreshCw, ArrowUpRight, TrendingUp, Clock
 } from "lucide-react";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useState } from "react";
 import type { CustomerCategory, CustomerGroup, Carrier, Pop, Route as RouteType, DidCountry, VoiceTier, Customer, Invoice, Payment, PromoCode, Referral } from "@shared/schema";
 
@@ -19,50 +19,72 @@ export default function AdminDashboard() {
 
   const { data: categories, isFetching: categoriesFetching, refetch: refetchCategories } = useQuery<CustomerCategory[]>({
     queryKey: ["/api/categories"],
+    staleTime: STALE_TIME.STATIC,
   });
 
   const { data: carriers, isFetching: carriersFetching, refetch: refetchCarriers } = useQuery<Carrier[]>({
     queryKey: ["/api/carriers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: pops, isFetching: popsFetching, refetch: refetchPops } = useQuery<Pop[]>({
     queryKey: ["/api/pops"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: routes, isFetching: routesFetching, refetch: refetchRoutes } = useQuery<RouteType[]>({
     queryKey: ["/api/routes"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: didCountries, isFetching: didFetching, refetch: refetchDids } = useQuery<DidCountry[]>({
     queryKey: ["/api/did-countries"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: voiceTiers, isFetching: tiersFetching, refetch: refetchTiers } = useQuery<VoiceTier[]>({
     queryKey: ["/api/voice-tiers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: customers, isFetching: customersFetching, refetch: refetchCustomers } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: groups, isFetching: groupsFetching, refetch: refetchGroups } = useQuery<CustomerGroup[]>({
     queryKey: ["/api/groups"],
+    staleTime: STALE_TIME.STATIC,
   });
 
   const { data: invoices, isFetching: invoicesFetching, refetch: refetchInvoices } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: payments, isFetching: paymentsFetching, refetch: refetchPayments } = useQuery<Payment[]>({
     queryKey: ["/api/payments"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: promoCodes, isFetching: promoFetching, refetch: refetchPromos } = useQuery<PromoCode[]>({
     queryKey: ["/api/promo-codes"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: referrals, isFetching: referralsFetching, refetch: refetchReferrals } = useQuery<Referral[]>({
     queryKey: ["/api/referrals"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const isAnyFetching = isRefreshing || categoriesFetching || carriersFetching || popsFetching || 

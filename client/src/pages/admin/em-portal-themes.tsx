@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -81,6 +81,7 @@ export default function EMPortalThemesPage() {
   
   const { data: draftData, isLoading } = useQuery<{ data: ThemeSettings | null }>({
     queryKey: ["/api/em/content/portal_themes/theme", selectedPortal, "draft"],
+    staleTime: STALE_TIME.DETAIL,
   });
   
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(DEFAULT_THEME);

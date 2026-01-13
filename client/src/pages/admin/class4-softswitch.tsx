@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,10 +93,14 @@ export function Class4CustomersPage() {
 
   const { data: customers = [], isLoading } = useQuery<Class4Customer[]>({
     queryKey: ["/api/class4/customers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: parentCustomers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({
@@ -433,10 +437,14 @@ export function Class4CarriersPage() {
 
   const { data: carriers = [], isLoading } = useQuery<Class4Carrier[]>({
     queryKey: ["/api/class4/carriers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: parentCustomers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({

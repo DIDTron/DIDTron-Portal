@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Plus, Edit, Trash2, Star, RefreshCw, Calendar, Clock } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BillingTerm } from "@shared/schema";
@@ -36,6 +36,8 @@ export default function BillingTermsPage() {
 
   const { data: billingTerms, isLoading, isFetching, refetch } = useQuery<BillingTerm[]>({
     queryKey: ["/api/billing-terms"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { paginatedItems, ...paginationProps } = useDataTablePagination(billingTerms || []);

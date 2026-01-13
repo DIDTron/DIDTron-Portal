@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,19 +89,27 @@ export default function CustomerCampaignsPage() {
 
   const { data: campaigns = [], isLoading: campaignsLoading } = useQuery<Campaign[]>({
     queryKey: ["/api/my/ai-voice/campaigns"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: phonebooks = [], isLoading: phonebooksLoading } = useQuery<Phonebook[]>({
     queryKey: ["/api/my/ai-voice/phonebooks"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: agents = [] } = useQuery<Agent[]>({
     queryKey: ["/api/my/ai-voice/agents"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: contacts = [] } = useQuery<Contact[]>({
     queryKey: ["/api/my/ai-voice/phonebooks", selectedPhonebook?.id, "contacts"],
     enabled: !!selectedPhonebook,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const createCampaignMutation = useMutation({

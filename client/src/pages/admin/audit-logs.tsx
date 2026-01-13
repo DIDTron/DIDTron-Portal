@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { AlertTriangle, Search, FileText, Loader2, RefreshCw, Download, Filter, Trash2, Calendar as CalendarIcon, User, Activity, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import type { AuditLog } from "@shared/schema";
 import { format } from "date-fns";
 
@@ -58,10 +58,14 @@ export default function AuditLogsPage() {
 
   const { data: logs = [], isLoading, refetch } = useQuery<AuditLog[]>({
     queryKey: ["/api/audit-logs"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: adminUsers = [] } = useQuery<AdminUser[]>({
     queryKey: ["/api/admin-users"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const deleteAllMutation = useMutation({

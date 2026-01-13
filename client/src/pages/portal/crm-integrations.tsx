@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import {
   Plus, Settings, Trash2, RefreshCw, Check, X, Loader2,
   Link2, LinkIcon, Unlink, Clock, ArrowRight, Search
@@ -338,11 +338,14 @@ function ConfigureDialog({
   const { data: settings } = useQuery<CrmSyncSettings>({
     queryKey: ["/api/my/crm/connections", connection?.id, "settings"],
     enabled: !!connection?.id && open,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   const { data: logs = [] } = useQuery<CrmSyncLog[]>({
     queryKey: ["/api/my/crm/connections", connection?.id, "logs"],
     enabled: !!connection?.id && open && activeTab === "logs",
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const updateSettingsMutation = useMutation({
@@ -571,6 +574,8 @@ export default function CrmIntegrationsPage() {
 
   const { data: connections = [], isLoading } = useQuery<CrmConnection[]>({
     queryKey: ["/api/my/crm/connections"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const testMutation = useMutation({

@@ -6,20 +6,27 @@ import {
   AlertTriangle, Clock, RefreshCw, ArrowUpRight, ArrowDownRight
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Customer, Invoice, Payment } from "@shared/schema";
 
 export default function BillingOverviewPage() {
   const { data: customers, isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: invoices, isLoading: invoicesLoading } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: payments, isLoading: paymentsLoading } = useQuery<Payment[]>({
     queryKey: ["/api/payments"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const isLoading = customersLoading || invoicesLoading || paymentsLoading;

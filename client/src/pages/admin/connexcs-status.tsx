@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface ConnexCSStatus {
@@ -62,6 +62,8 @@ export default function ConnexCSStatusPage() {
 
   const { data: status, isLoading, refetch, isRefetching } = useQuery<ConnexCSStatus>({
     queryKey: ["/api/connexcs/status/detailed"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const testConnectionMutation = useMutation({

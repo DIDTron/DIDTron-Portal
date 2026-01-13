@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,10 +66,14 @@ export default function AiVoiceSettingsPage() {
 
   const { data: systemSettings = [], isLoading } = useQuery<AiVoiceSetting[]>({
     queryKey: ["/api/admin/ai-voice/settings"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const { data: webhooks = [] } = useQuery<WebhookConfig[]>({
     queryKey: ["/api/admin/ai-voice/webhooks"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const saveMutation = useMutation({

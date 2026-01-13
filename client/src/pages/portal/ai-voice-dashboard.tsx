@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,10 +38,14 @@ type RecentCall = {
 export default function CustomerAiVoiceDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/my/ai-voice/dashboard/stats"],
+    staleTime: STALE_TIME.DETAIL,
+    placeholderData: keepPreviousData,
   });
 
   const { data: recentCalls = [], isLoading: callsLoading } = useQuery<RecentCall[]>({
     queryKey: ["/api/my/ai-voice/call-logs", { limit: 5 }],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const defaultStats: DashboardStats = {

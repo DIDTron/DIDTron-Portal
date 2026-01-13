@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -96,10 +96,14 @@ export default function TestingEngine() {
 
   const { data: modulesData } = useQuery<ModulesResponse>({
     queryKey: ["/api/e2e/modules"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const { data: runs = [], isLoading: runsLoading, refetch: refetchRuns } = useQuery<E2eRun[]>({
     queryKey: ["/api/e2e/runs"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: runDetails, refetch: refetchRunDetails } = useQuery<{ run: E2eRunWithProgress; results: PageResult[] }>({
@@ -112,6 +116,8 @@ export default function TestingEngine() {
     },
     enabled: !!selectedRunId,
     refetchInterval: runningRunId === selectedRunId ? 2000 : false,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const runTestsMutation = useMutation({

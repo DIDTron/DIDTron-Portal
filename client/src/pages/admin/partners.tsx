@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,10 +54,13 @@ export default function PartnersPage() {
 
   const { data: carriers, isLoading } = useQuery<Carrier[]>({
     queryKey: ["/api/carriers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: currencies } = useQuery<Currency[]>({
     queryKey: ["/api/currencies"],
+    staleTime: STALE_TIME.STATIC,
   });
 
   const sortedCarriers = [...(carriers || [])].sort((a, b) => {

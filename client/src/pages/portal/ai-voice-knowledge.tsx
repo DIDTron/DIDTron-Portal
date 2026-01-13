@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,11 +86,15 @@ export default function CustomerKnowledgeWorkspace() {
 
   const { data: knowledgeBases = [], isLoading } = useQuery<KnowledgeBase[]>({
     queryKey: ["/api/my/ai-voice/knowledge-bases"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: sources = [] } = useQuery<KbSource[]>({
     queryKey: ["/api/my/ai-voice/knowledge-bases", selectedKb?.id, "sources"],
     enabled: !!selectedKb,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({

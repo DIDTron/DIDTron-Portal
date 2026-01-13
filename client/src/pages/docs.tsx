@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useLocation, Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +24,14 @@ export default function DocsPage() {
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<DocCategory[]>({
     queryKey: ["/api/docs/categories"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const { data: articles = [], isLoading: articlesLoading } = useQuery<DocArticle[]>({
     queryKey: ["/api/docs/articles"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const publishedCategories = categories.filter(c => c.isPublished);

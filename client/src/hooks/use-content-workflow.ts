@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { EmContentItem, EmContentVersion, EmPublishHistory } from "@shared/schema";
 
@@ -65,20 +65,28 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
 
   const { data: contentItem, isLoading: isLoadingContent } = useQuery<EmContentItem | null>({
     queryKey: contentQueryKey,
+    staleTime: STALE_TIME.DETAIL,
+    placeholderData: keepPreviousData,
   });
 
   const { data: draftVersion } = useQuery<EmContentVersion | null>({
     queryKey: draftQueryKey,
     enabled: !!contentItem?.draftVersionId,
+    staleTime: STALE_TIME.DETAIL,
+    placeholderData: keepPreviousData,
   });
 
   const { data: publishedVersion } = useQuery<EmContentVersion | null>({
     queryKey: publishedQueryKey,
     enabled: !!contentItem?.publishedVersionId,
+    staleTime: STALE_TIME.DETAIL,
+    placeholderData: keepPreviousData,
   });
 
   const { data: publishHistory = [] } = useQuery<EmPublishHistory[]>({
     queryKey: historyQueryKey,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const saveDraftMutation = useMutation({

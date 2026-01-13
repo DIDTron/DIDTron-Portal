@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Search, Loader2, RefreshCw, Trash2, Eye, CheckCircle, XCircle, AlertTriangle, Clock, FlaskConical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import type { DevTest } from "@shared/schema";
 import { format } from "date-fns";
 
@@ -39,6 +39,8 @@ export default function DevTestsPage() {
 
   const { data: tests = [], isLoading, isFetching, refetch } = useQuery<DevTest[]>({
     queryKey: ["/api/dev-tests"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const deleteMutation = useMutation({

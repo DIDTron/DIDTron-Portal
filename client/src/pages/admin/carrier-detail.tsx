@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,33 +80,44 @@ export default function CarrierDetailPage() {
   const { data: carrier, isLoading } = useQuery<Carrier>({
     queryKey: ["/api/carriers", carrierId],
     enabled: !!carrierId,
+    staleTime: STALE_TIME.DETAIL,
   });
 
   const { data: currencies } = useQuery<Currency[]>({
     queryKey: ["/api/currencies"],
+    staleTime: STALE_TIME.STATIC,
   });
 
   const { data: interconnects } = useQuery<CarrierInterconnect[]>({
     queryKey: ["/api/carriers", carrierId, "interconnects"],
     enabled: !!carrierId,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: contacts } = useQuery<CarrierContact[]>({
     queryKey: ["/api/carriers", carrierId, "contacts"],
     enabled: !!carrierId,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: creditAlerts } = useQuery<CarrierCreditAlert[]>({
     queryKey: ["/api/carriers", carrierId, "credit-alerts"],
     enabled: !!carrierId,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: emailTemplates } = useQuery<EmailTemplate[]>({
     queryKey: ["/api/email-templates"],
+    staleTime: STALE_TIME.STATIC,
   });
 
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const [formData, setFormData] = useState({

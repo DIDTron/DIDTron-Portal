@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,6 +111,8 @@ export default function AiVoiceAssignmentsPage() {
 
   const { data: assignments = [], isLoading } = useQuery<Assignment[]>({
     queryKey: ["/api/admin/ai-voice/assignments"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const {
@@ -125,14 +127,20 @@ export default function AiVoiceAssignmentsPage() {
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/admin/categories"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: groups = [] } = useQuery<Group[]>({
     queryKey: ["/api/admin/groups"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: pricingTiers = [] } = useQuery<PricingTier[]>({
     queryKey: ["/api/admin/ai-voice/pricing-tiers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({

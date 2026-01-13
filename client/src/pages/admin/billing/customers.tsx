@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { Search, RefreshCw, CreditCard, Users, AlertTriangle, Edit, Calendar, Building2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Customer, BillingTerm, Carrier } from "@shared/schema";
 
@@ -48,14 +48,20 @@ export default function BillingCustomersPage() {
 
   const { data: customers, isLoading: customersLoading, isFetching: customersFetching, refetch: refetchCustomers } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: carriers, isLoading: carriersLoading, isFetching: carriersFetching, refetch: refetchCarriers } = useQuery<Carrier[]>({
     queryKey: ["/api/carriers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: billingTerms } = useQuery<BillingTerm[]>({
     queryKey: ["/api/billing-terms"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const updateCustomerMutation = useMutation({

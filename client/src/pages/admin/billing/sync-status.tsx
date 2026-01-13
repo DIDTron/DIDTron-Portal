@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Clock, Server, Users, CreditCard, FileText, ArrowUpRight, ArrowDownRight, Download, Upload, Database, Activity, BarChart3, TrendingUp, DollarSign } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface SyncJob {
@@ -60,14 +60,19 @@ export default function SyncStatusPage() {
 
   const { data: connexcsStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery<ConnexCSStatus>({
     queryKey: ["/api/connexcs/status/detailed"],
+    staleTime: STALE_TIME.REALTIME,
   });
 
   const { data: syncJobs, isLoading: jobsLoading, refetch: refetchJobs } = useQuery<SyncJob[]>({
     queryKey: ["/api/admin/connexcs/sync/jobs"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: reconciliation, isLoading: reconciliationLoading, refetch: refetchReconciliation } = useQuery<ReconciliationStats>({
     queryKey: ["/api/admin/connexcs/reconciliation"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const syncCustomersMutation = useMutation({

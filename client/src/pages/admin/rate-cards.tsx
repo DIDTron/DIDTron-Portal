@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -129,6 +129,8 @@ function CustomerRatesPage() {
       if (!res.ok) throw new Error('Failed to fetch rate cards');
       return res.json();
     },
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({

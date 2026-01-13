@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { 
   Play, CheckCircle2, XCircle, AlertTriangle, Loader2, Phone, Signal,
   Timer, BarChart3, RefreshCw, Search, X, Plus
@@ -119,22 +119,32 @@ export default function PortalSipTesterPage() {
 
   const { data: voiceTiers = [] } = useQuery<VoiceTier[]>({
     queryKey: ["/api/voice-tiers"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const { data: class4Carriers = [] } = useQuery<Class4Carrier[]>({
     queryKey: ["/api/my/class4/carriers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: audioFiles = [] } = useQuery<SipTestAudioFile[]>({
     queryKey: ["/api/sip-test-audio-files"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const { data: testRuns = [], isLoading: runsLoading } = useQuery<SipTestRun[]>({
     queryKey: ["/api/my/sip-test-runs"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: testNumbers = [] } = useQuery<SipTestNumber[]>({
     queryKey: ["/api/sip-test-numbers"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const dbNumbersByCountry = useMemo(() => {

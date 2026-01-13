@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -88,6 +89,8 @@ export default function AiVoiceAnalyticsPage() {
 
   const { data: analytics, isLoading, error } = useQuery<AnalyticsData>({
     queryKey: ["/api/admin/ai-voice/analytics", period],
+    staleTime: STALE_TIME.DETAIL,
+    placeholderData: keepPreviousData,
   });
 
   if (isLoading) {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,14 +59,20 @@ export default function CustomerAiVoiceBillingPage() {
 
   const { data: billing, isLoading: billingLoading } = useQuery<BillingData>({
     queryKey: ["/api/my/ai-voice/billing"],
+    staleTime: STALE_TIME.DETAIL,
+    placeholderData: keepPreviousData,
   });
 
   const { data: usageRecords = [], isLoading: usageLoading } = useQuery<UsageRecord[]>({
     queryKey: ["/api/my/ai-voice/usage", period],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: transactions = [] } = useQuery<Transaction[]>({
     queryKey: ["/api/my/ai-voice/transactions"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const defaultBilling: BillingData = {

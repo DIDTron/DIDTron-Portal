@@ -13,7 +13,7 @@ import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { validateAndNormalizeAZData, type ValidationError, VALID_BILLING_INCREMENTS } from "@shared/billing-increment-utils";
 
@@ -397,6 +397,8 @@ export function GlobalSettingsAZDatabase() {
   const { data: pendingJobs } = useQuery<{ pending: number }>({
     queryKey: ["/api/admin/jobs/az-import-status"],
     refetchInterval: autoRefresh ? 3000 : false,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const hasPendingImports = (pendingJobs?.pending ?? 0) > 0;
@@ -425,6 +427,8 @@ export function GlobalSettingsAZDatabase() {
 
   const { data: regionsData } = useQuery<string[]>({
     queryKey: ["/api/az-destinations/regions"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const queryParams = new URLSearchParams();
@@ -437,6 +441,8 @@ export function GlobalSettingsAZDatabase() {
   const { data, isLoading, isFetching, refetch } = useQuery<{ destinations: AzDestination[]; total: number }>({
     queryKey: [`/api/az-destinations?${queryString}`],
     refetchInterval: autoRefresh ? 3000 : false,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const updateMutation = useMutation({

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { 
   Plus, Trash2, Copy, Key, Webhook, Eye, EyeOff, 
   CheckCircle2, XCircle, Loader2, AlertTriangle, History, ChevronRight
@@ -42,14 +42,20 @@ export default function ApiWebhooksPage() {
   const { data: deliveries = [], isLoading: deliveriesLoading, isFetching: deliveriesFetching } = useQuery<WebhookDelivery[]>({
     queryKey: selectedWebhookId ? ["/api/my/webhooks", selectedWebhookId, "deliveries"] : ["disabled"],
     enabled: !!selectedWebhookId && activeTab === "delivery-logs",
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: apiKeys = [], isLoading: keysLoading } = useQuery<CustomerApiKey[]>({
     queryKey: ["/api/my/api-keys"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: webhooks = [], isLoading: webhooksLoading } = useQuery<WebhookType[]>({
     queryKey: ["/api/my/webhooks"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const createApiKey = useMutation({

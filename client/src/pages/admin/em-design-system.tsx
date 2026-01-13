@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, STALE_TIME } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -93,6 +93,7 @@ export default function EMDesignSystemPage() {
 
   const { data: scanResults, isLoading } = useQuery<ScanResults>({
     queryKey: ["/api/em/scan-results"],
+    staleTime: STALE_TIME.STATIC,
   });
 
   const scanMutation = useMutation({

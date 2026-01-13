@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { format, subDays } from "date-fns";
 
 interface ExportJob {
@@ -48,6 +48,8 @@ export default function CdrExportPage() {
 
   const { data: exports, isLoading } = useQuery<ExportJob[]>({
     queryKey: ["/api/my/cdr-exports"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const exportMutation = useMutation({

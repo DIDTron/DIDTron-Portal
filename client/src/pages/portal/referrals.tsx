@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME } from "@/lib/queryClient";
 
 interface ReferralData {
   referralCode: string;
@@ -33,6 +34,7 @@ export default function ReferralsPage() {
 
   const { data, isLoading } = useQuery<ReferralData>({
     queryKey: ["/api/my/referral"],
+    staleTime: STALE_TIME.DETAIL,
   });
 
   const copyToClipboard = async (text: string) => {

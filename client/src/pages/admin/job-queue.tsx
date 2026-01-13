@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -90,16 +90,22 @@ export default function JobQueuePage() {
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching, refetch: refetchStats } = useQuery<JobStats>({
     queryKey: ["/api/admin/jobs/stats"],
     refetchInterval: autoRefresh ? 30000 : false,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: jobsData, isLoading: jobsLoading, isFetching: jobsFetching, refetch: refetchJobs } = useQuery<JobsResponse>({
     queryKey: ["/api/admin/jobs", statusFilter, typeFilter],
     refetchInterval: autoRefresh ? 30000 : false,
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: workerStatus, isFetching: workerFetching, refetch: refetchWorker } = useQuery<{ running: boolean }>({
     queryKey: ["/api/admin/jobs/worker/status"],
     refetchInterval: autoRefresh ? 30000 : false,
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const isAnyFetching = statsFetching || jobsFetching || workerFetching || isRefreshing;

@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { 
   Play, Plus, Settings, Clock, Activity, CheckCircle2, XCircle, 
   AlertTriangle, Loader2, Phone, Signal, Zap, Timer, BarChart3,
@@ -110,18 +110,26 @@ function NewTestPage() {
 
   const { data: profiles = [] } = useQuery<SipTestProfile[]>({
     queryKey: ["/api/sip-test-profiles"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const { data: suppliers = [] } = useQuery<SipTestSupplier[]>({
     queryKey: ["/api/sip-test-suppliers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: voiceTiers = [] } = useQuery<VoiceTier[]>({
     queryKey: ["/api/voice-tiers"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const { data: audioFiles = [] } = useQuery<SipTestAudioFile[]>({
     queryKey: ["/api/sip-test-audio-files"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
   });
 
   const runTest = useMutation({
@@ -506,6 +514,8 @@ function HistoryPage() {
 
   const { data: testRuns = [], isLoading } = useQuery<SipTestRun[]>({
     queryKey: ["/api/sip-test-runs"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const toggleExpanded = (id: string) => {

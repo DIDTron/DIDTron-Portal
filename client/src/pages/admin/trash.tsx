@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { AlertTriangle, Search, Trash2, Loader2, RefreshCw, RotateCcw, Filter, Clock, Database, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import type { Trash } from "@shared/schema";
 
 export default function TrashPage() {
@@ -22,6 +22,8 @@ export default function TrashPage() {
 
   const { data: trashData, isLoading, refetch } = useQuery<{ items: Trash[]; total: number }>({
     queryKey: ["/api/trash"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
   const trashItems = trashData?.items || [];
 
@@ -33,6 +35,7 @@ export default function TrashPage() {
       const data = await res.json();
       return { retentionDays: parseInt(data.value) || 30 };
     },
+    staleTime: STALE_TIME.STATIC,
   });
 
   const restoreMutation = useMutation({

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -118,18 +119,26 @@ export default function AiVoiceDashboard() {
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/ai-voice/dashboard"],
+    staleTime: STALE_TIME.DETAIL,
+    placeholderData: keepPreviousData,
   });
 
   const { data: pricingTiers = [] } = useQuery<PricingTier[]>({
     queryKey: ["/api/admin/ai-voice/pricing-tiers"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: templates = [] } = useQuery<Template[]>({
     queryKey: ["/api/admin/ai-voice/templates"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const { data: callLogs = [] } = useQuery<CallLog[]>({
     queryKey: ["/api/admin/ai-voice/call-logs"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
   });
 
   const handleQuickAction = (subItem: string, label: string, route: string) => {
