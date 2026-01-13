@@ -592,3 +592,19 @@ All performance optimization stages completed:
   - Issue: Audit tab shows "No recent audit events" with empty table
   - Acceptance: Shows recent deployments/restarts, schema migrations, config changes, super-admin actions from audit_records
   - Files: client/src/pages/admin/system-status.tsx, server/system-status-routes.ts, shared/schema.ts
+
+---
+
+## Phase 7: Supplier Rating Plan Detail
+
+### Plan ID: PLAN-2026-01-13-SUPPLIERRATING
+
+- [x] **T160**: Create Supplier Rating Plan Detail page
+  - Files: client/src/pages/admin/supplier-rating-plan-detail.tsx, client/src/pages/admin/index.tsx
+  - Acceptance:
+    * Route /admin/softswitch/rating/supplier-plans/:id registered ✓
+    * 5 tabs: Rates, Plan Details, Origin Codes, Origin Sets, Rate History & Restore ✓
+    * Actions menu: Add Supplier Rate, Export Rates, Import Supplier Rates, Update Blocking ✓
+    * Breadcrumb: "Supplier Rating / [Plan Name]" ✓
+    * Matches Digitalk Carrier Cloud Manager UI layout ✓
+  - Status: ✅ Complete

@@ -66,6 +66,28 @@
 5. **Signalling** - Privacy, Session Timer, Release Cause
 6. **Monitoring** - SIP OPTIONS ping, Auto-disable
 
+### Supplier Rating Plan Detail - 5 Tabs
+Route: `/admin/softswitch/rating/supplier-plans/:id`
+Breadcrumb: "Supplier Rating / [Plan Name]"
+
+1. **Rates** - Rate table with filters (Effective, Code, Zone, Time Class, Origin Set, Origin Rates, Blocked)
+   - "Change to Code View" button
+   - Columns: Zone, Codes, Origin Set, Time Class, Effective Date, End Date, Effective Status, Recurring Charge, Recurring Interval, Delete
+   - Actions: Add Supplier Rate, Export Rates, Import Supplier Rates, Update Blocking
+2. **Plan Details** - Plan name, identifier, currency (editable)
+3. **Origin Codes** - Origin-based pricing rules
+4. **Origin Sets** - Group origin codes for management
+5. **Rate History & Restore** - Historical versions, restore capability
+
+### Customer Rating Plan Detail - 3 Tabs
+Route: `/admin/softswitch/rating/customer-plans/:id`
+Breadcrumb: "Customer Rating Plans / [Plan Name]"
+
+1. **Rates** - Rate table with extended filters (Show, Locked)
+   - Actions: Add Rate, Export Rates, Import Customer Rates, Usage Check, Update Blocking, Update Locking, Update Margin, Apply Floor Price
+2. **Plan Details** - Plan name, identifier, currency, margin enforcement, min rated call duration, short call duration
+3. **Rate History & Restore** - Historical versions, restore capability
+
 ## Component Library
 - Location: `/admin/experience-manager/component-library`
 - Single source of truth for all UI components

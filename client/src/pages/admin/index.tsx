@@ -69,6 +69,7 @@ const CarrierBalancesPage = lazy(() => import("./softswitch-balance").then(m => 
 const TwentyFourHourSpendPage = lazy(() => import("./softswitch-balance").then(m => ({ default: m.TwentyFourHourSpendPage })));
 const BalanceTotalsPage = lazy(() => import("./softswitch-balance").then(m => ({ default: m.BalanceTotalsPage })));
 const RatingPlanDetailPage = lazy(() => import("./softswitch-rating-plan-detail"));
+const SupplierRatingPlanDetailPage = lazy(() => import("./supplier-rating-plan-detail"));
 const ImportJobDetailPage = lazy(() => import("./import-job-detail"));
 const BusinessRuleDetailPage = lazy(() => import("./business-rule-detail").then(m => ({ default: m.BusinessRuleDetailPage })));
 const ImportTemplateWizardPage = lazy(() => import("./import-template-wizard").then(m => ({ default: m.ImportTemplateWizardPage })));
@@ -336,6 +337,7 @@ export default function AdminLayout() {
                 <Route path="/admin/softswitch/rating/customer-plans" component={CustomerRatingPlansPage} />
                 <Route path="/admin/softswitch/rating/customer-plans/:id" component={RatingPlanDetailPage} />
                 <Route path="/admin/softswitch/rating/supplier-plans" component={SupplierRatingPlansPage} />
+                <Route path="/admin/softswitch/rating/supplier-plans/:id" component={SupplierRatingPlanDetailPage} />
                 <Route path="/admin/softswitch/rating/period-exceptions" component={PeriodExceptionsPage} />
                 <Route path="/admin/softswitch/rating/az-database/period-exceptions" component={PeriodExceptionsPage} />
                 <Route path="/admin/softswitch/rating/cdr-rerating" component={CDRReratingPage} />
