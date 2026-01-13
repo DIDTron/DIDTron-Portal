@@ -1270,6 +1270,9 @@ export function SupplierRatingPlansPage() {
   }, []);
   const [importSettingsSearchFilter, setImportSettingsSearchFilter] = useState("");
   const [showAddImportSettingDialog, setShowAddImportSettingDialog] = useState(false);
+  const [showAddSupplierPlanDialog, setShowAddSupplierPlanDialog] = useState(false);
+  const [newSupplierPlanName, setNewSupplierPlanName] = useState("");
+  const [newSupplierPlanCurrency, setNewSupplierPlanCurrency] = useState("USD");
   const [addImportSettingCarrier, setAddImportSettingCarrier] = useState("");
   const [addImportSettingBusinessRule, setAddImportSettingBusinessRule] = useState("");
   const [businessRulesSearchFilter, setBusinessRulesSearchFilter] = useState("");
@@ -1313,6 +1316,27 @@ export function SupplierRatingPlansPage() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to delete import template", variant: "destructive" });
+    },
+  });
+
+  // Create new supplier rating plan mutation
+  const createSupplierPlanMutation = useMutation({
+    mutationFn: async (data: { name: string; currency: string }) => {
+      const res = await apiRequest("POST", "/api/softswitch/rating/supplier-plans", data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/softswitch/rating/supplier-plans"] });
+      toast({ title: "Success", description: "Supplier rating plan created successfully" });
+      setShowAddSupplierPlanDialog(false);
+      setNewSupplierPlanName("");
+      setNewSupplierPlanCurrency("USD");
+      if (data?.id) {
+        window.location.href = `/admin/softswitch/rating/supplier-plans/${data.id}`;
+      }
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create supplier rating plan", variant: "destructive" });
     },
   });
 
@@ -1378,6 +1402,10 @@ export function SupplierRatingPlansPage() {
     : supplierRatingTabActions[tab];
 
   const handleAction = (actionId: string) => {
+    if (actionId === "import-new-rating-plan") {
+      setShowAddSupplierPlanDialog(true);
+      return;
+    }
     if (actionId === "save-report") {
       setShowSaveReportDialog(true);
       return;
