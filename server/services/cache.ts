@@ -1,9 +1,12 @@
 import { getRedisClient } from "./redis-session";
 
 const CACHE_TTL = {
-  SIDEBAR_COUNTS: 60,    // 60 seconds
-  DASHBOARD_SUMMARY: 30, // 30 seconds
-  PERMISSIONS: 300,      // 5 minutes
+  SIDEBAR_COUNTS: 60,       // 60 seconds
+  DASHBOARD_SUMMARY: 60,    // 60 seconds (extended from 30s to reduce DB load)
+  PERMISSIONS: 300,         // 5 minutes
+  SYSTEM_OVERVIEW: 60,      // 60 seconds for system status overview metrics
+  SYSTEM_ALERTS: 30,        // 30 seconds for active alerts (need fresher data)
+  SYSTEM_HEALTH: 60,        // 60 seconds for health checks
 };
 
 export async function getCached<T>(key: string): Promise<T | null> {
@@ -59,6 +62,10 @@ export const CACHE_KEYS = {
   sidebarCounts: (userId: string) => `sidebar:counts:${userId}`,
   dashboardSummary: () => `dashboard:summary`,
   userPermissions: (userId: string) => `permissions:${userId}`,
+  systemOverview: () => `system:overview`,
+  systemAlertCount: () => `system:alert:count`,
+  systemHealthChecks: () => `system:health:checks`,
+  systemMetricsLatest: (type: string) => `system:metrics:${type}:latest`,
 };
 
 export { CACHE_TTL };

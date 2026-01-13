@@ -1524,7 +1524,12 @@ export const auditLogs = pgTable("audit_logs", {
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("idx_audit_logs_user_id").on(table.userId),
+  actionIdx: index("idx_audit_logs_action").on(table.action),
+  createdAtIdx: index("idx_audit_logs_created_at").on(table.createdAt),
+  tableNameRecordIdx: index("idx_audit_logs_table_record").on(table.tableName, table.recordId),
+}));
 
 export const configVersions = pgTable("config_versions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

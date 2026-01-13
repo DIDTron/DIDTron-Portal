@@ -19,7 +19,7 @@ import {
   Play, Pause, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, STALE_TIME } from "@/lib/queryClient";
 
 interface OverviewData {
   globalStatus: "green" | "yellow" | "red";
@@ -188,12 +188,21 @@ function OverviewTab({ onNavigateTab }: { onNavigateTab: (tab: string) => void }
   const { data, isLoading } = useQuery<OverviewData>({
     queryKey: ["/api/system/overview"],
     refetchInterval: 30000,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   if (isLoading) return <Skeleton className="h-96 w-full" />;
 
-  const kpis = data?.kpis || {};
+  const kpis = data?.kpis ?? { 
+    apiP95Latency: 0, 
+    dbP95Latency: 0, 
+    errorRate5xx: 0, 
+    redisP95Latency: 0, 
+    queuedJobs: 0, 
+    stuckJobs: 0, 
+    activeAlerts: 0, 
+    violationsLast15m: 0 
+  };
   const apiStatus = kpis.apiP95Latency > 250 ? "critical" : kpis.apiP95Latency > 120 ? "warning" : "good";
   const dbStatus = kpis.dbP95Latency > 150 ? "critical" : kpis.dbP95Latency > 60 ? "warning" : "good";
 
@@ -298,7 +307,7 @@ function ApiErrorsTab() {
   const { data, isLoading } = useQuery<ApiErrorsData>({
     queryKey: ["/api/system/api-errors"],
     refetchInterval: 30000,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -416,7 +425,7 @@ function PerformanceTab() {
   const { data, isLoading } = useQuery<{ budgets: PerformanceBudget[] }>({
     queryKey: ["/api/system/performance"],
     refetchInterval: 30000,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -469,7 +478,7 @@ function HealthTab() {
   const { data, isLoading } = useQuery<{ checks: HealthCheck[] }>({
     queryKey: ["/api/system/health"],
     refetchInterval: 30000,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -520,7 +529,7 @@ function AlertsTab() {
   const { data, isLoading, refetch } = useQuery<{ alerts: Alert[]; stats: { criticalCount: number; warningCount: number } }>({
     queryKey: ["/api/system/alerts"],
     refetchInterval: 30000,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   const acknowledgeMutation = useMutation({
@@ -598,7 +607,7 @@ function IntegrationsTab() {
   }> }>({
     queryKey: ["/api/system/integrations"],
     refetchInterval: 30000,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -661,7 +670,7 @@ function JobsTab() {
   }>({
     queryKey: ["/api/system/jobs"],
     refetchInterval: 30000,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -707,7 +716,7 @@ function DatabaseTab() {
   }>({
     queryKey: ["/api/system/database"],
     refetchInterval: 30000,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -771,7 +780,7 @@ function CacheTab() {
   const { data, isLoading } = useQuery<CacheData>({
     queryKey: ["/api/system/cache"],
     refetchInterval: 30000,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -1059,7 +1068,7 @@ export default function SystemStatusPage() {
   const { data: overview, refetch, isFetching } = useQuery<OverviewData>({
     queryKey: ["/api/system/overview"],
     refetchInterval: isLive ? 30000 : false,
-    staleTime: 10000,
+    staleTime: STALE_TIME.REALTIME,
   });
 
   const acknowledgeAllMutation = useMutation({

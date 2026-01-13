@@ -193,19 +193,9 @@ class MetricsCollectorService {
           latencyMs = Date.now() - start;
           connected = true;
 
-          // Try to get cache stats if available
-          try {
-            const info = await redisClient.info("stats");
-            if (info) {
-              const hits = parseInt(info.match(/keyspace_hits:(\d+)/)?.[1] || "0");
-              const misses = parseInt(info.match(/keyspace_misses:(\d+)/)?.[1] || "0");
-              if (hits + misses > 0) {
-                cacheHitRate = (hits / (hits + misses)) * 100;
-              }
-            }
-          } catch {
-            // Info command may not be available, use 0
-          }
+          // Note: Upstash Redis doesn't support the INFO command
+          // Cache hit rate tracking would require custom implementation
+          cacheHitRate = 0;
         }
       } catch (err) {
         console.log("[MetricsCollector] Redis not available:", err);
@@ -371,7 +361,7 @@ class MetricsCollectorService {
           errorRate: result.errorRate,
           lastSuccessAt: result.success ? collectedAt : null,
           lastFailureAt: result.success ? null : collectedAt,
-          lastFailureReason: result.success ? null : result.error,
+          lastFailureReason: result.success ? null : (result.error ?? null),
         };
 
         await this.storeSnapshot("integration", metrics, collectedAt);

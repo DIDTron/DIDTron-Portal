@@ -6,6 +6,7 @@ import { metricsCollector } from "./services/metrics-collector";
 import { alertEvaluator } from "./services/alert-evaluator";
 import { getJobStats } from "./job-queue";
 import { performanceMonitor } from "./services/performance-monitor";
+import { getCached, setCache, invalidateCacheKey, CACHE_TTL, CACHE_KEYS } from "./services/cache";
 
 function toISOString(date: Date | string | null | undefined): string | null {
   if (!date) return null;
@@ -22,18 +23,23 @@ function toISOStringNow(date: Date | string | null | undefined): string {
 export function registerSystemStatusRoutes(app: Express) {
   app.get("/api/system/overview", async (req: Request, res: Response) => {
     try {
-      const now = new Date();
-      const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
+      // Try to get cached overview first for better performance
+      const cacheKey = CACHE_KEYS.systemOverview();
+      const cached = await getCached<any>(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
 
-      const [apiSnapshot, dbSnapshot, redisSnapshot, jobSnapshot] = await Promise.all([
+      // Fetch ALL data in parallel for maximum performance
+      const [apiSnapshot, dbSnapshot, redisSnapshot, jobSnapshot, alertStats, activeAlerts] = await Promise.all([
         metricsCollector.getLatestSnapshot("api"),
         metricsCollector.getLatestSnapshot("database"),
         metricsCollector.getLatestSnapshot("redis"),
         metricsCollector.getLatestSnapshot("job_queue"),
+        alertEvaluator.getAlertStats(),
+        alertEvaluator.getActiveAlerts(),
       ]);
 
-      const alertStats = await alertEvaluator.getAlertStats();
-      const activeAlerts = await alertEvaluator.getActiveAlerts();
       const perfStats = performanceMonitor.getStats();
 
       const apiMetrics = apiSnapshot?.metrics as Record<string, unknown> || {};
@@ -51,7 +57,7 @@ export function registerSystemStatusRoutes(app: Express) {
       const slowEndpoints = (apiMetrics.slowEndpoints as Array<{ endpoint: string; p95: number }>) || [];
       const slowQueries = (dbMetrics.slowQueries as Array<{ query: string; durationMs: number }>) || [];
 
-      res.json({
+      const response = {
         globalStatus,
         lastUpdated: toISOStringNow(apiSnapshot?.collectedAt),
         kpis: {
@@ -76,7 +82,12 @@ export function registerSystemStatusRoutes(app: Express) {
         })),
         topSlowEndpoints: slowEndpoints.slice(0, 5),
         topSlowQueries: slowQueries.slice(0, 5),
-      });
+      };
+
+      // Cache the response for 60 seconds to reduce DB load
+      await setCache(cacheKey, response, CACHE_TTL.SYSTEM_OVERVIEW);
+      
+      res.json(response);
     } catch (error) {
       console.error("[SystemStatus] Error fetching overview:", error);
       res.status(500).json({ error: "Failed to fetch system overview" });
@@ -488,6 +499,8 @@ export function registerSystemStatusRoutes(app: Express) {
 
       const success = await alertEvaluator.acknowledgeAlert(id, userId);
       if (success) {
+        // Invalidate system overview cache so next request reflects the change
+        await invalidateCacheKey(CACHE_KEYS.systemOverview());
         res.json({ success: true });
       } else {
         res.status(400).json({ error: "Failed to acknowledge alert" });
@@ -530,6 +543,11 @@ export function registerSystemStatusRoutes(app: Express) {
         if (await alertEvaluator.acknowledgeAlert(alert.id, userId)) {
           acknowledged++;
         }
+      }
+
+      // Invalidate system overview cache so next request reflects the change
+      if (acknowledged > 0) {
+        await invalidateCacheKey(CACHE_KEYS.systemOverview());
       }
 
       res.json({ acknowledged });

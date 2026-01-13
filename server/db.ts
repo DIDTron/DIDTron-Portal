@@ -11,7 +11,18 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Optimized pool configuration for better performance
+// - max: Maximum number of clients in the pool (default: 10, we use 20 for better concurrency)
+// - idleTimeoutMillis: Close idle clients after 30 seconds to prevent connection churn
+// - connectionTimeoutMillis: Fail fast after 10 seconds if connection cannot be established
+// - maxUses: Close connection after 7500 queries to prevent memory leaks
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  maxUses: 7500,
+});
 
 const originalQuery = pool.query.bind(pool);
 function extractQueryText(query: any): string {
