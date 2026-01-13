@@ -293,3 +293,17 @@ Note: npm run check shows pre-existing TypeScript errors unrelated to this migra
 - `docs/AGENT_BRIEF.md` - Sections 20 (Performance Budgets SLO) + 21 (Monitoring & Alerting Governance)
 - `docs/DB_SCHEMA.md` - 7 monitoring tables (metrics_snapshots, system_alerts, integration_health, job_metrics, portal_metrics, audit_records, module_registry)
 - `docs/TODO.md` - Plan ID PLAN-2026-01-13-SYSTEMSTATUS with all implementation tasks
+
+---
+
+## 2026-01-13: Verified System Status Collector + Evaluator Already Wired
+
+**Decision**: Confirmed T150 (pre-load metrics) and T151 (alert evaluator) are already implemented and operational.
+
+**Evidence**:
+- `server/index.ts` lines 1165-1201: Both `startMetricsScheduler()` and alert evaluator scheduling are wired on server boot
+- `server/services/metrics-collector.ts` lines 576-604: Initial collection runs with 1s delay, then every 60s
+- `server/services/alert-evaluator.ts`: Full implementation with budget evaluation and DB persistence
+- **DB Proof**: `metrics_snapshots` has 11,993 rows; `system_alerts` has 28 rows (verified via SQL query)
+
+**Action**: Marked T150 and T151 as COMPLETE in docs/TODO.md with file paths and DB evidence.

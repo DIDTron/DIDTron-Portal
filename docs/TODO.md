@@ -554,15 +554,23 @@ All performance optimization stages completed:
 **Date**: 2026-01-13
 **Source**: User feedback on System Status page
 
-- [ ] **T150**: Pre-load metrics on server start so data is ready immediately on page navigation
+- [x] **T150**: Pre-load metrics on server start so data is ready immediately on page navigation ✅ COMPLETE
   - Issue: User sees no values when first navigating to System Status page, must wait
   - Acceptance: Backend pre-loads initial metrics on startup; page shows data immediately on navigation
   - Files: server/services/metrics-collector.ts, server/index.ts
+  - **Completion Note (2026-01-13)**:
+    - `server/services/metrics-collector.ts` lines 576-604: `startMetricsScheduler()` runs initial collection with 1s delay on startup, then every 60s
+    - `server/index.ts` lines 1165-1172: Calls `startMetricsScheduler()` on server boot
+    - **DB Proof**: `metrics_snapshots` table has 11,993 rows (earliest: 2026-01-13 04:14:16 UTC, latest: 2026-01-13 21:58:39 UTC)
 
-- [ ] **T151**: Implement Alert Evaluator to generate real alerts from budget breaches and health failures
+- [x] **T151**: Implement Alert Evaluator to generate real alerts from budget breaches and health failures ✅ COMPLETE
   - Issue: Active alerts shows "0 Critical, 0 Warning" with no data
   - Acceptance: Alert evaluator runs every 60s, creates system_alerts records for breaches
   - Files: server/services/alert-evaluator.ts, shared/schema.ts
+  - **Completion Note (2026-01-13)**:
+    - `server/index.ts` lines 1174-1201: Alert evaluator runs 10s after metrics, then every 60s
+    - `server/services/alert-evaluator.ts`: Full implementation with `evaluateAllBudgets()` that inserts to `system_alerts`
+    - **DB Proof**: `system_alerts` table has 28 rows (earliest: 2026-01-13 04:52:41 UTC, latest: 2026-01-13 20:01:39 UTC)
 
 - [ ] **T152**: Add System Status badge (red/green) to primary sidebar with alert count
   - Issue: No status indicator badge beside System Status in sidebar
