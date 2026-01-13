@@ -237,26 +237,22 @@ export function ImportTemplateWizardPage() {
     const currentIsExcel = currentFormat === "excel" || currentFormat === "xlsx" || currentFormat === "xls";
     const currentIsCsv = currentFormat === "csv";
     
-    let formatChanged = false;
-    let newFileFormat = formData.fileFormat;
-    const oldFileFormat = formData.fileFormat;
+    const isMismatch = (isExcelExtension && !currentIsExcel) || (isCsvExtension && !currentIsCsv);
     
-    if (isExcelExtension && !currentIsExcel) {
-      formatChanged = true;
-      newFileFormat = "Excel";
-      updateField("fileFormat", newFileFormat);
-    } else if (isCsvExtension && !currentIsCsv) {
-      formatChanged = true;
-      newFileFormat = "CSV";
-      updateField("fileFormat", newFileFormat);
-    }
-    
-    if (formatChanged) {
+    if (isMismatch) {
+      const uploadedType = isExcelExtension ? "Excel" : "CSV";
+      const expectedType = currentIsExcel ? "Excel" : "CSV";
+      
       toast({
-        title: "File format mismatch detected",
-        description: `Expected ${oldFileFormat} but uploaded ${extension?.toUpperCase()} file. Format changed to ${newFileFormat}.`,
-        variant: "default",
+        title: "Upload blocked: File format mismatch",
+        description: `You uploaded a ${uploadedType} file (${extension?.toUpperCase()}) but the selected format is ${expectedType}. Please change the File Format dropdown or upload a ${expectedType} file.`,
+        variant: "destructive",
       });
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
     }
     
     setUploadedFile(file);
