@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRoute } from "wouter";
+import { useRoute, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,8 +48,11 @@ const defaultRules: RuleConfig[] = [
   { ruleType: "Destination", rule: "Code Moved To New Zone", threshold: "", unit: "", action: "none" },
 ];
 
+const PARENT_ROUTE = "/admin/softswitch/rating/supplier-plans?tab=import-settings&subtab=business-rules";
+
 export function BusinessRuleDetailPage() {
   const [, params] = useRoute("/admin/softswitch/rating/business-rule/:ruleId");
+  const [, navigate] = useLocation();
   const ruleId = params?.ruleId;
   const isNew = ruleId === "new";
   
@@ -71,25 +74,37 @@ export function BusinessRuleDetailPage() {
       return;
     }
     toast({ title: "Saved", description: `Business rule "${name}" has been saved` });
-    setIsEditing(false);
+    navigate(PARENT_ROUTE);
   };
 
   const handleCancel = () => {
-    if (isNew) {
-      window.location.href = "/admin/softswitch/rating/supplier-plans";
-    } else {
-      setIsEditing(false);
-    }
+    navigate(PARENT_ROUTE);
   };
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <a href="/admin/softswitch/rating/supplier-plans" className="hover:text-foreground">Supplier Rating</a>
+      {/* Breadcrumb - Full path with clickable segments */}
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground" aria-label="Breadcrumb">
+        <Link 
+          href="/admin/softswitch/rating/supplier-plans" 
+          className="hover:text-foreground hover:underline cursor-pointer"
+          data-testid="breadcrumb-supplier-rating"
+        >
+          Supplier Rating
+        </Link>
         <span>/</span>
-        <span className="text-foreground">{isNew ? "New Business Rule" : name || "Business Rule"}</span>
-      </div>
+        <Link 
+          href={PARENT_ROUTE}
+          className="hover:text-foreground hover:underline cursor-pointer"
+          data-testid="breadcrumb-import-settings"
+        >
+          Import Settings
+        </Link>
+        <span>/</span>
+        <span className="text-foreground" data-testid="breadcrumb-current">
+          {isNew ? "New Business Rule" : name || "Business Rule"}
+        </span>
+      </nav>
 
       {/* Tab */}
       <div className="border-b">

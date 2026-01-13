@@ -38,6 +38,17 @@ DIDTron Communications is developing an AI-first, white-label wholesale VoIP pla
 - Each tab has its own set of actions - actions should not appear on tabs they don't belong to
 - Do NOT use currency/dollar icons in action dropdown items - use text only
 
+### Global Breadcrumb Navigation Policy
+- **All detail pages and sub-pages must display clickable breadcrumb navigation** showing the full path hierarchy
+- Breadcrumb format: `Parent Section / Parent Tab / Current Page` (e.g., "Supplier Rating / Import Settings / New Business Rule")
+- **Each segment must be clickable** and navigate to its corresponding route using wouter's `<Link>` component
+- The current/final segment should NOT be clickable and should display in `text-foreground` color
+- Parent segments should use `text-muted-foreground` with `hover:text-foreground hover:underline` styling
+- **After save/cancel actions**, detail pages must navigate back to their parent route (not the root section)
+- Use `useLocation` hook's `navigate()` function for programmatic navigation after actions
+- Define a `PARENT_ROUTE` constant at the top of each detail page component for consistency
+- This pattern must be applied across all modules: Softswitch, Wholesale, Billing, etc.
+
 ### Business Model - Module Distinction
 
 **Wholesale Module - Partner Management** (`/admin/wholesale/partners`, `/admin/wholesale/*`)
