@@ -176,6 +176,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/softswitch/rating/customer-plans": { section: "softswitch", subItem: "softswitch-customer-rating" },
   "/admin/softswitch/rating/customer-plans/:id": { section: "softswitch", subItem: "softswitch-customer-rating" },
   "/admin/softswitch/rating/supplier-plans": { section: "softswitch", subItem: "softswitch-supplier-rating" },
+  "/admin/softswitch/rating/supplier-plans/:id": { section: "softswitch", subItem: "softswitch-supplier-rating" },
   "/admin/softswitch/rating/period-exceptions": { section: "softswitch", subItem: "softswitch-period-exceptions" },
   "/admin/softswitch/rating/az-database/period-exceptions": { section: "softswitch", subItem: "softswitch-period-exceptions" },
   "/admin/softswitch/rating/cdr-rerating": { section: "softswitch", subItem: "softswitch-cdr-rerating" },
