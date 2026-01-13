@@ -5905,6 +5905,151 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== SUPPLIER RATING PLANS ====================
+
+  app.get("/api/softswitch/rating/supplier-plans", async (req, res) => {
+    try {
+      const plans = await storage.getSupplierRatingPlans();
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch supplier rating plans" });
+    }
+  });
+
+  app.get("/api/softswitch/rating/supplier-plans/:id", async (req, res) => {
+    try {
+      const plan = await storage.resolveSupplierRatingPlan(req.params.id);
+      if (!plan) return res.status(404).json({ error: "Supplier rating plan not found" });
+      res.json(plan);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch supplier rating plan" });
+    }
+  });
+
+  app.post("/api/softswitch/rating/supplier-plans", async (req, res) => {
+    try {
+      const body = { ...req.body };
+      if (body.effectiveDate && typeof body.effectiveDate === 'string') {
+        body.effectiveDate = new Date(body.effectiveDate);
+      }
+      const { insertSupplierRatingPlanSchema } = await import("@shared/schema");
+      const parsed = insertSupplierRatingPlanSchema.safeParse(body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      const plan = await storage.createSupplierRatingPlan(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "supplier_rating_plans",
+        recordId: plan.id,
+        newValues: plan,
+      });
+      res.status(201).json(plan);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create supplier rating plan" });
+    }
+  });
+
+  app.patch("/api/softswitch/rating/supplier-plans/:id", async (req, res) => {
+    try {
+      const oldPlan = await storage.resolveSupplierRatingPlan(req.params.id);
+      if (!oldPlan) return res.status(404).json({ error: "Supplier rating plan not found" });
+      const plan = await storage.updateSupplierRatingPlan(oldPlan.id, req.body);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "supplier_rating_plans",
+        recordId: oldPlan.id,
+        oldValues: oldPlan,
+        newValues: plan,
+      });
+      res.json(plan);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update supplier rating plan" });
+    }
+  });
+
+  app.delete("/api/softswitch/rating/supplier-plans/:id", async (req, res) => {
+    try {
+      const oldPlan = await storage.resolveSupplierRatingPlan(req.params.id);
+      if (!oldPlan) return res.status(404).json({ error: "Supplier rating plan not found" });
+      const deleted = await storage.deleteSupplierRatingPlan(oldPlan.id);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "supplier_rating_plans",
+        recordId: oldPlan.id,
+        oldValues: oldPlan,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete supplier rating plan" });
+    }
+  });
+
+  // ==================== SUPPLIER RATING PLAN RATES ====================
+
+  app.get("/api/softswitch/rating/supplier-plans/:planId/rates", async (req, res) => {
+    try {
+      const plan = await storage.resolveSupplierRatingPlan(req.params.planId);
+      if (!plan) return res.status(404).json({ error: "Supplier rating plan not found" });
+      const rates = await storage.getSupplierRatingPlanRates(plan.id);
+      res.json(rates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch supplier rating plan rates" });
+    }
+  });
+
+  app.post("/api/softswitch/rating/supplier-plans/:planId/rates", async (req, res) => {
+    try {
+      const plan = await storage.resolveSupplierRatingPlan(req.params.planId);
+      if (!plan) return res.status(404).json({ error: "Supplier rating plan not found" });
+      
+      const baseBody = { ...req.body, ratingPlanId: plan.id };
+      if (baseBody.effectiveDate && typeof baseBody.effectiveDate === 'string') {
+        baseBody.effectiveDate = new Date(baseBody.effectiveDate);
+      }
+      if (baseBody.endDate && typeof baseBody.endDate === 'string') {
+        baseBody.endDate = new Date(baseBody.endDate);
+      }
+      const { insertSupplierRatingPlanRateSchema } = await import("@shared/schema");
+      const parsed = insertSupplierRatingPlanRateSchema.safeParse(baseBody);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      const rate = await storage.createSupplierRatingPlanRate(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "supplier_rating_plan_rates",
+        recordId: rate.id,
+        newValues: rate,
+      });
+      res.status(201).json(rate);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create supplier rate" });
+    }
+  });
+
+  app.delete("/api/softswitch/rating/supplier-rates/:id", async (req, res) => {
+    try {
+      const oldRate = await storage.getSupplierRatingPlanRate(req.params.id);
+      const deleted = await storage.deleteSupplierRatingPlanRate(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Supplier rate not found" });
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "supplier_rating_plan_rates",
+        recordId: req.params.id,
+        oldValues: oldRate,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete supplier rate" });
+    }
+  });
+
   // A-Z Zone/Code Lookup for Rating
   app.get("/api/softswitch/rating/az-lookup/zones", async (req, res) => {
     try {

@@ -14,6 +14,10 @@ import {
   customerRatingPlans as customerRatingPlansTable,
   type CustomerRatingPlanRate, type InsertCustomerRatingPlanRate,
   customerRatingPlanRates as customerRatingPlanRatesTable,
+  type SupplierRatingPlan, type InsertSupplierRatingPlan,
+  supplierRatingPlans as supplierRatingPlansTable,
+  type SupplierRatingPlanRate, type InsertSupplierRatingPlanRate,
+  supplierRatingPlanRates as supplierRatingPlanRatesTable,
   type AuditLog, type InsertAuditLog,
   auditLogs as auditLogsTable,
   type Route, type InsertRoute,
@@ -292,6 +296,22 @@ export interface IStorage {
   getCodesForZone(zone: string): Promise<string[]>;
   getCodesWithIntervalsForZone(zone: string): Promise<{ codes: string[], billingIncrement: string | null }>;
   lookupZoneByCode(code: string): Promise<string | null>;
+
+  // Supplier Rating Plans
+  getSupplierRatingPlans(): Promise<SupplierRatingPlan[]>;
+  getSupplierRatingPlan(id: string): Promise<SupplierRatingPlan | undefined>;
+  getSupplierRatingPlanByShortCode(shortCode: string): Promise<SupplierRatingPlan | undefined>;
+  resolveSupplierRatingPlan(identifier: string): Promise<SupplierRatingPlan | undefined>;
+  createSupplierRatingPlan(plan: InsertSupplierRatingPlan): Promise<SupplierRatingPlan>;
+  updateSupplierRatingPlan(id: string, data: Partial<InsertSupplierRatingPlan>): Promise<SupplierRatingPlan | undefined>;
+  deleteSupplierRatingPlan(id: string): Promise<boolean>;
+
+  // Supplier Rating Plan Rates
+  getSupplierRatingPlanRates(ratingPlanId: string): Promise<SupplierRatingPlanRate[]>;
+  getSupplierRatingPlanRate(id: string): Promise<SupplierRatingPlanRate | undefined>;
+  createSupplierRatingPlanRate(rate: InsertSupplierRatingPlanRate): Promise<SupplierRatingPlanRate>;
+  updateSupplierRatingPlanRate(id: string, data: Partial<InsertSupplierRatingPlanRate>): Promise<SupplierRatingPlanRate | undefined>;
+  deleteSupplierRatingPlanRate(id: string): Promise<boolean>;
 
   // Business Rules
   getBusinessRules(): Promise<BusinessRule[]>;
@@ -1455,6 +1475,90 @@ export class MemStorage implements IStorage {
   async deleteRatingPlanRate(id: string): Promise<boolean> {
     const results = await db.delete(customerRatingPlanRatesTable)
       .where(eq(customerRatingPlanRatesTable.id, id))
+      .returning();
+    return results.length > 0;
+  }
+
+  // Supplier Rating Plans
+  async getSupplierRatingPlans(): Promise<SupplierRatingPlan[]> {
+    return await db.select().from(supplierRatingPlansTable);
+  }
+
+  async getSupplierRatingPlan(id: string): Promise<SupplierRatingPlan | undefined> {
+    const results = await db.select().from(supplierRatingPlansTable).where(eq(supplierRatingPlansTable.id, id));
+    return results[0];
+  }
+
+  async getSupplierRatingPlanByShortCode(shortCode: string): Promise<SupplierRatingPlan | undefined> {
+    const results = await db.select().from(supplierRatingPlansTable).where(eq(supplierRatingPlansTable.shortCode, shortCode));
+    return results[0];
+  }
+
+  async resolveSupplierRatingPlan(identifier: string): Promise<SupplierRatingPlan | undefined> {
+    const byId = await this.getSupplierRatingPlan(identifier);
+    if (byId) return byId;
+    return await this.getSupplierRatingPlanByShortCode(identifier);
+  }
+
+  private async getNextSupplierRatingPlanShortCode(): Promise<string> {
+    const results = await db.select({ shortCode: supplierRatingPlansTable.shortCode })
+      .from(supplierRatingPlansTable)
+      .orderBy(supplierRatingPlansTable.shortCode);
+    const codes = results.map(r => r.shortCode).filter(Boolean) as string[];
+    if (codes.length === 0) return "SRP-0001";
+    const lastCode = codes[codes.length - 1];
+    const num = parseInt(lastCode.replace("SRP-", ""), 10);
+    return `SRP-${(num + 1).toString().padStart(4, "0")}`;
+  }
+
+  async createSupplierRatingPlan(plan: InsertSupplierRatingPlan): Promise<SupplierRatingPlan> {
+    const shortCode = await this.getNextSupplierRatingPlanShortCode();
+    const results = await db.insert(supplierRatingPlansTable).values({ ...plan, shortCode }).returning();
+    return results[0];
+  }
+
+  async updateSupplierRatingPlan(id: string, data: Partial<InsertSupplierRatingPlan>): Promise<SupplierRatingPlan | undefined> {
+    const results = await db.update(supplierRatingPlansTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(supplierRatingPlansTable.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async deleteSupplierRatingPlan(id: string): Promise<boolean> {
+    const results = await db.delete(supplierRatingPlansTable).where(eq(supplierRatingPlansTable.id, id)).returning();
+    return results.length > 0;
+  }
+
+  // Supplier Rating Plan Rates
+  async getSupplierRatingPlanRates(ratingPlanId: string): Promise<SupplierRatingPlanRate[]> {
+    return await db.select().from(supplierRatingPlanRatesTable)
+      .where(eq(supplierRatingPlanRatesTable.ratingPlanId, ratingPlanId))
+      .orderBy(supplierRatingPlanRatesTable.zone);
+  }
+
+  async getSupplierRatingPlanRate(id: string): Promise<SupplierRatingPlanRate | undefined> {
+    const results = await db.select().from(supplierRatingPlanRatesTable)
+      .where(eq(supplierRatingPlanRatesTable.id, id));
+    return results[0];
+  }
+
+  async createSupplierRatingPlanRate(rate: InsertSupplierRatingPlanRate): Promise<SupplierRatingPlanRate> {
+    const results = await db.insert(supplierRatingPlanRatesTable).values(rate).returning();
+    return results[0];
+  }
+
+  async updateSupplierRatingPlanRate(id: string, data: Partial<InsertSupplierRatingPlanRate>): Promise<SupplierRatingPlanRate | undefined> {
+    const results = await db.update(supplierRatingPlanRatesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(supplierRatingPlanRatesTable.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async deleteSupplierRatingPlanRate(id: string): Promise<boolean> {
+    const results = await db.delete(supplierRatingPlanRatesTable)
+      .where(eq(supplierRatingPlanRatesTable.id, id))
       .returning();
     return results.length > 0;
   }
