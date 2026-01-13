@@ -259,31 +259,29 @@ export function ImportTemplateWizardPage() {
   const displayColumns = Array.from({ length: maxColumns }, (_, i) => getColumnLetter(i));
   const displayRows = parsedData.length > 0 ? parsedData.slice(0, 50) : Array(5).fill([]);
 
-  const { data: carriers = [], isLoading: isLoadingCarriers } = useQuery<Carrier[]>({
+  const { data: carriersResponse, isLoading: isLoadingCarriers } = useQuery<{ data: Carrier[] }>({
     queryKey: ["/api/carriers"],
     staleTime: STALE_TIME.STATIC,
     placeholderData: keepPreviousData,
   });
 
-  const supplierCarriers = Array.isArray(carriers)
-    ? carriers.filter(
-        (c) => c.partnerType === "supplier" || c.partnerType === "bilateral"
-      )
-    : [];
+  const carriers = carriersResponse?.data || [];
+  const supplierCarriers = carriers.filter(
+    (c) => c.partnerType === "supplier" || c.partnerType === "bilateral"
+  );
 
-  const { data: interconnects = [], isLoading: isLoadingInterconnects } = useQuery<Interconnect[]>({
+  const { data: interconnectsResponse, isLoading: isLoadingInterconnects } = useQuery<{ data: Interconnect[] }>({
     queryKey: ["/api/carrier-interconnects"],
     staleTime: STALE_TIME.STATIC,
     placeholderData: keepPreviousData,
   });
 
-  const filteredInterconnects = Array.isArray(interconnects) 
-    ? interconnects.filter(
-        (ic) =>
-          ic.carrierId === formData.carrierId &&
-          (ic.direction === "egress" || ic.direction === "bilateral")
-      )
-    : [];
+  const interconnects = interconnectsResponse?.data || [];
+  const filteredInterconnects = interconnects.filter(
+    (ic) =>
+      ic.carrierId === formData.carrierId &&
+      (ic.direction === "supplier" || ic.direction === "both")
+  );
 
   const { data: businessRules = [], isLoading: isLoadingBusinessRules } = useQuery<BusinessRule[]>({
     queryKey: ["/api/softswitch/rating/business-rules"],
@@ -473,19 +471,19 @@ export function ImportTemplateWizardPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Select Vendor Connection</Label>
+                  <Label>Select Supplier</Label>
                   <Select
                     value={formData.carrierId}
                     onValueChange={(v) => updateField("carrierId", v)}
                   >
-                    <SelectTrigger data-testid="select-vendor-connection">
-                      <SelectValue placeholder="Select Vendor Account" />
+                    <SelectTrigger data-testid="select-supplier">
+                      <SelectValue placeholder="Select Supplier" />
                     </SelectTrigger>
                     <SelectContent>
                       {isLoadingCarriers ? (
                         <SelectItem value="loading" disabled>Loading...</SelectItem>
                       ) : supplierCarriers.length === 0 ? (
-                        <SelectItem value="none" disabled>No supplier carriers</SelectItem>
+                        <SelectItem value="none" disabled>No suppliers available</SelectItem>
                       ) : (
                         supplierCarriers.map((carrier) => (
                           <SelectItem key={carrier.id} value={carrier.id}>
