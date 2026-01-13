@@ -175,15 +175,66 @@ export function registerSystemStatusRoutes(app: Express) {
 
   app.get("/api/system/health", async (req: Request, res: Response) => {
     try {
-      const now = toISOStringNow(new Date());
-      const checks = [
-        { component: "API Server", status: "pass", latency: 0, checkedAt: now },
-        { component: "PostgreSQL", status: "pass", latency: 0, checkedAt: now },
-        { component: "Redis", status: "pass", latency: 0, checkedAt: now },
-        { component: "R2 Storage", status: "pass", latency: 0, checkedAt: now },
-        { component: "DataQueue Worker", status: "pass", latency: 0, checkedAt: now },
-      ];
+      const now = new Date();
+      const checks: Array<{ component: string; status: string; latency: number; checkedAt: string | null }> = [];
 
+      // Check API Server (self-ping)
+      const apiStart = Date.now();
+      checks.push({ component: "API Server", status: "pass", latency: Date.now() - apiStart, checkedAt: toISOStringNow(now) });
+
+      // Check PostgreSQL with actual query
+      const dbStart = Date.now();
+      let dbStatus = "pass";
+      try {
+        await db.execute(sql`SELECT 1`);
+      } catch {
+        dbStatus = "fail";
+      }
+      checks.push({ component: "PostgreSQL", status: dbStatus, latency: Date.now() - dbStart, checkedAt: toISOStringNow(now) });
+
+      // Check Redis
+      const redisStart = Date.now();
+      let redisStatus = "pass";
+      try {
+        const { getRedisClient } = await import("./services/redis-session");
+        const redisClient = getRedisClient();
+        if (redisClient) {
+          await redisClient.ping();
+        } else {
+          redisStatus = "degraded";
+        }
+      } catch {
+        redisStatus = "degraded";
+      }
+      checks.push({ component: "Redis", status: redisStatus, latency: Date.now() - redisStart, checkedAt: toISOStringNow(now) });
+
+      // Check R2 Storage
+      const r2Start = Date.now();
+      let r2Status = "pass";
+      try {
+        const { isR2Available } = await import("./services/r2-storage");
+        if (!isR2Available()) {
+          r2Status = "degraded";
+        }
+      } catch {
+        r2Status = "degraded";
+      }
+      checks.push({ component: "R2 Storage", status: r2Status, latency: Date.now() - r2Start, checkedAt: toISOStringNow(now) });
+
+      // Check DataQueue Worker
+      const workerStart = Date.now();
+      let workerStatus = "pass";
+      try {
+        const { isWorkerRunning } = await import("./job-worker");
+        if (!isWorkerRunning()) {
+          workerStatus = "degraded";
+        }
+      } catch {
+        workerStatus = "fail";
+      }
+      checks.push({ component: "DataQueue Worker", status: workerStatus, latency: Date.now() - workerStart, checkedAt: toISOStringNow(now) });
+
+      // Add integration health checks from database
       const integrations = await db.select().from(integrationHealth);
       for (const integration of integrations) {
         checks.push({
@@ -196,7 +247,7 @@ export function registerSystemStatusRoutes(app: Express) {
 
       res.json({ 
         checks,
-        lastUpdated: now,
+        lastUpdated: toISOStringNow(now),
       });
     } catch (error) {
       console.error("[SystemStatus] Error fetching health checks:", error);
