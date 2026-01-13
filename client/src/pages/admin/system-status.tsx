@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DataTableFooter, useDataTablePagination } from "@/components/ui/data-table-footer";
 import { 
   Server, Database, Cpu, HardDrive, Clock, Activity, 
   AlertTriangle, CheckCircle2, XCircle, RefreshCw,
@@ -934,6 +935,16 @@ function AuditTab() {
     });
   }, [data?.records, categoryFilter, searchQuery]);
 
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    onPageChange,
+    onPageSizeChange,
+  } = useDataTablePagination(filteredRecords, 10);
+
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
   const eventTypes = ["all", "deployment", "migration", "config_change", "admin_action"];
@@ -1000,7 +1011,7 @@ function AuditTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRecords.length ? filteredRecords.map((r) => (
+            {paginatedItems.length ? paginatedItems.map((r) => (
               <TableRow key={r.id}>
                 <TableCell>
                   <Badge 
@@ -1028,12 +1039,15 @@ function AuditTab() {
             )}
           </TableBody>
         </Table>
-        {filteredRecords.length > 0 && (
-          <div className="mt-4 text-sm text-muted-foreground text-center">
-            Showing {filteredRecords.length} of {data?.records?.length || 0} events
-          </div>
-        )}
       </CardContent>
+      <DataTableFooter
+        currentPage={currentPage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+      />
     </Card>
   );
 }
