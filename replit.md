@@ -10,12 +10,22 @@ Before responding to any request, you MUST open and read:
 4) DESIGN_SYSTEM.md
 5) docs/DB_SCHEMA.md
 6) docs/DECISIONS.md
+7) docs/PERFORMANCE.md (MANDATORY - Performance governance rules)
 
 Every reply MUST start with:
 READ CHECK ✅ + list files opened, current Plan ID, TODO task ID, DOC TARGET.
 If you did not open the docs, reply only: READ CHECK ❌.
 
+Every task completion MUST include:
+PERFORMANCE CHECK:
+- [ ] staleTime on queries: YES/NO/N/A
+- [ ] Cursor pagination: YES/NO/N/A
+- [ ] Indexes added: YES/NO/N/A
+- [ ] DataQueue for heavy ops: YES/NO/N/A
+- [ ] Virtualization for large lists: YES/NO/N/A
+
 No work is allowed unless it is in docs/TODO.md under the current Plan ID.
+Performance rules in docs/PERFORMANCE.md are MANDATORY for all code changes.
 
 
 # DIDTron Communications - White-Label Multi-Portal VoIP Platform
