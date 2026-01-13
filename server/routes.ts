@@ -13,7 +13,7 @@ import { registerSystemStatusRoutes } from "./system-status-routes";
 import { z } from "zod";
 import { db } from "./db";
 import { e2eRuns, e2eResults } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql, asc } from "drizzle-orm";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { registerAiVoiceRoutes } from "./ai-voice-routes";
 import { getCached, setCache, invalidateCache, CACHE_KEYS, CACHE_TTL } from "./services/cache";
@@ -78,7 +78,9 @@ import {
   insertInterconnectMediaSettingsSchema,
   insertInterconnectSignallingSettingsSchema,
   insertInterconnectMonitoringSettingsSchema,
-  insertCustomerRatingPlanSchema
+  insertCustomerRatingPlanSchema,
+  supplierImportTemplates,
+  insertSupplierImportTemplateSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -3714,6 +3716,68 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete group" });
+    }
+  });
+
+  // ==================== SUPPLIER IMPORT TEMPLATES ====================
+
+  app.get("/api/supplier-import-templates", async (req, res) => {
+    try {
+      const templates = await db.select().from(supplierImportTemplates).orderBy(asc(supplierImportTemplates.name));
+      res.json(templates);
+    } catch (error) {
+      console.error("[SupplierImportTemplates] Error fetching templates:", error);
+      res.status(500).json({ error: "Failed to fetch import templates" });
+    }
+  });
+
+  app.get("/api/supplier-import-templates/:id", async (req, res) => {
+    try {
+      const [template] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
+      if (!template) return res.status(404).json({ error: "Import template not found" });
+      res.json(template);
+    } catch (error) {
+      console.error("[SupplierImportTemplates] Error fetching template:", error);
+      res.status(500).json({ error: "Failed to fetch import template" });
+    }
+  });
+
+  app.post("/api/supplier-import-templates", async (req, res) => {
+    try {
+      const parsed = insertSupplierImportTemplateSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      const [template] = await db.insert(supplierImportTemplates).values(parsed.data).returning();
+      res.status(201).json(template);
+    } catch (error) {
+      console.error("[SupplierImportTemplates] Error creating template:", error);
+      res.status(500).json({ error: "Failed to create import template" });
+    }
+  });
+
+  app.patch("/api/supplier-import-templates/:id", async (req, res) => {
+    try {
+      const [existing] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
+      if (!existing) return res.status(404).json({ error: "Import template not found" });
+      const [template] = await db.update(supplierImportTemplates)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(supplierImportTemplates.id, req.params.id))
+        .returning();
+      res.json(template);
+    } catch (error) {
+      console.error("[SupplierImportTemplates] Error updating template:", error);
+      res.status(500).json({ error: "Failed to update import template" });
+    }
+  });
+
+  app.delete("/api/supplier-import-templates/:id", async (req, res) => {
+    try {
+      const [existing] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
+      if (!existing) return res.status(404).json({ error: "Import template not found" });
+      await db.delete(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("[SupplierImportTemplates] Error deleting template:", error);
+      res.status(500).json({ error: "Failed to delete import template" });
     }
   });
 
