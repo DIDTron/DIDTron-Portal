@@ -1,0 +1,651 @@
+Below is the exact spec you should give the Replit AI agent for a System Status page that monitors speed + health for everything (Super Admin portal, customer portals, and marketing site), shows budgets/thresholds, triggers alerts, and stays future-proof (new modules get auto-added).
+
+Copy/paste this into your agent as the single requirement for docs/UI_SPEC.md + docs/AGENT_BRIEF.md + docs/DB_SCHEMA.md.
+
+1) SYSTEM STATUS PAGE: PURPOSE (non-negotiable)
+
+System Status is the single pane of glass for:
+
+“Is the platform up?”
+
+“Is it fast?”
+
+“What is slowing it down (API vs DB vs Redis vs DataQueue vs integrations vs frontend)?”
+
+“What broke, when, and what changed?”
+
+“Is each portal healthy? Is the marketing site healthy?”
+
+It must work for:
+
+Super Admin portal
+
+Customer portals
+
+Marketing website
+
+All integrations
+
+Background jobs
+
+It must be available to super_admin only.
+
+2) UI/UX LAYOUT (what the page looks like)
+Page layout
+
+Top header: System Status
+
+A thin sticky bar beneath header:
+
+Global status indicator: GREEN / YELLOW / RED
+
+Last refresh time (UTC + local)
+
+“Refresh now” button
+
+“Acknowledge all” (if alerts present)
+
+Primary content uses tabs:
+
+Tabs (must exist)
+
+Overview
+
+Performance Budgets (SLO)
+
+Health Checks
+
+API & Errors
+
+Database
+
+DataQueue Jobs
+
+Cache & Storage (Redis + R2)
+
+Integrations
+
+Portals
+
+Alerts
+
+Audit / Changes (optional but recommended)
+
+Each tab is a consistent card layout with:
+
+summary KPIs at the top (4–8 cards)
+
+a table of details beneath
+
+3) GLOBAL STATUS RULE (how GREEN/YELLOW/RED is decided)
+
+Compute overall state using the worst of:
+
+Health state
+
+Performance budgets
+
+Queue stuck/critical
+
+Error rate
+
+Integration down
+
+RED if any Critical alert is active (unacknowledged) OR core dependency down
+YELLOW if any Warning budget breach is active
+GREEN otherwise
+
+4) METRICS COLLECTION MODEL (how the system works)
+
+You will implement a Metrics Collector and an Alert Evaluator:
+
+A) Metrics Collector (DataQueue job)
+
+Runs every 60 seconds
+
+Collects:
+
+service health checks
+
+API latency stats
+
+DB latency + slow queries
+
+DataQueue queue depth + stuck jobs
+
+Redis latency + cache hit rate
+
+R2 latency
+
+integration checks
+
+portal UX timing samples (if available)
+
+Stores snapshots in Postgres (UTC timestamps)
+
+B) Alert Evaluator (DataQueue job)
+
+Runs every 60 seconds after collection
+
+Evaluates budgets over rolling windows:
+
+5 minutes (fast signal)
+
+15 minutes (stability)
+
+Creates alerts (DB) and notifications:
+
+in-app notifications
+
+Brevo email for Warning/Critical
+
+C) Never block user traffic
+
+Metrics and alerts must never run inside normal web requests.
+
+System Status reads from DB snapshots + some live pings on demand.
+
+5) EXACT PANELS + METRICS TO SHOW
+TAB 1: Overview (what you open first)
+
+Top KPI cards (show current value + last 15m trend sparkline):
+
+Overall status (Green/Yellow/Red)
+
+API p95 latency (15m)
+
+DB query p95 latency (15m)
+
+5xx rate (15m)
+
+DataQueue oldest job heartbeat age
+
+Redis p95 latency (15m)
+
+CDR freshness (last ingest UTC)
+
+Active alerts count (Critical/Warning)
+
+Below KPIs: “What’s wrong right now?”
+
+A list of active alerts grouped by severity
+
+A “Top 5 slow endpoints” list
+
+A “Top 5 slow DB queries” list
+
+TAB 2: Performance Budgets (SLO)
+
+Show each budget as a row with:
+
+Metric name
+
+Target threshold
+
+Current p95/p99
+
+Breach status (green/yellow/red)
+
+Window (5m / 15m)
+
+Breach duration
+
+Budgets / thresholds (use these exactly)
+
+Portal UX
+
+Route transition (cached): p95 ≤ 150ms, p99 ≤ 300ms
+
+Route transition (uncached): p95 ≤ 900ms, p99 ≤ 1500ms
+
+First interactive after login: p95 ≤ 1200ms, p99 ≤ 2000ms
+
+Create/update server confirm: p95 ≤ 350ms, p99 ≤ 700ms
+
+API
+
+List endpoints: p95 ≤ 120ms, p99 ≤ 250ms
+
+Detail endpoints: p95 ≤ 180ms, p99 ≤ 350ms
+
+5xx rate: Warning ≥ 0.3% (15m), Critical ≥ 1% (5m)
+
+Database
+
+Query latency: p95 ≤ 60ms, p99 ≤ 150ms
+
+Slow queries: Warning if >200ms count exceeds threshold, Critical if repeated >500ms
+
+Pool saturation: Warning ≥70%, Critical ≥90%
+
+Redis
+
+p95 latency: Warning >30ms, Critical >100ms
+
+R2
+
+p95 latency: Warning >300ms, Critical >1000ms
+
+DataQueue
+
+Heartbeat interval: every 30s required
+
+Stuck job: Warning no heartbeat 3m, Critical no heartbeat 10m
+
+Backlog: Warning >500 jobs for 15m, Critical >2000 jobs for 15m
+
+Freshness
+
+CDR ingested: Warning >10m, Critical >30m
+
+FX update: Warning >2h, Critical >6h
+
+TAB 3: Health Checks
+
+Show a table of checks, each row includes:
+
+Component
+
+Status (pass/fail)
+
+latency ms
+
+last checked UTC
+
+failure reason (if any)
+
+Health checks must include:
+
+API health (/api/health)
+
+Postgres ping latency
+
+Redis ping latency
+
+R2 head/list latency
+
+DataQueue worker alive (heartbeat)
+
+ConnexCS API health
+
+Brevo health
+
+NOWPayments webhook receiver health
+
+Ayrshare health
+
+Marketing website health (HTTP check)
+
+Portal frontend health (static asset check)
+
+TAB 4: API & Errors
+
+KPI cards:
+
+total requests / min
+
+p95 latency
+
+5xx rate
+
+4xx rate
+
+top endpoints by traffic
+
+Tables:
+
+Top 20 slow endpoints (p95)
+
+Top 20 error endpoints (5xx)
+
+Largest payload endpoints (top 10 response size KB)
+
+Recent error samples (message + stack hash)
+
+TAB 5: Database
+
+KPI cards:
+
+query p95/p99
+
+connections used / pool size
+
+pool saturation %
+
+slow query count
+
+Tables:
+
+Top slow queries list (fingerprinted)
+
+Top tables by read/write volume (if available)
+
+Index health checks (optional) – at least show missing index warnings recorded by code
+
+TAB 6: DataQueue Jobs
+
+KPI cards:
+
+queued jobs
+
+running jobs
+
+failed jobs (15m/24h)
+
+oldest job age
+
+stuck job count
+
+Tables:
+
+Queue depth by job type
+
+Failed jobs list (jobId, type, tenant, reason, attempts, last log)
+
+Stuck jobs list (no heartbeat)
+
+TAB 7: Cache & Storage (Redis + R2)
+
+Redis KPIs:
+
+p95 latency
+
+cache hit rate (permissions snapshot, counters, summaries)
+
+rate-limit rejections count
+
+R2 KPIs:
+
+upload/download errors
+
+p95 health latency
+
+last export/import file processed
+
+Tables:
+
+Cache hit/miss breakdown by cache key family
+
+Largest cached entries detection (>10KB) => warning
+
+TAB 8: Integrations
+
+Each integration row includes:
+
+Status (healthy/degraded/down)
+
+p95 latency
+
+error rate
+
+last successful call UTC
+
+last failure reason
+
+Integrations to include:
+
+ConnexCS
+
+Brevo
+
+NOWPayments
+
+Ayrshare
+
+OpenExchangeRates
+
+OpenAI (optional health)
+
+TAB 9: Portals
+
+This is where you monitor each portal separately:
+
+Super Admin portal health + route performance
+
+Customer portal health + route performance
+
+Marketing site health (latency + uptime)
+
+Each portal must have:
+
+last successful page load sample (if measured)
+
+route transition p95
+
+JS error count
+
+asset load failures
+
+If you can’t instrument frontend yet, show:
+
+server-rendered page health checks + static asset availability + API used by that portal.
+
+TAB 10: Alerts
+
+Alerts table includes:
+
+severity (Critical/Warning/Info)
+
+source (API/DB/Redis/Job/Integration/Portal)
+
+title
+
+description
+
+firstSeen UTC
+
+lastSeen UTC
+
+current status (active/resolved)
+
+acknowledged_by + acknowledged_at
+
+actions: Acknowledge / Snooze / View details
+
+TAB 11: Audit / Changes (recommended)
+
+Show:
+
+recent deployments/restarts
+
+schema migrations applied
+
+config changes (if tracked)
+
+recent super-admin actions (audit table)
+This helps correlate “it got slow after X”.
+
+6) ALERTING BEHAVIOR (how you get notified)
+Channels
+
+In-app notifications for Warning/Critical/Info
+
+Brevo email for Warning/Critical
+
+Severity rules
+
+Critical (email + in-app + banner):
+
+API/DB/Redis down
+
+stuck jobs critical
+
+error spike critical
+
+CDR stale critical
+
+integration down critical (ConnexCS, Brevo, NOWPayments)
+
+Warning (email + in-app):
+
+p95 budgets breached 15m
+
+slow query bursts
+
+memory high sustained
+
+integration failure rate above threshold
+
+Info (in-app only):
+
+recovery events
+
+acknowledged events
+
+All alerts stored in DB with UTC timestamps.
+
+7) FUTURE-PROOFING: auto-add monitoring for new modules
+
+To ensure “anything added in the future is also monitored”, do this:
+
+A) Module Registry (single source of truth)
+
+Create a single registry object/table that lists modules:
+
+module key
+
+routes prefix
+
+API prefix
+
+critical endpoints
+
+job types
+
+integrations used
+
+dashboards/counters used
+
+portal visibility (admin/customer/marketing)
+
+Rule:
+
+Every new module MUST register itself here as part of Definition of Done.
+
+System Status reads from the registry and automatically displays module health/perf rows.
+
+B) Standard instrumentation wrappers (mandatory)
+
+All API routes use a common middleware that logs:
+duration, status, endpoint key, response size, tenant, user role
+
+All DataQueue jobs use a common wrapper that writes:
+heartbeat, progress, duration, failures, retries
+
+All integrations use a wrapper that records:
+latency, success/failure, last success timestamp
+
+Frontend navigation uses a wrapper that records:
+route transition times and errors (at least for super-admin)
+
+Rule:
+
+If a new route/job/integration does not use wrappers, it is a violation and cannot be marked done.
+
+8) EXACT DOC UPDATES the agent must do (so it’s permanent)
+
+DOC TARGET: docs/UI_SPEC.md
+
+Create “System Status” page spec exactly as above (tabs, panels, tables, UX behavior)
+
+DOC TARGET: docs/AGENT_BRIEF.md
+
+Add “Performance Budgets (SLO)” section with the exact thresholds
+
+Add “Monitoring & Alerting” governance:
+
+DataQueue-based collector/evaluator
+
+no monitoring inside request path
+
+alerts via Brevo + in-app
+
+DOC TARGET: docs/DB_SCHEMA.md
+
+Add tables for metrics snapshots, alerts, integration health, job metrics, portal metrics, audit records (UTC)
+
+DOC TARGET: docs/TODO.md
+
+Add tasks with acceptance criteria to build the page + collector + alerts + tests
+
+DOC TARGET: docs/DECISIONS.md
+
+Append decision: “System Status is the enforcement engine for performance + stability; budgets defined; alerts automated.”
+
+9) “How we will always see it”
+
+Super Admin sidebar has a permanent “System Status” entry
+
+It shows current global color (green/yellow/red) and alert count badge
+
+It refreshes on demand and shows last snapshot time
+
+It provides drill-down to the exact failing layer (API vs DB vs Redis vs jobs vs integrations vs portal)
+
+10) What you should say to the AI agent (one copy/paste block)
+DOC TARGET: docs/UI_SPEC.md / System Status
+Write the full System Status spec exactly per my requirements: tabs, panels, tables, and UX behaviors.
+
+DOC TARGET: docs/AGENT_BRIEF.md / Monitoring + Performance Budgets
+Add the SLO thresholds exactly as listed and require DataQueue-based metrics collection + alert evaluation.
+
+DOC TARGET: docs/DB_SCHEMA.md / Monitoring Tables
+Define metrics + alerts + integration health + job metrics + portal metrics tables (UTC timestamps).
+
+DOC TARGET: docs/TODO.md
+Create a Plan ID and tasks with acceptance criteria to implement:
+- metrics collector job
+- alert evaluator job
+- System Status UI
+- in-app notifications + Brevo emails
+- module registry + instrumentation wrappers
+- tests for health + alert triggering + budget breach
+
+Do REQUEST INTAKE + dedupe first. No coding until TODO tasks are written.
+
+
+If you paste the above into your governance docs, the agent will have a single, explicit source of truth for “what to monitor, how to show it, thresholds, and auto-extension when new modules are added.”
+
+have you told him to add auto refresh or within how long period that it will use to update it's live card automatically 
+
+Not explicitly enough. Add this exact rule to the System Status spec so the agent implements it once and forever.
+
+Auto-refresh behavior (copy/paste into docs/UI_SPEC.md → System Status)
+AUTO REFRESH (MANDATORY)
+
+System Status has two update modes:
+
+1) Live Mode (default ON)
+- Auto-refresh the dashboard UI every 30 seconds.
+- Show a “Live” toggle (On/Off) + a “Last updated (UTC)” timestamp.
+- If the user turns Live Off, stop auto-refresh and show “Paused”.
+
+2) Snapshot Source (how data is produced)
+- Metrics snapshots are produced by a DataQueue Metrics Collector job every 60 seconds.
+- The UI pulls the latest snapshot from the DB (and optionally a few lightweight live pings).
+- UI must never run heavy collection work directly.
+
+UI rules:
+- Each KPI card shows “as of <timestamp>”.
+- If the latest snapshot is older than 2 minutes, show a yellow “Stale data” banner.
+- If older than 5 minutes, show a red “Data collection stalled” banner and trigger an alert.
+
+Manual controls:
+- “Refresh now” button forces a reload of the latest snapshot immediately.
+- “Run health checks now” button triggers lightweight live checks (not heavy metrics) and stores results.
+
+Performance:
+- The status page must not spam the server: do not refresh faster than 30 seconds.
+- When the tab is not visible, pause auto-refresh.
+
+Why these numbers
+
+30s UI refresh feels live to humans.
+
+60s snapshot collection keeps overhead low and stable.
+
+2m/5m staleness detects when the collector is broken.
+
+One message you can send your agent
+DOC TARGET: docs/UI_SPEC.md / System Status / Auto Refresh
+Add the AUTO REFRESH rules exactly (UI refresh 30s, collector 60s, stale banners at 2m/5m, pause when tab hidden).

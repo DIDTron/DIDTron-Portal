@@ -120,29 +120,6 @@ The backend utilizes PostgreSQL and Drizzle ORM, supported by a robust job queue
 #### Digitalk Carrier Hierarchy Implementation
 The Class 4 Softswitch module implements the Digitalk Carrier Cloud Manager hierarchy, structuring Carriers, Interconnects, and Services. A Carrier is a commercial entity (Customer/Supplier/Bilateral). An Interconnect represents a SIP trunk (Ingress/Egress, tech prefix, IP authentication, codecs, capacity). A Service is the key linkage, connecting an Interconnect to a Rating Plan and a Routing Plan. Key concepts include Tech Prefixes for call identification, rate selection at the Service level, and Bilateral Carriers combining both customer and supplier roles. The `carrier_services` table defines the relationship between `carrierId`, `interconnectId`, `ratingPlanId`, and `routingPlanId`, along with direction, tech prefix, priority, capacity, and enforcement policies. The API enforces Digitalk hierarchy rules, ensuring interconnects belong to the same carrier and service direction is compatible with interconnect direction.
 
-#### Performance Golden Rules (MANDATORY)
-All code changes MUST follow these performance patterns. See docs/PERFORMANCE.md for full details.
-
-**Frontend Performance (Non-Negotiable):**
-- All `useQuery` calls MUST include `staleTime` (min 30s for lists, 5min for static)
-- All paginated queries MUST use `placeholderData: keepPreviousData`
-- Tabbed pages MUST use conditional queries (`enabled: activeTab === "thisTab"`)
-- Tab hover MUST trigger prefetch via `queryClient.prefetchQuery()`
-- Tables with >200 rows MUST use VirtualizedTable
-- Large modules MUST be lazy loaded with `React.lazy()`
-
-**Backend Performance (Non-Negotiable):**
-- All list APIs MUST use cursor pagination (NO offset pagination)
-- All list APIs MUST enforce max limit (100 items)
-- Heavy operations (>1s) MUST use DataQueue
-- All new filter/order columns MUST have indexes
-
-**Available Performance Hooks:**
-- `client/src/hooks/use-cursor-query.ts` - Infinite scroll with cursor pagination
-- `client/src/hooks/use-tab-prefetch.ts` - Tab hover prefetching
-- `client/src/hooks/use-conditional-query.ts` - Conditional queries for tabs
-- `server/utils/pagination.ts` - Cursor pagination utilities
-
 ### External Dependencies
 -   **Stripe**: Payments and KYC identity verification.
 -   **PayPal**: Alternative payment processing.
