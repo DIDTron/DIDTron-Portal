@@ -70,7 +70,7 @@ export function registerSystemStatusRoutes(app: Express) {
           lastSeenAt: toISOString(a.lastSeenAt),
           acknowledgedAt: a.acknowledgedAt ? toISOString(a.acknowledgedAt) : null,
           resolvedAt: a.resolvedAt ? toISOString(a.resolvedAt) : null,
-          snoozedUntil: a.snoozedUntil ? toISOString(a.snoozedUntil) : null,
+          snoozeUntil: a.snoozeUntil ? toISOString(a.snoozeUntil) : null,
           createdAt: toISOString(a.createdAt),
           updatedAt: toISOString(a.updatedAt),
         })),
@@ -463,7 +463,7 @@ export function registerSystemStatusRoutes(app: Express) {
         lastSeenAt: toISOString(a.lastSeenAt),
         acknowledgedAt: a.acknowledgedAt ? toISOString(a.acknowledgedAt) : null,
         resolvedAt: a.resolvedAt ? toISOString(a.resolvedAt) : null,
-        snoozedUntil: a.snoozedUntil ? toISOString(a.snoozedUntil) : null,
+        snoozeUntil: a.snoozeUntil ? toISOString(a.snoozeUntil) : null,
       }));
 
       res.json({ 
@@ -532,11 +532,35 @@ export function registerSystemStatusRoutes(app: Express) {
 
   app.get("/api/system/audit", async (req: Request, res: Response) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 50;
+      const limit = parseInt(req.query.limit as string) || 100;
+      const period = (req.query.period as string) || "24h";
+      
+      // Calculate time range based on period
+      const now = new Date();
+      let sinceDate: Date;
+      switch (period) {
+        case "1h":
+          sinceDate = new Date(now.getTime() - 60 * 60 * 1000);
+          break;
+        case "6h":
+          sinceDate = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+          break;
+        case "7d":
+          sinceDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case "30d":
+          sinceDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case "24h":
+        default:
+          sinceDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          break;
+      }
 
       const records = await db
         .select()
         .from(auditRecords)
+        .where(gte(auditRecords.occurredAt, sinceDate))
         .orderBy(desc(auditRecords.occurredAt))
         .limit(limit);
 
@@ -563,7 +587,8 @@ export function registerSystemStatusRoutes(app: Express) {
       // Serialize timestamps
       const serializedModules = modules.map(m => ({
         ...m,
-        lastExportTime: m.lastExportTime ? toISOString(m.lastExportTime) : null,
+        createdAt: toISOString(m.createdAt),
+        updatedAt: toISOString(m.updatedAt),
       }));
 
       res.json({ 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +8,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Server, Database, Cpu, HardDrive, Clock, Activity, 
   AlertTriangle, CheckCircle2, XCircle, RefreshCw,
   Gauge, Zap, Timer, MemoryStick, Radio, Globe,
   Settings, FileText, Bell, Shield, Layers,
-  Play, Pause
+  Play, Pause, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -181,7 +183,7 @@ function formatDateTimestamp(timestamp: string | null | undefined): string {
   return new Date(timestamp).toLocaleString();
 }
 
-function OverviewTab() {
+function OverviewTab({ onNavigateTab }: { onNavigateTab: (tab: string) => void }) {
   const { data, isLoading } = useQuery<OverviewData>({
     queryKey: ["/api/system/overview"],
     refetchInterval: 30000,
@@ -210,7 +212,7 @@ function OverviewTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="hover-elevate cursor-pointer" onClick={() => document.querySelector('[data-testid="tab-alerts"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))}>
+        <Card className="hover-elevate cursor-pointer" onClick={() => onNavigateTab("alerts")}>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Active Alerts</CardTitle>
             <span className="text-xs text-muted-foreground">Click to view all</span>
@@ -248,7 +250,7 @@ function OverviewTab() {
           </CardContent>
         </Card>
 
-        <Card className="hover-elevate cursor-pointer" onClick={() => document.querySelector('[data-testid="tab-api"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))}>
+        <Card className="hover-elevate cursor-pointer" onClick={() => onNavigateTab("api")}>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Top Slow Endpoints</CardTitle>
             <span className="text-xs text-muted-foreground">Click to view all</span>
@@ -799,7 +801,7 @@ function CacheTab() {
           icon={Gauge}
         />
         <KPICard 
-          title="Storage Used" 
+          title="Replit Storage" 
           value={data?.storage?.usedMB?.toFixed(1) || 0} 
           unit="MB" 
           icon={HardDrive}
@@ -810,7 +812,8 @@ function CacheTab() {
       {data?.storage && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Storage Usage</CardTitle>
+            <CardTitle className="text-base">Replit Storage Usage</CardTitle>
+            <p className="text-xs text-muted-foreground">Local disk storage for the Replit environment</p>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -895,6 +898,10 @@ function CacheTab() {
 }
 
 function AuditTab() {
+  const [periodFilter, setPeriodFilter] = useState("24h");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  
   const { data, isLoading } = useQuery<{ records: Array<{
     id: string;
     eventType: string;
@@ -902,17 +909,85 @@ function AuditTab() {
     description: string;
     occurredAt: string | null;
   }> }>({
-    queryKey: ["/api/system/audit"],
+    queryKey: ["/api/system/audit", periodFilter],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/system/audit?period=${periodFilter}`);
+      return response.json();
+    },
     refetchInterval: 60000,
     staleTime: 30000,
   });
 
+  const filteredRecords = useMemo(() => {
+    if (!data?.records) return [];
+    
+    return data.records.filter((r) => {
+      if (categoryFilter !== "all" && r.eventType !== categoryFilter) return false;
+      if (searchQuery) {
+        const search = searchQuery.toLowerCase();
+        if (!r.description.toLowerCase().includes(search) && 
+            !(r.actorEmail?.toLowerCase().includes(search))) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [data?.records, categoryFilter, searchQuery]);
+
   if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  const eventTypes = ["all", "deployment", "migration", "config_change", "admin_action"];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Audit Events</CardTitle>
+        <div className="flex flex-col gap-4">
+          <CardTitle>Recent Audit Events</CardTitle>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Period:</span>
+              <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                <SelectTrigger className="w-32" data-testid="audit-period-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1h">Last Hour</SelectItem>
+                  <SelectItem value="6h">Last 6 Hours</SelectItem>
+                  <SelectItem value="24h">Last 24 Hours</SelectItem>
+                  <SelectItem value="7d">Last 7 Days</SelectItem>
+                  <SelectItem value="30d">Last 30 Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Category:</span>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-40" data-testid="audit-category-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {eventTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type === "all" ? "All Categories" : type.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search audit events..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                  data-testid="audit-search"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -925,9 +1000,21 @@ function AuditTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data?.records?.length ? data.records.map((r) => (
+            {filteredRecords.length ? filteredRecords.map((r) => (
               <TableRow key={r.id}>
-                <TableCell><Badge variant="outline">{r.eventType}</Badge></TableCell>
+                <TableCell>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      r.eventType === "deployment" && "border-blue-500 text-blue-600",
+                      r.eventType === "migration" && "border-purple-500 text-purple-600",
+                      r.eventType === "config_change" && "border-yellow-500 text-yellow-600",
+                      r.eventType === "admin_action" && "border-green-500 text-green-600"
+                    )}
+                  >
+                    {r.eventType.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                  </Badge>
+                </TableCell>
                 <TableCell>{r.actorEmail || "System"}</TableCell>
                 <TableCell className="max-w-[300px] truncate">{r.description}</TableCell>
                 <TableCell>{formatDateTimestamp(r.occurredAt)}</TableCell>
@@ -935,12 +1022,17 @@ function AuditTab() {
             )) : (
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-muted-foreground">
-                  No recent audit events
+                  No audit events found
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+        {filteredRecords.length > 0 && (
+          <div className="mt-4 text-sm text-muted-foreground text-center">
+            Showing {filteredRecords.length} of {data?.records?.length || 0} events
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -1030,7 +1122,7 @@ export default function SystemStatusPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <OverviewTab />
+          <OverviewTab onNavigateTab={setActiveTab} />
         </TabsContent>
         <TabsContent value="performance" className="mt-6">
           <PerformanceTab />
