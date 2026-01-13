@@ -307,3 +307,24 @@ Note: npm run check shows pre-existing TypeScript errors unrelated to this migra
 - **DB Proof**: `metrics_snapshots` has 11,993 rows; `system_alerts` has 28 rows (verified via SQL query)
 
 **Action**: Marked T150 and T151 as COMPLETE in docs/TODO.md with file paths and DB evidence.
+
+---
+
+## 2026-01-13: System Status UTC Timestamps and Auto-Refresh (T145)
+
+**Decision**: Updated System Status page to display all timestamps in UTC format and added per-card "as of" relative timestamps.
+
+**Changes Made**:
+1. `formatTimestamp()` - Now returns "HH:MM:SS UTC" instead of local time
+2. `formatDateTimestamp()` - Now returns "Mon DD, HH:MM:SS UTC" format
+3. Added `formatAsOf()` helper - Returns "as of Xs ago" or "as of Xm ago" for card headers
+4. Updated Active Alerts and Top Slow Endpoints cards to show "as of" timestamps
+
+**Why UTC**: Platform serves global users; UTC is the standard for monitoring/ops tools. Avoids timezone confusion when debugging issues.
+
+**Auto-refresh behavior** (already implemented, verified working):
+- Live toggle default ON (`useState(true)`)
+- Auto-refresh every 30 seconds (`refetchInterval: isLive ? 30000 : false`)
+- Pauses when browser tab is hidden (visibility change listener)
+
+**Files Changed**: `client/src/pages/admin/system-status.tsx`

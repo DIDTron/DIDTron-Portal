@@ -523,8 +523,17 @@ All performance optimization stages completed:
 
 ### Stage 6: Auto-Refresh & Sidebar Integration
 
-- [ ] **T145**: Implement 30s auto-refresh with Live toggle
+- [x] **T145**: Implement 30s auto-refresh with Live toggle ✅ COMPLETE
   - Acceptance: Auto-refresh every 30s, pause when tab hidden, Live toggle works
+  - **Completion Note (2026-01-13)**:
+    - `client/src/pages/admin/system-status.tsx` lines 200-236: Updated timestamp formatters to show UTC
+    - `formatTimestamp()` now returns "HH:MM:SS UTC" format
+    - `formatDateTimestamp()` now returns "Mon DD, HH:MM:SS UTC" format
+    - Added `formatAsOf()` helper for per-card "as of Xs/Xm ago" display
+    - Live toggle default ON (line 1233: `useState(true)`)
+    - Auto-refresh every 30s (line 1238: `refetchInterval: isLive ? 30000 : false`)
+    - Pause on tab hidden (lines 1250-1258: visibility change listener)
+    - Cards show "as of" timestamps in headers
 
 - [ ] **T146**: Add stale data banners (2m yellow, 5m red)
   - Acceptance: Banners appear when snapshot is older than thresholds

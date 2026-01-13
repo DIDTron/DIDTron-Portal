@@ -196,12 +196,40 @@ function StaleBanner({ lastUpdated }: { lastUpdated: string | null | undefined }
 
 function formatTimestamp(timestamp: string | null | undefined): string {
   if (!timestamp) return "Never";
-  return new Date(timestamp).toLocaleTimeString();
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString("en-US", { 
+    hour: "2-digit", 
+    minute: "2-digit", 
+    second: "2-digit",
+    hour12: false,
+    timeZone: "UTC" 
+  }) + " UTC";
 }
 
 function formatDateTimestamp(timestamp: string | null | undefined): string {
   if (!timestamp) return "Never";
-  return new Date(timestamp).toLocaleString();
+  const date = new Date(timestamp);
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "UTC"
+  }) + " UTC";
+}
+
+function formatAsOf(timestamp: string | null | undefined): string {
+  if (!timestamp) return "";
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  
+  if (diffSec < 60) return `as of ${diffSec}s ago`;
+  if (diffSec < 3600) return `as of ${Math.floor(diffSec / 60)}m ago`;
+  return `as of ${formatTimestamp(timestamp)}`;
 }
 
 function OverviewTab({ onNavigateTab }: { onNavigateTab: (tab: string) => void }) {
@@ -301,7 +329,7 @@ function OverviewTab({ onNavigateTab }: { onNavigateTab: (tab: string) => void }
         <Card className="hover-elevate cursor-pointer" onClick={() => onNavigateTab("alerts")}>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Active Alerts</CardTitle>
-            <span className="text-xs text-muted-foreground">Click to view all</span>
+            <span className="text-xs text-muted-foreground">{formatAsOf(data?.lastUpdated)}</span>
           </CardHeader>
           <CardContent>
             {data?.activeAlerts?.length ? (
@@ -339,7 +367,7 @@ function OverviewTab({ onNavigateTab }: { onNavigateTab: (tab: string) => void }
         <Card className="hover-elevate cursor-pointer" onClick={() => onNavigateTab("api")}>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Top Slow Endpoints</CardTitle>
-            <span className="text-xs text-muted-foreground">Click to view all</span>
+            <span className="text-xs text-muted-foreground">{formatAsOf(data?.lastUpdated)}</span>
           </CardHeader>
           <CardContent>
             {data?.topSlowEndpoints?.length ? (
