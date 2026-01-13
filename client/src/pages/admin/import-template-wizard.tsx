@@ -171,76 +171,93 @@ export function ImportTemplateWizardPage() {
   const [startingColumnExplicitlySet, setStartingColumnExplicitlySet] = useState(false);
   const [startingRowExplicitlySet, setStartingRowExplicitlySet] = useState(false);
 
+  const formatCellValue = (cell: string | number | Date | null | undefined): string => {
+    if (cell === null || cell === undefined) return "";
+    
+    if (cell instanceof Date && !isNaN(cell.getTime())) {
+      const day = cell.getDate();
+      const month = cell.toLocaleString("en-US", { month: "short" });
+      const year = String(cell.getFullYear()).slice(-2);
+      return `${day}/${month}/${year}`;
+    }
+    
+    if (typeof cell === "number") {
+      if (cell > 25569 && cell < 60000 && Number.isInteger(cell)) {
+        const excelEpoch = new Date(1899, 11, 30);
+        const date = new Date(excelEpoch.getTime() + cell * 86400000);
+        if (!isNaN(date.getTime())) {
+          const day = date.getDate();
+          const month = date.toLocaleString("en-US", { month: "short" });
+          const year = String(date.getFullYear()).slice(-2);
+          return `${day}/${month}/${year}`;
+        }
+      }
+      return String(cell);
+    }
+    
+    if (typeof cell === "string") {
+      const numVal = parseFloat(cell);
+      if (!isNaN(numVal) && numVal > 25569 && numVal < 60000 && Number.isInteger(numVal)) {
+        const excelEpoch = new Date(1899, 11, 30);
+        const date = new Date(excelEpoch.getTime() + numVal * 86400000);
+        if (!isNaN(date.getTime())) {
+          const day = date.getDate();
+          const month = date.toLocaleString("en-US", { month: "short" });
+          const year = String(date.getFullYear()).slice(-2);
+          return `${day}/${month}/${year}`;
+        }
+      }
+    }
+    
+    return String(cell);
+  };
+
   const parseFile = async (file: File) => {
     setIsParsingFile(true);
     try {
       const extension = file.name.split(".").pop()?.toLowerCase();
       const buffer = await file.arrayBuffer();
       
-      if (extension === "csv") {
-        const delimiter = formData.delimiter || ",";
-        const workbook = XLSX.read(buffer, { 
-          type: "array",
-          FS: delimiter,
-          raw: true
-        });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json<string[]>(worksheet, { 
-          header: 1, 
-          defval: "",
-          raw: false
-        });
-        setParsedData((jsonData as string[][]).filter((row) => row.some((cell) => cell !== "")));
-      } else if (extension === "xlsx" || extension === "xls") {
-        const workbook = XLSX.read(buffer, { 
-          type: "array",
-          cellDates: true,
-          cellNF: true,
-          cellText: false
-        });
-        const sheetIndex = Math.max(0, (formData.sheetNumber || 1) - 1);
-        const sheetName = workbook.SheetNames[sheetIndex] || workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        
-        const jsonData = XLSX.utils.sheet_to_json<(string | number | Date)[]>(worksheet, { 
-          header: 1, 
-          defval: "",
-          raw: false,
-          dateNF: "d/mmm/yy"
-        });
-        
-        const formattedData = (jsonData as (string | number | Date)[][]).map((row) =>
-          row.map((cell) => {
-            if (cell instanceof Date) {
-              const day = cell.getDate();
-              const month = cell.toLocaleString("en-US", { month: "short" });
-              const year = String(cell.getFullYear()).slice(-2);
-              return `${day}/${month}/${year}`;
-            }
-            if (typeof cell === "number") {
-              if (cell > 40000 && cell < 60000 && Number.isInteger(cell)) {
-                const excelEpoch = new Date(1899, 11, 30);
-                const date = new Date(excelEpoch.getTime() + cell * 86400000);
-                const day = date.getDate();
-                const month = date.toLocaleString("en-US", { month: "short" });
-                const year = String(date.getFullYear()).slice(-2);
-                return `${day}/${month}/${year}`;
-              }
-            }
-            return String(cell ?? "");
-          })
-        );
-        
-        setParsedData(formattedData);
-      } else {
+      const isExcelFormat = extension === "xlsx" || extension === "xls" || extension === "xlsb";
+      const isCsvFormat = extension === "csv";
+      
+      if (!isExcelFormat && !isCsvFormat) {
         toast({
           title: "Unsupported file format",
-          description: "Please upload a CSV, XLSX, or XLS file",
+          description: "Please upload a CSV, XLSX, XLS, or XLSB file",
           variant: "destructive",
         });
         return;
       }
+      
+      const readOptions: XLSX.ParsingOptions = {
+        type: "array",
+        cellDates: true,
+        cellNF: true,
+        cellText: false,
+      };
+      
+      if (isCsvFormat) {
+        readOptions.FS = formData.delimiter || ",";
+      }
+      
+      const workbook = XLSX.read(buffer, readOptions);
+      const sheetIndex = isExcelFormat ? Math.max(0, (formData.sheetNumber || 1) - 1) : 0;
+      const sheetName = workbook.SheetNames[sheetIndex] || workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      const jsonData = XLSX.utils.sheet_to_json<(string | number | Date)[]>(worksheet, { 
+        header: 1, 
+        defval: "",
+        raw: false,
+        dateNF: "d/mmm/yy"
+      });
+      
+      const formattedData = (jsonData as (string | number | Date)[][])
+        .map((row) => row.map(formatCellValue))
+        .filter((row) => row.some((cell) => cell !== ""));
+      
+      setParsedData(formattedData);
       
       toast({
         title: "File parsed successfully",
@@ -265,10 +282,10 @@ export function ImportTemplateWizardPage() {
     
     const extension = file.name.split(".").pop()?.toLowerCase();
     
-    const isExcelExtension = extension === "xlsx" || extension === "xls";
+    const isExcelExtension = extension === "xlsx" || extension === "xls" || extension === "xlsb";
     const isCsvExtension = extension === "csv";
     const currentFormat = formData.fileFormat.toLowerCase();
-    const currentIsExcel = currentFormat === "excel" || currentFormat === "xlsx" || currentFormat === "xls";
+    const currentIsExcel = currentFormat === "excel" || currentFormat === "xlsx" || currentFormat === "xls" || currentFormat === "xlsb";
     const currentIsCsv = currentFormat === "csv";
     
     const isMismatch = (isExcelExtension && !currentIsExcel) || (isCsvExtension && !currentIsCsv);
@@ -760,7 +777,7 @@ export function ImportTemplateWizardPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="CSV">CSV</SelectItem>
-                      <SelectItem value="Excel">Excel (XLSX/XLS)</SelectItem>
+                      <SelectItem value="Excel">Excel (XLSX/XLS/XLSB)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
