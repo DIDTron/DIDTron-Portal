@@ -56,14 +56,15 @@ export default function PeriodExceptionsPage() {
   const [activeSearchType, setActiveSearchType] = useState<"prefix" | "zone" | "country">("prefix");
   const [exceptionsPage, setExceptionsPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
-  const pageSize = 25;
+  const [exceptionsPageSize, setExceptionsPageSize] = useState(25);
+  const [historyPageSize, setHistoryPageSize] = useState(25);
 
   const { data: exceptionsData, isLoading: isLoadingExceptions, isFetching: isFetchingExceptions, refetch: refetchExceptions } = useQuery<PeriodExceptionsResponse>({
-    queryKey: ["/api/period-exceptions", activeSearchType, activeSearchQuery, exceptionsPage],
+    queryKey: ["/api/period-exceptions", activeSearchType, activeSearchQuery, exceptionsPage, exceptionsPageSize],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.set("limit", String(pageSize));
-      params.set("offset", String((exceptionsPage - 1) * pageSize));
+      params.set("limit", String(exceptionsPageSize));
+      params.set("offset", String((exceptionsPage - 1) * exceptionsPageSize));
       if (activeSearchQuery) {
         params.set("searchType", activeSearchType);
         params.set("query", activeSearchQuery);
@@ -77,11 +78,11 @@ export default function PeriodExceptionsPage() {
   });
 
   const { data: historyData, isLoading: isLoadingHistory, isFetching: isFetchingHistory } = useQuery<PeriodExceptionHistoryResponse>({
-    queryKey: ["/api/period-exceptions/history", historyPage],
+    queryKey: ["/api/period-exceptions/history", historyPage, historyPageSize],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.set("limit", String(pageSize));
-      params.set("offset", String((historyPage - 1) * pageSize));
+      params.set("limit", String(historyPageSize));
+      params.set("offset", String((historyPage - 1) * historyPageSize));
       const res = await fetch(`/api/period-exceptions/history?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch period exception history");
       return res.json();
@@ -135,11 +136,21 @@ export default function PeriodExceptionsPage() {
 
   const exceptions = exceptionsData?.data || [];
   const exceptionsTotal = exceptionsData?.total || 0;
-  const exceptionsTotalPages = Math.ceil(exceptionsTotal / pageSize);
+  const exceptionsTotalPages = Math.ceil(exceptionsTotal / exceptionsPageSize);
 
   const history = historyData?.data || [];
   const historyTotal = historyData?.total || 0;
-  const historyTotalPages = Math.ceil(historyTotal / pageSize);
+  const historyTotalPages = Math.ceil(historyTotal / historyPageSize);
+
+  const handleExceptionsPageSizeChange = (size: number) => {
+    setExceptionsPageSize(size);
+    setExceptionsPage(1);
+  };
+
+  const handleHistoryPageSizeChange = (size: number) => {
+    setHistoryPageSize(size);
+    setHistoryPage(1);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -275,16 +286,14 @@ export default function PeriodExceptionsPage() {
                 </Table>
               </div>
 
-              {exceptionsTotalPages > 1 && (
-                <DataTableFooter
-                  currentPage={exceptionsPage}
-                  totalPages={exceptionsTotalPages}
-                  pageSize={pageSize}
-                  totalItems={exceptionsTotal}
-                  onPageChange={setExceptionsPage}
-                  onPageSizeChange={() => {}}
-                />
-              )}
+              <DataTableFooter
+                currentPage={exceptionsPage}
+                totalPages={exceptionsTotalPages}
+                pageSize={exceptionsPageSize}
+                totalItems={exceptionsTotal}
+                onPageChange={setExceptionsPage}
+                onPageSizeChange={handleExceptionsPageSizeChange}
+              />
             </TabsContent>
 
             <TabsContent value="history" className="mt-0">
@@ -365,16 +374,14 @@ export default function PeriodExceptionsPage() {
                 </Table>
               </div>
 
-              {historyTotalPages > 1 && (
-                <DataTableFooter
-                  currentPage={historyPage}
-                  totalPages={historyTotalPages}
-                  pageSize={pageSize}
-                  totalItems={historyTotal}
-                  onPageChange={setHistoryPage}
-                  onPageSizeChange={() => {}}
-                />
-              )}
+              <DataTableFooter
+                currentPage={historyPage}
+                totalPages={historyTotalPages}
+                pageSize={historyPageSize}
+                totalItems={historyTotal}
+                onPageChange={setHistoryPage}
+                onPageSizeChange={handleHistoryPageSizeChange}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
