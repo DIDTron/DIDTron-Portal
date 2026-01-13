@@ -3536,7 +3536,7 @@ export type ConnexcsCdrSyncState = typeof connexcsCdrSyncState.$inferSelect;
 export const systemAlertSeverityEnum = pgEnum("system_alert_severity", ["critical", "warning", "info"]);
 export const systemAlertStatusEnum = pgEnum("system_alert_status", ["active", "resolved", "acknowledged", "snoozed"]);
 export const healthStatusEnum = pgEnum("health_status", ["healthy", "degraded", "down"]);
-export const metricsSnapshotTypeEnum = pgEnum("metrics_snapshot_type", ["api", "database", "redis", "r2", "job_queue", "integration", "portal"]);
+export const metricsSnapshotTypeEnum = pgEnum("metrics_snapshot_type", ["api", "database", "redis", "r2", "job_queue", "integration", "portal", "storage"]);
 export const auditEventTypeEnum = pgEnum("audit_event_type", ["deployment", "migration", "config_change", "admin_action"]);
 export const portalTypeEnum = pgEnum("portal_type", ["super_admin", "customer", "marketing"]);
 

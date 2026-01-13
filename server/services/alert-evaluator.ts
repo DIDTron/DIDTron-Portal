@@ -385,22 +385,7 @@ class AlertEvaluatorService {
     }
   }
 
-  async getActiveAlerts(): Promise<Array<{
-    id: string;
-    severity: string;
-    source: string;
-    title: string;
-    description: string | null;
-    metricName: string | null;
-    actualValue: string | null;
-    threshold: string | null;
-    breachDuration: number | null;
-    firstSeenAt: Date;
-    lastSeenAt: Date;
-    status: string;
-    acknowledgedBy: string | null;
-    acknowledgedAt: Date | null;
-  }>> {
+  async getActiveAlerts(): Promise<typeof systemAlerts.$inferSelect[]> {
     const alerts = await db
       .select()
       .from(systemAlerts)

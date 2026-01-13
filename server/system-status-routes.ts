@@ -332,6 +332,15 @@ export function registerSystemStatusRoutes(app: Express) {
         ? (redisSnapshot.collectedAt > r2Snapshot.collectedAt ? redisSnapshot.collectedAt : r2Snapshot.collectedAt)
         : (redisSnapshot?.collectedAt || r2Snapshot?.collectedAt || new Date());
       
+      // Get storage metrics from the metrics collector (collected periodically, not on-demand)
+      const storageSnapshot = await metricsCollector.getLatestSnapshot("storage");
+      const storageMetrics = storageSnapshot?.metrics as Record<string, unknown> || {};
+      const storage = storageMetrics.usedMB !== undefined ? {
+        usedMB: storageMetrics.usedMB as number,
+        totalMB: storageMetrics.totalMB as number,
+        usagePercent: storageMetrics.usagePercent as number,
+      } : null;
+
       res.json({
         redis: {
           p95Latency: redisMetrics.p95LatencyMs || 0,
@@ -348,6 +357,7 @@ export function registerSystemStatusRoutes(app: Express) {
           lastExportTime: r2Metrics.lastExportTime ? toISOString(r2Metrics.lastExportTime as Date) : null,
           lastUpdated: toISOString(r2Snapshot?.collectedAt),
         },
+        storage,
         lastUpdated: toISOStringNow(latestCacheUpdate),
       });
     } catch (error) {

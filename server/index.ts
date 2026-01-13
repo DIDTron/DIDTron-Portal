@@ -8,6 +8,7 @@ import { storage } from "./storage";
 import { hashPassword } from "./auth";
 import { integrationsRepository } from "./integrations-repository";
 import { initializeRedisSession, acquireDistributedLock, releaseDistributedLock } from "./services/redis-session";
+import { seedAuditEvents } from "./services/audit-logger";
 import { timingMiddleware, startMemoryMonitoring } from "./middleware/timing";
 
 const app = express();
@@ -1003,6 +1004,7 @@ async function seedBillingTerms() {
   await seedExperienceManager();
   await seedIntegrations();
   await seedBillingTerms();
+  await seedAuditEvents();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -1167,6 +1169,35 @@ async function seedBillingTerms() {
         log("System Status metrics scheduler started", "system-status");
       } catch (error) {
         log(`Metrics scheduler failed to start: ${error}`, "system-status");
+      }
+
+      // Start Alert Evaluator scheduler (runs 10 seconds after metrics, then every 60s)
+      try {
+        const { alertEvaluator } = await import("./services/alert-evaluator");
+        
+        // Run initial evaluation after metrics are collected
+        setTimeout(async () => {
+          try {
+            console.log("[AlertEvaluator] Running initial alert evaluation...");
+            await alertEvaluator.evaluateAllBudgets();
+            console.log("[AlertEvaluator] Initial alert evaluation complete");
+          } catch (error) {
+            console.error("[AlertEvaluator] Initial evaluation failed:", error);
+          }
+        }, 10000); // Wait 10 seconds for metrics to be collected first
+        
+        // Schedule recurring evaluation every 60 seconds (offset from metrics)
+        setInterval(async () => {
+          try {
+            await alertEvaluator.evaluateAllBudgets();
+          } catch (error) {
+            console.error("[AlertEvaluator] Scheduled evaluation failed:", error);
+          }
+        }, 60000);
+        
+        log("Alert evaluator scheduler started", "system-status");
+      } catch (error) {
+        log(`Alert evaluator scheduler failed to start: ${error}`, "system-status");
       }
 
       // Initialize Cloudflare R2 storage

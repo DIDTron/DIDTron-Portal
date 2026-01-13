@@ -210,9 +210,10 @@ function OverviewTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
+        <Card className="hover-elevate cursor-pointer" onClick={() => document.querySelector('[data-testid="tab-alerts"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))}>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Active Alerts</CardTitle>
+            <span className="text-xs text-muted-foreground">Click to view all</span>
           </CardHeader>
           <CardContent>
             {data?.activeAlerts?.length ? (
@@ -232,6 +233,11 @@ function OverviewTab() {
                     </Badge>
                   </div>
                 ))}
+                {data.activeAlerts.length > 5 && (
+                  <div className="text-center text-sm text-muted-foreground pt-2">
+                    +{data.activeAlerts.length - 5} more alerts
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center p-4 text-muted-foreground">
@@ -242,17 +248,93 @@ function OverviewTab() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="hover-elevate cursor-pointer" onClick={() => document.querySelector('[data-testid="tab-api"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))}>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Top Slow Endpoints</CardTitle>
+            <span className="text-xs text-muted-foreground">Click to view all</span>
           </CardHeader>
           <CardContent>
             {data?.topSlowEndpoints?.length ? (
               <div className="space-y-2">
-                {data.topSlowEndpoints.map((ep, i) => (
+                {data.topSlowEndpoints.slice(0, 5).map((ep, i) => (
                   <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                     <span className="text-sm font-mono truncate max-w-[200px]">{ep.endpoint}</span>
                     <Badge variant="outline">{ep.p95}ms</Badge>
+                  </div>
+                ))}
+                {data.topSlowEndpoints.length > 5 && (
+                  <div className="text-center text-sm text-muted-foreground pt-2">
+                    +{data.topSlowEndpoints.length - 5} more slow endpoints
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center p-4 text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                No slow endpoints
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+interface ApiErrorsData {
+  requestCount15m: number;
+  p95Latency: number;
+  errorRate5xx: number;
+  errorRate4xx: number;
+  slowEndpoints: Array<{ endpoint: string; p95: number; count: number }>;
+  errorEndpoints: Array<{ endpoint: string; errorCount: number; errorRate: number }>;
+  topEndpoints: Array<{ endpoint: string; count: number; avgLatency: number }>;
+}
+
+function ApiErrorsTab() {
+  const { data, isLoading } = useQuery<ApiErrorsData>({
+    queryKey: ["/api/system/api-errors"],
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPICard title="Requests (15m)" value={data?.requestCount15m || 0} icon={Globe} />
+        <KPICard title="API p95" value={data?.p95Latency || 0} unit="ms" icon={Zap} />
+        <KPICard 
+          title="5xx Error Rate" 
+          value={(data?.errorRate5xx || 0).toFixed(2)} 
+          unit="%" 
+          icon={XCircle} 
+          status={(data?.errorRate5xx || 0) > 1 ? "critical" : (data?.errorRate5xx || 0) > 0.3 ? "warning" : "good"} 
+        />
+        <KPICard 
+          title="4xx Error Rate" 
+          value={(data?.errorRate4xx || 0).toFixed(2)} 
+          unit="%" 
+          icon={AlertTriangle} 
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">All Slow Endpoints (p95 {">"} 100ms)</CardTitle>
+          </CardHeader>
+          <CardContent className="max-h-80 overflow-y-auto">
+            {data?.slowEndpoints?.length ? (
+              <div className="space-y-2">
+                {data.slowEndpoints.map((ep, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-mono truncate max-w-[200px]">{ep.endpoint}</span>
+                      <span className="text-xs text-muted-foreground">{ep.count} requests</span>
+                    </div>
+                    <Badge variant="destructive">{ep.p95}ms</Badge>
                   </div>
                 ))}
               </div>
@@ -264,7 +346,65 @@ function OverviewTab() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Error Endpoints (5xx/4xx)</CardTitle>
+          </CardHeader>
+          <CardContent className="max-h-80 overflow-y-auto">
+            {data?.errorEndpoints?.length ? (
+              <div className="space-y-2">
+                {data.errorEndpoints.map((ep, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-mono truncate max-w-[200px]">{ep.endpoint}</span>
+                      <span className="text-xs text-muted-foreground">{ep.errorRate.toFixed(1)}% error rate</span>
+                    </div>
+                    <Badge variant="destructive">{ep.errorCount} errors</Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center p-4 text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                No error endpoints
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Top Endpoints by Request Volume</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Endpoint</TableHead>
+                <TableHead>Requests</TableHead>
+                <TableHead>Avg Latency</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data?.topEndpoints?.length ? data.topEndpoints.slice(0, 15).map((ep, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-mono text-sm">{ep.endpoint}</TableCell>
+                  <TableCell>{ep.count}</TableCell>
+                  <TableCell>{ep.avgLatency}ms</TableCell>
+                </TableRow>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    No endpoint data available
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -603,11 +743,29 @@ function DatabaseTab() {
   );
 }
 
+interface CacheData {
+  redis: { 
+    p95Latency: number; 
+    cacheHitRate: number; 
+    connected: boolean;
+    rateLimitRejections?: number;
+  };
+  r2: { 
+    p95Latency: number; 
+    uploadErrors: number; 
+    downloadErrors: number;
+    lastExportFile?: string | null;
+    lastExportTime?: string | null;
+  };
+  storage?: {
+    usedMB: number;
+    totalMB: number;
+    usagePercent: number;
+  };
+}
+
 function CacheTab() {
-  const { data, isLoading } = useQuery<{
-    redis: { p95Latency: number; cacheHitRate: number; connected: boolean };
-    r2: { p95Latency: number; uploadErrors: number; downloadErrors: number };
-  }>({
+  const { data, isLoading } = useQuery<CacheData>({
     queryKey: ["/api/system/cache"],
     refetchInterval: 30000,
     staleTime: 10000,
@@ -615,52 +773,123 @@ function CacheTab() {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
+  const storagePercent = data?.storage?.usagePercent || 0;
+  const storageStatus = storagePercent > 90 ? "critical" : storagePercent > 70 ? "warning" : "good";
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Redis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span>Status</span>
-              <Badge variant={data?.redis?.connected ? "default" : "destructive"}>
-                {data?.redis?.connected ? "Connected" : "Disconnected"}
-              </Badge>
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPICard 
+          title="Redis p95" 
+          value={data?.redis?.p95Latency || 0} 
+          unit="ms" 
+          icon={Radio}
+          status={!data?.redis?.connected ? "critical" : undefined}
+        />
+        <KPICard 
+          title="R2 p95" 
+          value={data?.r2?.p95Latency || 0} 
+          unit="ms" 
+          icon={HardDrive}
+        />
+        <KPICard 
+          title="Cache Hit Rate" 
+          value={((data?.redis?.cacheHitRate || 0) * 100).toFixed(1)} 
+          unit="%" 
+          icon={Gauge}
+        />
+        <KPICard 
+          title="Storage Used" 
+          value={data?.storage?.usedMB?.toFixed(1) || 0} 
+          unit="MB" 
+          icon={HardDrive}
+          status={storageStatus}
+        />
+      </div>
+
+      {data?.storage && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Storage Usage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm">
+                <span>{data.storage.usedMB.toFixed(1)} MB used of {data.storage.totalMB.toFixed(1)} MB</span>
+                <span className="font-bold">{data.storage.usagePercent.toFixed(1)}%</span>
+              </div>
+              <Progress 
+                value={data.storage.usagePercent} 
+                className={cn(
+                  storageStatus === "critical" && "[&>div]:bg-red-500",
+                  storageStatus === "warning" && "[&>div]:bg-yellow-500"
+                )}
+              />
             </div>
-            <div className="flex items-center justify-between">
-              <span>p95 Latency</span>
-              <span className="font-bold">{data?.redis?.p95Latency || 0}ms</span>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Redis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Status</span>
+                <Badge variant={data?.redis?.connected ? "default" : "destructive"}>
+                  {data?.redis?.connected ? "Connected" : "Disconnected"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>p95 Latency</span>
+                <span className="font-bold">{data?.redis?.p95Latency || 0}ms</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Cache Hit Rate</span>
+                <span className="font-bold">{((data?.redis?.cacheHitRate || 0) * 100).toFixed(1)}%</span>
+              </div>
+              {data?.redis?.rateLimitRejections !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span>Rate Limit Rejections</span>
+                  <span className="font-bold">{data.redis.rateLimitRejections}</span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-between">
-              <span>Cache Hit Rate</span>
-              <span className="font-bold">{(data?.redis?.cacheHitRate || 0) * 100}%</span>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>R2 Object Storage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>p95 Latency</span>
+                <span className="font-bold">{data?.r2?.p95Latency || 0}ms</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Upload Errors</span>
+                <span className="font-bold">{data?.r2?.uploadErrors || 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Download Errors</span>
+                <span className="font-bold">{data?.r2?.downloadErrors || 0}</span>
+              </div>
+              {data?.r2?.lastExportTime && (
+                <div className="flex items-center justify-between">
+                  <span>Last Export</span>
+                  <span className="text-sm text-muted-foreground">
+                    {formatDateTimestamp(data.r2.lastExportTime)}
+                  </span>
+                </div>
+              )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>R2 Object Storage</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span>p95 Latency</span>
-              <span className="font-bold">{data?.r2?.p95Latency || 0}ms</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Upload Errors</span>
-              <span className="font-bold">{data?.r2?.uploadErrors || 0}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Download Errors</span>
-              <span className="font-bold">{data?.r2?.downloadErrors || 0}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -810,7 +1039,7 @@ export default function SystemStatusPage() {
           <HealthTab />
         </TabsContent>
         <TabsContent value="api" className="mt-6">
-          <OverviewTab />
+          <ApiErrorsTab />
         </TabsContent>
         <TabsContent value="database" className="mt-6">
           <DatabaseTab />

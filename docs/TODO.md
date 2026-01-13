@@ -546,3 +546,49 @@ All performance optimization stages completed:
 
 - [ ] **T149**: Implement Brevo email alerts for Warning/Critical
   - Acceptance: Emails sent for Warning/Critical alerts via Brevo integration
+
+---
+
+### Stage 9: User-Reported Fixes (HIGH PRIORITY)
+
+**Date**: 2026-01-13
+**Source**: User feedback on System Status page
+
+- [ ] **T150**: Pre-load metrics on server start so data is ready immediately on page navigation
+  - Issue: User sees no values when first navigating to System Status page, must wait
+  - Acceptance: Backend pre-loads initial metrics on startup; page shows data immediately on navigation
+  - Files: server/services/metrics-collector.ts, server/index.ts
+
+- [ ] **T151**: Implement Alert Evaluator to generate real alerts from budget breaches and health failures
+  - Issue: Active alerts shows "0 Critical, 0 Warning" with no data
+  - Acceptance: Alert evaluator runs every 60s, creates system_alerts records for breaches
+  - Files: server/services/alert-evaluator.ts, shared/schema.ts
+
+- [ ] **T152**: Add System Status badge (red/green) to primary sidebar with alert count
+  - Issue: No status indicator badge beside System Status in sidebar
+  - Acceptance: Red badge with count if alerts > 0, green checkmark if healthy
+  - Files: client/src/components/layout/super-admin/primary-sidebar.tsx
+
+- [ ] **T153**: Restore storage usage display (Replit storage metrics)
+  - Issue: User lost the storage usage card that was previously designed
+  - Acceptance: Storage usage card shows used/total space in Cache tab
+
+- [ ] **T154**: Fix API & Errors tab to show unique content per spec
+  - Issue: API & Errors tab shows same content as Overview (not per spec)
+  - Acceptance: Shows requests/min, 5xx/4xx rates, Top 20 slow endpoints, Top 20 error endpoints, Largest payload endpoints, Recent error samples
+  - Files: client/src/pages/admin/system-status.tsx, server/system-status-routes.ts
+
+- [ ] **T155**: Add 'All Slow Endpoints' and 'All Slow Queries' cards in addition to Top 5
+  - Issue: User wants to see ALL slow endpoints/queries, not just top 5
+  - Acceptance: Overview tab has additional cards showing full list of slow endpoints and queries
+  - Files: client/src/pages/admin/system-status.tsx
+
+- [ ] **T156**: Populate Active Alerts card with real data from system_alerts table
+  - Issue: Active alerts card in Overview shows nothing even when issues exist
+  - Acceptance: Active alerts card displays actual alerts from database, navigates to Alerts tab on click
+  - Files: client/src/pages/admin/system-status.tsx
+
+- [ ] **T157**: Fix Audit tab to show deployments, migrations, config changes, super-admin actions
+  - Issue: Audit tab shows "No recent audit events" with empty table
+  - Acceptance: Shows recent deployments/restarts, schema migrations, config changes, super-admin actions from audit_records
+  - Files: client/src/pages/admin/system-status.tsx, server/system-status-routes.ts, shared/schema.ts

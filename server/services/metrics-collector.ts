@@ -4,7 +4,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import { getJobStats, getJobs } from "../job-queue";
 import { performanceMonitor } from "./performance-monitor";
 
-export type MetricsSnapshotType = "api" | "database" | "redis" | "r2" | "job_queue" | "integration" | "portal";
+export type MetricsSnapshotType = "api" | "database" | "redis" | "r2" | "job_queue" | "integration" | "portal" | "storage";
 
 interface ApiMetrics {
   requestCount15m: number;
@@ -72,6 +72,12 @@ interface PortalMetrics {
   healthStatus: "healthy" | "degraded" | "down";
 }
 
+interface StorageMetrics {
+  usedMB: number;
+  totalMB: number;
+  usagePercent: number;
+}
+
 class MetricsCollectorService {
   private lastCollectionTime: Date | null = null;
   private isCollecting = false;
@@ -95,6 +101,7 @@ class MetricsCollectorService {
         this.collectJobQueueMetrics(collectedAt),
         this.collectIntegrationMetrics(collectedAt),
         this.collectPortalMetrics(collectedAt),
+        this.collectStorageMetrics(collectedAt),
       ]);
 
       this.lastCollectionTime = collectedAt;
@@ -462,6 +469,39 @@ class MetricsCollectorService {
     }
   }
 
+  private async collectStorageMetrics(collectedAt: Date): Promise<void> {
+    try {
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+      
+      let metrics: StorageMetrics = {
+        usedMB: 0,
+        totalMB: 1000, // Default to 1GB
+        usagePercent: 0,
+      };
+
+      try {
+        const { stdout } = await execAsync('df -m /home/runner 2>/dev/null || df -m . 2>/dev/null || echo "Filesystem 1000 0 1000"');
+        const lines = stdout.trim().split('\n');
+        if (lines.length > 1) {
+          const parts = lines[1].split(/\s+/);
+          if (parts.length >= 4) {
+            metrics.totalMB = parseFloat(parts[1]) || 1000;
+            metrics.usedMB = parseFloat(parts[2]) || 0;
+            metrics.usagePercent = metrics.totalMB > 0 ? (metrics.usedMB / metrics.totalMB) * 100 : 0;
+          }
+        }
+      } catch (e) {
+        // Use defaults if df command fails
+      }
+
+      await this.storeSnapshot("storage", metrics, collectedAt);
+    } catch (error) {
+      console.error("[MetricsCollector] Error collecting storage metrics:", error);
+    }
+  }
+
   private async storeSnapshot(
     snapshotType: MetricsSnapshotType,
     metrics: unknown,
@@ -552,14 +592,16 @@ export function startMetricsScheduler(): void {
   console.log("[MetricsScheduler] Starting metrics collection scheduler (every 60 seconds)");
   metricsSchedulerStarted = true;
 
-  // Run immediately on startup
+  // Run immediately on startup with minimal delay for services to stabilize
   setTimeout(async () => {
     try {
+      console.log("[MetricsScheduler] Running initial metrics collection...");
       await metricsCollector.collectAllMetrics();
+      console.log("[MetricsScheduler] Initial metrics collection complete");
     } catch (error) {
       console.error("[MetricsScheduler] Initial collection failed:", error);
     }
-  }, 5000); // Wait 5 seconds for services to stabilize
+  }, 1000); // Wait 1 second for basic services to initialize
 
   // Schedule recurring collection every 60 seconds
   metricsIntervalId = setInterval(async () => {
