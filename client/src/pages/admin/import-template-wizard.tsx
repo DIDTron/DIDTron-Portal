@@ -33,7 +33,7 @@ import { Badge } from "@/components/ui/badge";
 interface Carrier {
   id: string;
   name: string;
-  carrierType: string;
+  partnerType: string;
 }
 
 interface Interconnect {
@@ -267,7 +267,7 @@ export function ImportTemplateWizardPage() {
 
   const supplierCarriers = Array.isArray(carriers)
     ? carriers.filter(
-        (c) => c.carrierType === "supplier" || c.carrierType === "bilateral"
+        (c) => c.partnerType === "supplier" || c.partnerType === "bilateral"
       )
     : [];
 
