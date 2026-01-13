@@ -339,7 +339,7 @@ export default function AdminLayout() {
                 <Route path="/admin/softswitch/rating/zone-name" component={RatingZoneNamePage} />
                 <Route path="/admin/softswitch/rating/import-job/:jobId" component={ImportJobDetailPage} />
                 <Route path="/admin/softswitch/rating/business-rule/:ruleId" component={BusinessRuleDetailPage} />
-                <Route path="/admin/softswitch/rating/import-template/:id" component={ImportTemplateWizardPage} />
+                <Route path="/admin/softswitch/rating/supplier-rating/import-template/:id" component={ImportTemplateWizardPage} />
                 <Route path="/admin/softswitch/routing">{() => <PlaceholderPage title="Routing" />}</Route>
                 <Route path="/admin/softswitch/balance/carrier-balances" component={CarrierBalancesPage} />
                 <Route path="/admin/softswitch/balance/24h-spend" component={TwentyFourHourSpendPage} />

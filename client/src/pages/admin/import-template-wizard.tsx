@@ -275,11 +275,13 @@ export function ImportTemplateWizardPage() {
     placeholderData: keepPreviousData,
   });
 
-  const filteredInterconnects = interconnects.filter(
-    (ic) =>
-      ic.carrierId === formData.carrierId &&
-      (ic.direction === "egress" || ic.direction === "bilateral")
-  );
+  const filteredInterconnects = Array.isArray(interconnects) 
+    ? interconnects.filter(
+        (ic) =>
+          ic.carrierId === formData.carrierId &&
+          (ic.direction === "egress" || ic.direction === "bilateral")
+      )
+    : [];
 
   const { data: businessRules = [], isLoading: isLoadingBusinessRules } = useQuery<BusinessRule[]>({
     queryKey: ["/api/softswitch/rating/business-rules"],
@@ -331,7 +333,7 @@ export function ImportTemplateWizardPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplier-import-templates"] });
       toast({ title: "Success", description: `Import template ${isEditing ? "updated" : "created"} successfully` });
-      navigate("/admin/softswitch/rating?tab=import-templates");
+      navigate("/admin/softswitch/rating/supplier-rating/import-templates");
     },
     onError: () => {
       toast({ title: "Error", description: `Failed to ${isEditing ? "update" : "create"} import template`, variant: "destructive" });
@@ -385,7 +387,7 @@ export function ImportTemplateWizardPage() {
     return null;
   };
 
-  const PARENT_ROUTE = "/admin/softswitch/rating?tab=import-templates";
+  const PARENT_ROUTE = "/admin/softswitch/rating/supplier-rating/import-templates";
 
   if (isEditing && isLoadingTemplate) {
     return (

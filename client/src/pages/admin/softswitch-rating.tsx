@@ -1381,7 +1381,7 @@ export function SupplierRatingPlansPage() {
       return;
     }
     if (actionId === "add-template") {
-      window.location.href = "/admin/softswitch/rating/import-template/new";
+      window.location.href = "/admin/softswitch/rating/supplier-rating/import-template/new";
       return;
     }
     if (actionId === "delete-all-templates") {
@@ -2668,7 +2668,7 @@ export function SupplierRatingPlansPage() {
                     <TableRow key={template.id} data-testid={`row-import-template-${template.id}`}>
                       <TableCell>
                         <a 
-                          href={`/admin/softswitch/rating/import-template/${template.id}`}
+                          href={`/admin/softswitch/rating/supplier-rating/import-template/${template.id}`}
                           className="text-primary hover:underline font-medium"
                           data-testid={`link-import-template-${template.id}`}
                         >
