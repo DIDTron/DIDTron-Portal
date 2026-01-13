@@ -959,9 +959,7 @@ const supplierRatingTabActions: Record<SupplierRatingTab, TabAction[]> = {
     { id: "save-report", label: "Save Report", testId: "menu-save-report" },
     { id: "export", label: "Export", testId: "menu-export" },
   ],
-  "import-settings": [
-    { id: "reset-settings", label: "Reset to Defaults", testId: "menu-reset-settings" },
-  ],
+  "import-settings": [],
   "import-templates": [
     { id: "add-template", label: "Add Template", testId: "menu-add-template" },
     { id: "delete-all-templates", label: "Delete All Templates", testId: "menu-delete-all-templates" },
@@ -1111,6 +1109,48 @@ const mockImportSummaryOriginSummary: ImportSummaryOriginSummary = {
   newOriginSets: 0, newOriginCodes: 0, deletedOriginCodes: 0
 };
 
+// Import Settings types
+type ImportSettingsSubTab = "import-settings" | "business-rules";
+
+interface ImportSettingItem {
+  id: string;
+  name: string;
+  currency: string;
+  businessRules: string;
+  carrierValidation: {
+    from: string;
+    filename: string;
+    subject: string;
+  };
+  autoImportRules: number;
+  notifications: number;
+}
+
+interface BusinessRule {
+  id: string;
+  name: string;
+  increase: number;
+  decrease: number;
+  new: number;
+  deletion: number;
+  initialPeriod: string;
+  recurringPeriod: string;
+  assigned: boolean;
+}
+
+const mockImportSettings: ImportSettingItem[] = [];
+const mockBusinessRules: BusinessRule[] = [];
+
+// Import Settings sub-tab actions
+const importSettingsSubTabActions: Record<ImportSettingsSubTab, TabAction[]> = {
+  "import-settings": [
+    { id: "add-import-setting", label: "Add Import Setting", testId: "menu-add-import-setting" },
+  ],
+  "business-rules": [
+    { id: "create-business-rule", label: "Create Business Rule", testId: "menu-create-business-rule" },
+  ],
+};
+
 const periodOptions: { value: RateInboxPeriod; label: string }[] = [
   { value: "specify", label: "Specify" },
   { value: "today", label: "Today" },
@@ -1164,6 +1204,14 @@ export function SupplierRatingPlansPage() {
   const [saveReportPublic, setSaveReportPublic] = useState(false);
   const [importSummaryViewMode, setImportSummaryViewMode] = useState<"zone" | "code">("zone");
   
+  // Import Settings tab state
+  const [importSettingsSubTab, setImportSettingsSubTab] = useState<ImportSettingsSubTab>("import-settings");
+  const [importSettingsSearchFilter, setImportSettingsSearchFilter] = useState("");
+  const [showAddImportSettingDialog, setShowAddImportSettingDialog] = useState(false);
+  const [addImportSettingCarrier, setAddImportSettingCarrier] = useState("");
+  const [addImportSettingBusinessRule, setAddImportSettingBusinessRule] = useState("");
+  const [businessRulesSearchFilter, setBusinessRulesSearchFilter] = useState("");
+  
   const { toast } = useToast();
 
   const filteredPlans = mockSupplierPlans.filter((plan) => {
@@ -1198,6 +1246,8 @@ export function SupplierRatingPlansPage() {
 
   const currentActions = tab === "rate-inbox" 
     ? rateInboxSubTabActions[rateInboxSubTab] 
+    : tab === "import-settings"
+    ? importSettingsSubTabActions[importSettingsSubTab]
     : supplierRatingTabActions[tab];
 
   const handleAction = (actionId: string) => {
@@ -1213,6 +1263,14 @@ export function SupplierRatingPlansPage() {
     }
     if (actionId === "export") {
       toast({ title: "Export", description: "Exporting report to CSV..." });
+      return;
+    }
+    if (actionId === "add-import-setting") {
+      setShowAddImportSettingDialog(true);
+      return;
+    }
+    if (actionId === "create-business-rule") {
+      window.location.href = "/admin/softswitch/rating/business-rule/new";
       return;
     }
     toast({ title: `Action: ${actionId}`, description: "This action is not yet implemented" });
@@ -2242,9 +2300,217 @@ export function SupplierRatingPlansPage() {
         </TabsContent>
 
         <TabsContent value="import-settings">
-          <div className="py-12 text-center text-muted-foreground">
-            Import Settings coming soon
+          {/* Sub-tabs */}
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              variant={importSettingsSubTab === "import-settings" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setImportSettingsSubTab("import-settings")}
+              className={importSettingsSubTab === "import-settings" ? "bg-[#3d4f5f] hover:bg-[#4d5f6f]" : ""}
+              data-testid="button-import-settings-subtab"
+            >
+              Import Settings
+            </Button>
+            <Button
+              variant={importSettingsSubTab === "business-rules" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setImportSettingsSubTab("business-rules")}
+              className={importSettingsSubTab === "business-rules" ? "bg-[#3d4f5f] hover:bg-[#4d5f6f]" : ""}
+              data-testid="button-business-rules-subtab"
+            >
+              Business Rules
+            </Button>
           </div>
+
+          {/* Search Filter */}
+          <div className="flex items-center gap-2 mb-4">
+            <Input
+              placeholder="Click to filter"
+              value={importSettingsSubTab === "import-settings" ? importSettingsSearchFilter : businessRulesSearchFilter}
+              onChange={(e) => importSettingsSubTab === "import-settings" 
+                ? setImportSettingsSearchFilter(e.target.value) 
+                : setBusinessRulesSearchFilter(e.target.value)
+              }
+              className="max-w-md"
+              data-testid="input-import-settings-search"
+            />
+            <Button variant="ghost" size="icon" data-testid="button-import-settings-search">
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Import Settings List */}
+          {importSettingsSubTab === "import-settings" && (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-[#3d4f5f]">
+                  <TableHead className="text-white text-xs">Name</TableHead>
+                  <TableHead className="text-white text-xs">Currency</TableHead>
+                  <TableHead className="text-white text-xs">Business Rules</TableHead>
+                  <TableHead className="text-white text-xs">Carrier Validation</TableHead>
+                  <TableHead className="text-white text-xs text-center">Auto Import Rules</TableHead>
+                  <TableHead className="text-white text-xs text-center">Notifications</TableHead>
+                  <TableHead className="text-white text-xs w-[80px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockImportSettings.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      No import settings found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  mockImportSettings.map((setting) => (
+                    <TableRow key={setting.id}>
+                      <TableCell>
+                        <a 
+                          href={`/admin/softswitch/rating/import-setting/${setting.id}`}
+                          className="text-primary hover:underline text-sm"
+                          data-testid={`link-import-setting-${setting.id}`}
+                        >
+                          {setting.name}
+                        </a>
+                      </TableCell>
+                      <TableCell className="text-sm">{setting.currency}</TableCell>
+                      <TableCell className="text-sm">{setting.businessRules}</TableCell>
+                      <TableCell className="text-sm space-y-1">
+                        <div>From={setting.carrierValidation.from}</div>
+                        <div>Filename="{setting.carrierValidation.filename}"</div>
+                        <div>Subject="{setting.carrierValidation.subject}"</div>
+                      </TableCell>
+                      <TableCell className="text-center text-sm">{setting.autoImportRules}</TableCell>
+                      <TableCell className="text-center text-sm">{setting.notifications}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => toast({ title: "Delete", description: `Deleting import setting ${setting.name}...` })}
+                          data-testid={`button-delete-import-setting-${setting.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+
+          {/* Business Rules List */}
+          {importSettingsSubTab === "business-rules" && (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-[#3d4f5f]">
+                  <TableHead className="text-white text-xs">Business Rule</TableHead>
+                  <TableHead className="text-white text-xs text-center">Increase</TableHead>
+                  <TableHead className="text-white text-xs text-center">Decrease</TableHead>
+                  <TableHead className="text-white text-xs text-center">New</TableHead>
+                  <TableHead className="text-white text-xs text-center">Deletion</TableHead>
+                  <TableHead className="text-white text-xs">Initial Period</TableHead>
+                  <TableHead className="text-white text-xs">Recurring Period</TableHead>
+                  <TableHead className="text-white text-xs">Assigned</TableHead>
+                  <TableHead className="text-white text-xs w-[80px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockBusinessRules.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      No business rules found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  mockBusinessRules.map((rule) => (
+                    <TableRow key={rule.id}>
+                      <TableCell>
+                        <a 
+                          href={`/admin/softswitch/rating/business-rule/${rule.id}`}
+                          className="text-primary hover:underline text-sm"
+                          data-testid={`link-business-rule-${rule.id}`}
+                        >
+                          {rule.name}
+                        </a>
+                      </TableCell>
+                      <TableCell className="text-center text-sm">{rule.increase}</TableCell>
+                      <TableCell className="text-center text-sm">{rule.decrease}</TableCell>
+                      <TableCell className="text-center text-sm">{rule.new}</TableCell>
+                      <TableCell className="text-center text-sm">{rule.deletion}</TableCell>
+                      <TableCell className="text-sm">{rule.initialPeriod}</TableCell>
+                      <TableCell className="text-sm">{rule.recurringPeriod}</TableCell>
+                      <TableCell className="text-sm">{rule.assigned ? "Yes" : "-"}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => toast({ title: "Delete", description: `Deleting business rule ${rule.name}...` })}
+                          data-testid={`button-delete-business-rule-${rule.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+
+          {/* Add Import Setting Dialog */}
+          <Dialog open={showAddImportSettingDialog} onOpenChange={setShowAddImportSettingDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Import Settings</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="carrier">Carrier</Label>
+                  <Select value={addImportSettingCarrier} onValueChange={setAddImportSettingCarrier}>
+                    <SelectTrigger data-testid="select-add-import-carrier">
+                      <SelectValue placeholder="Select carrier..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="carrier1">Carrier 1</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="businessRule">Business Rule</Label>
+                  <Select value={addImportSettingBusinessRule} onValueChange={setAddImportSettingBusinessRule}>
+                    <SelectTrigger data-testid="select-add-import-business-rule">
+                      <SelectValue placeholder="Select business rule..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockBusinessRules.length === 0 ? (
+                        <SelectItem value="none" disabled>No business rules available</SelectItem>
+                      ) : (
+                        mockBusinessRules.map((rule) => (
+                          <SelectItem key={rule.id} value={rule.id}>{rule.name}</SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAddImportSettingDialog(false)} data-testid="button-cancel-add-import-setting">
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    toast({ title: "Import Setting Created", description: "New import setting has been created" });
+                    setShowAddImportSettingDialog(false);
+                    setAddImportSettingCarrier("");
+                    setAddImportSettingBusinessRule("");
+                  }}
+                  data-testid="button-save-add-import-setting"
+                >
+                  Save
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="import-templates">

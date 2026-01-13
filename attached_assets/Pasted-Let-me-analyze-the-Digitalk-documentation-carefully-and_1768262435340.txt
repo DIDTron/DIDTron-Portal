@@ -1,0 +1,71 @@
+Let me analyze the Digitalk documentation carefully and explain what I understand:
+
+My Analysis of Import Settings & Business Rules
+Import Settings Tab Structure
+The Import Settings tab has two sub-tabs:
+
+Import Settings sub-tab (list of carriers with their import configurations)
+Business Rules sub-tab (list of reusable business rules)
+1. Import Settings List View
+Column	Description
+Name	Carrier name (clickable link to detail)
+Currency	USD, EUR, etc.
+Business Rules	Which rule set is assigned (e.g., "+1 Increase")
+Carrier Validation	Multi-line showing: From=email, Filename=pattern, Subject=pattern
+Auto Import Rules	Count of auto-import rules configured
+Notifications	Count of notifications configured
+Delete	Delete button
+Actions: "Add Import Setting" → Modal with Carrier dropdown + Business Rule dropdown
+
+2. Business Rules List View
+Column	Description
+Business Rule	Name (clickable link to detail page)
+Increase	Days notice required for rate increases
+Decrease	Days notice for decreases
+New	Days notice for new rates
+Deletion	Days notice for deletions
+Initial Period	Valid initial billing periods (0,1,6,15,30,60)
+Recurring Period	Valid recurring periods
+Assigned	"Yes" or "-"
+Delete	Delete button
+Actions: "Create Business Rule"
+
+3. Business Rule Detail/Edit Page (Two-column layout)
+Left Side - Rule Details:
+
+Name (text input)
+Assigned: Yes/No
+Last Updated: date/time
+Business Rules Breach Actions explanation panel:
+None: Rule not applied
+Alert Only: Identified but can be manually rejected
+Reject Rate: Automatically rejected, won't import unless manually accepted
+Block Rate: Imported with blocked state
+Right Side - Rules and Actions Table:
+
+Rule Type	Rule	Threshold	Unit	Action
+Notice Period	Rate Increase	7	Days	Alert Only ▼
+Notice Period	Rate Decrease	1	Days	None ▼
+Notice Period	New Rate	7	Days	None ▼
+Notice Period	Rate Deletion	7	Days	None ▼
+Notice Period	Rate Blocked	7	Days	None ▼
+Notice Period	Oldest Effective Date	30	Days	None ▼
+Notice Period	Maximum Effective Date	30	Days	None ▼
+Pricing	Max Increase		%	None ▼
+Pricing	Max Decrease		%	None ▼
+Pricing	Max Rate			None ▼
+Valid Periods	Initial Periods	0,1,60		None ▼
+Valid Periods	Recurring Periods	1,60		None ▼
+Destination	Code Moved To New Zone			None ▼
+Action Dropdown Options: None, Alert Only, Reject Rate, Block Rate
+
+What I Will Build:
+Update Import Settings tab with two sub-tabs (Import Settings | Business Rules)
+Import Settings list with proper columns and "Add Import Setting" dialog
+Business Rules list with proper columns and "Create Business Rule" action
+Business Rule detail page with:
+Two-column layout (Rule Details left, Rules and Actions right)
+Breach Actions explanation panel
+Editable threshold inputs and action dropdowns
+Save/Cancel/Edit buttons
+Should I proceed with this implementation?
