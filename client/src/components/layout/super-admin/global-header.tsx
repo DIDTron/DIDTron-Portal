@@ -39,6 +39,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
 
   const { data: connexcsStatus, isLoading: statusLoading } = useQuery<ConnexCSStatus>({
     queryKey: ["/api/connexcs/status"],
+    staleTime: 5 * 60 * 1000, // 5 minutes - prevent refetching on remount
     refetchInterval: 60000,
   });
 

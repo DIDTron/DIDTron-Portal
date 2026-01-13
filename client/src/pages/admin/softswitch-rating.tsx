@@ -1251,6 +1251,7 @@ export function SupplierRatingPlansPage() {
   // Fetch business rules from database
   const { data: businessRulesData = [], refetch: refetchBusinessRules } = useQuery<BusinessRuleAPI[]>({
     queryKey: ["/api/softswitch/rating/business-rules"],
+    staleTime: 30 * 1000, // 30 seconds - prevent refetching on tab switch
   });
 
   const filteredPlans = mockSupplierPlans.filter((plan) => {
