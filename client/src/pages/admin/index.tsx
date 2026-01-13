@@ -71,6 +71,7 @@ const BalanceTotalsPage = lazy(() => import("./softswitch-balance").then(m => ({
 const RatingPlanDetailPage = lazy(() => import("./softswitch-rating-plan-detail"));
 const ImportJobDetailPage = lazy(() => import("./import-job-detail"));
 const BusinessRuleDetailPage = lazy(() => import("./business-rule-detail").then(m => ({ default: m.BusinessRuleDetailPage })));
+const ImportTemplateDetailPage = lazy(() => import("./import-template-detail"));
 
 const BillingOverviewPage = lazy(() => import("./billing/index"));
 const BillingCustomersPage = lazy(() => import("./billing/customers"));
@@ -178,6 +179,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/softswitch/rating/period-exceptions": { section: "softswitch", subItem: "softswitch-period-exceptions" },
   "/admin/softswitch/rating/cdr-rerating": { section: "softswitch", subItem: "softswitch-cdr-rerating" },
   "/admin/softswitch/rating/zone-name": { section: "softswitch", subItem: "softswitch-zone-name" },
+  "/admin/softswitch/rating/import-template/:id": { section: "softswitch", subItem: "softswitch-supplier-rating" },
   "/admin/softswitch/routing": { section: "softswitch", subItem: "softswitch-routing" },
   "/admin/softswitch/balance/carrier-balances": { section: "softswitch", subItem: "softswitch-carrier-balances" },
   "/admin/softswitch/balance/24h-spend": { section: "softswitch", subItem: "softswitch-24h-spend" },
@@ -338,6 +340,7 @@ export default function AdminLayout() {
                 <Route path="/admin/softswitch/rating/zone-name" component={RatingZoneNamePage} />
                 <Route path="/admin/softswitch/rating/import-job/:jobId" component={ImportJobDetailPage} />
                 <Route path="/admin/softswitch/rating/business-rule/:ruleId" component={BusinessRuleDetailPage} />
+                <Route path="/admin/softswitch/rating/import-template/:id" component={ImportTemplateDetailPage} />
                 <Route path="/admin/softswitch/routing">{() => <PlaceholderPage title="Routing" />}</Route>
                 <Route path="/admin/softswitch/balance/carrier-balances" component={CarrierBalancesPage} />
                 <Route path="/admin/softswitch/balance/24h-spend" component={TwentyFourHourSpendPage} />
