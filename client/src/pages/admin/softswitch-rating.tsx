@@ -976,20 +976,33 @@ const supplierRatingTabActions: Record<SupplierRatingTab, TabAction[]> = {
   ],
 };
 
-interface SupplierRatingPlan {
+interface SupplierRatingPlanAPI {
   id: string;
+  shortCode: string | null;
   name: string;
-  supplier: string;
-  supplierInterconnect: string;
-  blockUnresolvableCodes: boolean;
+  carrierId: string | null;
+  interconnectId: string | null;
+  blockUnresolvableCodes: boolean | null;
   currency: string;
-  creationTemplate: string;
-  uncommittedChanges: boolean;
-  lastUpdated: string;
-  inUse: boolean;
+  creationTemplate: string | null;
+  uncommittedChanges: boolean | null;
+  inUse: boolean | null;
+  timeZone: string | null;
+  carrierTimeZone: string | null;
+  defaultRates: string | null;
+  effectiveDate: string | null;
+  initialInterval: number | null;
+  recurringInterval: number | null;
+  periodExceptionTemplate: string | null;
+  template: string | null;
+  selectedTimeClasses: string[] | null;
+  selectedZones: string[] | null;
+  zonesSelect: string | null;
+  assignOrigin: string | null;
+  originMappingGroupId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
-
-const mockSupplierPlans: SupplierRatingPlan[] = [];
 
 type RateInboxSubTab = "action-required" | "carrier-assigned" | "deleted" | "junk";
 type RateInboxPeriod = "specify" | "today" | "yesterday" | "this-week" | "this-month" | "last-2-months" | "last-6-months" | "this-year";
@@ -1268,6 +1281,13 @@ export function SupplierRatingPlansPage() {
   
   const { toast } = useToast();
   
+  // Fetch supplier rating plans from database
+  const { data: supplierPlansData = [], refetch: refetchSupplierPlans, isFetching: isSupplierPlansFetching } = useQuery<SupplierRatingPlanAPI[]>({
+    queryKey: ["/api/softswitch/rating/supplier-plans"],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
+  });
+
   // Fetch business rules from database
   const { data: businessRulesData = [], refetch: refetchBusinessRules } = useQuery<BusinessRuleAPI[]>({
     queryKey: ["/api/softswitch/rating/business-rules"],
@@ -1296,7 +1316,7 @@ export function SupplierRatingPlansPage() {
     },
   });
 
-  const filteredPlans = mockSupplierPlans.filter((plan) => {
+  const filteredPlans = supplierPlansData.filter((plan) => {
     if (nameFilter && !plan.name.toLowerCase().includes(nameFilter.toLowerCase())) {
       return false;
     }

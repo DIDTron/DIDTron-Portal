@@ -348,15 +348,12 @@ export default function InterconnectDetailPage() {
     placeholderData: keepPreviousData,
   });
 
-  // Fetch supplier rate cards for Supplier Buy Rates dropdown
-  const { data: supplierRateCardsData } = useQuery<Array<{ id: string; name: string; code?: string; currencyCode?: string; type?: string }>>({
-    queryKey: ["/api/rate-cards"],
+  // Fetch supplier rating plans from the Softswitch module
+  const { data: supplierRatingPlansData } = useQuery<Array<{ id: string; name: string; shortCode?: string | null; currency: string }>>({
+    queryKey: ["/api/softswitch/rating/supplier-plans"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
   });
-  
-  // Filter to only show provider/supplier rate cards
-  const providerRateCards = supplierRateCardsData?.filter(rc => rc.type === "provider") || [];
 
   const [formData, setFormData] = useState({
     name: "",
@@ -998,9 +995,9 @@ export default function InterconnectDetailPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">-</SelectItem>
-                            {(providerRateCards.length > 0 ? providerRateCards : supplierRateCardsData || []).map((rc) => (
-                              <SelectItem key={rc.id} value={rc.name || rc.id}>
-                                {rc.name} {rc.currencyCode && `(${rc.currencyCode})`}
+                            {(supplierRatingPlansData || []).map((plan) => (
+                              <SelectItem key={plan.id} value={plan.name || plan.id}>
+                                {plan.name} ({plan.currency})
                               </SelectItem>
                             ))}
                           </SelectContent>
