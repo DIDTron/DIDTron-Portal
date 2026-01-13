@@ -37,7 +37,60 @@ onMouseEnter={() => {
 }}
 ```
 
-### 1.3 Code Splitting (Lazy Loading)
+### 1.3 Conditional Tab Queries (MANDATORY - GOLDEN RULE)
+Pages with multiple tabs MUST only fetch data for the ACTIVE tab:
+- Use `enabled` flag tied to current tab state
+- Prefetch adjacent tabs on hover for instant switching
+- NEVER fetch all tab data on mount
+
+```typescript
+// REQUIRED pattern for tabbed pages
+const [activeTab, setActiveTab] = useState<"tab1" | "tab2" | "tab3">("tab1");
+
+// Prefetch function for tab hover - triggers data fetch before click
+const prefetchTab = useCallback((tabId: string) => {
+  const queryMap = {
+    tab1: ["/api/tab1-data"],
+    tab2: ["/api/tab2-data"],
+    tab3: ["/api/tab3-data"],
+  };
+  queryClient.prefetchQuery({ queryKey: queryMap[tabId], staleTime: STALE_TIME.LIST });
+}, []);
+
+// Tab 1 - always fetch (default tab)
+const { data: tab1Data } = useQuery({
+  queryKey: ["/api/tab1-data"],
+  staleTime: STALE_TIME.LIST,
+  enabled: true, // Default tab always enabled
+});
+
+// Tab 2 - STRICTLY enabled only when this tab is active
+const { data: tab2Data } = useQuery({
+  queryKey: ["/api/tab2-data"],
+  staleTime: STALE_TIME.LIST,
+  enabled: activeTab === "tab2", // ONLY when this tab is active
+});
+
+// Tab 3 - STRICTLY enabled only when this tab is active
+const { data: tab3Data } = useQuery({
+  queryKey: ["/api/tab3-data"],
+  staleTime: STALE_TIME.LIST,
+  enabled: activeTab === "tab3", // ONLY when this tab is active
+});
+
+// Tab selection with hover prefetch (works with Select or Buttons)
+<SelectItem value="tab2" onMouseEnter={() => prefetchTab("tab2")}>Tab 2</SelectItem>
+// OR for buttons:
+<Button onMouseEnter={() => prefetchTab("tab2")} onClick={() => setActiveTab("tab2")}>Tab 2</Button>
+```
+
+**WHY THIS MATTERS:**
+- Without conditional queries, navigating to a page with 3 tabs fires ALL 3 API calls
+- This causes network congestion, slower initial load, and wasted bandwidth
+- With conditional queries, only the visible tab's data is fetched
+- Adjacent tab prefetch on hover makes tab switches feel instant
+
+### 1.4 Code Splitting (Lazy Loading)
 Large modules MUST be lazy loaded:
 - Softswitch module
 - Billing module
@@ -49,13 +102,13 @@ Large modules MUST be lazy loaded:
 const SoftswitchModule = lazy(() => import("./pages/admin/softswitch"));
 ```
 
-### 1.4 Virtualized Tables
+### 1.5 Virtualized Tables
 Any list/table with potential for >200 rows MUST use virtualization:
 - Use `@tanstack/react-virtual` or similar
 - Only render visible rows in DOM
 - Implement infinite scroll or cursor pagination
 
-### 1.5 Optimistic UI
+### 1.6 Optimistic UI
 For create/update operations:
 - Update UI immediately before server confirmation
 - Show loading indicator

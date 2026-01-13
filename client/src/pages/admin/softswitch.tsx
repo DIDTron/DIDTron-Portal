@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +62,17 @@ export function SoftswitchCarriersPage() {
     supplierBalance: "0.00",
   });
 
+  // Prefetch function for tab hover
+  const prefetchTab = useCallback((tabId: EntityView) => {
+    const queryMap: Record<EntityView, string[]> = {
+      carriers: ["/api/carriers"],
+      interconnects: ["/api/carrier-interconnects"],
+      services: ["/api/carrier-services"],
+    };
+    queryClient.prefetchQuery({ queryKey: queryMap[tabId], staleTime: STALE_TIME.LIST });
+  }, []);
+
+  // Carriers - always fetch (default tab)
   const { data: carriersResponse, isLoading } = useQuery<{ data: Carrier[]; nextCursor: string | null; hasMore: boolean }>({
     queryKey: ["/api/carriers"],
     staleTime: STALE_TIME.LIST,
@@ -74,17 +85,23 @@ export function SoftswitchCarriersPage() {
     staleTime: STALE_TIME.STATIC,
   });
 
-  const { data: allInterconnects, isLoading: isLoadingInterconnects } = useQuery<(CarrierInterconnect & { carrierName?: string })[]>({
+  // Interconnects - ONLY fetch when interconnects tab is active (true conditional query)
+  const { data: interconnectsResponse, isLoading: isLoadingInterconnects } = useQuery<{ data: (CarrierInterconnect & { carrierName?: string })[]; nextCursor: string | null; hasMore: boolean }>({
     queryKey: ["/api/carrier-interconnects"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
+    enabled: entityView === "interconnects", // ONLY when this tab is active
   });
+  const allInterconnects = interconnectsResponse?.data;
 
-  const { data: allServices, isLoading: isLoadingServices } = useQuery<(CarrierService & { carrierName?: string; interconnectName?: string })[]>({
+  // Services - ONLY fetch when services tab is active (true conditional query)
+  const { data: servicesResponse, isLoading: isLoadingServices } = useQuery<{ data: (CarrierService & { carrierName?: string; interconnectName?: string })[]; nextCursor: string | null; hasMore: boolean }>({
     queryKey: ["/api/carrier-services"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
+    enabled: entityView === "services", // ONLY when this tab is active
   });
+  const allServices = servicesResponse?.data;
 
   const sortedCarriers = [...(carriers || [])].sort((a, b) => {
     const compare = a.name.localeCompare(b.name);
@@ -877,19 +894,19 @@ export function SoftswitchCarriersPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="carriers">
+              <SelectItem value="carriers" onMouseEnter={() => prefetchTab("carriers")}>
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   Carriers
                 </div>
               </SelectItem>
-              <SelectItem value="interconnects">
+              <SelectItem value="interconnects" onMouseEnter={() => prefetchTab("interconnects")}>
                 <div className="flex items-center gap-2">
                   <Network className="h-4 w-4" />
                   Interconnects
                 </div>
               </SelectItem>
-              <SelectItem value="services">
+              <SelectItem value="services" onMouseEnter={() => prefetchTab("services")}>
                 <div className="flex items-center gap-2">
                   <Layers className="h-4 w-4" />
                   Services

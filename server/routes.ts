@@ -3839,10 +3839,24 @@ export async function registerRoutes(
 
   app.get("/api/customers", async (req, res) => {
     try {
-      const categoryId = req.query.categoryId as string | undefined;
-      const groupId = req.query.groupId as string | undefined;
-      const customers = await storage.getCustomers(categoryId, groupId);
-      res.json(customers);
+      const { categoryId, groupId, cursor, limit = "50" } = req.query;
+      const parsedLimit = Math.min(parseInt(String(limit)) || 50, 100);
+      const customers = await storage.getCustomers(
+        categoryId as string | undefined,
+        groupId as string | undefined
+      );
+      
+      // Apply cursor pagination
+      let startIndex = 0;
+      if (cursor) {
+        startIndex = customers.findIndex(c => c.id === cursor) + 1;
+      }
+      const paged = customers.slice(startIndex, startIndex + parsedLimit + 1);
+      const hasMore = paged.length > parsedLimit;
+      const data = hasMore ? paged.slice(0, -1) : paged;
+      const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : null;
+      
+      res.json({ data, nextCursor, hasMore });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch customers" });
     }
@@ -4042,9 +4056,21 @@ export async function registerRoutes(
   // ==================== INVOICES ====================
   app.get("/api/invoices", async (req, res) => {
     try {
-      const customerId = req.query.customerId as string | undefined;
-      const invoices = await storage.getInvoices(customerId);
-      res.json(invoices);
+      const { customerId, cursor, limit = "50" } = req.query;
+      const parsedLimit = Math.min(parseInt(String(limit)) || 50, 100);
+      const invoices = await storage.getInvoices(customerId as string | undefined);
+      
+      // Apply cursor pagination
+      let startIndex = 0;
+      if (cursor) {
+        startIndex = invoices.findIndex(i => i.id === cursor) + 1;
+      }
+      const paged = invoices.slice(startIndex, startIndex + parsedLimit + 1);
+      const hasMore = paged.length > parsedLimit;
+      const data = hasMore ? paged.slice(0, -1) : paged;
+      const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : null;
+      
+      res.json({ data, nextCursor, hasMore });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch invoices" });
     }
@@ -5969,8 +5995,21 @@ export async function registerRoutes(
   // Carrier Interconnects
   app.get("/api/carrier-interconnects", async (req, res) => {
     try {
+      const { cursor, limit = "50" } = req.query;
+      const parsedLimit = Math.min(parseInt(String(limit)) || 50, 100);
       const interconnects = await storage.getAllCarrierInterconnects();
-      res.json(interconnects);
+      
+      // Apply cursor pagination
+      let startIndex = 0;
+      if (cursor) {
+        startIndex = interconnects.findIndex(i => i.id === cursor) + 1;
+      }
+      const paged = interconnects.slice(startIndex, startIndex + parsedLimit + 1);
+      const hasMore = paged.length > parsedLimit;
+      const data = hasMore ? paged.slice(0, -1) : paged;
+      const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : null;
+      
+      res.json({ data, nextCursor, hasMore });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch all carrier interconnects" });
     }
@@ -6062,8 +6101,21 @@ export async function registerRoutes(
   // Carrier Services - THE KEY LINKAGE: Interconnect → Rating Plan + Routing Plan
   app.get("/api/carrier-services", async (req, res) => {
     try {
+      const { cursor, limit = "50" } = req.query;
+      const parsedLimit = Math.min(parseInt(String(limit)) || 50, 100);
       const services = await storage.getAllCarrierServices();
-      res.json(services);
+      
+      // Apply cursor pagination
+      let startIndex = 0;
+      if (cursor) {
+        startIndex = services.findIndex(s => s.id === cursor) + 1;
+      }
+      const paged = services.slice(startIndex, startIndex + parsedLimit + 1);
+      const hasMore = paged.length > parsedLimit;
+      const data = hasMore ? paged.slice(0, -1) : paged;
+      const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : null;
+      
+      res.json({ data, nextCursor, hasMore });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch all carrier services" });
     }
@@ -7000,9 +7052,21 @@ export async function registerRoutes(
 
   app.get("/api/tickets", async (req, res) => {
     try {
-      const customerId = req.query.customerId as string | undefined;
-      const tickets = await storage.getTickets(customerId);
-      res.json(tickets);
+      const { customerId, cursor, limit = "50" } = req.query;
+      const parsedLimit = Math.min(parseInt(String(limit)) || 50, 100);
+      const tickets = await storage.getTickets(customerId as string | undefined);
+      
+      // Apply cursor pagination
+      let startIndex = 0;
+      if (cursor) {
+        startIndex = tickets.findIndex(t => t.id === cursor) + 1;
+      }
+      const paged = tickets.slice(startIndex, startIndex + parsedLimit + 1);
+      const hasMore = paged.length > parsedLimit;
+      const data = hasMore ? paged.slice(0, -1) : paged;
+      const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : null;
+      
+      res.json({ data, nextCursor, hasMore });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch tickets" });
     }
