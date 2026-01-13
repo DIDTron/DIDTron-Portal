@@ -71,6 +71,7 @@ const BalanceTotalsPage = lazy(() => import("./softswitch-balance").then(m => ({
 const RatingPlanDetailPage = lazy(() => import("./softswitch-rating-plan-detail"));
 const ImportJobDetailPage = lazy(() => import("./import-job-detail"));
 const BusinessRuleDetailPage = lazy(() => import("./business-rule-detail").then(m => ({ default: m.BusinessRuleDetailPage })));
+const ImportTemplateWizardPage = lazy(() => import("./import-template-wizard").then(m => ({ default: m.ImportTemplateWizardPage })));
 
 const BillingOverviewPage = lazy(() => import("./billing/index"));
 const BillingCustomersPage = lazy(() => import("./billing/customers"));
@@ -338,6 +339,7 @@ export default function AdminLayout() {
                 <Route path="/admin/softswitch/rating/zone-name" component={RatingZoneNamePage} />
                 <Route path="/admin/softswitch/rating/import-job/:jobId" component={ImportJobDetailPage} />
                 <Route path="/admin/softswitch/rating/business-rule/:ruleId" component={BusinessRuleDetailPage} />
+                <Route path="/admin/softswitch/rating/import-template/:id" component={ImportTemplateWizardPage} />
                 <Route path="/admin/softswitch/routing">{() => <PlaceholderPage title="Routing" />}</Route>
                 <Route path="/admin/softswitch/balance/carrier-balances" component={CarrierBalancesPage} />
                 <Route path="/admin/softswitch/balance/24h-spend" component={TwentyFourHourSpendPage} />

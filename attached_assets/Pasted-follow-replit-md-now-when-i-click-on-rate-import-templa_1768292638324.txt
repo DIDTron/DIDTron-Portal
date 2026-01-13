@@ -1,0 +1,50 @@
+follow replit.md
+
+now when i click on rate import template it show this
+screenshot number image_1768289881345.png
+have dropdown Select Vendor Connection so for example i choose carrier acme then should have another box to choose the interconnect that belong to acme and this interconnect should supplier or bulateral but not customer because this is supplier rates
+then have menu to choose if we will upload it from email like admin@acme.com or domain www.acme.com
+so any user send the email from this domain to our rate mail rates@didtron.com we accept the rate because we trust this sender domain and we start to the process of auto upload the rate from the received attachment in the email
+
+when i choose email it show as per the screenshot {E39F0C44-703B-4F57-8F46-F905C9B3FE78}_1768289933931.png
+and if i choose multiple files it show one more cell File Name Keyword which is the file name attached in the received email from the supplier
+sometimes the supplier don't send one attachment in the email can send csv and xlsx so we need to define the name of the file also the file name can end with the sending date so we need to add % as a wild card so for example if i received a file named ( Acme STD Rate Sheet 13/1/2026 )
+i should add the keyword %Acme STD Rate% to define the key word of the file name
+
+then Minimum Rate Notification Days we will replace it with a dropdown list and rename it to business rules we also need to add another box and name period axception with dropdown inherted from the created period exception page in didtron
+also delete allow decreased rates as it's already included in the business rules
+
+then have secod section upload file as per the screenshot number
+{BA013781-B121-456C-BC05-30D516287058}_1768290813904.png
+have the first box Select File Type this is dropdwon menu between ( CSV / XLSX / XLS ) based on the selection other boxes can change to fit to the format of the file as per screenshot number image_1768290982639.png
+this is for the format of the CSV
+
+as per screenshot number {24612DFC-E5E3-4B40-80DD-070E058BD1F4}_1768291046130.png
+this is for the format of the XLSX
+
+as per screenshot number {2FF15785-C281-4856-8831-A20C3C208793}_1768291109587.png
+this is for the format of the XLS
+
+then we need to set the variables
+as per the screenshot number image_1768291216392.png
+
+like section and below it's boxes and name of the box beside it for example
+Section name Dest/Orig and below it
+Zone (Area)
+Code (Area)
+Origin Set
+Origin Set (Area)
+Origin Code
+Location
+and so on for the other sections
+
+then below all of this has the box select file to upload the file we want to set it up as rate import template
+after we choose the relevant file you need to check if it's the correct format or not if it's not the correct format you need to popup a widow warning that the file is in wrong format if the file in the correct format you need to upload it and show it like how it looks same if you opened it in excel file in a normal computer same how it comes from the supplier, just remove from it any image and make sure security wise it's clean
+
+then after the file get uploaded we need to allow the user to map it to the variable boxes by click right then we dropdown for him the variables to set it on the file by 2 main steps 1st he need to define the starting column on the A column or the beginning of the sheet itself as per screenshot number {B6F7C9B5-6CE3-4677-B69F-4AEA354384AB}_1768292110389.png
+then once he choose the starting colum you change the color of the column to mark it for his eyes then he need to define the starting raw like he is marking all the raw not inside the cells
+then once he choose the starting raw also you need to mark it for him with the same color of the column so he can see it also
+then he can start the cells which he marked in the raw to the variables as per the screenshot {025A9740-553C-459A-9F34-46F4F1D7F72A}_1768292328773.png
+and you need to replace the variables what in screenshot {025A9740-553C-459A-9F34-46F4F1D7F72A}_1768292328773.png to the varaibles of screenshot image_1768291216392.png
+
+then he can click and it get saved outside as a template
