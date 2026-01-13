@@ -343,8 +343,123 @@ createdAt: timestamp
 updatedAt: timestamp
 ```
 
+## Monitoring & Alerting Tables
+
+### Metrics Snapshots (metrics_snapshots)
+Stores periodic system metrics collected by DataQueue job every 60s
+```
+id: varchar (UUID)
+snapshotType: text (api | database | redis | r2 | job_queue | integration | portal)
+metrics: jsonb (type-specific metrics payload)
+collectedAt: timestamp (UTC)
+createdAt: timestamp (UTC)
+```
+
+### System Alerts (system_alerts)
+Active and resolved performance/health alerts
+```
+id: varchar (UUID)
+severity: enum (critical | warning | info)
+source: text (api | database | redis | job | integration | portal)
+title: text
+description: text
+metricName: text
+actualValue: decimal
+threshold: decimal
+breachDuration: integer (seconds)
+firstSeenAt: timestamp (UTC)
+lastSeenAt: timestamp (UTC)
+status: enum (active | resolved | acknowledged | snoozed)
+acknowledgedBy: FK → users
+acknowledgedAt: timestamp (UTC)
+resolvedAt: timestamp (UTC)
+snoozeUntil: timestamp (UTC)
+createdAt: timestamp (UTC)
+updatedAt: timestamp (UTC)
+```
+
+### Integration Health (integration_health)
+Health status for each external integration
+```
+id: varchar (UUID)
+integrationName: text (connexcs | brevo | nowpayments | ayrshare | openexchangerates | openai)
+status: enum (healthy | degraded | down)
+latencyP95: integer (ms)
+errorRate: decimal (percentage)
+lastSuccessAt: timestamp (UTC)
+lastFailureAt: timestamp (UTC)
+lastFailureReason: text
+checkedAt: timestamp (UTC)
+createdAt: timestamp (UTC)
+updatedAt: timestamp (UTC)
+```
+
+### Job Metrics (job_metrics)
+DataQueue job performance metrics
+```
+id: varchar (UUID)
+jobType: text
+queuedCount: integer
+runningCount: integer
+failedCount15m: integer
+failedCount24h: integer
+oldestJobAge: integer (seconds)
+stuckJobCount: integer
+averageDuration: integer (ms)
+collectedAt: timestamp (UTC)
+createdAt: timestamp (UTC)
+```
+
+### Portal Metrics (portal_metrics)
+Portal-specific health and performance metrics
+```
+id: varchar (UUID)
+portalType: text (super_admin | customer | marketing)
+routeTransitionP95: integer (ms)
+routeTransitionP99: integer (ms)
+jsErrorCount: integer
+assetLoadFailures: integer
+lastPageLoadSample: timestamp (UTC)
+healthStatus: enum (healthy | degraded | down)
+collectedAt: timestamp (UTC)
+createdAt: timestamp (UTC)
+```
+
+### Audit Records (audit_records)
+System changes for correlation with performance issues
+```
+id: varchar (UUID)
+eventType: text (deployment | migration | config_change | admin_action)
+actorId: FK → users
+actorEmail: text
+description: text
+metadata: jsonb
+occurredAt: timestamp (UTC)
+createdAt: timestamp (UTC)
+```
+
+### Module Registry (module_registry)
+Registry of all modules for auto-monitoring
+```
+id: varchar (UUID)
+moduleKey: text (unique)
+displayName: text
+routesPrefix: text
+apiPrefix: text
+criticalEndpoints: jsonb (array of endpoint patterns)
+jobTypes: jsonb (array of job type names)
+integrationsUsed: jsonb (array of integration names)
+portalVisibility: jsonb (admin | customer | marketing)
+isActive: boolean
+createdAt: timestamp (UTC)
+updatedAt: timestamp (UTC)
+```
+
 ## Enums
 - `carrier_partner_type`: customer | supplier | bilateral
 - `credit_type`: prepaid | postpaid
 - `capacity_mode`: unrestricted | capped
 - `route_status`: active | paused | disabled | testing
+- `alert_severity`: critical | warning | info
+- `alert_status`: active | resolved | acknowledged | snoozed
+- `health_status`: healthy | degraded | down

@@ -260,3 +260,306 @@ This Digitalk pattern applies to all hierarchical entity management:
 - **Routing:** Routing Plans → Routes
 - **DIDs:** DID Groups → DID Numbers
 - **Trunk Groups:** Groups → Member Interconnects
+
+---
+
+## System Status Page (Monitoring & Alerting)
+
+### Purpose (Non-Negotiable)
+
+System Status is the single pane of glass for:
+- "Is the platform up?"
+- "Is it fast?"
+- "What is slowing it down (API vs DB vs Redis vs DataQueue vs integrations vs frontend)?"
+- "What broke, when, and what changed?"
+- "Is each portal healthy? Is the marketing site healthy?"
+
+It must work for:
+- Super Admin portal
+- Customer portals
+- Marketing website
+- All integrations
+- Background jobs
+
+**Access**: super_admin only
+
+### Page Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ HEADER: System Status                                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ● GREEN/YELLOW/RED │ Last updated: HH:MM:SS UTC │ [Live ●] │ [Refresh Now] │ [Acknowledge All] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ [Overview] [Performance] [Health] [API] [Database] [Jobs] [Cache] [Integrations] [Portals] [Alerts] [Audit] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ TAB CONTENT AREA                                                             │
+│ - Top: 4-8 KPI Cards with sparklines                                         │
+│ - Bottom: Data tables with details                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Global Status Rule (GREEN/YELLOW/RED)
+
+Compute overall state using the worst of:
+- Health state
+- Performance budgets
+- Queue stuck/critical
+- Error rate
+- Integration down
+
+**Status Logic:**
+- **RED**: Any Critical alert active (unacknowledged) OR core dependency down
+- **YELLOW**: Any Warning budget breach active
+- **GREEN**: Otherwise
+
+### Auto-Refresh Behavior (Mandatory)
+
+**Live Mode (default ON):**
+- Auto-refresh UI every 30 seconds
+- Show "Live" toggle (On/Off) + "Last updated (UTC)" timestamp
+- If Live Off, stop auto-refresh and show "Paused"
+
+**Snapshot Source:**
+- Metrics snapshots produced by DataQueue Metrics Collector job every 60 seconds
+- UI pulls latest snapshot from DB (plus optional lightweight live pings)
+- UI must never run heavy collection work directly
+
+**UI Rules:**
+- Each KPI card shows "as of <timestamp>"
+- If latest snapshot >2 minutes old: yellow "Stale data" banner
+- If >5 minutes old: red "Data collection stalled" banner + trigger alert
+
+**Manual Controls:**
+- "Refresh now" forces immediate snapshot reload
+- "Run health checks now" triggers lightweight live checks
+
+**Performance:**
+- Do not refresh faster than 30 seconds
+- Pause auto-refresh when tab not visible
+
+### Tab 1: Overview
+
+**KPI Cards (4-8):**
+- Overall status (Green/Yellow/Red)
+- API p95 latency (15m) with sparkline
+- DB query p95 latency (15m) with sparkline
+- 5xx rate (15m)
+- DataQueue oldest job heartbeat age
+- Redis p95 latency (15m)
+- CDR freshness (last ingest UTC)
+- Active alerts count (Critical/Warning)
+
+**Below KPIs:**
+- "What's wrong right now?" section
+- Active alerts grouped by severity
+- "Top 5 slow endpoints" list
+- "Top 5 slow DB queries" list
+
+### Tab 2: Performance Budgets (SLO)
+
+Each budget displayed as a row with:
+- Metric name
+- Target threshold
+- Current p95/p99
+- Breach status (green/yellow/red)
+- Window (5m / 15m)
+- Breach duration
+
+**Portal UX Budgets:**
+| Metric | p95 Target | p99 Target |
+|--------|------------|------------|
+| Route transition (cached) | ≤150ms | ≤300ms |
+| Route transition (uncached) | ≤900ms | ≤1500ms |
+| First interactive after login | ≤1200ms | ≤2000ms |
+| Create/update server confirm | ≤350ms | ≤700ms |
+
+**API Budgets:**
+| Metric | p95 Target | p99 Target |
+|--------|------------|------------|
+| List endpoints | ≤120ms | ≤250ms |
+| Detail endpoints | ≤180ms | ≤350ms |
+| 5xx rate | Warning ≥0.3% (15m) | Critical ≥1% (5m) |
+
+**Database Budgets:**
+| Metric | Warning | Critical |
+|--------|---------|----------|
+| Query latency p95 | ≤60ms | ≤150ms |
+| Slow queries (>200ms count) | threshold exceeded | repeated >500ms |
+| Pool saturation | ≥70% | ≥90% |
+
+**Redis Budgets:**
+| Metric | Warning | Critical |
+|--------|---------|----------|
+| p95 latency | >30ms | >100ms |
+
+**R2 Budgets:**
+| Metric | Warning | Critical |
+|--------|---------|----------|
+| p95 latency | >300ms | >1000ms |
+
+**DataQueue Budgets:**
+| Metric | Warning | Critical |
+|--------|---------|----------|
+| Heartbeat interval | every 30s required | - |
+| Stuck job (no heartbeat) | 3m | 10m |
+| Backlog | >500 jobs for 15m | >2000 jobs for 15m |
+
+**Freshness Budgets:**
+| Metric | Warning | Critical |
+|--------|---------|----------|
+| CDR ingested | >10m | >30m |
+| FX update | >2h | >6h |
+
+### Tab 3: Health Checks
+
+Table columns:
+- Component
+- Status (pass/fail)
+- Latency (ms)
+- Last checked (UTC)
+- Failure reason (if any)
+
+**Required Health Checks:**
+- API health (/api/health)
+- Postgres ping latency
+- Redis ping latency
+- R2 head/list latency
+- DataQueue worker alive (heartbeat)
+- ConnexCS API health
+- Brevo health
+- NOWPayments webhook receiver health
+- Ayrshare health
+- Marketing website health (HTTP check)
+- Portal frontend health (static asset check)
+
+### Tab 4: API & Errors
+
+**KPI Cards:**
+- Total requests/min
+- p95 latency
+- 5xx rate
+- 4xx rate
+- Top endpoints by traffic
+
+**Tables:**
+- Top 20 slow endpoints (p95)
+- Top 20 error endpoints (5xx)
+- Largest payload endpoints (top 10 response size KB)
+- Recent error samples (message + stack hash)
+
+### Tab 5: Database
+
+**KPI Cards:**
+- Query p95/p99
+- Connections used / pool size
+- Pool saturation %
+- Slow query count
+
+**Tables:**
+- Top slow queries list (fingerprinted)
+- Top tables by read/write volume (if available)
+- Index health checks / missing index warnings
+
+### Tab 6: DataQueue Jobs
+
+**KPI Cards:**
+- Queued jobs
+- Running jobs
+- Failed jobs (15m / 24h)
+- Oldest job age
+- Stuck job count
+
+**Tables:**
+- Queue depth by job type
+- Failed jobs list (jobId, type, tenant, reason, attempts, last log)
+- Stuck jobs list (no heartbeat)
+
+### Tab 7: Cache & Storage (Redis + R2)
+
+**Redis KPIs:**
+- p95 latency
+- Cache hit rate (permissions, counters, summaries)
+- Rate-limit rejections count
+
+**R2 KPIs:**
+- Upload/download errors
+- p95 health latency
+- Last export/import file processed
+
+**Tables:**
+- Cache hit/miss breakdown by cache key family
+- Largest cached entries detection (>10KB = warning)
+
+### Tab 8: Integrations
+
+Each integration row:
+- Status (healthy/degraded/down)
+- p95 latency
+- Error rate
+- Last successful call (UTC)
+- Last failure reason
+
+**Integrations to Monitor:**
+- ConnexCS
+- Brevo
+- NOWPayments
+- Ayrshare
+- OpenExchangeRates
+- OpenAI (optional)
+
+### Tab 9: Portals
+
+Monitor each portal separately:
+- Super Admin portal health + route performance
+- Customer portal health + route performance
+- Marketing site health (latency + uptime)
+
+**Per Portal Metrics:**
+- Last successful page load sample
+- Route transition p95
+- JS error count
+- Asset load failures
+
+**Fallback (if no frontend instrumentation):**
+- Server-rendered page health checks
+- Static asset availability
+- API latency used by that portal
+
+### Tab 10: Alerts
+
+Table columns:
+- Severity (Critical/Warning/Info)
+- Source (API/DB/Redis/Job/Integration/Portal)
+- Title
+- Description
+- First seen (UTC)
+- Last seen (UTC)
+- Current status (active/resolved)
+- Acknowledged by + at
+- Actions: Acknowledge / Snooze / View details
+
+### Tab 11: Audit / Changes
+
+Display:
+- Recent deployments/restarts
+- Schema migrations applied
+- Config changes (if tracked)
+- Recent super-admin actions (from audit table)
+
+**Purpose:** Correlate "it got slow after X"
+
+### Sidebar Widget
+
+**Location:** Primary sidebar, below main navigation
+
+**Display:**
+- System Status icon + label
+- Alert count badge next to label:
+  - If alerts > 0: Red badge with count number
+  - If everything healthy: Green badge (checkmark or "OK")
+- Shows current global status color
+
+**Behavior:**
+- Clicking navigates to /admin/system-status
+- Badge updates in real-time (polls with same 30s interval)

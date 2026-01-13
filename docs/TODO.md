@@ -409,3 +409,140 @@ All performance optimization stages completed:
 - ✅ Stage 5: Virtualization + Optimistic UI (VirtualizedTable, 3 optimistic hooks)
 - ✅ Stage 6: Redis Hot Caching (sidebar counts, dashboard summaries)
 - ✅ Stage 7: Performance Guardrails (timing middleware, slow query logging, route prefetching)
+
+---
+
+## Phase 6: System Status Monitoring
+
+### Plan ID: PLAN-2026-01-13-SYSTEMSTATUS
+
+**Objective**: Build comprehensive System Status monitoring page with 11 tabs, DataQueue-based metrics collection, alerting, and auto-monitoring for new modules per the spec in docs/UI_SPEC.md.
+
+---
+
+### Stage 1: Documentation Updates ✅
+
+- [x] **T120**: Update docs/UI_SPEC.md with System Status page spec
+  - Acceptance: 11 tabs documented, layout, auto-refresh rules, all budgets specified
+  
+- [x] **T121**: Update docs/AGENT_BRIEF.md with Performance Budgets (SLO) and Monitoring governance
+  - Acceptance: Sections 20 + 21 added with exact thresholds and DataQueue-based collection rules
+
+- [x] **T122**: Update docs/DB_SCHEMA.md with monitoring tables
+  - Acceptance: metrics_snapshots, system_alerts, integration_health, job_metrics, portal_metrics, audit_records, module_registry tables defined
+
+- [x] **T123**: Update docs/TODO.md with System Status Plan ID
+  - Acceptance: PLAN-2026-01-13-SYSTEMSTATUS created with all tasks
+
+- [ ] **T124**: Update docs/DECISIONS.md with System Status decision
+  - Acceptance: Decision recorded for System Status as enforcement engine
+
+---
+
+### Stage 2: Database Infrastructure
+
+- [ ] **T125**: Create Drizzle schema for monitoring tables
+  - Files: shared/schema.ts
+  - Acceptance: All 7 monitoring tables defined with correct types and constraints
+
+- [ ] **T126**: Run database migration for monitoring tables
+  - Acceptance: Tables exist in PostgreSQL, verified via SQL
+
+---
+
+### Stage 3: Backend Services
+
+- [ ] **T127**: Build Metrics Collector DataQueue job
+  - Files: server/services/metrics-collector.ts
+  - Acceptance: Runs every 60s, collects API/DB/Redis/R2/integrations/portals metrics, stores in metrics_snapshots
+
+- [ ] **T128**: Build Alert Evaluator DataQueue job
+  - Files: server/services/alert-evaluator.ts
+  - Acceptance: Runs every 60s after collector, evaluates budgets over 5m/15m windows, creates alerts in system_alerts
+
+- [ ] **T129**: Create module registry table and seeding
+  - Acceptance: Module registry populated with existing modules (Softswitch, Billing, etc.)
+
+- [ ] **T130**: Add standard instrumentation wrappers
+  - Files: server/middleware/instrumentation.ts
+  - Acceptance: API routes, DataQueue jobs, integrations all log metrics to snapshots
+
+---
+
+### Stage 4: System Status API
+
+- [ ] **T131**: Create System Status API endpoints
+  - Files: server/routes.ts
+  - Acceptance: GET /api/system/overview, /api/system/performance, /api/system/health, /api/system/api-errors, /api/system/database, /api/system/jobs, /api/system/cache, /api/system/integrations, /api/system/portals, /api/system/alerts, /api/system/audit
+
+- [ ] **T132**: Add live health check endpoint
+  - Acceptance: GET /api/system/health-check runs lightweight pings on demand
+
+---
+
+### Stage 5: System Status UI (11 Tabs)
+
+- [ ] **T133**: Build System Status page shell with sticky header + tabs
+  - Files: client/src/pages/admin/system-status.tsx
+  - Acceptance: 11 tabs, global status indicator, Live toggle, Refresh button, Acknowledge All button
+
+- [ ] **T134**: Build Overview tab
+  - Acceptance: 8 KPI cards with sparklines, active alerts list, top 5 slow endpoints/queries
+
+- [ ] **T135**: Build Performance Budgets (SLO) tab
+  - Acceptance: All budget rows with metric, target, current, breach status, window, duration
+
+- [ ] **T136**: Build Health Checks tab
+  - Acceptance: Table with all 11 health checks (API, Postgres, Redis, R2, DataQueue, ConnexCS, Brevo, NOWPayments, Ayrshare, Marketing, Portal)
+
+- [ ] **T137**: Build API & Errors tab
+  - Acceptance: KPIs + slow endpoints + error endpoints + payload size + error samples tables
+
+- [ ] **T138**: Build Database tab
+  - Acceptance: KPIs + slow queries + pool saturation display
+
+- [ ] **T139**: Build DataQueue Jobs tab
+  - Acceptance: KPIs + queue depth by type + failed jobs + stuck jobs tables
+
+- [ ] **T140**: Build Cache & Storage tab
+  - Acceptance: Redis KPIs + R2 KPIs + cache hit/miss breakdown
+
+- [ ] **T141**: Build Integrations tab
+  - Acceptance: All 6 integrations with status, latency, error rate, last success/failure
+
+- [ ] **T142**: Build Portals tab
+  - Acceptance: Super Admin, Customer, Marketing portal health + route performance
+
+- [ ] **T143**: Build Alerts tab
+  - Acceptance: Alerts table with Acknowledge/Snooze actions
+
+- [ ] **T144**: Build Audit/Changes tab
+  - Acceptance: Deployments, migrations, config changes, admin actions display
+
+---
+
+### Stage 6: Auto-Refresh & Sidebar Integration
+
+- [ ] **T145**: Implement 30s auto-refresh with Live toggle
+  - Acceptance: Auto-refresh every 30s, pause when tab hidden, Live toggle works
+
+- [ ] **T146**: Add stale data banners (2m yellow, 5m red)
+  - Acceptance: Banners appear when snapshot is older than thresholds
+
+- [ ] **T147**: Update sidebar System Status widget with alert count badge
+  - Files: client/src/components/layout/super-admin/primary-sidebar.tsx
+  - Acceptance: Red badge with count if alerts > 0, green badge if healthy
+
+---
+
+### Stage 7: In-App Notifications
+
+- [ ] **T148**: Implement in-app notification system for alerts
+  - Acceptance: Warning/Critical/Info notifications displayed in app
+
+---
+
+### Stage 8: Brevo Email Alerts (LAST)
+
+- [ ] **T149**: Implement Brevo email alerts for Warning/Critical
+  - Acceptance: Emails sent for Warning/Critical alerts via Brevo integration

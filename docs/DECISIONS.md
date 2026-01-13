@@ -263,3 +263,33 @@ Note: npm run check shows pre-existing TypeScript errors unrelated to this migra
 - `docs/DB_SCHEMA.md` - Added table definitions
 - `server/storage.ts` - PostgreSQL CRUD for 4 entities
 - `server/index.ts` - Added seed call
+
+---
+
+## 2026-01-13: System Status as Performance + Stability Enforcement Engine
+
+**Decision**: Implemented comprehensive System Status monitoring system as the single pane of glass for platform health, performance, and alerting.
+
+**Reason**: Need centralized visibility into "Is the platform up?", "Is it fast?", "What is slowing it down?", "What broke, when, and what changed?" across all portals (Super Admin, Customer, Marketing) and all components (API, DB, Redis, R2, DataQueue, integrations).
+
+**Key Design Choices**:
+
+1. **DataQueue-Based Collection**: Metrics Collector and Alert Evaluator run as DataQueue jobs every 60 seconds. Never blocks user traffic - all heavy work happens in background jobs.
+
+2. **11-Tab Structure**: Overview, Performance Budgets, Health Checks, API & Errors, Database, DataQueue Jobs, Cache & Storage, Integrations, Portals, Alerts, Audit/Changes.
+
+3. **Auto-Refresh**: UI refreshes every 30 seconds with Live toggle. Pauses when tab not visible. Stale data banners at 2m (yellow) and 5m (red).
+
+4. **SLO Budgets Defined**: Exact thresholds for API (p95 ≤ 120ms list, ≤ 180ms detail), DB (p95 ≤ 60ms), Redis (≤ 30ms), DataQueue (stuck job 3m warning, 10m critical).
+
+5. **Alerting**: Three severity levels (Critical/Warning/Info). Critical triggers email + in-app. Alerts stored in PostgreSQL with acknowledge/snooze actions.
+
+6. **Future-Proofing**: Module Registry ensures new modules auto-register for monitoring. Standard instrumentation wrappers are mandatory for all routes/jobs/integrations.
+
+7. **Sidebar Widget**: System Status widget shows alert count badge (red with number if alerts, green if healthy).
+
+**Docs Updated**:
+- `docs/UI_SPEC.md` - Full System Status page spec (11 tabs, layout, auto-refresh, all budgets)
+- `docs/AGENT_BRIEF.md` - Sections 20 (Performance Budgets SLO) + 21 (Monitoring & Alerting Governance)
+- `docs/DB_SCHEMA.md` - 7 monitoring tables (metrics_snapshots, system_alerts, integration_health, job_metrics, portal_metrics, audit_records, module_registry)
+- `docs/TODO.md` - Plan ID PLAN-2026-01-13-SYSTEMSTATUS with all implementation tasks
