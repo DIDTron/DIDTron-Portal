@@ -480,7 +480,11 @@ export function registerSystemStatusRoutes(app: Express) {
   app.post("/api/system/alerts/:id/acknowledge", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const userId = (req as unknown as { user?: { id: string } }).user?.id || "system";
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
 
       const success = await alertEvaluator.acknowledgeAlert(id, userId);
       if (success) {
@@ -513,7 +517,12 @@ export function registerSystemStatusRoutes(app: Express) {
 
   app.post("/api/system/alerts/acknowledge-all", async (req: Request, res: Response) => {
     try {
-      const userId = (req as unknown as { user?: { id: string } }).user?.id || "system";
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
       const activeAlerts = await alertEvaluator.getActiveAlerts();
 
       let acknowledged = 0;
