@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2, Trash2, XCircle, RefreshCw } from "lucide-react";
+import { Cog, Link2, DollarSign, Languages, Check, AlertCircle, Database, Search, Upload, Download, ChevronLeft, ChevronRight, Loader2, Trash2, XCircle, RefreshCw, RefreshCcw } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -472,6 +472,22 @@ export function GlobalSettingsAZDatabase() {
     },
   });
 
+  const syncToPeriodExceptionsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/period-exceptions/sync-from-az");
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Sync Complete",
+        description: `Added: ${data.added}, Updated: ${data.updated}, Removed: ${data.removed || 0}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/period-exceptions"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
@@ -731,6 +747,20 @@ export function GlobalSettingsAZDatabase() {
             data-testid="button-refresh"
           >
             <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => syncToPeriodExceptionsMutation.mutate()}
+            disabled={syncToPeriodExceptionsMutation.isPending}
+            data-testid="button-sync-period-exceptions"
+          >
+            {syncToPeriodExceptionsMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <RefreshCcw className="h-4 w-4 mr-2" />
+            )}
+            Sync to Period Exceptions
           </Button>
           <Button
             variant="outline"

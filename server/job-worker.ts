@@ -45,6 +45,96 @@ import {
 } from "./ai-voice-handlers";
 import { handleMetricsCollectJob } from "./services/metrics-collector";
 import { handleAlertEvaluateJob } from "./services/alert-evaluator";
+import { storage } from "./storage";
+
+// Shared function to sync period exceptions from A-Z Database
+async function syncPeriodExceptionsFromAZ(userId?: string): Promise<{ added: number; updated: number; removed: number }> {
+  const user = userId ? await storage.getUser(userId) : null;
+  
+  // Get all AZ destinations with non-1/1 intervals that are active
+  const azResult = await db.execute(sql`
+    SELECT * FROM az_destinations 
+    WHERE billing_increment IS NOT NULL 
+    AND billing_increment != '1/1'
+    AND is_active = true
+  `);
+  
+  const azDestinations = azResult.rows as any[];
+  const validAzIds = new Set(azDestinations.map(az => az.id));
+  
+  let added = 0;
+  let updated = 0;
+  let removed = 0;
+  
+  for (const az of azDestinations) {
+    const intervalParts = az.billing_increment.split('/');
+    const initialInterval = parseInt(intervalParts[0]) || 1;
+    const recurringInterval = parseInt(intervalParts[1]) || 1;
+    const intervalHash = `${initialInterval}/${recurringInterval}`;
+    
+    const existing = await db.execute(sql`
+      SELECT * FROM period_exceptions WHERE az_destination_id = ${az.id}
+    `);
+    
+    if (existing.rows.length === 0) {
+      const insertResult = await db.execute(sql`
+        INSERT INTO period_exceptions (prefix, zone_name, country_name, initial_interval, recurring_interval, az_destination_id, interval_hash)
+        VALUES (${az.code}, ${az.destination}, ${az.region}, ${initialInterval}, ${recurringInterval}, ${az.id}, ${intervalHash})
+        RETURNING id
+      `);
+      
+      await db.execute(sql`
+        INSERT INTO period_exception_history (period_exception_id, prefix, zone_name, change_type, new_initial_interval, new_recurring_interval, changed_by_user_id, changed_by_email, change_source)
+        VALUES (${(insertResult.rows[0] as any).id}, ${az.code}, ${az.destination}, 'added', ${initialInterval}, ${recurringInterval}, ${userId}, ${user?.email}, 'sync')
+      `);
+      
+      added++;
+    } else {
+      const existingRecord = existing.rows[0] as any;
+      const intervalChanged = existingRecord.interval_hash !== intervalHash;
+      
+      await db.execute(sql`
+        UPDATE period_exceptions 
+        SET prefix = ${az.code},
+            zone_name = ${az.destination},
+            country_name = ${az.region},
+            initial_interval = ${initialInterval}, 
+            recurring_interval = ${recurringInterval}, 
+            interval_hash = ${intervalHash},
+            synced_at = NOW(),
+            updated_at = NOW()
+        WHERE id = ${existingRecord.id}
+      `);
+      
+      if (intervalChanged) {
+        await db.execute(sql`
+          INSERT INTO period_exception_history (period_exception_id, prefix, zone_name, change_type, previous_initial_interval, previous_recurring_interval, new_initial_interval, new_recurring_interval, changed_by_user_id, changed_by_email, change_source)
+          VALUES (${existingRecord.id}, ${az.code}, ${az.destination}, 'updated', ${existingRecord.initial_interval}, ${existingRecord.recurring_interval}, ${initialInterval}, ${recurringInterval}, ${userId}, ${user?.email}, 'sync')
+        `);
+        updated++;
+      }
+    }
+  }
+  
+  // Remove period exceptions for destinations that are now 1/1 or inactive
+  const existingExceptions = await db.execute(sql`
+    SELECT * FROM period_exceptions WHERE az_destination_id IS NOT NULL
+  `);
+  
+  for (const exception of existingExceptions.rows as any[]) {
+    if (!validAzIds.has(exception.az_destination_id)) {
+      await db.execute(sql`
+        INSERT INTO period_exception_history (period_exception_id, prefix, zone_name, change_type, previous_initial_interval, previous_recurring_interval, changed_by_user_id, changed_by_email, change_source)
+        VALUES (${exception.id}, ${exception.prefix}, ${exception.zone_name}, 'removed', ${exception.initial_interval}, ${exception.recurring_interval}, ${userId}, ${user?.email}, 'sync')
+      `);
+      
+      await db.execute(sql`DELETE FROM period_exceptions WHERE id = ${exception.id}`);
+      removed++;
+    }
+  }
+  
+  return { added, updated, removed };
+}
 
 const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
   rate_card_import: async (payload: RateCardImportPayload, signal?: AbortSignal) => {
@@ -174,6 +264,15 @@ const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
       }
       
       console.log(`[AZImportJob] Import complete: ${totalInserted} inserted, ${totalUpdated} updated, ${totalSkipped} skipped`);
+      
+      // Auto-sync period exceptions after import
+      try {
+        console.log("[AZImportJob] Syncing period exceptions...");
+        const syncResult = await syncPeriodExceptionsFromAZ(payload.userId);
+        console.log(`[AZImportJob] Period exception sync: added=${syncResult.added}, updated=${syncResult.updated}, removed=${syncResult.removed}`);
+      } catch (syncError) {
+        console.error("[AZImportJob] Period exception sync failed (non-blocking):", syncError);
+      }
       
       await auditService.createAuditLog({
         userId: payload.userId,
