@@ -23,11 +23,16 @@ function toISOStringNow(date: Date | string | null | undefined): string {
 export function registerSystemStatusRoutes(app: Express) {
   app.get("/api/system/overview", async (req: Request, res: Response) => {
     try {
-      // Try to get cached overview first for better performance
+      // Check for force refresh parameter (bypasses cache)
+      const forceRefresh = req.query.force === "true";
+      
+      // Try to get cached overview first for better performance (unless force refresh)
       const cacheKey = CACHE_KEYS.systemOverview();
-      const cached = await getCached<any>(cacheKey);
-      if (cached) {
-        return res.json(cached);
+      if (!forceRefresh) {
+        const cached = await getCached<any>(cacheKey);
+        if (cached) {
+          return res.json(cached);
+        }
       }
 
       // Fetch ALL data in parallel for maximum performance

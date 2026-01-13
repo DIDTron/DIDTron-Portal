@@ -1111,7 +1111,13 @@ export default function SystemStatusPage() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => refetch()}
+            onClick={async () => {
+              // Force refresh bypasses server cache
+              await queryClient.invalidateQueries({ queryKey: ["/api/system/overview"] });
+              await fetch("/api/system/overview?force=true").then(r => r.json()).then(data => {
+                queryClient.setQueryData(["/api/system/overview"], data);
+              });
+            }}
             disabled={isFetching}
             data-testid="button-refresh"
           >
