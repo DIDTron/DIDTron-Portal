@@ -179,8 +179,19 @@ export function registerSystemStatusRoutes(app: Express) {
       });
 
       const latestSnapshot = snapshots.find(s => s !== null);
+      
+      // Get recent violations for the 15-minute history
+      const recentViolations = performanceMonitor.getRecentViolations(50).map(v => ({
+        metricType: v.metric.includes("API") ? "api" : v.metric.includes("Query") ? "database" : "other",
+        operation: v.endpoint || v.metric,
+        duration: v.actual,
+        threshold: v.threshold,
+        timestamp: v.timestamp.toISOString(),
+      }));
+      
       res.json({ 
         budgets: budgetStatuses,
+        violations: recentViolations,
         lastUpdated: toISOStringNow(latestSnapshot?.collectedAt),
       });
     } catch (error) {

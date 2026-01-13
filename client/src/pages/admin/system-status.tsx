@@ -16,7 +16,7 @@ import {
   AlertTriangle, CheckCircle2, XCircle, RefreshCw,
   Gauge, Zap, Timer, MemoryStick, Radio, Globe,
   Settings, FileText, Bell, Shield, Layers,
-  Play, Pause, Search
+  Play, Pause, Search, ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { queryClient, apiRequest, STALE_TIME } from "@/lib/queryClient";
@@ -98,20 +98,37 @@ function KPICard({
   value, 
   unit, 
   icon: Icon, 
-  status 
+  status,
+  onClick,
+  testId
 }: { 
   title: string; 
   value: number | string; 
   unit?: string; 
   icon: typeof Server;
   status?: "good" | "warning" | "critical";
+  onClick?: () => void;
+  testId?: string;
 }) {
   return (
-    <Card className={cn(
-      "transition-colors",
-      status === "critical" && "border-red-500/50",
-      status === "warning" && "border-yellow-500/50"
-    )}>
+    <Card 
+      className={cn(
+        "transition-colors",
+        status === "critical" && "border-red-500/50",
+        status === "warning" && "border-yellow-500/50",
+        onClick && "cursor-pointer overflow-visible hover-elevate"
+      )}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { 
+        if (e.key === "Enter" || e.key === " ") { 
+          e.preventDefault(); 
+          onClick(); 
+        } 
+      } : undefined}
+      data-testid={testId}
+    >
       <CardContent className="pt-4 pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -136,6 +153,9 @@ function KPICard({
               </p>
             </div>
           </div>
+          {onClick && (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
         </div>
       </CardContent>
     </Card>
@@ -211,14 +231,70 @@ function OverviewTab({ onNavigateTab }: { onNavigateTab: (tab: string) => void }
       <StaleBanner lastUpdated={data?.lastUpdated} />
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPICard title="API p95 Latency" value={kpis.apiP95Latency || 0} unit="ms" icon={Zap} status={apiStatus} />
-        <KPICard title="DB p95 Latency" value={kpis.dbP95Latency || 0} unit="ms" icon={Database} status={dbStatus} />
-        <KPICard title="5xx Error Rate" value={kpis.errorRate5xx || 0} unit="%" icon={AlertTriangle} />
-        <KPICard title="Active Alerts" value={kpis.activeAlerts || 0} icon={Bell} status={kpis.activeAlerts > 0 ? "warning" : "good"} />
-        <KPICard title="Queued Jobs" value={kpis.queuedJobs || 0} icon={Layers} />
-        <KPICard title="Stuck Jobs" value={kpis.stuckJobs || 0} icon={Cpu} status={kpis.stuckJobs > 0 ? "critical" : "good"} />
-        <KPICard title="Redis p95" value={kpis.redisP95Latency || 0} unit="ms" icon={Radio} />
-        <KPICard title="Violations (15m)" value={kpis.violationsLast15m || 0} icon={Timer} />
+        <KPICard 
+          title="API p95 Latency" 
+          value={kpis.apiP95Latency || 0} 
+          unit="ms" 
+          icon={Zap} 
+          status={apiStatus} 
+          onClick={() => onNavigateTab("api")}
+          testId="kpi-api-latency"
+        />
+        <KPICard 
+          title="DB p95 Latency" 
+          value={kpis.dbP95Latency || 0} 
+          unit="ms" 
+          icon={Database} 
+          status={dbStatus} 
+          onClick={() => onNavigateTab("database")}
+          testId="kpi-db-latency"
+        />
+        <KPICard 
+          title="5xx Error Rate" 
+          value={kpis.errorRate5xx || 0} 
+          unit="%" 
+          icon={AlertTriangle} 
+          onClick={() => onNavigateTab("api")}
+          testId="kpi-error-rate"
+        />
+        <KPICard 
+          title="Active Alerts" 
+          value={kpis.activeAlerts || 0} 
+          icon={Bell} 
+          status={kpis.activeAlerts > 0 ? "warning" : "good"} 
+          onClick={() => onNavigateTab("alerts")}
+          testId="kpi-active-alerts"
+        />
+        <KPICard 
+          title="Queued Jobs" 
+          value={kpis.queuedJobs || 0} 
+          icon={Layers} 
+          onClick={() => onNavigateTab("jobs")}
+          testId="kpi-queued-jobs"
+        />
+        <KPICard 
+          title="Stuck Jobs" 
+          value={kpis.stuckJobs || 0} 
+          icon={Cpu} 
+          status={kpis.stuckJobs > 0 ? "critical" : "good"} 
+          onClick={() => onNavigateTab("jobs")}
+          testId="kpi-stuck-jobs"
+        />
+        <KPICard 
+          title="Redis p95" 
+          value={kpis.redisP95Latency || 0} 
+          unit="ms" 
+          icon={Radio} 
+          onClick={() => onNavigateTab("cache")}
+          testId="kpi-redis-latency"
+        />
+        <KPICard 
+          title="Violations (15m)" 
+          value={kpis.violationsLast15m || 0} 
+          icon={Timer} 
+          onClick={() => onNavigateTab("performance")}
+          testId="kpi-violations"
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -421,8 +497,16 @@ function ApiErrorsTab() {
   );
 }
 
+interface Violation {
+  metricType: string;
+  operation: string;
+  duration: number;
+  threshold: number;
+  timestamp: string;
+}
+
 function PerformanceTab() {
-  const { data, isLoading } = useQuery<{ budgets: PerformanceBudget[] }>({
+  const { data, isLoading } = useQuery<{ budgets: PerformanceBudget[]; violations: Violation[] }>({
     queryKey: ["/api/system/performance"],
     refetchInterval: 30000,
     staleTime: STALE_TIME.REALTIME,
@@ -431,46 +515,102 @@ function PerformanceTab() {
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Performance Budgets (SLO)</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Metric</TableHead>
-              <TableHead>Target</TableHead>
-              <TableHead>Current</TableHead>
-              <TableHead>Window</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data?.budgets?.map((budget, i) => (
-              <TableRow key={i}>
-                <TableCell className="font-medium">{budget.name}</TableCell>
-                <TableCell>
-                  {Object.entries(budget.target).map(([k, v]) => (
-                    <span key={k} className="mr-2">{k}: {v}</span>
-                  ))}
-                </TableCell>
-                <TableCell>{budget.currentValue.toFixed(1)}ms</TableCell>
-                <TableCell>{budget.window}</TableCell>
-                <TableCell>
-                  <Badge variant={
-                    budget.status === "red" ? "destructive" :
-                    budget.status === "yellow" ? "secondary" : "default"
-                  }>
-                    {budget.status === "green" ? "OK" : budget.status === "yellow" ? "Warning" : "Breach"}
-                  </Badge>
-                </TableCell>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Performance Budgets (SLO)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Metric</TableHead>
+                <TableHead>Target</TableHead>
+                <TableHead>Current</TableHead>
+                <TableHead>Window</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {data?.budgets?.map((budget, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-medium">{budget.name}</TableCell>
+                  <TableCell>
+                    {Object.entries(budget.target).map(([k, v]) => (
+                      <span key={k} className="mr-2">{k}: {v}</span>
+                    ))}
+                  </TableCell>
+                  <TableCell>{budget.currentValue.toFixed(1)}ms</TableCell>
+                  <TableCell>{budget.window}</TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      budget.status === "red" ? "destructive" :
+                      budget.status === "yellow" ? "secondary" : "default"
+                    }>
+                      {budget.status === "green" ? "OK" : budget.status === "yellow" ? "Warning" : "Breach"}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Timer className="h-5 w-5" />
+            Recent Violations (Last 15 Minutes)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data?.violations?.length ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Operation</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Threshold</TableHead>
+                  <TableHead>Over By</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.violations.map((v, i) => (
+                  <TableRow key={i} data-testid={`violation-row-${i}`}>
+                    <TableCell className="text-muted-foreground" data-testid={`violation-time-${i}`}>
+                      {new Date(v.timestamp).toLocaleTimeString()}
+                    </TableCell>
+                    <TableCell data-testid={`violation-type-${i}`}>
+                      <Badge variant="outline">
+                        {v.metricType === "api" ? "API" : 
+                         v.metricType === "database" ? "Database" : 
+                         v.metricType.toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs max-w-[300px] truncate" title={v.operation} data-testid={`violation-operation-${i}`}>
+                      {v.operation}
+                    </TableCell>
+                    <TableCell className="text-red-600 font-medium" data-testid={`violation-duration-${i}`}>{Math.round(v.duration)}ms</TableCell>
+                    <TableCell data-testid={`violation-threshold-${i}`}>{v.threshold}ms</TableCell>
+                    <TableCell className="text-red-600" data-testid={`violation-over-${i}`}>
+                      +{Math.round(v.duration - v.threshold)}ms
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex items-center justify-center p-8 text-muted-foreground">
+              <CheckCircle2 className="h-5 w-5 mr-2 text-green-500" />
+              No violations in the last 15 minutes
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
