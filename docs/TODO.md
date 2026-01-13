@@ -608,3 +608,26 @@ All performance optimization stages completed:
     * Breadcrumb: "Supplier Rating / [Plan Name]" ✓
     * Matches Digitalk Carrier Cloud Manager UI layout ✓
   - Status: ✅ Complete
+
+---
+
+## Phase 8: Supplier Rating Plan Actions
+
+### Plan ID: PLAN-2026-01-13-SUPPLIERWIZARD
+
+- [x] **T161**: Implement "Import New Rating Plan" action for Supplier Rating
+  - DOC TARGET: docs/TODO.md
+  - Files: client/src/pages/admin/softswitch-rating.tsx
+  - Acceptance:
+    * "Import New Rating Plan" action opens a dialog ✓
+    * Dialog has fields: Name (required), Currency (dropdown, default USD) ✓
+    * On save, calls POST /api/softswitch/rating/supplier-plans ✓
+    * On success, navigates to new plan detail page ✓
+    * Fix existing LSP errors (supplier, lastUpdated properties) ✓
+  - Performance:
+    * staleTime on queries: YES (uses existing STALE_TIME.LIST)
+    * Cursor pagination: N/A (dialog form, not list)
+    * Indexes added: N/A (no schema change)
+    * DataQueue for heavy ops: N/A (simple create)
+    * Virtualization: N/A
+  - Status: ✅ Complete

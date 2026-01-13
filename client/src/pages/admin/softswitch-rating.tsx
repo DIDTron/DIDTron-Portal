@@ -1544,14 +1544,14 @@ export function SupplierRatingPlansPage() {
                         {plan.name}
                       </a>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={plan.supplier}>
-                      {plan.supplier || "-"}
+                    <TableCell className="max-w-[200px] truncate" title={plan.carrierId || undefined}>
+                      {plan.carrierId || "-"}
                     </TableCell>
                     <TableCell>{plan.blockUnresolvableCodes ? "Yes" : "No"}</TableCell>
                     <TableCell>{plan.currency}</TableCell>
-                    <TableCell>{plan.creationTemplate}</TableCell>
+                    <TableCell>{plan.creationTemplate || "-"}</TableCell>
                     <TableCell>{plan.uncommittedChanges ? "Yes" : "-"}</TableCell>
-                    <TableCell>{plan.lastUpdated}</TableCell>
+                    <TableCell>{plan.updatedAt ? new Date(plan.updatedAt).toLocaleDateString() : "-"}</TableCell>
                     <TableCell>{plan.inUse ? "Yes" : "-"}</TableCell>
                     <TableCell>
                       <Button 
@@ -2777,6 +2777,71 @@ export function SupplierRatingPlansPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Add Supplier Rating Plan Dialog */}
+      <Dialog open={showAddSupplierPlanDialog} onOpenChange={setShowAddSupplierPlanDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import New Rating Plan</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="planName">Plan Name</Label>
+              <Input
+                id="planName"
+                value={newSupplierPlanName}
+                onChange={(e) => setNewSupplierPlanName(e.target.value)}
+                placeholder="Enter plan name..."
+                data-testid="input-new-plan-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="planCurrency">Currency</Label>
+              <Select value={newSupplierPlanCurrency} onValueChange={setNewSupplierPlanCurrency}>
+                <SelectTrigger data-testid="select-new-plan-currency">
+                  <SelectValue placeholder="Select currency..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                  <SelectItem value="AUD">AUD</SelectItem>
+                  <SelectItem value="CAD">CAD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowAddSupplierPlanDialog(false);
+                setNewSupplierPlanName("");
+                setNewSupplierPlanCurrency("USD");
+              }} 
+              data-testid="button-cancel-new-plan"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!newSupplierPlanName.trim()) {
+                  toast({ title: "Error", description: "Plan name is required", variant: "destructive" });
+                  return;
+                }
+                createSupplierPlanMutation.mutate({
+                  name: newSupplierPlanName.trim(),
+                  currency: newSupplierPlanCurrency,
+                });
+              }}
+              disabled={createSupplierPlanMutation.isPending}
+              data-testid="button-save-new-plan"
+            >
+              {createSupplierPlanMutation.isPending ? "Creating..." : "Create Plan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
