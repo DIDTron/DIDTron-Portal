@@ -8,6 +8,7 @@ import { connexcs } from "./connexcs";
 import { connexcsTools } from "./connexcs-tools-service";
 import { auditService } from "./audit";
 import { sendWelcomeEmail, sendPaymentReceived, sendReferralReward, sendLowBalanceAlert } from "./brevo";
+import { performanceMonitor } from "./services/performance-monitor";
 import { z } from "zod";
 import { db } from "./db";
 import { e2eRuns, e2eResults } from "@shared/schema";
@@ -10151,6 +10152,72 @@ export async function registerRoutes(
         error: "E2E test run failed", 
         details: error instanceof Error ? error.message : "Unknown error" 
       });
+    }
+  });
+
+  // ==================== SYSTEM STATUS & PERFORMANCE ====================
+  
+  app.get("/api/system/status", async (_req, res) => {
+    try {
+      const memUsage = process.memoryUsage();
+      const uptime = process.uptime();
+      const performanceStats = performanceMonitor.getStats();
+      
+      res.json({
+        status: "healthy",
+        uptime: Math.floor(uptime),
+        memory: {
+          heapUsedMb: Math.round(memUsage.heapUsed / 1024 / 1024),
+          heapTotalMb: Math.round(memUsage.heapTotal / 1024 / 1024),
+          rssMb: Math.round(memUsage.rss / 1024 / 1024),
+        },
+        performance: performanceStats,
+        services: {
+          database: "online",
+          api: "online",
+          ai: "online",
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Failed to get system status:", error);
+      res.status(500).json({ error: "Failed to get system status" });
+    }
+  });
+  
+  app.get("/api/system/performance", async (_req, res) => {
+    try {
+      const stats = performanceMonitor.getStats();
+      const violations = performanceMonitor.getRecentViolations(100);
+      res.json({ stats, violations });
+    } catch (error) {
+      console.error("Failed to get performance data:", error);
+      res.status(500).json({ error: "Failed to get performance data" });
+    }
+  });
+  
+  const performanceBudgetSchema = z.object({
+    apiResponseTime: z.number().positive().optional(),
+    queryExecutionTime: z.number().positive().optional(),
+    memoryUsageMb: z.number().positive().optional(),
+  });
+  
+  app.post("/api/system/performance/budget", async (req, res) => {
+    try {
+      const parsed = performanceBudgetSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      const updates: Record<string, number> = {};
+      if (parsed.data.apiResponseTime !== undefined) updates.apiResponseTime = parsed.data.apiResponseTime;
+      if (parsed.data.queryExecutionTime !== undefined) updates.queryExecutionTime = parsed.data.queryExecutionTime;
+      if (parsed.data.memoryUsageMb !== undefined) updates.memoryUsageMb = parsed.data.memoryUsageMb;
+      if (parsed.data.cpuUsagePercent !== undefined) updates.cpuUsagePercent = parsed.data.cpuUsagePercent;
+      performanceMonitor.setBudget(updates);
+      res.json({ success: true, budget: performanceMonitor.getBudget() });
+    } catch (error) {
+      console.error("Failed to update performance budget:", error);
+      res.status(500).json({ error: "Failed to update budget" });
     }
   });
 

@@ -8,7 +8,7 @@ import { storage } from "./storage";
 import { hashPassword } from "./auth";
 import { integrationsRepository } from "./integrations-repository";
 import { initializeRedisSession, acquireDistributedLock, releaseDistributedLock } from "./services/redis-session";
-import { timingMiddleware } from "./middleware/timing";
+import { timingMiddleware, startMemoryMonitoring } from "./middleware/timing";
 
 const app = express();
 const httpServer = createServer(app);
@@ -1048,6 +1048,10 @@ async function seedBillingTerms() {
       } catch (error) {
         log(`Job worker auto-start failed: ${error}`, "job-queue");
       }
+      
+      // Start performance memory monitoring (every 60 seconds)
+      startMemoryMonitoring(60000);
+      log("Performance memory monitoring started", "performance");
 
       // Initialize integrations and load credentials into services
       try {

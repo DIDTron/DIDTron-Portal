@@ -246,7 +246,11 @@ export function PrimarySidebar() {
             <TooltipTrigger asChild>
               <div 
                 className="flex items-center justify-center p-2 rounded-md cursor-pointer text-sidebar-foreground hover-elevate"
-                data-testid="nav-section-help"
+                data-testid="nav-section-system-status"
+                onClick={() => {
+                  const monitoringSection = navSections.find(s => s.id === "monitoring");
+                  if (monitoringSection) handleSectionClick(monitoringSection);
+                }}
               >
                 <Server className="h-5 w-5" />
               </div>
@@ -258,7 +262,11 @@ export function PrimarySidebar() {
         ) : (
           <div 
             className="flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer text-sidebar-foreground hover-elevate"
-            data-testid="nav-section-help"
+            data-testid="nav-section-system-status"
+            onClick={() => {
+              const monitoringSection = navSections.find(s => s.id === "monitoring");
+              if (monitoringSection) handleSectionClick(monitoringSection);
+            }}
           >
             <Server className="h-5 w-5 shrink-0" />
             <span>System Status</span>

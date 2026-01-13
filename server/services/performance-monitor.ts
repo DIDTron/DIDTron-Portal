@@ -12,7 +12,6 @@ interface PerformanceBudget {
   apiResponseTime: number;
   queryExecutionTime: number;
   memoryUsageMb: number;
-  cpuUsagePercent: number;
 }
 
 interface PerformanceViolation {
@@ -28,7 +27,6 @@ const DEFAULT_BUDGET: PerformanceBudget = {
   apiResponseTime: 500,
   queryExecutionTime: 200,
   memoryUsageMb: 512,
-  cpuUsagePercent: 80,
 };
 
 class PerformanceMonitorService {
