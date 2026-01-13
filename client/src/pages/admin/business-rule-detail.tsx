@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useRoute, useLocation, Link } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,6 +64,20 @@ export function BusinessRuleDetailPage() {
   
   const { toast } = useToast();
 
+  const createMutation = useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      return await apiRequest("POST", "/api/softswitch/rating/business-rules", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/softswitch/rating/business-rules"] });
+      toast({ title: "Saved", description: `Business rule "${name}" has been saved` });
+      navigate(PARENT_ROUTE);
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: String(error), variant: "destructive" });
+    },
+  });
+
   const updateRule = (index: number, field: keyof RuleConfig, value: string) => {
     const newRules = [...rules];
     newRules[index] = { ...newRules[index], [field]: value };
@@ -73,8 +89,37 @@ export function BusinessRuleDetailPage() {
       toast({ title: "Error", description: "Please enter a name for the business rule", variant: "destructive" });
       return;
     }
-    toast({ title: "Saved", description: `Business rule "${name}" has been saved` });
-    navigate(PARENT_ROUTE);
+    
+    const ruleData = {
+      name: name.trim(),
+      rateIncreaseThreshold: parseInt(rules[0].threshold) || 7,
+      rateIncreaseAction: rules[0].action,
+      rateDecreaseThreshold: parseInt(rules[1].threshold) || 1,
+      rateDecreaseAction: rules[1].action,
+      newRateThreshold: parseInt(rules[2].threshold) || 7,
+      newRateAction: rules[2].action,
+      rateDeletionThreshold: parseInt(rules[3].threshold) || 7,
+      rateDeletionAction: rules[3].action,
+      rateBlockedThreshold: parseInt(rules[4].threshold) || 7,
+      rateBlockedAction: rules[4].action,
+      oldestEffectiveDateThreshold: parseInt(rules[5].threshold) || 30,
+      oldestEffectiveDateAction: rules[5].action,
+      maxEffectiveDateThreshold: parseInt(rules[6].threshold) || 30,
+      maxEffectiveDateAction: rules[6].action,
+      maxIncreaseThreshold: rules[7].threshold || null,
+      maxIncreaseAction: rules[7].action,
+      maxDecreaseThreshold: rules[8].threshold || null,
+      maxDecreaseAction: rules[8].action,
+      maxRateThreshold: rules[9].threshold || null,
+      maxRateAction: rules[9].action,
+      initialPeriodsThreshold: rules[10].threshold || "0,1,60",
+      initialPeriodsAction: rules[10].action,
+      recurringPeriodsThreshold: rules[11].threshold || "1,60",
+      recurringPeriodsAction: rules[11].action,
+      codeMovedToNewZoneAction: rules[12].action,
+    };
+    
+    createMutation.mutate(ruleData);
   };
 
   const handleCancel = () => {

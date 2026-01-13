@@ -83,6 +83,8 @@ import {
   type CustomerApiKey, type InsertCustomerApiKey,
   type AzDestination, type InsertAzDestination,
   azDestinations,
+  type BusinessRule, type InsertBusinessRule,
+  businessRules as businessRulesTable,
   type EmContentItem, type InsertEmContentItem,
   type EmContentVersion, type InsertEmContentVersion,
   type EmValidationResult, type InsertEmValidationResult,
@@ -286,6 +288,13 @@ export interface IStorage {
   getCodesForZone(zone: string): Promise<string[]>;
   getCodesWithIntervalsForZone(zone: string): Promise<{ codes: string[], billingIncrement: string | null }>;
   lookupZoneByCode(code: string): Promise<string | null>;
+
+  // Business Rules
+  getBusinessRules(): Promise<BusinessRule[]>;
+  getBusinessRule(id: string): Promise<BusinessRule | undefined>;
+  createBusinessRule(rule: InsertBusinessRule): Promise<BusinessRule>;
+  updateBusinessRule(id: string, data: Partial<InsertBusinessRule>): Promise<BusinessRule | undefined>;
+  deleteBusinessRule(id: string): Promise<boolean>;
 
   // Carrier Assignments
   getCarrierAssignment(carrierId: string): Promise<CarrierAssignment | undefined>;
@@ -1497,6 +1506,34 @@ export class MemStorage implements IStorage {
       .where(eq(azDestinations.code, code))
       .limit(1);
     return results[0]?.destination ?? null;
+  }
+
+  // Business Rules - Using PostgreSQL database
+  async getBusinessRules(): Promise<BusinessRule[]> {
+    return await db.select().from(businessRulesTable);
+  }
+
+  async getBusinessRule(id: string): Promise<BusinessRule | undefined> {
+    const results = await db.select().from(businessRulesTable).where(eq(businessRulesTable.id, id));
+    return results[0];
+  }
+
+  async createBusinessRule(rule: InsertBusinessRule): Promise<BusinessRule> {
+    const result = await db.insert(businessRulesTable).values(rule).returning();
+    return result[0];
+  }
+
+  async updateBusinessRule(id: string, data: Partial<InsertBusinessRule>): Promise<BusinessRule | undefined> {
+    const result = await db.update(businessRulesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(businessRulesTable.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteBusinessRule(id: string): Promise<boolean> {
+    const result = await db.delete(businessRulesTable).where(eq(businessRulesTable.id, id)).returning();
+    return result.length > 0;
   }
 
   // Carrier Assignments - Using PostgreSQL database

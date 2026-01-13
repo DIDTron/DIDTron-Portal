@@ -5837,6 +5837,84 @@ export async function registerRoutes(
     }
   });
 
+  // Business Rules CRUD
+  app.get("/api/softswitch/rating/business-rules", async (req, res) => {
+    try {
+      const rules = await storage.getBusinessRules();
+      res.json(rules);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch business rules" });
+    }
+  });
+
+  app.get("/api/softswitch/rating/business-rules/:id", async (req, res) => {
+    try {
+      const rule = await storage.getBusinessRule(req.params.id);
+      if (!rule) return res.status(404).json({ error: "Business rule not found" });
+      res.json(rule);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch business rule" });
+    }
+  });
+
+  app.post("/api/softswitch/rating/business-rules", async (req, res) => {
+    try {
+      const { insertBusinessRuleSchema } = await import("@shared/schema");
+      const parsed = insertBusinessRuleSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+      const rule = await storage.createBusinessRule(parsed.data);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "create",
+        tableName: "business_rules",
+        recordId: rule.id,
+        newValues: rule,
+      });
+      res.status(201).json(rule);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create business rule" });
+    }
+  });
+
+  app.patch("/api/softswitch/rating/business-rules/:id", async (req, res) => {
+    try {
+      const existing = await storage.getBusinessRule(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Business rule not found" });
+      const rule = await storage.updateBusinessRule(req.params.id, req.body);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "update",
+        tableName: "business_rules",
+        recordId: req.params.id,
+        oldValues: existing,
+        newValues: rule,
+      });
+      res.json(rule);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update business rule" });
+    }
+  });
+
+  app.delete("/api/softswitch/rating/business-rules/:id", async (req, res) => {
+    try {
+      const existing = await storage.getBusinessRule(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Business rule not found" });
+      await storage.deleteBusinessRule(req.params.id);
+      await storage.createAuditLog({
+        userId: req.session?.userId,
+        action: "delete",
+        tableName: "business_rules",
+        recordId: req.params.id,
+        oldValues: existing,
+      });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete business rule" });
+    }
+  });
+
   // Carrier Assignments
   app.get("/api/carriers/:id/assignment", async (req, res) => {
     try {

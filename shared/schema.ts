@@ -656,6 +656,45 @@ export const insertCustomerRatingPlanRateSchema = createInsertSchema(customerRat
 export type InsertCustomerRatingPlanRate = z.infer<typeof insertCustomerRatingPlanRateSchema>;
 export type CustomerRatingPlanRate = typeof customerRatingPlanRates.$inferSelect;
 
+// ==================== BUSINESS RULES (Import Rate Validation) ====================
+
+export const businessRules = pgTable("business_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  assigned: boolean("assigned").default(false),
+  rateIncreaseThreshold: integer("rate_increase_threshold").default(7),
+  rateIncreaseAction: text("rate_increase_action").default("none"),
+  rateDecreaseThreshold: integer("rate_decrease_threshold").default(1),
+  rateDecreaseAction: text("rate_decrease_action").default("none"),
+  newRateThreshold: integer("new_rate_threshold").default(7),
+  newRateAction: text("new_rate_action").default("none"),
+  rateDeletionThreshold: integer("rate_deletion_threshold").default(7),
+  rateDeletionAction: text("rate_deletion_action").default("none"),
+  rateBlockedThreshold: integer("rate_blocked_threshold").default(7),
+  rateBlockedAction: text("rate_blocked_action").default("none"),
+  oldestEffectiveDateThreshold: integer("oldest_effective_date_threshold").default(30),
+  oldestEffectiveDateAction: text("oldest_effective_date_action").default("none"),
+  maxEffectiveDateThreshold: integer("max_effective_date_threshold").default(30),
+  maxEffectiveDateAction: text("max_effective_date_action").default("none"),
+  maxIncreaseThreshold: decimal("max_increase_threshold", { precision: 10, scale: 2 }),
+  maxIncreaseAction: text("max_increase_action").default("none"),
+  maxDecreaseThreshold: decimal("max_decrease_threshold", { precision: 10, scale: 2 }),
+  maxDecreaseAction: text("max_decrease_action").default("none"),
+  maxRateThreshold: decimal("max_rate_threshold", { precision: 10, scale: 4 }),
+  maxRateAction: text("max_rate_action").default("none"),
+  initialPeriodsThreshold: text("initial_periods_threshold").default("0,1,60"),
+  initialPeriodsAction: text("initial_periods_action").default("none"),
+  recurringPeriodsThreshold: text("recurring_periods_threshold").default("1,60"),
+  recurringPeriodsAction: text("recurring_periods_action").default("none"),
+  codeMovedToNewZoneAction: text("code_moved_to_new_zone_action").default("none"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertBusinessRuleSchema = createInsertSchema(businessRules).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBusinessRule = z.infer<typeof insertBusinessRuleSchema>;
+export type BusinessRule = typeof businessRules.$inferSelect;
+
 // ==================== POPS (Points of Presence) ====================
 
 export const pops = pgTable("pops", {

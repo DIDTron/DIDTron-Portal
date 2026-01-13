@@ -1138,8 +1138,21 @@ interface BusinessRule {
   assigned: boolean;
 }
 
+interface BusinessRuleAPI {
+  id: string;
+  name: string;
+  assigned: boolean | null;
+  rateIncreaseThreshold: number | null;
+  rateDecreaseThreshold: number | null;
+  newRateThreshold: number | null;
+  rateDeletionThreshold: number | null;
+  initialPeriodsThreshold: string | null;
+  recurringPeriodsThreshold: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 const mockImportSettings: ImportSettingItem[] = [];
-const mockBusinessRules: BusinessRule[] = [];
 
 // Import Settings sub-tab actions
 const importSettingsSubTabActions: Record<ImportSettingsSubTab, TabAction[]> = {
@@ -1163,7 +1176,17 @@ const periodOptions: { value: RateInboxPeriod; label: string }[] = [
 ];
 
 export function SupplierRatingPlansPage() {
-  const [tab, setTab] = useState<SupplierRatingTab>("rating-plans");
+  // Helper to read URL params for tab navigation
+  const getUrlParams = () => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      tab: params.get("tab") as SupplierRatingTab | null,
+      subtab: params.get("subtab") as ImportSettingsSubTab | null,
+    };
+  };
+  
+  const initialParams = getUrlParams();
+  const [tab, setTab] = useState<SupplierRatingTab>(initialParams.tab || "rating-plans");
   const [nameFilter, setNameFilter] = useState("");
   const [uncommittedFilter, setUncommittedFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -1205,7 +1228,18 @@ export function SupplierRatingPlansPage() {
   const [importSummaryViewMode, setImportSummaryViewMode] = useState<"zone" | "code">("zone");
   
   // Import Settings tab state
-  const [importSettingsSubTab, setImportSettingsSubTab] = useState<ImportSettingsSubTab>("import-settings");
+  const [importSettingsSubTab, setImportSettingsSubTab] = useState<ImportSettingsSubTab>(initialParams.subtab || "import-settings");
+  
+  // Sync tab state with URL params on navigation
+  useEffect(() => {
+    const params = getUrlParams();
+    if (params.tab && params.tab !== tab) {
+      setTab(params.tab);
+    }
+    if (params.subtab && params.subtab !== importSettingsSubTab) {
+      setImportSettingsSubTab(params.subtab);
+    }
+  }, []);
   const [importSettingsSearchFilter, setImportSettingsSearchFilter] = useState("");
   const [showAddImportSettingDialog, setShowAddImportSettingDialog] = useState(false);
   const [addImportSettingCarrier, setAddImportSettingCarrier] = useState("");
@@ -1213,6 +1247,11 @@ export function SupplierRatingPlansPage() {
   const [businessRulesSearchFilter, setBusinessRulesSearchFilter] = useState("");
   
   const { toast } = useToast();
+  
+  // Fetch business rules from database
+  const { data: businessRulesData = [], refetch: refetchBusinessRules } = useQuery<BusinessRuleAPI[]>({
+    queryKey: ["/api/softswitch/rating/business-rules"],
+  });
 
   const filteredPlans = mockSupplierPlans.filter((plan) => {
     if (nameFilter && !plan.name.toLowerCase().includes(nameFilter.toLowerCase())) {
@@ -2415,14 +2454,14 @@ export function SupplierRatingPlansPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockBusinessRules.length === 0 ? (
+                {businessRulesData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No business rules found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  mockBusinessRules.map((rule) => (
+                  businessRulesData.map((rule) => (
                     <TableRow key={rule.id}>
                       <TableCell>
                         <a 
@@ -2433,12 +2472,12 @@ export function SupplierRatingPlansPage() {
                           {rule.name}
                         </a>
                       </TableCell>
-                      <TableCell className="text-center text-sm">{rule.increase}</TableCell>
-                      <TableCell className="text-center text-sm">{rule.decrease}</TableCell>
-                      <TableCell className="text-center text-sm">{rule.new}</TableCell>
-                      <TableCell className="text-center text-sm">{rule.deletion}</TableCell>
-                      <TableCell className="text-sm">{rule.initialPeriod}</TableCell>
-                      <TableCell className="text-sm">{rule.recurringPeriod}</TableCell>
+                      <TableCell className="text-center text-sm">{rule.rateIncreaseThreshold || 7}</TableCell>
+                      <TableCell className="text-center text-sm">{rule.rateDecreaseThreshold || 1}</TableCell>
+                      <TableCell className="text-center text-sm">{rule.newRateThreshold || 7}</TableCell>
+                      <TableCell className="text-center text-sm">{rule.rateDeletionThreshold || 7}</TableCell>
+                      <TableCell className="text-sm">{rule.initialPeriodsThreshold || "0,1,60"}</TableCell>
+                      <TableCell className="text-sm">{rule.recurringPeriodsThreshold || "1,60"}</TableCell>
                       <TableCell className="text-sm">{rule.assigned ? "Yes" : "-"}</TableCell>
                       <TableCell>
                         <Button 
@@ -2482,10 +2521,10 @@ export function SupplierRatingPlansPage() {
                       <SelectValue placeholder="Select business rule..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockBusinessRules.length === 0 ? (
+                      {businessRulesData.length === 0 ? (
                         <SelectItem value="none" disabled>No business rules available</SelectItem>
                       ) : (
-                        mockBusinessRules.map((rule) => (
+                        businessRulesData.map((rule) => (
                           <SelectItem key={rule.id} value={rule.id}>{rule.name}</SelectItem>
                         ))
                       )}
