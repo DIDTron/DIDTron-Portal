@@ -1,4 +1,15 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient, QueryFunction, keepPreviousData } from "@tanstack/react-query";
+
+// Performance constants per docs/PERFORMANCE.md
+export const STALE_TIME = {
+  LIST: 30 * 1000,      // 30 seconds for list queries
+  DETAIL: 60 * 1000,    // 1 minute for detail queries  
+  STATIC: 5 * 60 * 1000, // 5 minutes for static/config data
+  REALTIME: 10 * 1000,  // 10 seconds for near-realtime data
+};
+
+// Re-export for use in components
+export { keepPreviousData };
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -47,7 +58,7 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      staleTime: STALE_TIME.LIST, // 30 seconds default per PERFORMANCE.md
       retry: false,
     },
     mutations: {

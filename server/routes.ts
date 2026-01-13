@@ -14,6 +14,7 @@ import { e2eRuns, e2eResults } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { registerAiVoiceRoutes } from "./ai-voice-routes";
+import { getCached, setCache, invalidateCache, CACHE_KEYS, CACHE_TTL } from "./services/cache";
 import { 
   insertCustomerCategorySchema, 
   insertCustomerGroupSchema,
@@ -3890,6 +3891,8 @@ export async function registerRoutes(
         console.error("[ConnexCS] Auto-sync customer failed:", syncError);
       }
       
+      await invalidateCache("sidebar:counts:*");
+      await invalidateCache("dashboard:*");
       res.status(201).json(customer);
     } catch (error) {
       res.status(500).json({ error: "Failed to create customer" });
@@ -3909,6 +3912,8 @@ export async function registerRoutes(
         oldValues: oldCustomer,
         newValues: customer,
       });
+      await invalidateCache("sidebar:counts:*");
+      await invalidateCache("dashboard:*");
       res.json(customer);
     } catch (error) {
       res.status(500).json({ error: "Failed to update customer" });
@@ -3927,6 +3932,8 @@ export async function registerRoutes(
         recordId: req.params.id,
         oldValues: oldCustomer,
       });
+      await invalidateCache("sidebar:counts:*");
+      await invalidateCache("dashboard:*");
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete customer" });
@@ -5452,8 +5459,16 @@ export async function registerRoutes(
 
   app.get("/api/carriers", async (req, res) => {
     try {
-      const carriers = await storage.getCarriers();
-      res.json(carriers);
+      const { parseCursorParams, buildCursorResponse } = await import("./utils/pagination");
+      const { cursor, limit } = parseCursorParams({
+        cursor: req.query.cursor as string,
+        limit: parseInt(req.query.limit as string) || 20,
+        maxLimit: 100,
+      });
+      
+      const results = await storage.getCarriersWithCursor(cursor, limit + 1);
+      const response = buildCursorResponse(results, limit);
+      res.json(response);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch carriers" });
     }
@@ -5502,6 +5517,7 @@ export async function registerRoutes(
         console.error("[ConnexCS] Auto-sync carrier failed:", syncError);
       }
       
+      await invalidateCache("sidebar:counts:*");
       res.status(201).json(carrier);
     } catch (error) {
       console.error("[Carriers] Create error:", error);
@@ -5523,6 +5539,7 @@ export async function registerRoutes(
         oldValues: oldCarrier,
         newValues: carrier,
       });
+      await invalidateCache("sidebar:counts:*");
       res.json(carrier);
     } catch (error) {
       res.status(500).json({ error: "Failed to update carrier" });
@@ -5542,6 +5559,7 @@ export async function registerRoutes(
         recordId: req.params.id,
         oldValues: oldCarrier,
       });
+      await invalidateCache("sidebar:counts:*");
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete carrier" });
@@ -6995,6 +7013,7 @@ export async function registerRoutes(
       const parsed = insertTicketSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
       const ticket = await storage.createTicket(parsed.data);
+      await invalidateCache("sidebar:counts:*");
       res.status(201).json(ticket);
     } catch (error) {
       res.status(500).json({ error: "Failed to create ticket" });
@@ -7005,6 +7024,7 @@ export async function registerRoutes(
     try {
       const ticket = await storage.updateTicket(req.params.id, req.body);
       if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+      await invalidateCache("sidebar:counts:*");
       res.json(ticket);
     } catch (error) {
       res.status(500).json({ error: "Failed to update ticket" });
@@ -7015,10 +7035,72 @@ export async function registerRoutes(
 
   app.get("/api/dashboard/category-stats", async (req, res) => {
     try {
+      const cacheKey = CACHE_KEYS.dashboardSummary();
+      const cached = await getCached<{ categoryId: string; customerCount: number; revenue: number }[]>(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+      
       const stats = await storage.getCategoryStats();
+      await setCache(cacheKey, stats, CACHE_TTL.DASHBOARD_SUMMARY);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch category stats" });
+    }
+  });
+
+  // Sidebar counts endpoint with caching
+  app.get("/api/admin/sidebar-counts", async (req, res) => {
+    try {
+      const userId = req.session.userId || "anonymous";
+      const cacheKey = CACHE_KEYS.sidebarCounts(userId);
+      
+      const cached = await getCached<Record<string, number>>(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+      
+      const [
+        customers,
+        carriers,
+        tickets,
+        routes,
+        didCountries,
+        alerts,
+        invoices,
+        payments,
+        rateCards,
+      ] = await Promise.all([
+        storage.getCustomers(),
+        storage.getCarriers(),
+        storage.getTickets(),
+        storage.getRoutes(),
+        storage.getDidCountries(),
+        storage.getAlerts(),
+        storage.getInvoices(),
+        storage.getPayments(),
+        storage.getRateCards(),
+      ]);
+      
+      const counts = {
+        customers: customers.length,
+        carriers: carriers.length,
+        tickets: tickets.length,
+        openTickets: tickets.filter((t: any) => t.status === "open" || t.status === "pending").length,
+        routes: routes.length,
+        didCountries: didCountries.length,
+        alerts: alerts.length,
+        activeAlerts: alerts.filter((a: any) => a.status === "active" || a.status === "triggered").length,
+        invoices: invoices.length,
+        payments: payments.length,
+        rateCards: rateCards.length,
+      };
+      
+      await setCache(cacheKey, counts, CACHE_TTL.SIDEBAR_COUNTS);
+      res.json(counts);
+    } catch (error) {
+      console.error("Sidebar counts error:", error);
+      res.status(500).json({ error: "Failed to fetch sidebar counts" });
     }
   });
 

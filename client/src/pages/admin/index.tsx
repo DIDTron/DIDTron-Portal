@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useLocation, Switch, Route } from "wouter";
 import { getCurrentUser, logout, type User } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +9,7 @@ import { SecondarySidebar } from "@/components/layout/super-admin/secondary-side
 import { WorkspaceTabs } from "@/components/layout/super-admin/workspace-tabs";
 import { AdminSearchResults } from "@/components/layout/super-admin/search-results";
 import { useSuperAdminTabs } from "@/stores/super-admin-tabs";
+import { Loader2 } from "lucide-react";
 
 import AdminDashboard from "./dashboard";
 import POPsPage from "./pops";
@@ -17,8 +18,6 @@ import CodecsPage from "./codecs";
 import ChannelPlansPage from "./channel-plans";
 import DIDCountriesPage from "./did-countries";
 import PartnersPage from "./partners";
-import CarrierDetailPage from "./carrier-detail";
-import InterconnectDetailPage from "./interconnect-detail";
 import RoutesPage from "./routes";
 import DIDProvidersPage from "./did-providers";
 import IntegrationsPage from "./integrations";
@@ -35,13 +34,6 @@ import TicketsPage from "./tickets";
 import SocialAccountsPage from "./social-accounts";
 import SocialPostsPage from "./social-posts";
 import DocumentationPage from "./documentation";
-import ExperienceManagerPage from "./experience-manager";
-import EMMarketingPage from "./em-marketing";
-import EMPortalThemesPage from "./em-portal-themes";
-import EMWhiteLabelPage from "./em-white-label";
-import EMDesignSystemPage from "./em-design-system";
-import EMComponentLibraryPage from "./em-component-library";
-import EMBrandingPage from "./em-branding";
 import SipTesterPage from "./sip-tester";
 import KycPage from "./kyc";
 import AdminUsersPage from "./admin-users";
@@ -53,21 +45,6 @@ import MetricsPage from "./metrics";
 import AlertsPage from "./alerts";
 import MonitoringRulesPage from "./monitoring-rules";
 import RolesPage from "./roles";
-import AiVoiceAgentsPage from "./ai-voice-agents";
-import AiVoiceDashboard from "./ai-voice-dashboard";
-import AiVoiceKnowledgeBasesPage from "./ai-voice-knowledge-bases";
-import AiVoiceBillingPage from "./ai-voice-billing";
-import AiVoiceCampaignsPage from "./ai-voice-campaigns";
-import AiVoiceCallLogsPage from "./ai-voice-call-logs";
-import AiVoiceAnalyticsPage from "./ai-voice-analytics";
-import AiVoiceSettingsPage from "./ai-voice-settings";
-import AiVoiceAssignmentsPage from "./ai-voice-assignments";
-import { SoftswitchCarriersPage } from "./softswitch";
-import { CustomerRatingPlansPage, SupplierRatingPlansPage, PeriodExceptionsPage, CDRReratingPage, RatingZoneNamePage } from "./softswitch-rating";
-import { CarrierBalancesPage, TwentyFourHourSpendPage, BalanceTotalsPage } from "./softswitch-balance";
-import RatingPlanDetailPage from "./softswitch-rating-plan-detail";
-import ImportJobDetailPage from "./import-job-detail";
-import { BusinessRuleDetailPage } from "./business-rule-detail";
 import DIDInventoryPage from "./did-inventory";
 import CurrenciesPage from "./currencies";
 import { GlobalSettingsPlatform, GlobalSettingsCurrencies, GlobalSettingsLocalization, GlobalSettingsAZDatabase } from "./global-settings";
@@ -77,15 +54,58 @@ import ConnexCSStatusPage from "./connexcs-status";
 import JobQueuePage from "./job-queue";
 import DevTestsPage from "./dev-tests";
 import TestingEnginePage from "./testing-engine";
-import BillingOverviewPage from "./billing/index";
-import BillingCustomersPage from "./billing/customers";
-import CreditNotesPage from "./billing/credit-notes";
-import SOAPage from "./billing/soa";
-import NettingPage from "./billing/netting";
-import SupplierAuditPage from "./billing/supplier-audit";
-import TemplatesPage from "./billing/templates";
-import SyncStatusPage from "./billing/sync-status";
-import BillingTermsPage from "./billing/terms";
+
+const CarrierDetailPage = lazy(() => import("./carrier-detail"));
+const InterconnectDetailPage = lazy(() => import("./interconnect-detail"));
+
+const SoftswitchCarriersPage = lazy(() => import("./softswitch").then(m => ({ default: m.SoftswitchCarriersPage })));
+const CustomerRatingPlansPage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.CustomerRatingPlansPage })));
+const SupplierRatingPlansPage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.SupplierRatingPlansPage })));
+const PeriodExceptionsPage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.PeriodExceptionsPage })));
+const CDRReratingPage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.CDRReratingPage })));
+const RatingZoneNamePage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.RatingZoneNamePage })));
+const CarrierBalancesPage = lazy(() => import("./softswitch-balance").then(m => ({ default: m.CarrierBalancesPage })));
+const TwentyFourHourSpendPage = lazy(() => import("./softswitch-balance").then(m => ({ default: m.TwentyFourHourSpendPage })));
+const BalanceTotalsPage = lazy(() => import("./softswitch-balance").then(m => ({ default: m.BalanceTotalsPage })));
+const RatingPlanDetailPage = lazy(() => import("./softswitch-rating-plan-detail"));
+const ImportJobDetailPage = lazy(() => import("./import-job-detail"));
+const BusinessRuleDetailPage = lazy(() => import("./business-rule-detail").then(m => ({ default: m.BusinessRuleDetailPage })));
+
+const BillingOverviewPage = lazy(() => import("./billing/index"));
+const BillingCustomersPage = lazy(() => import("./billing/customers"));
+const CreditNotesPage = lazy(() => import("./billing/credit-notes"));
+const SOAPage = lazy(() => import("./billing/soa"));
+const NettingPage = lazy(() => import("./billing/netting"));
+const SupplierAuditPage = lazy(() => import("./billing/supplier-audit"));
+const TemplatesPage = lazy(() => import("./billing/templates"));
+const SyncStatusPage = lazy(() => import("./billing/sync-status"));
+const BillingTermsPage = lazy(() => import("./billing/terms"));
+
+const ExperienceManagerPage = lazy(() => import("./experience-manager"));
+const EMMarketingPage = lazy(() => import("./em-marketing"));
+const EMPortalThemesPage = lazy(() => import("./em-portal-themes"));
+const EMWhiteLabelPage = lazy(() => import("./em-white-label"));
+const EMDesignSystemPage = lazy(() => import("./em-design-system"));
+const EMComponentLibraryPage = lazy(() => import("./em-component-library"));
+const EMBrandingPage = lazy(() => import("./em-branding"));
+
+const AiVoiceAgentsPage = lazy(() => import("./ai-voice-agents"));
+const AiVoiceDashboard = lazy(() => import("./ai-voice-dashboard"));
+const AiVoiceKnowledgeBasesPage = lazy(() => import("./ai-voice-knowledge-bases"));
+const AiVoiceBillingPage = lazy(() => import("./ai-voice-billing"));
+const AiVoiceCampaignsPage = lazy(() => import("./ai-voice-campaigns"));
+const AiVoiceCallLogsPage = lazy(() => import("./ai-voice-call-logs"));
+const AiVoiceAnalyticsPage = lazy(() => import("./ai-voice-analytics"));
+const AiVoiceSettingsPage = lazy(() => import("./ai-voice-settings"));
+const AiVoiceAssignmentsPage = lazy(() => import("./ai-voice-assignments"));
+
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center h-full min-h-[200px]">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -249,6 +269,7 @@ export default function AdminLayout() {
             <WorkspaceTabs />
             
             <main className="flex-1 overflow-auto p-6">
+              <Suspense fallback={<LoadingFallback />}>
               <Switch>
                 <Route path="/admin/search" component={AdminSearchResults} />
                 <Route path="/admin" component={AdminDashboard} />
@@ -349,6 +370,7 @@ export default function AdminLayout() {
                   <PlaceholderPage title="Page Not Found" />
                 </Route>
               </Switch>
+              </Suspense>
             </main>
           </div>
         </div>

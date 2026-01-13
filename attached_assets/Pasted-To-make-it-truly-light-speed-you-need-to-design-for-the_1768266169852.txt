@@ -1,0 +1,259 @@
+To make it truly “light-speed”, you need to design for the three things users feel most:
+
+Time to first interaction (page shell appears instantly)
+
+Time to next click (navigation feels zero-delay)
+
+Time to complete an action (creating a task feels immediate)
+
+Here’s the deeper, production-grade playbook that actually gets you there with your stack (Vite + React + wouter + TanStack Query + Express + Postgres + Redis + DataQueue + R2).
+
+A) Make navigation “instant” by never reloading the shell
+1) App Shell architecture
+
+Keep sidebars + headers mounted permanently.
+
+Only swap the content pane.
+
+Don’t rebuild navigation state on every route change.
+
+Rule: Route changes must not trigger full app re-render.
+
+2) Code splitting by module + preloading
+
+Split bundles by big modules (Softswitch, Billing, Reports, Admin).
+
+On sidebar hover (or first time sidebar appears), preload the module chunk.
+
+Result: clicking a module feels immediate because code is already in memory.
+
+B) The biggest speed killer is “fetch patterns”
+3) Stop “fetch on every mount”
+
+TanStack Query should be tuned for human UX, not “always fresh”.
+
+Use:
+
+staleTime for stable pages (e.g., 30–120 seconds)
+
+gcTime long enough to keep cache alive while navigating
+
+keepPreviousData on paginated lists so the table doesn’t flash
+
+Result: Users see data instantly from cache, then it refreshes silently.
+
+4) Route prefetch = instant next page
+
+On hover:
+
+Prefetch route chunk
+
+Prefetch route data
+
+Prefetch permissions/feature flags snapshot once
+
+Result: click feels 0ms because both code + data are already cached.
+
+C) Make every list “fast” by design (this is where most apps die)
+5) Cursor pagination only (never offset for big tables)
+
+Offset pagination slows down at scale. Cursor stays fast.
+
+API: GET /tasks?cursor=...&limit=50
+
+Response: { items, nextCursor }
+
+6) Server “max limit” enforcement
+
+Hard cap (e.g., 200). If UI needs more, it must paginate/scroll.
+
+Result: nobody can accidentally request 50k rows and freeze your server.
+
+7) Virtualize tables
+
+Even 500 rows with complex cells can lag in React.
+
+Virtualize rows (only render visible rows)
+
+If columns are heavy, simplify cell components or memoize
+
+Result: scrolling feels like native.
+
+D) Perceived speed: the “task create” should feel instantaneous
+8) Optimistic writes + background confirmation
+
+When user clicks “Create Task”:
+
+UI inserts task instantly (temporary id)
+
+Send request
+
+Replace temp id with real id
+
+If failure, rollback + show toast
+
+Result: user never waits for server to “feel” the action.
+
+9) Background enrichment
+
+Everything non-essential happens after:
+
+AI tags
+
+suggestions
+
+audit analysis
+
+notifications
+
+Use DataQueue.
+
+E) Backend speed: treat API like a low-latency service
+10) DB queries must be “index-first”
+
+Every endpoint should be index-supported:
+
+filter columns indexed
+
+sort columns indexed
+
+tenant_id always first in index for multi-tenant
+
+Example for tasks:
+
+(tenant_id, status, updated_at desc)
+
+(tenant_id, assignee_id, updated_at desc)
+
+(tenant_id, created_at desc)
+
+11) Stop N+1 patterns
+
+When rendering a list of tasks, do NOT query per-row:
+
+Use joins
+
+Or batch fetch in one query
+
+12) Compress responses + keep them small
+
+Use gzip/brotli
+
+Don’t return huge nested objects
+
+Use list DTOs: minimal fields
+
+F) Caching: only cache what is hot and small
+13) Redis as “hot snapshot”
+
+Use Redis to cache:
+
+user permissions snapshot
+
+navigation module availability
+
+dashboard counters (counts by status)
+
+TTL 30–120 sec.
+
+Do not store large entities or entire tables.
+
+14) Client cache is your first cache
+
+TanStack Query cache should do 80% of the work.
+Redis should be for:
+
+cross-request reuse
+
+expensive computed counters
+
+locks
+
+G) The biggest “speed unlock”: make the server do less work
+15) Background jobs for heavy anything
+
+Anything that:
+
+touches many rows
+
+imports/exports
+
+syncs CDRs
+
+calculates invoices
+
+updates many routes
+
+Must go through DataQueue.
+
+API returns:
+
+immediate jobId
+
+UI shows progress from Redis
+
+H) Measure or you’ll never be fast
+16) Add “performance budgets”
+
+You need 3 budgets:
+
+initial shell load (e.g., < 1s on good network)
+
+route transition (e.g., < 150ms perceived; use cached data)
+
+API p95 (e.g., list endpoints < 200ms p95)
+
+17) Add endpoint timing logs
+
+Log:
+
+route name
+
+query time
+
+rows returned
+
+tenant id
+
+Then you’ll know what’s slowing you down.
+
+What you should build next (the actual “light-speed plan”)
+
+If you do only these 10 things, you’ll feel the biggest improvement:
+
+App shell persistent (no full re-renders)
+
+Module code splitting + preload on hover
+
+TanStack Query defaults (staleTime, keepPreviousData, cacheTime)
+
+Route data prefetch (hover prefetch + next page prefetch)
+
+Cursor pagination everywhere + max limit enforced
+
+Virtualized tables for large lists
+
+Optimistic task creation
+
+Index plan for your hottest queries
+
+Redis snapshot caching (permissions + counters)
+
+Performance budgets + endpoint timings
+
+One block to tell your AI agent (forces it into TODO + measurable speed)
+REQUEST INTAKE: Create a “Performance Light-Speed” plan under the current Plan ID in docs/TODO.md (dedupe first).
+
+Add tasks with acceptance criteria that are measurable:
+- App shell stays mounted; route transitions do not re-render entire app
+- Code split by module + preload chunks on sidebar hover
+- TanStack Query caching tuned (staleTime/keepPreviousData) and route data prefetch implemented
+- Cursor pagination + enforced max limits on all list endpoints
+- Virtualized tables for any list >200 rows
+- Optimistic create for Tasks + background enrichment via DataQueue
+- DB indexes for task filters/sorts and other hot endpoints
+- Redis small cache for permissions snapshot + dashboard counters
+- Add performance budgets + endpoint timing logs
+- Validate with Playwright: navigation and create-task flow feel instant; no “fetch all” requests
+
+Do not code until tasks are written with acceptance criteria.

@@ -184,7 +184,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, or, ne, ilike } from "drizzle-orm";
+import { eq, and, or, ne, ilike, gt, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -261,6 +261,7 @@ export interface IStorage {
 
   // Carriers
   getCarriers(): Promise<Carrier[]>;
+  getCarriersWithCursor(cursor: string | null, limit: number): Promise<Carrier[]>;
   getCarrier(id: string): Promise<Carrier | undefined>;
   getCarrierByCode(code: string): Promise<Carrier | undefined>;
   resolveCarrier(identifier: string): Promise<Carrier | undefined>;
@@ -1317,6 +1318,20 @@ export class MemStorage implements IStorage {
   // Carriers (Wholesale Partners) - Persisted to Database
   async getCarriers(): Promise<Carrier[]> {
     return await db.select().from(carriersTable);
+  }
+
+  async getCarriersWithCursor(cursor: string | null, limit: number): Promise<Carrier[]> {
+    if (cursor) {
+      return await db.select()
+        .from(carriersTable)
+        .where(gt(carriersTable.id, cursor))
+        .orderBy(asc(carriersTable.id))
+        .limit(limit);
+    }
+    return await db.select()
+      .from(carriersTable)
+      .orderBy(asc(carriersTable.id))
+      .limit(limit);
   }
 
   async getCarrier(id: string): Promise<Carrier | undefined> {

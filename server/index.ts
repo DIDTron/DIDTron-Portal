@@ -8,6 +8,7 @@ import { storage } from "./storage";
 import { hashPassword } from "./auth";
 import { integrationsRepository } from "./integrations-repository";
 import { initializeRedisSession, acquireDistributedLock, releaseDistributedLock } from "./services/redis-session";
+import { timingMiddleware } from "./middleware/timing";
 
 const app = express();
 const httpServer = createServer(app);
@@ -69,6 +70,8 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+app.use(timingMiddleware);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {

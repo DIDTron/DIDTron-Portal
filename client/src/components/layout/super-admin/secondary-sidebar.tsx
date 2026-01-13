@@ -15,8 +15,58 @@ import {
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { queryClient, STALE_TIME } from "@/lib/queryClient";
+
+const prefetchedRoutes = new Set<string>();
+
+const prefetchRouteData = (route: string) => {
+  if (prefetchedRoutes.has(route)) return;
+  prefetchedRoutes.add(route);
+
+  if (route.includes('/softswitch/carriers')) {
+    queryClient.prefetchQuery({
+      queryKey: ["/api/carriers"],
+      staleTime: STALE_TIME.LIST,
+    });
+  } else if (route.includes('/softswitch/rating')) {
+    queryClient.prefetchQuery({
+      queryKey: ["/api/softswitch/rating/business-rules"],
+      staleTime: STALE_TIME.LIST,
+    });
+  } else if (route.includes('/customers')) {
+    queryClient.prefetchQuery({
+      queryKey: ["/api/customers"],
+      staleTime: STALE_TIME.LIST,
+    });
+  } else if (route.includes('/billing')) {
+    queryClient.prefetchQuery({
+      queryKey: ["/api/billing/overview"],
+      staleTime: STALE_TIME.LIST,
+    });
+  } else if (route.includes('/admin-users')) {
+    queryClient.prefetchQuery({
+      queryKey: ["/api/admin-users"],
+      staleTime: STALE_TIME.LIST,
+    });
+  } else if (route.includes('/audit-logs')) {
+    queryClient.prefetchQuery({
+      queryKey: ["/api/audit-logs"],
+      staleTime: STALE_TIME.LIST,
+    });
+  } else if (route.includes('/did-inventory')) {
+    queryClient.prefetchQuery({
+      queryKey: ["/api/did-inventory"],
+      staleTime: STALE_TIME.LIST,
+    });
+  } else if (route.includes('/did-providers')) {
+    queryClient.prefetchQuery({
+      queryKey: ["/api/did-providers"],
+      staleTime: STALE_TIME.LIST,
+    });
+  }
+};
 
 export interface NavSubItem {
   id: string;
@@ -222,9 +272,10 @@ interface SortableSubItemProps {
   item: NavSubItem;
   isActive: boolean;
   onClick: () => void;
+  onHover: (route: string) => void;
 }
 
-function SortableSubItem({ item, isActive, onClick }: SortableSubItemProps) {
+function SortableSubItem({ item, isActive, onClick, onHover }: SortableSubItemProps) {
   const {
     attributes,
     listeners,
@@ -253,6 +304,7 @@ function SortableSubItem({ item, isActive, onClick }: SortableSubItemProps) {
           : "text-sidebar-foreground hover-elevate"
       )}
       data-testid={`nav-item-${item.id}`}
+      onMouseEnter={() => onHover(item.route)}
     >
       <button
         type="button"
@@ -281,10 +333,11 @@ interface SortableCollapsibleItemProps {
   item: NavSubItem;
   activeSubItem: string | null;
   onChildClick: (child: NavSubItem) => void;
+  onHover: (route: string) => void;
   location: string;
 }
 
-function SortableCollapsibleItem({ item, activeSubItem, onChildClick, location }: SortableCollapsibleItemProps) {
+function SortableCollapsibleItem({ item, activeSubItem, onChildClick, onHover, location }: SortableCollapsibleItemProps) {
   const {
     attributes,
     listeners,
@@ -308,7 +361,7 @@ function SortableCollapsibleItem({ item, activeSubItem, onChildClick, location }
   const Icon = item.icon;
   
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} onMouseEnter={() => onHover(item.route)}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <div
@@ -351,6 +404,7 @@ function SortableCollapsibleItem({ item, activeSubItem, onChildClick, location }
                       : "text-sidebar-foreground hover-elevate"
                   )}
                   onClick={() => onChildClick(child)}
+                  onMouseEnter={() => onHover(child.route)}
                   data-testid={`sidebar-item-${child.id}`}
                 >
                   <div className="w-3" />
@@ -444,6 +498,17 @@ export function SecondarySidebar() {
     setLocation(item.route);
   };
 
+  const prefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleHoverPrefetch = useCallback((route: string) => {
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+    }
+    prefetchTimeoutRef.current = setTimeout(() => {
+      prefetchRouteData(route);
+    }, 100);
+  }, []);
+
   return (
     <div className="flex flex-col h-full w-48 border-r bg-sidebar shrink-0">
       <div className="flex h-10 items-center gap-2 px-3 border-b">
@@ -478,6 +543,7 @@ export function SecondarySidebar() {
                     item={item}
                     activeSubItem={activeSubItem}
                     onChildClick={handleItemClick}
+                    onHover={handleHoverPrefetch}
                     location={location}
                   />
                 ) : (
@@ -486,6 +552,7 @@ export function SecondarySidebar() {
                     item={item}
                     isActive={activeSubItem === item.id}
                     onClick={() => handleItemClick(item)}
+                    onHover={handleHoverPrefetch}
                   />
                 )
               ))}

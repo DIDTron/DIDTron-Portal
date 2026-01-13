@@ -4,7 +4,7 @@ This top section is governance. You are NOT allowed to rewrite, summarize, move,
 If you need to change it, you MUST ask the user first.
 
 Before responding to any request, you MUST open and read:
-1) docs/AGENT_BRIEF.md
+1) docs/AGENT_BRIEF.md (MANDATORY - AGENT_BRIEF governance rules)
 2) docs/TODO.md
 3) docs/UI_SPEC.md
 4) DESIGN_SYSTEM.md

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, decimal, jsonb, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, decimal, jsonb, pgEnum, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -208,7 +208,11 @@ export const users = pgTable("users", {
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  emailIdx: index("idx_users_email").on(table.email),
+  statusIdx: index("idx_users_status").on(table.status),
+  roleIdx: index("idx_users_role").on(table.role),
+}));
 
 export const sessions = pgTable("sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -263,7 +267,10 @@ export const customers = pgTable("customers", {
   billingTermId: varchar("billing_term_id").references(() => billingTerms.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  statusIdx: index("idx_customers_status").on(table.status),
+  createdAtIdx: index("idx_customers_created_at").on(table.createdAt),
+}));
 
 export const customerKyc = pgTable("customer_kyc", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -354,7 +361,11 @@ export const carriers = pgTable("carriers", {
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  statusIdx: index("idx_carriers_status").on(table.status),
+  createdAtIdx: index("idx_carriers_created_at").on(table.createdAt),
+  nameIdx: index("idx_carriers_name").on(table.name),
+}));
 
 export const carrierInterconnects = pgTable("carrier_interconnects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -378,7 +389,12 @@ export const carrierInterconnects = pgTable("carrier_interconnects", {
   displayOrder: integer("display_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  carrierIdIdx: index("idx_interconnects_carrier_id").on(table.carrierId),
+  directionIdx: index("idx_interconnects_direction").on(table.direction),
+  isActiveIdx: index("idx_interconnects_is_active").on(table.isActive),
+  createdAtIdx: index("idx_interconnects_created_at").on(table.createdAt),
+}));
 
 // Carrier Services - THE KEY LINKAGE: Interconnect → Rating Plan + Routing Plan
 export const carrierServices = pgTable("carrier_services", {
@@ -418,7 +434,11 @@ export const carrierServices = pgTable("carrier_services", {
   destinationExceptionsId: varchar("destination_exceptions_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  interconnectIdIdx: index("idx_services_interconnect_id").on(table.interconnectId),
+  carrierIdIdx: index("idx_services_carrier_id").on(table.carrierId),
+  createdAtIdx: index("idx_services_created_at").on(table.createdAt),
+}));
 
 export const serviceMatchLists = pgTable("service_match_lists", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -689,7 +709,10 @@ export const businessRules = pgTable("business_rules", {
   codeMovedToNewZoneAction: text("code_moved_to_new_zone_action").default("none"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  createdAtIdx: index("idx_business_rules_created_at").on(table.createdAt),
+  nameIdx: index("idx_business_rules_name").on(table.name),
+}));
 
 export const insertBusinessRuleSchema = createInsertSchema(businessRules).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertBusinessRule = z.infer<typeof insertBusinessRuleSchema>;
@@ -878,7 +901,11 @@ export const rateCards = pgTable("rate_cards", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  carrierIdIdx: index("idx_rating_plans_carrier_id").on(table.carrierId),
+  createdAtIdx: index("idx_rating_plans_created_at").on(table.createdAt),
+  nameIdx: index("idx_rating_plans_name").on(table.name),
+}));
 
 export const rateCardRates = pgTable("rate_card_rates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1222,7 +1249,11 @@ export const invoices = pgTable("invoices", {
   paidAt: timestamp("paid_at"),
   pdfUrl: text("pdf_url"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  customerIdIdx: index("idx_invoices_customer_id").on(table.customerId),
+  statusIdx: index("idx_invoices_status").on(table.status),
+  createdAtIdx: index("idx_invoices_created_at").on(table.createdAt),
+}));
 
 export const invoiceItems = pgTable("invoice_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1394,7 +1425,10 @@ export const tickets = pgTable("tickets", {
   closedAt: timestamp("closed_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  statusIdx: index("idx_tickets_status").on(table.status),
+  createdAtIdx: index("idx_tickets_created_at").on(table.createdAt),
+}));
 
 export const ticketReplies = pgTable("ticket_replies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
