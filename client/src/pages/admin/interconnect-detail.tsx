@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -193,6 +194,40 @@ export default function InterconnectDetailPage() {
   });
 
   const [isEditingMonitoring, setIsEditingMonitoring] = useState(false);
+  const [isEditingEgressRouting, setIsEditingEgressRouting] = useState(false);
+  const [isEditingEgressTranslation, setIsEditingEgressTranslation] = useState(false);
+
+  const [egressRoutingData, setEgressRoutingData] = useState({
+    techPrefix: "",
+    sendToIps: [] as Array<{ id: string; ip: string; port: number; weight: number; transport: string; active: boolean }>,
+    transport: "udp",
+    portMode: "default" as "default" | "custom",
+    customPort: 5060,
+    failoverEnabled: false,
+    failoverTimeout: 3000,
+    maxAttempts: 3,
+  });
+
+  const [egressTranslationData, setEgressTranslationData] = useState({
+    setPaiHeader: "none" as "none" | "from_origination" | "custom",
+    paiValue: "",
+    blockInvalidOrigins: false,
+    stripPlusPai: false,
+    stripPlusFrom: false,
+    appendToUri: "",
+    originTranslation: "",
+    destinationTranslation: "",
+    globalTranslation: "",
+  });
+
+  const [showAddSendToIPDialog, setShowAddSendToIPDialog] = useState(false);
+  const [newSendToIP, setNewSendToIP] = useState({
+    ip: "",
+    port: 5060,
+    weight: 100,
+    transport: "udp",
+    active: true,
+  });
 
   const [newService, setNewService] = useState({
     name: "",
@@ -653,6 +688,57 @@ export default function InterconnectDetailPage() {
     },
     onError: () => {
       toast({ title: "Failed to save monitoring settings", variant: "destructive" });
+    },
+  });
+
+  // Mutation to save egress routing settings
+  const saveEgressRoutingMutation = useMutation({
+    mutationFn: async (data: typeof egressRoutingData) => {
+      const res = await apiRequest("PUT", `/api/interconnects/${interconnectId}/egress-routing`, {
+        techPrefix: data.techPrefix || null,
+        transport: data.transport,
+        portMode: data.portMode,
+        customPort: data.customPort,
+        failoverEnabled: data.failoverEnabled,
+        failoverTimeout: data.failoverTimeout,
+        maxAttempts: data.maxAttempts,
+        sendToIps: data.sendToIps,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "egress-routing"] });
+      toast({ title: "Egress routing settings saved" });
+      setIsEditingEgressRouting(false);
+    },
+    onError: () => {
+      toast({ title: "Failed to save egress routing settings", variant: "destructive" });
+    },
+  });
+
+  // Mutation to save egress translation settings
+  const saveEgressTranslationMutation = useMutation({
+    mutationFn: async (data: typeof egressTranslationData) => {
+      const res = await apiRequest("PUT", `/api/interconnects/${interconnectId}/egress-translation`, {
+        setPaiHeader: data.setPaiHeader,
+        paiValue: data.paiValue || null,
+        blockInvalidOrigins: data.blockInvalidOrigins,
+        stripPlusPai: data.stripPlusPai,
+        stripPlusFrom: data.stripPlusFrom,
+        appendToUri: data.appendToUri || null,
+        originTranslation: data.originTranslation || null,
+        destinationTranslation: data.destinationTranslation || null,
+        globalTranslation: data.globalTranslation || null,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interconnects", interconnectId, "egress-translation"] });
+      toast({ title: "Egress translation settings saved" });
+      setIsEditingEgressTranslation(false);
+    },
+    onError: () => {
+      toast({ title: "Failed to save egress translation settings", variant: "destructive" });
     },
   });
 
@@ -1975,24 +2061,459 @@ export default function InterconnectDetailPage() {
 
           {/* Egress Routing Tab (Supplier) */}
           <TabsContent value="egress-routing" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Egress Routing</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Egress routing configuration for outbound traffic to this supplier.</p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-2 gap-8">
+              {/* Routing Configuration Card */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                  <CardTitle className="text-base">Routing Configuration</CardTitle>
+                  {!isEditingEgressRouting && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditingEgressRouting(true)} data-testid="button-edit-egress-routing">
+                      Edit
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Tech Prefix</span>
+                      {isEditingEgressRouting ? (
+                        <Input
+                          value={egressRoutingData.techPrefix}
+                          onChange={(e) => setEgressRoutingData({ ...egressRoutingData, techPrefix: e.target.value })}
+                          placeholder="e.g., 1234#"
+                          data-testid="input-egress-tech-prefix"
+                        />
+                      ) : (
+                        <span className="text-sm font-mono">{egressRoutingData.techPrefix || "-"}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Transport</span>
+                      {isEditingEgressRouting ? (
+                        <Select
+                          value={egressRoutingData.transport}
+                          onValueChange={(v) => setEgressRoutingData({ ...egressRoutingData, transport: v })}
+                        >
+                          <SelectTrigger data-testid="select-egress-transport" className="w-48">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="udp">UDP</SelectItem>
+                            <SelectItem value="tcp">TCP</SelectItem>
+                            <SelectItem value="tls">TLS</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm uppercase">{egressRoutingData.transport}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Port</span>
+                      {isEditingEgressRouting ? (
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={egressRoutingData.portMode}
+                            onValueChange={(v) => setEgressRoutingData({ ...egressRoutingData, portMode: v as "default" | "custom" })}
+                          >
+                            <SelectTrigger data-testid="select-port-mode" className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="default">Default (5060)</SelectItem>
+                              <SelectItem value="custom">Custom</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {egressRoutingData.portMode === "custom" && (
+                            <Input
+                              type="number"
+                              value={egressRoutingData.customPort}
+                              onChange={(e) => setEgressRoutingData({ ...egressRoutingData, customPort: parseInt(e.target.value) || 5060 })}
+                              className="w-24"
+                              data-testid="input-custom-port"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm">{egressRoutingData.portMode === "custom" ? egressRoutingData.customPort : "5060 (Default)"}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Failover</span>
+                      {isEditingEgressRouting ? (
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={egressRoutingData.failoverEnabled}
+                              onCheckedChange={(checked) => setEgressRoutingData({ ...egressRoutingData, failoverEnabled: !!checked })}
+                            />
+                            <span className="text-sm">Enabled</span>
+                          </div>
+                          {egressRoutingData.failoverEnabled && (
+                            <>
+                              <Input
+                                type="number"
+                                value={egressRoutingData.failoverTimeout}
+                                onChange={(e) => setEgressRoutingData({ ...egressRoutingData, failoverTimeout: parseInt(e.target.value) || 3000 })}
+                                className="w-24"
+                                placeholder="Timeout (ms)"
+                              />
+                              <Input
+                                type="number"
+                                value={egressRoutingData.maxAttempts}
+                                onChange={(e) => setEgressRoutingData({ ...egressRoutingData, maxAttempts: parseInt(e.target.value) || 3 })}
+                                className="w-20"
+                                placeholder="Max attempts"
+                              />
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm">{egressRoutingData.failoverEnabled ? `Yes (${egressRoutingData.failoverTimeout}ms, ${egressRoutingData.maxAttempts} attempts)` : "No"}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {isEditingEgressRouting && (
+                    <div className="flex gap-2 pt-4">
+                      <Button 
+                        onClick={() => saveEgressRoutingMutation.mutate(egressRoutingData)} 
+                        disabled={saveEgressRoutingMutation.isPending}
+                      >
+                        {saveEgressRoutingMutation.isPending ? "Saving..." : "Save"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsEditingEgressRouting(false)}>Cancel</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Send To IPs Card */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                  <CardTitle className="text-base">Send To IPs</CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => setShowAddSendToIPDialog(true)} data-testid="button-add-send-to-ip">
+                    <Plus className="mr-1 h-4 w-4" /> Add IP
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {egressRoutingData.sendToIps.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4 text-sm">
+                      No Send To IPs configured. Click Add IP to add one.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-primary">
+                          <TableHead className="text-primary-foreground">IP Address</TableHead>
+                          <TableHead className="text-primary-foreground">Port</TableHead>
+                          <TableHead className="text-primary-foreground">Weight</TableHead>
+                          <TableHead className="text-primary-foreground">Transport</TableHead>
+                          <TableHead className="text-primary-foreground text-center">Active</TableHead>
+                          <TableHead className="text-primary-foreground w-16">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {egressRoutingData.sendToIps.map((addr) => (
+                          <TableRow key={addr.id}>
+                            <TableCell className="font-mono text-sm">{addr.ip}</TableCell>
+                            <TableCell className="text-sm">{addr.port}</TableCell>
+                            <TableCell className="text-sm">{addr.weight}%</TableCell>
+                            <TableCell className="text-sm uppercase">{addr.transport}</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox checked={addr.active} disabled />
+                            </TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => {
+                                  setEgressRoutingData({
+                                    ...egressRoutingData,
+                                    sendToIps: egressRoutingData.sendToIps.filter(ip => ip.id !== addr.id)
+                                  });
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Add Send To IP Dialog */}
+            <Dialog open={showAddSendToIPDialog} onOpenChange={setShowAddSendToIPDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Send To IP</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">IP Address</Label>
+                    <Input
+                      value={newSendToIP.ip}
+                      onChange={(e) => setNewSendToIP({ ...newSendToIP, ip: e.target.value })}
+                      placeholder="e.g., 192.168.1.100"
+                      className="col-span-3"
+                      data-testid="input-new-send-to-ip"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Port</Label>
+                    <Input
+                      type="number"
+                      value={newSendToIP.port}
+                      onChange={(e) => setNewSendToIP({ ...newSendToIP, port: parseInt(e.target.value) || 5060 })}
+                      className="col-span-3"
+                      data-testid="input-new-send-to-port"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Weight (%)</Label>
+                    <Input
+                      type="number"
+                      value={newSendToIP.weight}
+                      onChange={(e) => setNewSendToIP({ ...newSendToIP, weight: parseInt(e.target.value) || 100 })}
+                      className="col-span-3"
+                      data-testid="input-new-send-to-weight"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Transport</Label>
+                    <Select
+                      value={newSendToIP.transport}
+                      onValueChange={(v) => setNewSendToIP({ ...newSendToIP, transport: v })}
+                    >
+                      <SelectTrigger className="col-span-3" data-testid="select-new-send-to-transport">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="udp">UDP</SelectItem>
+                        <SelectItem value="tcp">TCP</SelectItem>
+                        <SelectItem value="tls">TLS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Active</Label>
+                    <div className="col-span-3">
+                      <Checkbox
+                        checked={newSendToIP.active}
+                        onCheckedChange={(checked) => setNewSendToIP({ ...newSendToIP, active: !!checked })}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowAddSendToIPDialog(false)}>Cancel</Button>
+                  <Button 
+                    onClick={() => {
+                      if (newSendToIP.ip) {
+                        setEgressRoutingData({
+                          ...egressRoutingData,
+                          sendToIps: [...egressRoutingData.sendToIps, { ...newSendToIP, id: crypto.randomUUID() }]
+                        });
+                        setNewSendToIP({ ip: "", port: 5060, weight: 100, transport: "udp", active: true });
+                        setShowAddSendToIPDialog(false);
+                      }
+                    }}
+                    data-testid="button-confirm-add-send-to-ip"
+                  >
+                    Add
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Egress Translations Tab (Supplier) */}
           <TabsContent value="egress-translations" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Egress Translations</CardTitle>
+            <div className="grid grid-cols-2 gap-8">
+              {/* P-Asserted-Identity (PAI) Card */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                  <CardTitle className="text-base">P-Asserted-Identity (PAI)</CardTitle>
+                  {!isEditingEgressTranslation && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditingEgressTranslation(true)} data-testid="button-edit-egress-translation">
+                      Edit
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Set PAI Header</span>
+                      {isEditingEgressTranslation ? (
+                        <Select
+                          value={egressTranslationData.setPaiHeader}
+                          onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, setPaiHeader: v as "none" | "from_origination" | "custom" })}
+                        >
+                          <SelectTrigger data-testid="select-egress-pai" className="w-56">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="from_origination">From Origination</SelectItem>
+                            <SelectItem value="custom">Custom Value</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm">
+                          {egressTranslationData.setPaiHeader === "none" ? "None" :
+                           egressTranslationData.setPaiHeader === "from_origination" ? "From Origination" : "Custom Value"}
+                        </span>
+                      )}
+                    </div>
+                    {egressTranslationData.setPaiHeader === "custom" && (
+                      <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                        <span className="text-sm text-muted-foreground">PAI Value</span>
+                        {isEditingEgressTranslation ? (
+                          <Input
+                            value={egressTranslationData.paiValue}
+                            onChange={(e) => setEgressTranslationData({ ...egressTranslationData, paiValue: e.target.value })}
+                            placeholder="e.g., sip:+1234567890@domain.com"
+                            data-testid="input-pai-value"
+                          />
+                        ) : (
+                          <span className="text-sm font-mono">{egressTranslationData.paiValue || "-"}</span>
+                        )}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Strip + from PAI</span>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={egressTranslationData.stripPlusPai}
+                          onCheckedChange={(checked) => setEgressTranslationData({ ...egressTranslationData, stripPlusPai: !!checked })}
+                          disabled={!isEditingEgressTranslation}
+                        />
+                        <span className="text-sm text-muted-foreground">Remove leading + from PAI number</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Strip + from From</span>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={egressTranslationData.stripPlusFrom}
+                          onCheckedChange={(checked) => setEgressTranslationData({ ...egressTranslationData, stripPlusFrom: !!checked })}
+                          disabled={!isEditingEgressTranslation}
+                        />
+                        <span className="text-sm text-muted-foreground">Remove leading + from From header</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Origin Validation Card */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                  <CardTitle className="text-base">Origin Validation</CardTitle>
+                  {!isEditingEgressTranslation && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditingEgressTranslation(true)} data-testid="button-edit-origin-validation">
+                      Edit
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Block Invalid Origins</span>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={egressTranslationData.blockInvalidOrigins}
+                          onCheckedChange={(checked) => setEgressTranslationData({ ...egressTranslationData, blockInvalidOrigins: !!checked })}
+                          disabled={!isEditingEgressTranslation}
+                        />
+                        <span className="text-sm text-muted-foreground">Reject calls with invalid origination numbers</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Append to URI</span>
+                      {isEditingEgressTranslation ? (
+                        <Input
+                          value={egressTranslationData.appendToUri}
+                          onChange={(e) => setEgressTranslationData({ ...egressTranslationData, appendToUri: e.target.value })}
+                          placeholder="e.g., ;user=phone"
+                          data-testid="input-append-uri"
+                        />
+                      ) : (
+                        <span className="text-sm font-mono">{egressTranslationData.appendToUri || "-"}</span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Number Translation Card - Full Width */}
+            <Card className="mt-6">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+                <CardTitle className="text-base">Number Translation</CardTitle>
+                {!isEditingEgressTranslation && (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditingEgressTranslation(true)} data-testid="button-edit-number-translation">
+                    Edit
+                  </Button>
+                )}
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Egress translation rules for outbound traffic.</p>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Global Translation</Label>
+                    {isEditingEgressTranslation ? (
+                      <Input
+                        value={egressTranslationData.globalTranslation}
+                        onChange={(e) => setEgressTranslationData({ ...egressTranslationData, globalTranslation: e.target.value })}
+                        placeholder="Regex pattern"
+                        data-testid="input-global-translation"
+                      />
+                    ) : (
+                      <p className="text-sm font-mono">{egressTranslationData.globalTranslation || "-"}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Origin Translation</Label>
+                    {isEditingEgressTranslation ? (
+                      <Input
+                        value={egressTranslationData.originTranslation}
+                        onChange={(e) => setEgressTranslationData({ ...egressTranslationData, originTranslation: e.target.value })}
+                        placeholder="Regex pattern"
+                        data-testid="input-origin-translation-egress"
+                      />
+                    ) : (
+                      <p className="text-sm font-mono">{egressTranslationData.originTranslation || "-"}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Destination Translation</Label>
+                    {isEditingEgressTranslation ? (
+                      <Input
+                        value={egressTranslationData.destinationTranslation}
+                        onChange={(e) => setEgressTranslationData({ ...egressTranslationData, destinationTranslation: e.target.value })}
+                        placeholder="Regex pattern"
+                        data-testid="input-destination-translation-egress"
+                      />
+                    ) : (
+                      <p className="text-sm font-mono">{egressTranslationData.destinationTranslation || "-"}</p>
+                    )}
+                  </div>
+                </div>
+
+                {isEditingEgressTranslation && (
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button 
+                      onClick={() => saveEgressTranslationMutation.mutate(egressTranslationData)} 
+                      disabled={saveEgressTranslationMutation.isPending}
+                    >
+                      {saveEgressTranslationMutation.isPending ? "Saving..." : "Save"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsEditingEgressTranslation(false)}>Cancel</Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
