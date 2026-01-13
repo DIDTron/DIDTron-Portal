@@ -289,6 +289,21 @@ export function ImportTemplateWizardPage() {
     placeholderData: keepPreviousData,
   });
 
+  interface PeriodExceptionPlan {
+    id: string;
+    name: string;
+    description: string;
+    exceptionCount: number;
+    isDefault: boolean;
+    isActive: boolean;
+  }
+
+  const { data: periodExceptionPlans = [], isLoading: isLoadingPeriodExceptionPlans } = useQuery<PeriodExceptionPlan[]>({
+    queryKey: ["/api/softswitch/rating/period-exception-plans"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
+  });
+
   const { data: existingTemplate, isLoading: isLoadingTemplate } = useQuery<SupplierImportTemplate>({
     queryKey: ["/api/supplier-import-templates", params.id],
     enabled: !!isEditing,
@@ -594,6 +609,15 @@ export function ImportTemplateWizardPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
+                      {isLoadingPeriodExceptionPlans ? (
+                        <SelectItem value="loading" disabled>Loading...</SelectItem>
+                      ) : (
+                        periodExceptionPlans.map((plan) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.name} ({plan.exceptionCount} rules)
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

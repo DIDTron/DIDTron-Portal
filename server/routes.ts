@@ -10002,6 +10002,32 @@ export async function registerRoutes(
 
   // ==================== PERIOD EXCEPTIONS API ====================
 
+  // Period Exception Plans - returns available plans for dropdowns
+  app.get("/api/softswitch/rating/period-exception-plans", async (req, res) => {
+    try {
+      // Check if there are any period exceptions
+      const countResult = await db.execute(sql`SELECT COUNT(*) as count FROM period_exceptions`);
+      const count = parseInt((countResult.rows[0] as any)?.count || "0");
+      
+      // Return the default "Period-Exception-ALL" plan if exceptions exist
+      const plans = count > 0 ? [
+        {
+          id: "period-exception-all",
+          name: "Period-Exception-ALL",
+          description: "Global period exception plan containing all billing intervals",
+          exceptionCount: count,
+          isDefault: true,
+          isActive: true,
+        }
+      ] : [];
+      
+      res.json(plans);
+    } catch (error: any) {
+      console.error("Failed to get period exception plans:", error);
+      res.status(500).json({ error: "Failed to get period exception plans", details: error.message });
+    }
+  });
+
   app.get("/api/period-exceptions", async (req, res) => {
     try {
       const { searchType, query, limit = "50", offset = "0" } = req.query;
