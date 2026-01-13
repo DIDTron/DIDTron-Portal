@@ -963,8 +963,7 @@ const supplierRatingTabActions: Record<SupplierRatingTab, TabAction[]> = {
   ],
   "import-settings": [],
   "import-templates": [
-    { id: "add-template", label: "Add Template", testId: "menu-add-template" },
-    { id: "delete-all-templates", label: "Delete All Templates", testId: "menu-delete-all-templates" },
+    { id: "add-template", label: "Add Import Template", testId: "menu-add-import-template" },
   ],
   "import-notifications": [
     { id: "configure-notifications", label: "Configure Notifications", testId: "menu-configure-notifications" },
@@ -1154,6 +1153,20 @@ interface BusinessRuleAPI {
   updatedAt: string | null;
 }
 
+interface SupplierImportTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  delimiter: string;
+  hasHeaderRow: boolean;
+  headerRowNumber: number;
+  dataStartRow: number;
+  columnMappings: Record<string, unknown>;
+  ignorePatterns: string[] | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 const mockImportSettings: ImportSettingItem[] = [];
 
 // Import Settings sub-tab actions
@@ -1248,6 +1261,11 @@ export function SupplierRatingPlansPage() {
   const [addImportSettingBusinessRule, setAddImportSettingBusinessRule] = useState("");
   const [businessRulesSearchFilter, setBusinessRulesSearchFilter] = useState("");
   
+  // Import Templates state
+  const [importTemplatesSearchFilter, setImportTemplatesSearchFilter] = useState("");
+  const [importTemplatesCurrentPage, setImportTemplatesCurrentPage] = useState(1);
+  const [importTemplatesPageSize, setImportTemplatesPageSize] = useState(20);
+  
   const { toast } = useToast();
   
   // Fetch business rules from database
@@ -1255,6 +1273,27 @@ export function SupplierRatingPlansPage() {
     queryKey: ["/api/softswitch/rating/business-rules"],
     staleTime: STALE_TIME.STATIC,
     placeholderData: keepPreviousData,
+  });
+
+  // Fetch import templates from database
+  const { data: importTemplatesData = [], refetch: refetchImportTemplates, isFetching: isImportTemplatesFetching } = useQuery<SupplierImportTemplate[]>({
+    queryKey: ["/api/supplier-import-templates"],
+    staleTime: STALE_TIME.STATIC,
+    placeholderData: keepPreviousData,
+  });
+  
+  // Delete import template mutation
+  const deleteImportTemplateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/supplier-import-templates/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier-import-templates"] });
+      toast({ title: "Success", description: "Import template deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete import template", variant: "destructive" });
+    },
   });
 
   const filteredPlans = mockSupplierPlans.filter((plan) => {
@@ -1287,6 +1326,31 @@ export function SupplierRatingPlansPage() {
   
   const paginatedPlans = filteredPlans.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  // Import Templates filtering and pagination
+  const filteredImportTemplates = importTemplatesData.filter((template) => {
+    if (importTemplatesSearchFilter && !template.name.toLowerCase().includes(importTemplatesSearchFilter.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
+  
+  const totalImportTemplates = filteredImportTemplates.length;
+  const totalImportTemplatesPages = Math.ceil(totalImportTemplates / importTemplatesPageSize);
+  
+  useEffect(() => {
+    setImportTemplatesCurrentPage(1);
+  }, [importTemplatesSearchFilter]);
+  
+  useEffect(() => {
+    if (totalImportTemplatesPages === 0) {
+      setImportTemplatesCurrentPage(1);
+    } else if (importTemplatesCurrentPage > totalImportTemplatesPages) {
+      setImportTemplatesCurrentPage(totalImportTemplatesPages);
+    }
+  }, [totalImportTemplatesPages, importTemplatesCurrentPage]);
+  
+  const paginatedImportTemplates = filteredImportTemplates.slice((importTemplatesCurrentPage - 1) * importTemplatesPageSize, importTemplatesCurrentPage * importTemplatesPageSize);
+
   const currentActions = tab === "rate-inbox" 
     ? rateInboxSubTabActions[rateInboxSubTab] 
     : tab === "import-settings"
@@ -1314,6 +1378,14 @@ export function SupplierRatingPlansPage() {
     }
     if (actionId === "create-business-rule") {
       window.location.href = "/admin/softswitch/rating/business-rule/new";
+      return;
+    }
+    if (actionId === "add-template") {
+      window.location.href = "/admin/softswitch/rating/import-template/new";
+      return;
+    }
+    if (actionId === "delete-all-templates") {
+      toast({ title: "Delete All Templates", description: "This action is not yet implemented" });
       return;
     }
     toast({ title: `Action: ${actionId}`, description: "This action is not yet implemented" });
@@ -2556,10 +2628,93 @@ export function SupplierRatingPlansPage() {
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="import-templates">
-          <div className="py-12 text-center text-muted-foreground">
-            Import Templates coming soon
+        <TabsContent value="import-templates" className="space-y-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search templates..."
+                value={importTemplatesSearchFilter}
+                onChange={(e) => setImportTemplatesSearchFilter(e.target.value)}
+                className="pl-9"
+                data-testid="input-import-templates-search"
+              />
+            </div>
+            {isImportTemplatesFetching && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
           </div>
+          
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[60%]">Template Name</TableHead>
+                  <TableHead className="w-[30%]">Last Updated</TableHead>
+                  <TableHead className="w-[10%] text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedImportTemplates.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                      {importTemplatesSearchFilter 
+                        ? "No import templates found matching your search" 
+                        : "No import templates configured. Use Actions → Add Template to create one."}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedImportTemplates.map((template) => (
+                    <TableRow key={template.id} data-testid={`row-import-template-${template.id}`}>
+                      <TableCell>
+                        <a 
+                          href={`/admin/softswitch/rating/import-template/${template.id}`}
+                          className="text-primary hover:underline font-medium"
+                          data-testid={`link-import-template-${template.id}`}
+                        >
+                          {template.name}
+                        </a>
+                        {template.description && (
+                          <p className="text-sm text-muted-foreground mt-0.5">{template.description}</p>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {template.updatedAt 
+                          ? new Date(template.updatedAt).toLocaleDateString("en-US", { 
+                              year: "numeric", 
+                              month: "short", 
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteImportTemplateMutation.mutate(template.id)}
+                          disabled={deleteImportTemplateMutation.isPending}
+                          data-testid={`button-delete-import-template-${template.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            
+            <DataTableFooter
+              currentPage={importTemplatesCurrentPage}
+              totalPages={totalImportTemplatesPages}
+              pageSize={importTemplatesPageSize}
+              totalItems={totalImportTemplates}
+              onPageChange={setImportTemplatesCurrentPage}
+              onPageSizeChange={setImportTemplatesPageSize}
+            />
+          </Card>
         </TabsContent>
 
         <TabsContent value="import-notifications">
