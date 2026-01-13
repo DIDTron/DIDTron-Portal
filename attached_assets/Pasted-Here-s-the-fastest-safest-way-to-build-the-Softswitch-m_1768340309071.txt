@@ -1,0 +1,456 @@
+Here’s the fastest, safest way to build the Softswitch module (Digitalk-style) on top of ConnexCS so it stays fast, and a failure in rating doesn’t break routing, and a ConnexCS slowdown doesn’t freeze the whole portal.
+
+Core idea
+
+Treat Softswitch as a bounded context with sub-domains, and treat ConnexCS as an external engine you integrate with via an adapter + job queue, while keeping a local read model in Postgres for 99% of UI reads.
+
+Rule: UI reads come from Postgres, not live ConnexCS calls. ConnexCS calls happen mostly via DataQueue jobs.
+
+Backend design
+1) Softswitch module = one folder, many sub-routers
+
+You don’t split Softswitch into separate repos; you split it into sub-routers + sub-services so each sub-domain is isolated:
+
+Routes structure
+
+server/routes/softswitch/index.ts (mounts sub-routers)
+
+carriers.routes.ts
+
+interconnects.routes.ts
+
+services.routes.ts
+
+rating.routes.ts
+
+routing.routes.ts
+
+balances.routes.ts
+
+monitoring.routes.ts
+
+sync.routes.ts (manual sync triggers only)
+
+Each sub-router only touches:
+
+its own service layer (server/services/softswitch/<subdomain>/*)
+
+its own repo layer (server/repos/softswitch/<subdomain>/*)
+
+This prevents “one huge routes.ts file” and prevents accidental coupling.
+
+2) ConnexCS integration must be a single adapter layer
+
+All ConnexCS calls go through one module:
+
+server/integrations/connexcs/connexcsClient.ts (HTTP client with timeouts)
+
+server/integrations/connexcs/connexcsAdapter.ts (domain methods: createCarrier, syncCdrs, pushRateCard, etc.)
+
+server/integrations/connexcs/connexcsMapper.ts (maps ConnexCS IDs ↔ local IDs)
+
+And you keep a mapping table (you already have similar):
+
+connexcsEntityMap (local_id, connexcs_id, entity_type, tenant_id, updated_at)
+
+Rule: no route handler calls ConnexCS directly.
+
+3) Use CQRS: “Commands via jobs”, “Queries from DB”
+
+This is the main speed unlock.
+
+Queries (fast path)
+
+All list/detail endpoints read from Postgres:
+
+carriers, interconnects, services, rating plans, routing plans, balances snapshot, etc.
+
+They must be:
+
+cursor paginated
+
+minimal list payload
+
+indexed by tenant_id + sort keys
+
+Commands (slow path)
+
+Anything that writes to ConnexCS or does heavy compute is a DataQueue job:
+
+sync carriers
+
+sync balances
+
+import/parse rates
+
+push rate card / routing changes
+
+historical CDR backfill
+
+recompute summaries
+
+API returns immediately:
+
+{ jobId }
+
+UI polls job status and shows progress.
+
+4) Failure isolation inside Softswitch (so rating failure doesn’t break routing)
+
+Use bulkheads and separate job types + separate limits:
+
+Separate job types per sub-domain
+
+softswitch.sync.carriers
+
+softswitch.sync.cdrs
+
+softswitch.rating.import.parse
+
+softswitch.rating.push
+
+softswitch.routing.push
+
+softswitch.balances.sync
+
+Concurrency limits per job type
+
+CDR sync jobs can run 1–2 at a time
+
+rating import parse can run 1 at a time
+
+routing push can run small concurrency
+
+Timeouts + circuit breaker for ConnexCS
+
+strict HTTP timeouts (connect/read)
+
+retry with backoff only for safe idempotent calls
+
+circuit breaker: if ConnexCS fails repeatedly, mark integration “degraded” and stop flooding it
+
+Rule: ConnexCS failure becomes a degraded state, not a portal outage.
+
+5) “Eventual consistency” with explicit states
+
+When a user changes something:
+
+write a local DB record immediately (or update a “desired state”)
+
+enqueue a push job
+
+show status in UI:
+
+pending_sync
+
+synced
+
+failed_sync (with error)
+
+degraded_connexcs
+
+This is how you stay fast even when ConnexCS is slow.
+
+6) Read model strategy (what to store locally)
+
+Store locally in Postgres everything needed to render UI quickly:
+
+carriers/interconnects/services
+
+rating plan metadata + “active version”
+
+routing plan metadata + “active version”
+
+balance snapshots
+
+last sync timestamps + cursors
+
+job states and last failures
+
+summary tables for dashboards
+
+CDRs: store incrementally + partition by time if large.
+
+Frontend design
+1) Softswitch is one lazy-loaded module chunk
+
+client/src/pages/admin/softswitch/* (lazy chunk)
+
+initial click loads only:
+
+shell + sidebar + permissions snapshot
+
+first softswitch page list query
+
+No other modules load.
+
+2) “Tabs behave like embedded pages” (fast way)
+
+Detail pages like interconnect-detail.tsx must be split into:
+
+InterconnectDetail.tsx (shell)
+
+tabs/SignallingTab.tsx
+
+tabs/MediaTab.tsx
+
+etc.
+
+Each tab query must be conditional:
+
+enabled: activeTab === "media"
+
+And you prefetch adjacent tabs on hover.
+
+Rule: never fetch all tab data on page load.
+
+3) All “writes” in UI are job-driven
+
+Buttons like:
+
+“Sync from ConnexCS”
+
+“Push changes”
+
+“Import rates”
+
+Must:
+
+call an API that returns jobId
+
+show progress (poll status)
+
+update UI optimistically for local desired state
+
+show clear “synced/pending/failed” badges
+
+This prevents “the page freezes while we push to ConnexCS”.
+
+4) Large grids must be virtualized
+
+Rating plan rates and route tables can be huge.
+
+virtualization always
+
+typeahead search
+
+server pagination enforced
+
+Faster design option (best practice with external engine)
+
+If you want maximum performance and isolation:
+
+“Local-first UI + Sync engine”
+
+Local DB is the UI truth (read model)
+
+ConnexCS is the execution engine
+
+Sync jobs keep them aligned
+
+UI always stays fast, and ConnexCS slowness becomes “sync pending”
+
+This is faster than “live ConnexCS reads” and safer than “do everything in one request”.
+
+What to tell the agent (copy/paste)
+Implement Softswitch as a bounded context with sub-routers/services and CQRS:
+
+Backend:
+- Create server/routes/softswitch/index.ts mounting sub-routers: carriers, interconnects, services, rating, routing, balances, monitoring, sync.
+- Create server/services/softswitch/<subdomain>/* and server/repos/softswitch/<subdomain>/* (no giant routes.ts/storage.ts usage).
+- All ConnexCS calls must go through server/integrations/connexcs/* adapter only.
+- UI reads must come from Postgres read models; ConnexCS calls mostly via DataQueue jobs (return jobId).
+- Add failure isolation: per-job-type concurrency limits, timeouts, circuit breaker; ConnexCS failures mark module degraded without breaking other subdomains.
+
+Frontend:
+- Softswitch module stays lazy-loaded.
+- Break huge detail pages into tab components; only active tab fetches (enabled), prefetch adjacent tabs on hover.
+- Large tables virtualized; all lists cursor paginated; no “fetch all”.
+- All writes create DataQueue jobs with jobId; UI shows pending/synced/failed status.
+
+Update System Status:
+- Add per-subdomain metrics (rating/routing/balances/cdr sync) so failures don’t hide.
+
+
+If you want, the next step after this is to define the exact Softswitch subdomain contract (what’s “Carrier”, “Interconnect”, “Service”, “RatingPlan”, “RoutingPlan” in your DB vs ConnexCS) so the agent can implement consistent read models and avoid expensive joins.
+
+If you want, the next step after this is to define the **exact Softswitch subdomain contract** (what’s “Carrier”, “Interconnect”, “Service”, “RatingPlan”, “RoutingPlan” in your DB vs ConnexCS) so the agent can implement consistent read models and avoid expensive joins.
+
+explain to me this also and tell me how we say it to the replit ai agent
+
+Here’s what “Softswitch subdomain contract” means (in plain English), why it matters for speed/stability, and the exact block you paste to the Replit AI agent.
+
+What it means (simple)
+
+Right now you have two “worlds”:
+
+Your platform DB world (Postgres) — what your UI reads fast.
+
+ConnexCS world (external engine) — where calls are actually routed, rated, and CDRs are generated.
+
+A subdomain contract is a written, strict agreement that defines, for each Softswitch concept:
+
+What the entity is called
+
+What fields we store in Postgres
+
+What fields exist only in ConnexCS
+
+What the source of truth is (DB vs ConnexCS)
+
+How syncing works (push, pull, or both)
+
+What ID mapping is used (local id ↔ connexcs id)
+
+What “status states” exist (synced / pending / failed / degraded)
+
+What endpoints exist and what they return (minimal list vs detail)
+
+What background jobs exist for it
+
+When you define that contract, the agent can build consistent code without guessing, and you avoid:
+
+expensive deep joins,
+
+duplicate data models,
+
+“some pages read from ConnexCS live and become slow”,
+
+and “rating breaks routing because they are coupled”.
+
+Why it makes the portal faster
+
+Because it forces a read-model design:
+
+The UI reads fast tables in Postgres (minimal, indexed, paginated).
+
+Any heavy or external work goes to DataQueue jobs.
+
+ConnexCS is called mostly in the background, not while rendering pages.
+
+So the portal stays quick even if ConnexCS is slow.
+
+What you need to define (the actual contract sections)
+
+You define it per subdomain:
+
+1) Carrier subdomain
+
+DB truth: carrier identity, roles (customer/supplier/bilateral), tenant ownership.
+
+ConnexCS truth: engine-specific carrier identifiers/settings.
+
+Sync: push changes to ConnexCS, pull back current engine state.
+
+2) Interconnect subdomain (SIP trunk)
+
+DB truth: name, direction, capacity, auth settings, codecs, IP lists.
+
+ConnexCS truth: actual trunk object and runtime validation.
+
+Sync: push config, pull status/health.
+
+3) Service subdomain (the Digitalk “linker”)
+
+This is the most important one.
+
+Service = attaches interconnect to rating plan + routing plan + rules (direction, tech prefix, priorities).
+
+DB truth: all service configuration and relationships.
+
+ConnexCS truth: actual execution configuration once pushed.
+
+4) Rating subdomain
+
+DB truth: rate card versions, business rules, exceptions.
+
+ConnexCS truth: rated call results and engine-side rating plan objects.
+
+Sync: upload/push rate cards to ConnexCS via jobs, never in request.
+
+UI reads from DB read model, not ConnexCS.
+
+5) Routing subdomain
+
+DB truth: routing plan, route groups, priorities, match lists.
+
+ConnexCS truth: runtime routing tables.
+
+Sync: push routing via jobs.
+
+6) CDR/CRD ingestion subdomain
+
+ConnexCS truth: CDR source.
+
+DB truth: stored CDR/CRD, incremental sync cursor/high-water mark.
+
+Sync: pull via jobs, batched, partitioned.
+
+Where to put it in your docs (so it becomes “forever truth”)
+
+This contract belongs in:
+
+docs/DB_SCHEMA.md (because it defines canonical entities + mapping)
+and
+
+docs/UI_SPEC.md (because it defines what UI reads and which pages are list vs detail)
+and a decision log entry in:
+
+docs/DECISIONS.md
+
+You do not create a new doc file.
+
+Exactly what to say to the Replit AI agent (copy/paste)
+DOC TARGET: docs/DB_SCHEMA.md / Softswitch Subdomain Contract (DB vs ConnexCS)
+Define the Softswitch contract so there is zero ambiguity and no slow accidental joins/live ConnexCS reads.
+
+For each entity: Carrier, Interconnect, Service, RatingPlan, RoutingPlan, CDR/CRD Sync:
+1) Definition: what it is in Digitalk terms
+2) Canonical source of truth (DB vs ConnexCS) per field group
+3) DB tables involved (table names + key columns)
+4) ConnexCS mapping (connexcsEntityMap usage; which ConnexCS object corresponds)
+5) Sync model:
+   - push (DB -> ConnexCS) actions
+   - pull (ConnexCS -> DB) actions
+   - job type names (DataQueue), batching rules, and cursors/high-water marks where needed
+6) Status model:
+   - synced / pending_sync / failed_sync / degraded_connexcs
+   - how UI shows status and how errors are persisted
+7) API shape:
+   - list endpoints minimal payload + cursor pagination + max limit
+   - detail endpoints for deep data
+   - tab endpoints only fetch when tab active (do not load all)
+8) Index strategy for hot queries and sorts (tenant_id-first where applicable)
+
+DOC TARGET: docs/UI_SPEC.md / Softswitch Module Data Loading Rules
+Add rules:
+- UI must read from DB read models (fast), not live ConnexCS.
+- Any write/push/sync triggers DataQueue job and returns jobId.
+- Tabs are embedded but fetch only the active tab (enabled flag) + prefetch adjacent tabs.
+- Large grids always virtualized; destinations/rates always search+limit+cursor.
+
+DOC TARGET: docs/DECISIONS.md
+Append: “Adopted Softswitch subdomain contract: DB read models + DataQueue push/pull; ConnexCS called via adapter/jobs; failure isolation between rating/routing/billing.”
+
+Then update docs/TODO.md:
+- Create/confirm a Plan ID and add tasks (dedupe first) to implement any missing pieces required by the contract.
+- Do not code until contract is written and tasks exist.
+
+The benefit you get immediately
+
+Once that contract is written, you can tell the agent:
+
+“Build carrier interconnect tab X”
+and it will already know:
+
+what table to read,
+
+which endpoint should be list vs detail,
+
+how to sync to ConnexCS,
+
+how to show “pending sync” state,
+
+and which indexes/pagination rules are mandatory.
+
+That’s what makes it fast and stable.

@@ -1,0 +1,51 @@
+Yes — create the phased task list, but follow our FOREVER POLICY (Plan Lock + no drift).
+
+MANDATORY RULES BEFORE YOU DO ANYTHING:
+1) Do READ CHECK ✅ and list the docs you opened.
+2) DOC TARGET: docs/TODO.md — create/confirm a Plan ID for this refactor and write the phases as checklist tasks with acceptance criteria (dedupe first).
+3) This refactor must be INCREMENTAL. No big-bang moves.
+
+CRITICAL TECHNICAL CONSTRAINTS:
+A) DO NOT BREAK EXISTING ENDPOINTS.
+- Keep all current API paths working exactly as-is (ex: /api/carriers, /api/interconnects, /api/cdrs, /api/rate-cards/*, etc.).
+- You may create new routers/files internally, but URL behavior must remain identical.
+- Do NOT switch the UI to /api/softswitch/*.
+- If you want /api/softswitch/* later, it must be additive only and explicitly listed as a later TODO item.
+
+B) DO NOT BEGIN ROUTE MOVES UNTIL SYSTEM STATUS IS VERIFIED COMPLETE (or you prove it already is).
+- First inventory the System Status backend: metrics snapshots persistence, alerts persistence, p95/p99, per-endpoint breakdown, collector/evaluator jobs, stale banners.
+- If any of that is missing, add/execute TODO tasks to complete System Status first.
+
+PHASED PLAN (WRITE INTO TODO, THEN EXECUTE ONLY PHASE 1 NOW):
+Phase 1 (safe, zero behavior change):
+- Create folder structure for softswitch routers/services/repos (no endpoint moves).
+- Create ConnexCS adapter layer that wraps connexcs-tools-service (no behavior change yet).
+- Add job-type concurrency limits in job-queue (no behavior change except safer execution).
+- Add circuit breaker scaffolding as additive and OFF by default until status/UI exists to observe it.
+Acceptance:
+- No endpoint changes.
+- All tests pass (npm run check + Playwright + Axe where relevant).
+- System runs exactly as before.
+
+Phase 2 (smallest route move):
+- Move only the carrier endpoints into carriers.routes.ts, mounted under the SAME existing /api paths.
+- Keep response shapes identical.
+Acceptance:
+- Snapshot of baseline endpoints verified (before/after results match).
+- Performance equal or better.
+
+Phase 3+:
+- Continue one subdomain at a time: interconnects → services → rating → routing → balances → monitoring → sync triggers.
+- Never move more than one subdomain per phase.
+
+FAILURE ISOLATION REQUIREMENTS (must be TODO items with acceptance):
+- Per-job-type concurrency (rating import max 1, CDR sync limited, etc.).
+- ConnexCS circuit breaker: failures should degrade only ConnexCS actions, not break DB reads or other subdomains.
+- Add syncStatus fields ONLY as additive migrations (pending/synced/failed/degraded) + store last_error + last_attempt_at (UTC).
+- ConnexCS calls must not happen during page render (reads from DB only; commands via jobs).
+
+OUTPUT FORMAT:
+- After writing TODO plan: show Plan ID + next 3 tasks.
+- Then execute ONLY Phase 1 and STOP, reporting: files changed + tests pass/fail.
+
+Do not ask “would you like me to” again — just follow the above.
