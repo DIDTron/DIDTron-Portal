@@ -193,12 +193,46 @@ export function ImportTemplateWizardPage() {
         });
         setParsedData((jsonData as string[][]).filter((row) => row.some((cell) => cell !== "")));
       } else if (extension === "xlsx" || extension === "xls") {
-        const workbook = XLSX.read(buffer, { type: "array" });
+        const workbook = XLSX.read(buffer, { 
+          type: "array",
+          cellDates: true,
+          cellNF: true,
+          cellText: false
+        });
         const sheetIndex = Math.max(0, (formData.sheetNumber || 1) - 1);
         const sheetName = workbook.SheetNames[sheetIndex] || workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1, defval: "" });
-        setParsedData(jsonData as string[][]);
+        
+        const jsonData = XLSX.utils.sheet_to_json<(string | number | Date)[]>(worksheet, { 
+          header: 1, 
+          defval: "",
+          raw: false,
+          dateNF: "d/mmm/yy"
+        });
+        
+        const formattedData = (jsonData as (string | number | Date)[][]).map((row) =>
+          row.map((cell) => {
+            if (cell instanceof Date) {
+              const day = cell.getDate();
+              const month = cell.toLocaleString("en-US", { month: "short" });
+              const year = String(cell.getFullYear()).slice(-2);
+              return `${day}/${month}/${year}`;
+            }
+            if (typeof cell === "number") {
+              if (cell > 40000 && cell < 60000 && Number.isInteger(cell)) {
+                const excelEpoch = new Date(1899, 11, 30);
+                const date = new Date(excelEpoch.getTime() + cell * 86400000);
+                const day = date.getDate();
+                const month = date.toLocaleString("en-US", { month: "short" });
+                const year = String(date.getFullYear()).slice(-2);
+                return `${day}/${month}/${year}`;
+              }
+            }
+            return String(cell ?? "");
+          })
+        );
+        
+        setParsedData(formattedData);
       } else {
         toast({
           title: "Unsupported file format",
