@@ -62,11 +62,12 @@ export function SoftswitchCarriersPage() {
     supplierBalance: "0.00",
   });
 
-  const { data: carriers, isLoading } = useQuery<Carrier[]>({
+  const { data: carriersResponse, isLoading } = useQuery<{ data: Carrier[]; nextCursor: string | null; hasMore: boolean }>({
     queryKey: ["/api/carriers"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
   });
+  const carriers = carriersResponse?.data;
 
   const { data: currencies } = useQuery<Currency[]>({
     queryKey: ["/api/currencies"],

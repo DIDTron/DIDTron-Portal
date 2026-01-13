@@ -152,6 +152,9 @@ import {
   rateCards as rateCardsTable,
   rateCardRates as rateCardRatesTable,
   routes as routesTable,
+  routeGroups as routeGroupsTable,
+  monitoringRules as monitoringRulesTable,
+  alerts as alertsTable,
   fileTemplates,
   aiVoiceAgents as aiVoiceAgentsTable,
   aiVoiceFlows as aiVoiceFlowsTable,
@@ -2624,7 +2627,7 @@ export class MemStorage implements IStorage {
   // Dashboard Stats
   async getCategoryStats(): Promise<{ categoryId: string; customerCount: number; revenue: number }[]> {
     const stats: Map<string, { customerCount: number; revenue: number }> = new Map();
-    const customerArray = Array.from(this.customers.values());
+    const customerArray = await db.select().from(customersTable);
     for (const customer of customerArray) {
       if (customer.categoryId) {
         const existing = stats.get(customer.categoryId) || { customerCount: 0, revenue: 0 };
