@@ -359,77 +359,7 @@ After coding, output:
 
 If cannot comply: STOP and state exactly what blocks compliance.
 
-────────────────────────────────────────────────────────────
-20) PERFORMANCE BUDGETS (SLO) — MANDATORY THRESHOLDS
-────────────────────────────────────────────────────────────
-All performance budgets are non-negotiable. Breaches trigger alerts.
 
-Portal UX:
-- Route transition (cached): p95 ≤ 150ms, p99 ≤ 300ms
-- Route transition (uncached): p95 ≤ 900ms, p99 ≤ 1500ms
-- First interactive after login: p95 ≤ 1200ms, p99 ≤ 2000ms
-- Create/update server confirm: p95 ≤ 350ms, p99 ≤ 700ms
-
-API:
-- List endpoints: p95 ≤ 120ms, p99 ≤ 250ms
-- Detail endpoints: p95 ≤ 180ms, p99 ≤ 350ms
-- 5xx rate: Warning ≥ 0.3% (15m), Critical ≥ 1% (5m)
-
-Database:
-- Query latency: p95 ≤ 60ms, p99 ≤ 150ms
-- Slow queries (>200ms): Warning if count exceeds threshold, Critical if repeated >500ms
-- Pool saturation: Warning ≥ 70%, Critical ≥ 90%
-
-Redis:
-- p95 latency: Warning > 30ms, Critical > 100ms
-
-R2:
-- p95 latency: Warning > 300ms, Critical > 1000ms
-
-DataQueue:
-- Heartbeat interval: every 30s required
-- Stuck job (no heartbeat): Warning 3m, Critical 10m
-- Backlog: Warning > 500 jobs for 15m, Critical > 2000 jobs for 15m
-
-Freshness:
-- CDR ingested: Warning > 10m, Critical > 30m
-- FX update: Warning > 2h, Critical > 6h
-
-────────────────────────────────────────────────────────────
-21) MONITORING & ALERTING GOVERNANCE — MANDATORY
-────────────────────────────────────────────────────────────
-All monitoring uses DataQueue-based background jobs. Never block user traffic.
-
-A) Metrics Collector (DataQueue job)
-- Runs every 60 seconds
-- Collects: health checks, API latency, DB latency + slow queries, queue depth + stuck jobs, Redis latency + cache hit rate, R2 latency, integration checks, portal UX samples
-- Stores snapshots in PostgreSQL (UTC timestamps)
-
-B) Alert Evaluator (DataQueue job)
-- Runs every 60 seconds after collector
-- Evaluates budgets over rolling windows: 5 minutes (fast signal), 15 minutes (stability)
-- Creates alerts in DB
-- Triggers: in-app notifications + Brevo email for Warning/Critical
-
-C) Never block user traffic
-- Metrics and alerts run only in DataQueue jobs
-- System Status page reads from DB snapshots + optional live pings on demand
-
-D) Alert Channels
-- Critical (email + in-app + banner): API/DB/Redis down, stuck jobs critical, error spike, CDR stale, integration down (ConnexCS, Brevo, NOWPayments)
-- Warning (email + in-app): p95 budgets breached 15m, slow query bursts, memory high sustained, integration failure rate above threshold
-- Info (in-app only): recovery events, acknowledged events
-
-E) Future-Proofing: Module Registry
-- All new modules MUST register in a module registry as part of Definition of Done
-- Registry tracks: module key, routes prefix, API prefix, critical endpoints, job types, integrations used, dashboards, portal visibility
-- System Status reads from registry and auto-displays module health/perf rows
-
-F) Standard Instrumentation Wrappers (Mandatory)
-- All API routes use middleware that logs: duration, status, endpoint key, response size, tenant, user role
-- All DataQueue jobs use wrapper that writes: heartbeat, progress, duration, failures, retries
-- All integrations use wrapper that records: latency, success/failure, last success timestamp
-- If new route/job/integration does not use wrappers, it cannot be marked done
 
 
 
