@@ -377,12 +377,13 @@ class MetricsCollectorService {
   private async checkConnexCS(): Promise<{ status: "healthy" | "degraded" | "down"; latency: number; errorRate: number; success: boolean; error?: string }> {
     try {
       const start = Date.now();
-      const { connexcsToolsService } = await import("../connexcs-tools-service");
-      const status = await connexcsToolsService.getConnectionStatus();
+      const { connexcsTools } = await import("../connexcs-tools-service");
+      const { storage } = await import("../storage");
+      const status = await connexcsTools.getStatus(storage);
       const latency = Date.now() - start;
       return { status: status.connected ? "healthy" : "degraded", latency, errorRate: 0, success: status.connected };
     } catch (err) {
-      return { status: "down", latency: 0, errorRate: 100, success: false, error: (err as Error).message };
+      return { status: "down", latency: 0, errorRate: 99.99, success: false, error: (err as Error).message };
     }
   }
 
@@ -394,7 +395,7 @@ class MetricsCollectorService {
       const latency = Date.now() - start;
       return { status: isConfigured ? "healthy" : "degraded", latency, errorRate: 0, success: isConfigured };
     } catch (err) {
-      return { status: "down", latency: 0, errorRate: 100, success: false, error: (err as Error).message };
+      return { status: "down", latency: 0, errorRate: 99.99, success: false, error: (err as Error).message };
     }
   }
 
@@ -407,11 +408,11 @@ class MetricsCollectorService {
       return { 
         status: syncStatus.schedulerActive ? "healthy" : "degraded", 
         latency, 
-        errorRate: syncStatus.lastSyncError ? 100 : 0, 
+        errorRate: syncStatus.lastSyncError ? 99.99 : 0, 
         success: syncStatus.schedulerActive 
       };
     } catch (err) {
-      return { status: "down", latency: 0, errorRate: 100, success: false, error: (err as Error).message };
+      return { status: "down", latency: 0, errorRate: 99.99, success: false, error: (err as Error).message };
     }
   }
 
