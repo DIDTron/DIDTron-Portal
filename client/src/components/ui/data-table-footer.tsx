@@ -111,11 +111,14 @@ export function DataTableFooter({
   );
 }
 
-export function useDataTablePagination<T>(items: T[], defaultPageSize = 10) {
+export function useDataTablePagination<T>(items: T[] | undefined | null, defaultPageSize = 10) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
 
-  const totalItems = items.length;
+  // Ensure items is always an array
+  const safeItems = Array.isArray(items) ? items : [];
+  
+  const totalItems = safeItems.length;
   const totalPages = Math.ceil(totalItems / pageSize);
 
   useEffect(() => {
@@ -125,7 +128,7 @@ export function useDataTablePagination<T>(items: T[], defaultPageSize = 10) {
     }
   }, [totalItems, pageSize, totalPages, currentPage]);
 
-  const paginatedItems = items.slice(
+  const paginatedItems = safeItems.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
