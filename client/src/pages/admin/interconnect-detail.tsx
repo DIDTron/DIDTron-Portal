@@ -223,17 +223,23 @@ export default function InterconnectDetailPage() {
 
   // Egress Translation state - matches Digitalk Carrier Cloud Manager exactly
   const [egressTranslationData, setEgressTranslationData] = useState({
-    // Origination Address Validation section
+    // Origination Address Validation section (LEFT)
     originationValidation: "None" as "None" | "Length Check Only" | "Full Validation",
-    missingInvalidOrigination: "Do Not Block" as "Do Not Block" | "Block" | "Replace with Default",
-    // Egress Number Translation section (PAI handling)
+    minLength: "",
+    maxLength: "",
+    missingInvalidOrigination: "Do Not Block" as "Do Not Block" | "Block",
+    // PAI Generation section (LEFT)
     setPaiHeader: "Never" as "Never" | "If PAI is Invalid" | "Always",
     paiHeaderSource: "Generate" as "Generate" | "OA if Valid else Generate" | "From Header",
     generationBlockSize: "1" as "1" | "10" | "100" | "1000",
     setFromHeader: "Leave As-Is" as "Leave As-Is" | "Same as PAI" | "Generate",
+    // Egress Number Translation section (RIGHT)
+    translateOrigination: "From Address Only" as "From Address Only" | "Separate Address Translations",
+    fromAddress: "%",
+    toAddress: "%",
     removeDisplayName: "No" as "No" | "From Address Only" | "To And From Addresses",
     setContactUserAsFromUser: "No" as "No" | "Yes",
-    // PAI Topology Hiding section
+    // PAI Topology Hiding section (RIGHT)
     hidePaiTopology: "No" as "No" | "Yes",
   });
 
@@ -743,11 +749,16 @@ export default function InterconnectDetailPage() {
     mutationFn: async (data: typeof egressTranslationData) => {
       const res = await apiRequest("PUT", `/api/interconnects/${interconnectId}/egress-translation`, {
         originationValidation: data.originationValidation,
+        minLength: data.originationValidation === "Length Check Only" ? data.minLength : null,
+        maxLength: data.originationValidation === "Length Check Only" ? data.maxLength : null,
         missingInvalidOrigination: data.missingInvalidOrigination,
         setPaiHeader: data.setPaiHeader,
-        paiHeaderSource: data.paiHeaderSource,
-        generationBlockSize: data.generationBlockSize,
-        setFromHeader: data.setFromHeader,
+        paiHeaderSource: data.setPaiHeader !== "Never" ? data.paiHeaderSource : null,
+        generationBlockSize: data.setPaiHeader !== "Never" ? data.generationBlockSize : null,
+        setFromHeader: data.setPaiHeader !== "Never" ? data.setFromHeader : null,
+        translateOrigination: data.translateOrigination,
+        fromAddress: data.fromAddress || null,
+        toAddress: data.toAddress || null,
         removeDisplayName: data.removeDisplayName,
         setContactUserAsFromUser: data.setContactUserAsFromUser,
         hidePaiTopology: data.hidePaiTopology,
@@ -2537,20 +2548,57 @@ export default function InterconnectDetailPage() {
                         <span className="text-sm">{egressTranslationData.originationValidation}</span>
                       )}
                     </div>
+                    {/* Min Length - only visible when "Length Check Only" is selected */}
+                    {egressTranslationData.originationValidation === "Length Check Only" && (
+                      <div className="grid grid-cols-[200px_1fr] items-center gap-2">
+                        <span className="text-sm text-muted-foreground text-right">Min Length</span>
+                        {isEditingEgressTranslation ? (
+                          <Input
+                            type="number"
+                            value={egressTranslationData.minLength}
+                            onChange={(e) => setEgressTranslationData({ ...egressTranslationData, minLength: e.target.value })}
+                            className="w-24"
+                            min="1"
+                            max="32"
+                            data-testid="input-min-length"
+                          />
+                        ) : (
+                          <span className="text-sm">{egressTranslationData.minLength}</span>
+                        )}
+                      </div>
+                    )}
+                    {/* Max Length - only visible when "Length Check Only" is selected */}
+                    {egressTranslationData.originationValidation === "Length Check Only" && (
+                      <div className="grid grid-cols-[200px_1fr] items-center gap-2">
+                        <span className="text-sm text-muted-foreground text-right">Max Length</span>
+                        {isEditingEgressTranslation ? (
+                          <Input
+                            type="number"
+                            value={egressTranslationData.maxLength}
+                            onChange={(e) => setEgressTranslationData({ ...egressTranslationData, maxLength: e.target.value })}
+                            className="w-24"
+                            min="1"
+                            max="32"
+                            data-testid="input-max-length"
+                          />
+                        ) : (
+                          <span className="text-sm">{egressTranslationData.maxLength}</span>
+                        )}
+                      </div>
+                    )}
                     <div className="grid grid-cols-[200px_1fr] items-center gap-2">
                       <span className="text-sm text-muted-foreground text-right">Missing/Invalid Origination</span>
                       {isEditingEgressTranslation ? (
                         <Select
                           value={egressTranslationData.missingInvalidOrigination}
-                          onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, missingInvalidOrigination: v as "Do Not Block" | "Block" | "Replace with Default" })}
+                          onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, missingInvalidOrigination: v as "Do Not Block" | "Block" })}
                         >
-                          <SelectTrigger data-testid="select-missing-invalid-origination" className="w-56">
+                          <SelectTrigger data-testid="select-missing-invalid-origination" className="w-40">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Do Not Block">Do Not Block</SelectItem>
                             <SelectItem value="Block">Block</SelectItem>
-                            <SelectItem value="Replace with Default">Replace with Default</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
@@ -2560,9 +2608,9 @@ export default function InterconnectDetailPage() {
                   </div>
                 </div>
 
-                {/* Egress Number Translation Section */}
+                {/* PAI Generation Section */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-primary">Egress Number Translation</h3>
+                  <h3 className="text-sm font-semibold text-primary">PAI Generation</h3>
                   <div className="space-y-3">
                     <div className="grid grid-cols-[200px_1fr] items-center gap-2">
                       <span className="text-sm text-muted-foreground text-right">Set PAI Header</span>
@@ -2584,67 +2632,134 @@ export default function InterconnectDetailPage() {
                         <span className="text-sm">{egressTranslationData.setPaiHeader}</span>
                       )}
                     </div>
+                    {/* PAI Header Source - only visible when Set PAI Header is not "Never" */}
+                    {egressTranslationData.setPaiHeader !== "Never" && (
+                      <div className="grid grid-cols-[200px_1fr] items-center gap-2">
+                        <span className="text-sm text-muted-foreground text-right">PAI Header Source</span>
+                        {isEditingEgressTranslation ? (
+                          <Select
+                            value={egressTranslationData.paiHeaderSource}
+                            onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, paiHeaderSource: v as "Generate" | "OA if Valid else Generate" | "From Header" })}
+                          >
+                            <SelectTrigger data-testid="select-pai-header-source" className="w-56">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Generate">Generate</SelectItem>
+                              <SelectItem value="OA if Valid else Generate">OA if Valid else Generate</SelectItem>
+                              <SelectItem value="From Header">From Header</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="text-sm">{egressTranslationData.paiHeaderSource}</span>
+                        )}
+                      </div>
+                    )}
+                    {/* Generation Block Size - only visible when Set PAI Header is not "Never" */}
+                    {egressTranslationData.setPaiHeader !== "Never" && (
+                      <div className="grid grid-cols-[200px_1fr] items-center gap-2">
+                        <span className="text-sm text-muted-foreground text-right">Generation Block Size</span>
+                        {isEditingEgressTranslation ? (
+                          <Select
+                            value={egressTranslationData.generationBlockSize}
+                            onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, generationBlockSize: v as "1" | "10" | "100" | "1000" })}
+                          >
+                            <SelectTrigger data-testid="select-generation-block-size" className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1</SelectItem>
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="100">100</SelectItem>
+                              <SelectItem value="1000">1000</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="text-sm">{egressTranslationData.generationBlockSize}</span>
+                        )}
+                      </div>
+                    )}
+                    {/* Set FROM Header - only visible when Set PAI Header is not "Never" */}
+                    {egressTranslationData.setPaiHeader !== "Never" && (
+                      <div className="grid grid-cols-[200px_1fr] items-center gap-2">
+                        <span className="text-sm text-muted-foreground text-right">Set FROM Header</span>
+                        {isEditingEgressTranslation ? (
+                          <Select
+                            value={egressTranslationData.setFromHeader}
+                            onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, setFromHeader: v as "Leave As-Is" | "Same as PAI" | "Generate" })}
+                          >
+                            <SelectTrigger data-testid="select-set-from-header" className="w-40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Leave As-Is">Leave As-Is</SelectItem>
+                              <SelectItem value="Same as PAI">Same as PAI</SelectItem>
+                              <SelectItem value="Generate">Generate</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="text-sm">{egressTranslationData.setFromHeader}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN */}
+              <div className="space-y-6">
+                {/* Egress Number Translation Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-primary">Egress Number Translation</h3>
+                  <div className="space-y-3">
                     <div className="grid grid-cols-[200px_1fr] items-center gap-2">
-                      <span className="text-sm text-muted-foreground text-right">PAI Header Source</span>
+                      <span className="text-sm text-muted-foreground text-right">Translate Origination</span>
                       {isEditingEgressTranslation ? (
                         <Select
-                          value={egressTranslationData.paiHeaderSource}
-                          onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, paiHeaderSource: v as "Generate" | "OA if Valid else Generate" | "From Header" })}
+                          value={egressTranslationData.translateOrigination}
+                          onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, translateOrigination: v as "From Address Only" | "Separate Address Translations" })}
                         >
-                          <SelectTrigger data-testid="select-pai-header-source" className="w-56">
+                          <SelectTrigger data-testid="select-translate-origination" className="w-56">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Generate">Generate</SelectItem>
-                            <SelectItem value="OA if Valid else Generate">OA if Valid else Generate</SelectItem>
-                            <SelectItem value="From Header">From Header</SelectItem>
+                            <SelectItem value="From Address Only">From Address Only</SelectItem>
+                            <SelectItem value="Separate Address Translations">Separate Address Translations</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
-                        <span className="text-sm">{egressTranslationData.paiHeaderSource}</span>
+                        <span className="text-sm">{egressTranslationData.translateOrigination}</span>
                       )}
                     </div>
                     <div className="grid grid-cols-[200px_1fr] items-center gap-2">
-                      <span className="text-sm text-muted-foreground text-right">Generation Block Size</span>
+                      <span className="text-sm text-muted-foreground text-right">From Address</span>
                       {isEditingEgressTranslation ? (
-                        <Select
-                          value={egressTranslationData.generationBlockSize}
-                          onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, generationBlockSize: v as "1" | "10" | "100" | "1000" })}
-                        >
-                          <SelectTrigger data-testid="select-generation-block-size" className="w-24">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                            <SelectItem value="1000">1000</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Input
+                          value={egressTranslationData.fromAddress}
+                          onChange={(e) => setEgressTranslationData({ ...egressTranslationData, fromAddress: e.target.value })}
+                          className="w-32"
+                          data-testid="input-from-address"
+                        />
                       ) : (
-                        <span className="text-sm">{egressTranslationData.generationBlockSize}</span>
+                        <span className="text-sm font-mono">{egressTranslationData.fromAddress}</span>
                       )}
                     </div>
-                    <div className="grid grid-cols-[200px_1fr] items-center gap-2">
-                      <span className="text-sm text-muted-foreground text-right">Set FROM Header</span>
-                      {isEditingEgressTranslation ? (
-                        <Select
-                          value={egressTranslationData.setFromHeader}
-                          onValueChange={(v) => setEgressTranslationData({ ...egressTranslationData, setFromHeader: v as "Leave As-Is" | "Same as PAI" | "Generate" })}
-                        >
-                          <SelectTrigger data-testid="select-set-from-header" className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Leave As-Is">Leave As-Is</SelectItem>
-                            <SelectItem value="Same as PAI">Same as PAI</SelectItem>
-                            <SelectItem value="Generate">Generate</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-sm">{egressTranslationData.setFromHeader}</span>
-                      )}
-                    </div>
+                    {/* To Address - only visible when "Separate Address Translations" is selected */}
+                    {egressTranslationData.translateOrigination === "Separate Address Translations" && (
+                      <div className="grid grid-cols-[200px_1fr] items-center gap-2">
+                        <span className="text-sm text-muted-foreground text-right">To Address</span>
+                        {isEditingEgressTranslation ? (
+                          <Input
+                            value={egressTranslationData.toAddress}
+                            onChange={(e) => setEgressTranslationData({ ...egressTranslationData, toAddress: e.target.value })}
+                            className="w-32"
+                            data-testid="input-to-address"
+                          />
+                        ) : (
+                          <span className="text-sm font-mono">{egressTranslationData.toAddress}</span>
+                        )}
+                      </div>
+                    )}
                     <div className="grid grid-cols-[200px_1fr] items-center gap-2">
                       <span className="text-sm text-muted-foreground text-right">Remove Display Name</span>
                       {isEditingEgressTranslation ? (
@@ -2686,15 +2801,12 @@ export default function InterconnectDetailPage() {
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* RIGHT COLUMN */}
-              <div className="space-y-6">
                 {/* PAI Topology Hiding Section */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-primary">PAI Topology Hiding</h3>
                   <div className="space-y-3">
-                    <div className="grid grid-cols-[180px_1fr] items-center gap-2">
+                    <div className="grid grid-cols-[200px_1fr] items-center gap-2">
                       <span className="text-sm text-muted-foreground text-right">Hide PAI Topology</span>
                       {isEditingEgressTranslation ? (
                         <Select
