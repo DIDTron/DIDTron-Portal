@@ -348,6 +348,13 @@ export default function InterconnectDetailPage() {
     placeholderData: keepPreviousData,
   });
 
+  // Fetch supplier rate cards for Supplier Buy Rates dropdown
+  const { data: supplierRateCardsData } = useQuery<Array<{ id: string; name: string; code?: string; currencyCode?: string; type?: string }>>({
+    queryKey: ["/api/rate-cards", { type: "provider" }],
+    staleTime: STALE_TIME.LIST,
+    placeholderData: keepPreviousData,
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     direction: "both",
@@ -359,6 +366,7 @@ export default function InterconnectDetailPage() {
     techPrefix: "",
     ipAddress: "",
     sipPort: 5060,
+    supplierBuyRates: "",
   });
 
   useEffect(() => {
@@ -378,6 +386,7 @@ export default function InterconnectDetailPage() {
         techPrefix: interconnect.techPrefix || "",
         ipAddress: interconnect.ipAddress || "",
         sipPort: interconnect.sipPort || 5060,
+        supplierBuyRates: interconnect.supplierBuyRates || "",
       });
       
       const firstTab = getTabsForDirection(interconnect.direction || "both")[0]?.id || "details";
@@ -973,10 +982,29 @@ export default function InterconnectDetailPage() {
                     )}
                   </div>
                   
-                  {(interconnect.direction === "supplier" || interconnect.direction === "bilateral") && (
+                  {(interconnect.direction === "supplier" || interconnect.direction === "both") && (
                     <div className="grid grid-cols-[120px_1fr] items-center gap-2">
                       <span className="text-sm text-muted-foreground">Supplier Buy Rates</span>
-                      <span className="text-sm">{interconnect.supplierBuyRates || "-"}</span>
+                      {isEditing ? (
+                        <Select
+                          value={formData.supplierBuyRates || "none"}
+                          onValueChange={(v) => setFormData({ ...formData, supplierBuyRates: v === "none" ? "" : v })}
+                        >
+                          <SelectTrigger data-testid="select-supplier-buy-rates">
+                            <SelectValue placeholder="Select rate card" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">-</SelectItem>
+                            {supplierRateCardsData?.map((rc) => (
+                              <SelectItem key={rc.id} value={rc.name || rc.id}>
+                                {rc.name} {rc.currencyCode && `(${rc.currencyCode})`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-sm">{interconnect.supplierBuyRates || "-"}</span>
+                      )}
                     </div>
                   )}
 
