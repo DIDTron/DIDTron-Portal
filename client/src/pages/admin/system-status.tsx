@@ -408,7 +408,7 @@ interface ApiErrorsData {
 }
 
 function ApiErrorsTab() {
-  const { data, isLoading } = useQuery<ApiErrorsData>({
+  const { data, isLoading, dataUpdatedAt } = useQuery<ApiErrorsData>({
     queryKey: ["/api/system/api-errors"],
     refetchInterval: 30000,
     staleTime: STALE_TIME.REALTIME,
@@ -416,8 +416,13 @@ function ApiErrorsTab() {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
+  const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
+
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard title="Requests (15m)" value={data?.requestCount15m || 0} icon={Globe} />
         <KPICard title="API p95" value={data?.p95Latency || 0} unit="ms" icon={Zap} />
@@ -438,8 +443,9 @@ function ApiErrorsTab() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">All Slow Endpoints (p95 {">"} 100ms)</CardTitle>
+            <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
           </CardHeader>
           <CardContent className="max-h-80 overflow-y-auto">
             {data?.slowEndpoints?.length ? (
@@ -464,8 +470,9 @@ function ApiErrorsTab() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Error Endpoints (5xx/4xx)</CardTitle>
+            <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
           </CardHeader>
           <CardContent className="max-h-80 overflow-y-auto">
             {data?.errorEndpoints?.length ? (
@@ -491,8 +498,9 @@ function ApiErrorsTab() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-base">Top Endpoints by Request Volume</CardTitle>
+          <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
         </CardHeader>
         <CardContent>
           <Table>
@@ -534,7 +542,7 @@ interface Violation {
 }
 
 function PerformanceTab() {
-  const { data, isLoading } = useQuery<{ budgets: PerformanceBudget[]; violations: Violation[] }>({
+  const { data, isLoading, dataUpdatedAt } = useQuery<{ budgets: PerformanceBudget[]; violations: Violation[] }>({
     queryKey: ["/api/system/performance"],
     refetchInterval: 30000,
     staleTime: STALE_TIME.REALTIME,
@@ -542,11 +550,17 @@ function PerformanceTab() {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
+  const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
+
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+      </div>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle>Performance Budgets (SLO)</CardTitle>
+          <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
         </CardHeader>
         <CardContent>
           <Table>
@@ -586,11 +600,12 @@ function PerformanceTab() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
             <Timer className="h-5 w-5" />
             Recent Violations (Last 15 Minutes)
           </CardTitle>
+          <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
         </CardHeader>
         <CardContent>
           {data?.violations?.length ? (
@@ -643,7 +658,7 @@ function PerformanceTab() {
 }
 
 function HealthTab() {
-  const { data, isLoading } = useQuery<{ checks: HealthCheck[] }>({
+  const { data, isLoading, dataUpdatedAt } = useQuery<{ checks: HealthCheck[] }>({
     queryKey: ["/api/system/health"],
     refetchInterval: 30000,
     staleTime: STALE_TIME.REALTIME,
@@ -651,10 +666,13 @@ function HealthTab() {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
+  const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>Health Checks</CardTitle>
+        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
       </CardHeader>
       <CardContent>
         <Table>
@@ -694,7 +712,7 @@ function HealthTab() {
 }
 
 function AlertsTab() {
-  const { data, isLoading, refetch } = useQuery<{ alerts: Alert[]; stats: { criticalCount: number; warningCount: number } }>({
+  const { data, isLoading, refetch, dataUpdatedAt } = useQuery<{ alerts: Alert[]; stats: { criticalCount: number; warningCount: number } }>({
     queryKey: ["/api/system/alerts"],
     refetchInterval: 30000,
     staleTime: STALE_TIME.REALTIME,
@@ -710,10 +728,15 @@ function AlertsTab() {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
+  const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>System Alerts</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <div className="flex items-center gap-4">
+          <CardTitle>System Alerts</CardTitle>
+          <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+        </div>
         <div className="flex gap-2">
           <Badge variant="destructive">{data?.stats?.criticalCount || 0} Critical</Badge>
           <Badge variant="secondary">{data?.stats?.warningCount || 0} Warning</Badge>
@@ -765,7 +788,7 @@ function AlertsTab() {
 }
 
 function IntegrationsTab() {
-  const { data, isLoading } = useQuery<{ integrations: Array<{
+  const { data, isLoading, dataUpdatedAt } = useQuery<{ integrations: Array<{
     name: string;
     status: string;
     latencyP95: number;
@@ -780,10 +803,13 @@ function IntegrationsTab() {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
+  const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>Integration Health</CardTitle>
+        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
       </CardHeader>
       <CardContent>
         <Table>
@@ -827,7 +853,7 @@ function IntegrationsTab() {
 }
 
 function JobsTab() {
-  const { data, isLoading } = useQuery<{
+  const { data, isLoading, dataUpdatedAt } = useQuery<{
     queuedJobs: number;
     runningJobs: number;
     failedJobs15m: number;
@@ -843,8 +869,13 @@ function JobsTab() {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
+  const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
+
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard title="Queued Jobs" value={data?.queuedJobs || 0} icon={Layers} />
         <KPICard title="Running Jobs" value={data?.runningJobs || 0} icon={Play} />
@@ -852,8 +883,9 @@ function JobsTab() {
         <KPICard title="Stuck Jobs" value={data?.stuckJobCount || 0} icon={Pause} status={data?.stuckJobCount ? "critical" : "good"} />
       </div>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle>Queue Summary</CardTitle>
+          <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
@@ -873,7 +905,7 @@ function JobsTab() {
 }
 
 function DatabaseTab() {
-  const { data, isLoading } = useQuery<{
+  const { data, isLoading, dataUpdatedAt } = useQuery<{
     p95Latency: number;
     p99Latency: number;
     poolUsed: number;
@@ -889,8 +921,13 @@ function DatabaseTab() {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
+  const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
+
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard title="Query p95" value={data?.p95Latency || 0} unit="ms" icon={Database} />
         <KPICard title="Query p99" value={data?.p99Latency || 0} unit="ms" icon={Database} />
@@ -898,8 +935,9 @@ function DatabaseTab() {
         <KPICard title="Slow Queries" value={data?.slowQueryCount || 0} icon={Timer} />
       </div>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle>Slow Queries</CardTitle>
+          <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
         </CardHeader>
         <CardContent>
           {data?.slowQueries?.length ? (
@@ -945,7 +983,7 @@ interface CacheData {
 }
 
 function CacheTab() {
-  const { data, isLoading } = useQuery<CacheData>({
+  const { data, isLoading, dataUpdatedAt } = useQuery<CacheData>({
     queryKey: ["/api/system/cache"],
     refetchInterval: 30000,
     staleTime: STALE_TIME.REALTIME,
@@ -953,11 +991,15 @@ function CacheTab() {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
+  const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
   const storagePercent = data?.storage?.usagePercent || 0;
   const storageStatus = storagePercent > 90 ? "critical" : storagePercent > 70 ? "warning" : "good";
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard 
           title="Redis p95" 
@@ -989,9 +1031,12 @@ function CacheTab() {
 
       {data?.storage && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Replit Storage Usage</CardTitle>
-            <p className="text-xs text-muted-foreground">Local disk storage for the Replit environment</p>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <div>
+              <CardTitle className="text-base">Replit Storage Usage</CardTitle>
+              <p className="text-xs text-muted-foreground">Local disk storage for the Replit environment</p>
+            </div>
+            <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -1013,8 +1058,9 @@ function CacheTab() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle>Redis</CardTitle>
+            <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -1042,8 +1088,9 @@ function CacheTab() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle>R2 Object Storage</CardTitle>
+            <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -1080,7 +1127,7 @@ function AuditTab() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   
-  const { data, isLoading } = useQuery<{ records: Array<{
+  const { data, isLoading, dataUpdatedAt } = useQuery<{ records: Array<{
     id: string;
     eventType: string;
     actorEmail: string;
@@ -1095,6 +1142,8 @@ function AuditTab() {
     refetchInterval: 60000,
     staleTime: 30000,
   });
+
+  const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
 
   const filteredRecords = useMemo(() => {
     if (!data?.records) return [];
@@ -1130,7 +1179,10 @@ function AuditTab() {
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-4">
-          <CardTitle>Recent Audit Events</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Recent Audit Events</CardTitle>
+            <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Period:</span>

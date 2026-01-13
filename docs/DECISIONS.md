@@ -328,3 +328,17 @@ Note: npm run check shows pre-existing TypeScript errors unrelated to this migra
 - Pauses when browser tab is hidden (visibility change listener)
 
 **Files Changed**: `client/src/pages/admin/system-status.tsx`
+
+**Update (2026-01-13)**: Extended per-card "as of" timestamps to ALL cards in ALL tabs:
+- OverviewTab: Active Alerts, Top Slow Endpoints
+- ApiErrorsTab: All Slow Endpoints, Error Endpoints, Top Endpoints by Request Volume
+- PerformanceTab: Performance Budgets, Recent Violations
+- HealthTab: Health Checks
+- AlertsTab: System Alerts
+- IntegrationsTab: Integration Health
+- JobsTab: Queue Summary
+- DatabaseTab: Slow Queries
+- CacheTab: Replit Storage Usage, Redis, R2 Object Storage
+- AuditTab: Recent Audit Events
+
+Pattern: Each useQuery now captures `dataUpdatedAt` and displays via `formatAsOf(new Date(dataUpdatedAt).toISOString())` in each Card header.
