@@ -63,17 +63,19 @@ export default function AdminDashboard() {
     staleTime: STALE_TIME.STATIC,
   });
 
-  const { data: invoices, isFetching: invoicesFetching, refetch: refetchInvoices } = useQuery<Invoice[]>({
+  const { data: invoicesResponse, isFetching: invoicesFetching, refetch: refetchInvoices } = useQuery<{ data: Invoice[]; nextCursor: string | null; hasMore: boolean }>({
     queryKey: ["/api/invoices"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
   });
+  const invoices = invoicesResponse?.data ?? [];
 
-  const { data: payments, isFetching: paymentsFetching, refetch: refetchPayments } = useQuery<Payment[]>({
+  const { data: paymentsResponse, isFetching: paymentsFetching, refetch: refetchPayments } = useQuery<{ data: Payment[]; nextCursor: string | null; hasMore: boolean }>({
     queryKey: ["/api/payments"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
   });
+  const payments = paymentsResponse?.data ?? [];
 
   const { data: promoCodes, isFetching: promoFetching, refetch: refetchPromos } = useQuery<PromoCode[]>({
     queryKey: ["/api/promo-codes"],
@@ -201,16 +203,16 @@ export default function AdminDashboard() {
         <StatCard 
           icon={CreditCard} 
           title="Invoices" 
-          value={(invoices ?? []).length.toString()} 
-          description={`${(invoices ?? []).filter(i => i.status === 'pending').length} pending`}
+          value={invoices.length.toString()} 
+          description={`${invoices.filter(i => i.status === 'pending').length} pending`}
           testId="stat-invoices"
           onClick={() => handleQuickAction("billing", "invoices", "Invoices", "/admin/invoices")}
         />
         <StatCard 
           icon={CreditCard} 
           title="Payments" 
-          value={(payments ?? []).length.toString()} 
-          description={`$${(payments ?? []).reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0).toFixed(2)} total`}
+          value={payments.length.toString()} 
+          description={`$${payments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0).toFixed(2)} total`}
           testId="stat-payments"
           onClick={() => handleQuickAction("billing", "payments", "Payments", "/admin/payments")}
         />
