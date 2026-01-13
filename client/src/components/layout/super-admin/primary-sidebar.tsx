@@ -8,6 +8,8 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 
 export interface NavSection {
   id: string;
@@ -147,6 +149,14 @@ export function PrimarySidebar() {
     })
   );
 
+  const { data: alertData } = useQuery<{ stats?: { criticalCount: number; warningCount: number } }>({
+    queryKey: ["/api/system/alerts"],
+    refetchInterval: 60000,
+    staleTime: 30000,
+  });
+  
+  const activeAlertCount = (alertData?.stats?.criticalCount || 0) + (alertData?.stats?.warningCount || 0);
+
   const orderedSections = useMemo(() => {
     if (primarySectionOrder.length === 0) {
       return navSections;
@@ -245,7 +255,7 @@ export function PrimarySidebar() {
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <div 
-                className="flex items-center justify-center p-2 rounded-md cursor-pointer text-sidebar-foreground hover-elevate"
+                className="relative flex items-center justify-center p-2 rounded-md cursor-pointer text-sidebar-foreground hover-elevate"
                 data-testid="nav-section-system-status"
                 onClick={() => {
                   setActiveSection("system-status");
@@ -259,15 +269,20 @@ export function PrimarySidebar() {
                 }}
               >
                 <Server className="h-5 w-5" />
+                {activeAlertCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white" data-testid="badge-system-alerts">
+                    {activeAlertCount > 9 ? "9+" : activeAlertCount}
+                  </span>
+                )}
               </div>
             </TooltipTrigger>
             <TooltipContent side="right" className="font-medium">
-              System Status
+              System Status {activeAlertCount > 0 && `(${activeAlertCount} alerts)`}
             </TooltipContent>
           </Tooltip>
         ) : (
           <div 
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer text-sidebar-foreground hover-elevate"
+            className="flex items-center justify-between gap-3 px-3 py-2 rounded-md text-sm cursor-pointer text-sidebar-foreground hover-elevate"
             data-testid="nav-section-system-status"
             onClick={() => {
               setActiveSection("system-status");
@@ -280,8 +295,15 @@ export function PrimarySidebar() {
               setLocation("/admin/system-status");
             }}
           >
-            <Server className="h-5 w-5 shrink-0" />
-            <span>System Status</span>
+            <div className="flex items-center gap-3">
+              <Server className="h-5 w-5 shrink-0" />
+              <span>System Status</span>
+            </div>
+            {activeAlertCount > 0 && (
+              <Badge variant="destructive" className="h-5 min-w-5 text-xs px-1.5" data-testid="badge-system-alerts">
+                {activeAlertCount > 99 ? "99+" : activeAlertCount}
+              </Badge>
+            )}
           </div>
         )}
       </div>

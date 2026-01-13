@@ -3530,3 +3530,162 @@ export type InsertConnexcsCdrStats = z.infer<typeof insertConnexcsCdrStatsSchema
 export type ConnexcsCdrStats = typeof connexcsCdrStats.$inferSelect;
 export type InsertConnexcsCdrSyncState = z.infer<typeof insertConnexcsCdrSyncStateSchema>;
 export type ConnexcsCdrSyncState = typeof connexcsCdrSyncState.$inferSelect;
+
+// ==================== SYSTEM MONITORING ENUMS ====================
+
+export const systemAlertSeverityEnum = pgEnum("system_alert_severity", ["critical", "warning", "info"]);
+export const systemAlertStatusEnum = pgEnum("system_alert_status", ["active", "resolved", "acknowledged", "snoozed"]);
+export const healthStatusEnum = pgEnum("health_status", ["healthy", "degraded", "down"]);
+export const metricsSnapshotTypeEnum = pgEnum("metrics_snapshot_type", ["api", "database", "redis", "r2", "job_queue", "integration", "portal"]);
+export const auditEventTypeEnum = pgEnum("audit_event_type", ["deployment", "migration", "config_change", "admin_action"]);
+export const portalTypeEnum = pgEnum("portal_type", ["super_admin", "customer", "marketing"]);
+
+// ==================== SYSTEM MONITORING TABLES ====================
+
+// Metrics Snapshots - stores periodic system metrics collected by DataQueue job every 60s
+export const metricsSnapshots = pgTable("metrics_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  snapshotType: metricsSnapshotTypeEnum("snapshot_type").notNull(),
+  metrics: jsonb("metrics").notNull(), // Type-specific metrics payload
+  collectedAt: timestamp("collected_at").notNull(), // UTC timestamp when metrics were collected
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_metrics_snapshots_type_collected").on(table.snapshotType, table.collectedAt),
+  index("idx_metrics_snapshots_collected").on(table.collectedAt),
+]);
+
+// System Alerts - active and resolved performance/health alerts
+export const systemAlerts = pgTable("system_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  severity: systemAlertSeverityEnum("severity").notNull(),
+  source: text("source").notNull(), // api | database | redis | job | integration | portal
+  title: text("title").notNull(),
+  description: text("description"),
+  metricName: text("metric_name"),
+  actualValue: decimal("actual_value", { precision: 14, scale: 4 }),
+  threshold: decimal("threshold", { precision: 14, scale: 4 }),
+  breachDuration: integer("breach_duration"), // seconds
+  firstSeenAt: timestamp("first_seen_at").notNull(),
+  lastSeenAt: timestamp("last_seen_at").notNull(),
+  status: systemAlertStatusEnum("status").notNull().default("active"),
+  acknowledgedBy: varchar("acknowledged_by").references(() => users.id),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  resolvedAt: timestamp("resolved_at"),
+  snoozeUntil: timestamp("snooze_until"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_system_alerts_status").on(table.status),
+  index("idx_system_alerts_severity_status").on(table.severity, table.status),
+  index("idx_system_alerts_source").on(table.source),
+  index("idx_system_alerts_first_seen").on(table.firstSeenAt),
+]);
+
+// Integration Health - health status for each external integration
+export const integrationHealth = pgTable("integration_health", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  integrationName: text("integration_name").notNull().unique(), // connexcs, brevo, nowpayments, ayrshare, openexchangerates, openai
+  status: healthStatusEnum("status").notNull().default("healthy"),
+  latencyP95: integer("latency_p95"), // ms
+  errorRate: decimal("error_rate", { precision: 6, scale: 4 }), // percentage as decimal
+  lastSuccessAt: timestamp("last_success_at"),
+  lastFailureAt: timestamp("last_failure_at"),
+  lastFailureReason: text("last_failure_reason"),
+  checkedAt: timestamp("checked_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Job Metrics - DataQueue job performance metrics
+export const jobMetrics = pgTable("job_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobType: text("job_type").notNull(),
+  queuedCount: integer("queued_count").default(0),
+  runningCount: integer("running_count").default(0),
+  failedCount15m: integer("failed_count_15m").default(0),
+  failedCount24h: integer("failed_count_24h").default(0),
+  oldestJobAge: integer("oldest_job_age"), // seconds
+  stuckJobCount: integer("stuck_job_count").default(0),
+  averageDuration: integer("average_duration"), // ms
+  collectedAt: timestamp("collected_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_job_metrics_type_collected").on(table.jobType, table.collectedAt),
+  index("idx_job_metrics_collected").on(table.collectedAt),
+]);
+
+// Portal Metrics - portal-specific health and performance metrics
+export const portalMetrics = pgTable("portal_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  portalType: portalTypeEnum("portal_type").notNull(),
+  routeTransitionP95: integer("route_transition_p95"), // ms
+  routeTransitionP99: integer("route_transition_p99"), // ms
+  jsErrorCount: integer("js_error_count").default(0),
+  assetLoadFailures: integer("asset_load_failures").default(0),
+  lastPageLoadSample: timestamp("last_page_load_sample"),
+  healthStatus: healthStatusEnum("health_status").notNull().default("healthy"),
+  collectedAt: timestamp("collected_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_portal_metrics_type_collected").on(table.portalType, table.collectedAt),
+  index("idx_portal_metrics_collected").on(table.collectedAt),
+]);
+
+// Audit Records - system changes for correlation with performance issues
+export const auditRecords = pgTable("audit_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventType: auditEventTypeEnum("event_type").notNull(),
+  actorId: varchar("actor_id").references(() => users.id),
+  actorEmail: text("actor_email"),
+  description: text("description").notNull(),
+  metadata: jsonb("metadata"),
+  occurredAt: timestamp("occurred_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_audit_records_type").on(table.eventType),
+  index("idx_audit_records_occurred").on(table.occurredAt),
+  index("idx_audit_records_actor").on(table.actorId),
+]);
+
+// Module Registry - registry of all modules for auto-monitoring
+export const moduleRegistry = pgTable("module_registry", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  moduleKey: text("module_key").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  routesPrefix: text("routes_prefix"),
+  apiPrefix: text("api_prefix"),
+  criticalEndpoints: jsonb("critical_endpoints"), // array of endpoint patterns
+  jobTypes: jsonb("job_types"), // array of job type names
+  integrationsUsed: jsonb("integrations_used"), // array of integration names
+  portalVisibility: jsonb("portal_visibility"), // array: ["admin", "customer", "marketing"]
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ==================== SYSTEM MONITORING ZOD SCHEMAS ====================
+
+export const insertMetricsSnapshotSchema = createInsertSchema(metricsSnapshots).omit({ id: true, createdAt: true });
+export const insertSystemAlertSchema = createInsertSchema(systemAlerts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertIntegrationHealthSchema = createInsertSchema(integrationHealth).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertJobMetricsSchema = createInsertSchema(jobMetrics).omit({ id: true, createdAt: true });
+export const insertPortalMetricsSchema = createInsertSchema(portalMetrics).omit({ id: true, createdAt: true });
+export const insertAuditRecordSchema = createInsertSchema(auditRecords).omit({ id: true, createdAt: true });
+export const insertModuleRegistrySchema = createInsertSchema(moduleRegistry).omit({ id: true, createdAt: true, updatedAt: true });
+
+// ==================== SYSTEM MONITORING TYPES ====================
+
+export type InsertMetricsSnapshot = z.infer<typeof insertMetricsSnapshotSchema>;
+export type MetricsSnapshot = typeof metricsSnapshots.$inferSelect;
+export type InsertSystemAlert = z.infer<typeof insertSystemAlertSchema>;
+export type SystemAlert = typeof systemAlerts.$inferSelect;
+export type InsertIntegrationHealth = z.infer<typeof insertIntegrationHealthSchema>;
+export type IntegrationHealth = typeof integrationHealth.$inferSelect;
+export type InsertJobMetrics = z.infer<typeof insertJobMetricsSchema>;
+export type JobMetrics = typeof jobMetrics.$inferSelect;
+export type InsertPortalMetrics = z.infer<typeof insertPortalMetricsSchema>;
+export type PortalMetrics = typeof portalMetrics.$inferSelect;
+export type InsertAuditRecord = z.infer<typeof insertAuditRecordSchema>;
+export type AuditRecord = typeof auditRecords.$inferSelect;
+export type InsertModuleRegistry = z.infer<typeof insertModuleRegistrySchema>;
+export type ModuleRegistry = typeof moduleRegistry.$inferSelect;

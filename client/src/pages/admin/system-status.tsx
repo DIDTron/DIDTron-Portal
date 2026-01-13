@@ -1,469 +1,836 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Server, Database, Cpu, HardDrive, Clock, Activity, 
   AlertTriangle, CheckCircle2, XCircle, RefreshCw,
-  Gauge, Zap, Timer, MemoryStick
+  Gauge, Zap, Timer, MemoryStick, Radio, Globe,
+  Settings, FileText, Bell, Shield, Layers,
+  Play, Pause
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
-interface SystemStatus {
-  status: "healthy" | "degraded" | "critical";
-  uptime: number;
-  memory: {
-    heapUsedMb: number;
-    heapTotalMb: number;
-    rssMb: number;
+interface OverviewData {
+  globalStatus: "green" | "yellow" | "red";
+  lastUpdated: string | null;
+  kpis: {
+    apiP95Latency: number;
+    dbP95Latency: number;
+    errorRate5xx: number;
+    redisP95Latency: number;
+    queuedJobs: number;
+    stuckJobs: number;
+    activeAlerts: number;
+    violationsLast15m: number;
   };
-  performance: {
-    totalViolations: number;
-    last15Minutes: number;
-    lastHour: number;
-    budget: {
-      apiResponseTime: number;
-      queryExecutionTime: number;
-      memoryUsageMb: number;
-    };
-    lastAlertTime: string | null;
-  };
-  services: {
-    database: "online" | "offline" | "degraded";
-    api: "online" | "offline" | "degraded";
-    ai: "online" | "offline" | "degraded";
-  };
-  timestamp: string;
-}
-
-interface PerformanceData {
-  stats: {
-    totalViolations: number;
-    last15Minutes: number;
-    lastHour: number;
-    budget: {
-      apiResponseTime: number;
-      queryExecutionTime: number;
-      memoryUsageMb: number;
-    };
-    lastAlertTime: string | null;
-  };
-  violations: Array<{
-    metric: string;
-    actual: number;
-    threshold: number;
-    unit: string;
-    endpoint?: string;
-    timestamp: string;
+  activeAlerts: Array<{
+    id: string;
+    severity: string;
+    title: string;
+    description: string;
+    firstSeenAt: string | null;
   }>;
+  topSlowEndpoints: Array<{ endpoint: string; p95: number }>;
+  topSlowQueries: Array<{ query: string; durationMs: number }>;
 }
 
-interface JobQueueStatus {
-  stats: {
-    pending: number;
-    running: number;
-    completed: number;
-    failed: number;
-    cancelled: number;
-  };
-  recentJobs: Array<{
-    id: number;
-    type: string;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-  }>;
+interface PerformanceBudget {
+  name: string;
+  metricType: string;
+  target: Record<string, number>;
+  window: string;
+  currentValue: number;
+  status: "green" | "yellow" | "red";
+  lastUpdated: string | null;
 }
 
-function StatusBadge({ status }: { status: "online" | "offline" | "degraded" | "healthy" | "critical" }) {
+interface HealthCheck {
+  component: string;
+  status: "pass" | "degraded" | "fail";
+  latency: number;
+  checkedAt: string | null;
+}
+
+interface Alert {
+  id: string;
+  severity: string;
+  source: string;
+  title: string;
+  description: string;
+  firstSeenAt: string | null;
+  lastSeenAt: string | null;
+  status: string;
+  acknowledgedBy: string | null;
+  acknowledgedAt: string | null;
+  snoozedUntil: string | null;
+  resolvedAt: string | null;
+}
+
+function GlobalStatusIndicator({ status }: { status: "green" | "yellow" | "red" }) {
   const config = {
-    online: { color: "bg-green-500", label: "Online" },
-    healthy: { color: "bg-green-500", label: "Healthy" },
-    degraded: { color: "bg-yellow-500", label: "Degraded" },
-    offline: { color: "bg-red-500", label: "Offline" },
-    critical: { color: "bg-red-500", label: "Critical" },
+    green: { color: "bg-green-500", label: "Healthy", textColor: "text-green-600" },
+    yellow: { color: "bg-yellow-500", label: "Warning", textColor: "text-yellow-600" },
+    red: { color: "bg-red-500", label: "Critical", textColor: "text-red-600" },
   };
-  
-  const { color, label } = config[status] || config.offline;
+  const { color, label, textColor } = config[status];
   
   return (
-    <div className="flex items-center gap-2">
-      <div className={cn("w-2 h-2 rounded-full", color)} />
-      <span className="text-sm font-medium">{label}</span>
+    <div className="flex items-center gap-2" data-testid="global-status">
+      <div className={cn("w-3 h-3 rounded-full animate-pulse", color)} />
+      <span className={cn("font-semibold", textColor)}>{label}</span>
     </div>
   );
 }
 
-function BudgetIndicator({ label, actual, budget, unit }: { label: string; actual: number; budget: number; unit: string }) {
-  const percentage = Math.min((actual / budget) * 100, 100);
-  const status = percentage > 90 ? "critical" : percentage > 70 ? "warning" : "good";
-  
+function KPICard({ 
+  title, 
+  value, 
+  unit, 
+  icon: Icon, 
+  status 
+}: { 
+  title: string; 
+  value: number | string; 
+  unit?: string; 
+  icon: typeof Server;
+  status?: "good" | "warning" | "critical";
+}) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{label}</span>
-        <span className="text-sm text-muted-foreground">
-          {actual.toFixed(0)}{unit} / {budget}{unit}
-        </span>
+    <Card className={cn(
+      "transition-colors",
+      status === "critical" && "border-red-500/50",
+      status === "warning" && "border-yellow-500/50"
+    )}>
+      <CardContent className="pt-4 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "p-2 rounded-md",
+              status === "critical" ? "bg-red-100 dark:bg-red-900/30" :
+              status === "warning" ? "bg-yellow-100 dark:bg-yellow-900/30" :
+              "bg-primary/10"
+            )}>
+              <Icon className={cn(
+                "h-4 w-4",
+                status === "critical" ? "text-red-600" :
+                status === "warning" ? "text-yellow-600" :
+                "text-primary"
+              )} />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{title}</p>
+              <p className="text-lg font-bold">
+                {typeof value === "number" ? value.toFixed(value < 10 ? 2 : 0) : value}
+                {unit && <span className="text-sm font-normal ml-1">{unit}</span>}
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StaleBanner({ lastUpdated }: { lastUpdated: string | null | undefined }) {
+  if (!lastUpdated) {
+    return (
+      <div className="px-4 py-2 rounded-md mb-4 flex items-center gap-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400" data-testid="stale-banner">
+        <AlertTriangle className="h-4 w-4" />
+        <span>No data collected yet</span>
       </div>
-      <Progress 
-        value={percentage} 
-        className={cn(
-          "h-2",
-          status === "critical" && "[&>div]:bg-red-500",
-          status === "warning" && "[&>div]:bg-yellow-500"
-        )}
-      />
-      <div className="flex items-center gap-1">
-        {status === "good" && <CheckCircle2 className="h-3 w-3 text-green-500" />}
-        {status === "warning" && <AlertTriangle className="h-3 w-3 text-yellow-500" />}
-        {status === "critical" && <XCircle className="h-3 w-3 text-red-500" />}
-        <span className={cn(
-          "text-xs",
-          status === "good" && "text-green-600",
-          status === "warning" && "text-yellow-600",
-          status === "critical" && "text-red-600"
-        )}>
-          {status === "good" ? "Within budget" : status === "warning" ? "Approaching limit" : "Over budget"}
-        </span>
-      </div>
+    );
+  }
+
+  const now = new Date();
+  const updated = new Date(lastUpdated);
+  const ageMs = now.getTime() - updated.getTime();
+  const ageMinutes = ageMs / 60000;
+
+  if (ageMinutes < 2) return null;
+
+  return (
+    <div className={cn(
+      "px-4 py-2 rounded-md mb-4 flex items-center gap-2",
+      ageMinutes >= 5 ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" :
+      "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+    )} data-testid="stale-banner">
+      <AlertTriangle className="h-4 w-4" />
+      <span>
+        {ageMinutes >= 5 ? "Data collection stalled" : "Stale data"} - 
+        Last updated {Math.floor(ageMinutes)} minutes ago
+      </span>
     </div>
   );
 }
 
-function formatUptime(seconds: number): string {
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  
-  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
+function formatTimestamp(timestamp: string | null | undefined): string {
+  if (!timestamp) return "Never";
+  return new Date(timestamp).toLocaleTimeString();
 }
 
-function getRecentApiLatency(performance: PerformanceData | undefined): number {
-  if (!performance?.violations?.length) return 0;
-  const apiViolations = performance.violations.filter(v => v.metric === "API Response Time");
-  if (apiViolations.length === 0) return 0;
-  const mostRecent = apiViolations.reduce((latest, current) => 
-    new Date(current.timestamp) > new Date(latest.timestamp) ? current : latest
-  );
-  return mostRecent.actual;
+function formatDateTimestamp(timestamp: string | null | undefined): string {
+  if (!timestamp) return "Never";
+  return new Date(timestamp).toLocaleString();
 }
 
-function getRecentQueryLatency(performance: PerformanceData | undefined): number {
-  if (!performance?.violations?.length) return 0;
-  const queryViolations = performance.violations.filter(v => v.metric === "Query Execution Time");
-  if (queryViolations.length === 0) return 0;
-  const mostRecent = queryViolations.reduce((latest, current) => 
-    new Date(current.timestamp) > new Date(latest.timestamp) ? current : latest
-  );
-  return mostRecent.actual;
-}
-
-export default function SystemStatusPage() {
-  const { data: status, isLoading: statusLoading, refetch: refetchStatus, isFetching: statusFetching } = useQuery<SystemStatus>({
-    queryKey: ["/api/system/status"],
+function OverviewTab() {
+  const { data, isLoading } = useQuery<OverviewData>({
+    queryKey: ["/api/system/overview"],
     refetchInterval: 30000,
     staleTime: 10000,
   });
 
-  const { data: performance, isLoading: perfLoading, refetch: refetchPerf } = useQuery<PerformanceData>({
+  if (isLoading) return <Skeleton className="h-96 w-full" />;
+
+  const kpis = data?.kpis || {};
+  const apiStatus = kpis.apiP95Latency > 250 ? "critical" : kpis.apiP95Latency > 120 ? "warning" : "good";
+  const dbStatus = kpis.dbP95Latency > 150 ? "critical" : kpis.dbP95Latency > 60 ? "warning" : "good";
+
+  return (
+    <div className="space-y-6">
+      <StaleBanner lastUpdated={data?.lastUpdated} />
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPICard title="API p95 Latency" value={kpis.apiP95Latency || 0} unit="ms" icon={Zap} status={apiStatus} />
+        <KPICard title="DB p95 Latency" value={kpis.dbP95Latency || 0} unit="ms" icon={Database} status={dbStatus} />
+        <KPICard title="5xx Error Rate" value={kpis.errorRate5xx || 0} unit="%" icon={AlertTriangle} />
+        <KPICard title="Active Alerts" value={kpis.activeAlerts || 0} icon={Bell} status={kpis.activeAlerts > 0 ? "warning" : "good"} />
+        <KPICard title="Queued Jobs" value={kpis.queuedJobs || 0} icon={Layers} />
+        <KPICard title="Stuck Jobs" value={kpis.stuckJobs || 0} icon={Cpu} status={kpis.stuckJobs > 0 ? "critical" : "good"} />
+        <KPICard title="Redis p95" value={kpis.redisP95Latency || 0} unit="ms" icon={Radio} />
+        <KPICard title="Violations (15m)" value={kpis.violationsLast15m || 0} icon={Timer} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Active Alerts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data?.activeAlerts?.length ? (
+              <div className="space-y-2">
+                {data.activeAlerts.slice(0, 5).map((alert) => (
+                  <div key={alert.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      {alert.severity === "critical" ? (
+                        <XCircle className="h-4 w-4 text-red-500" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      )}
+                      <span className="text-sm font-medium">{alert.title}</span>
+                    </div>
+                    <Badge variant={alert.severity === "critical" ? "destructive" : "secondary"}>
+                      {alert.severity}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center p-4 text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                No active alerts
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Top Slow Endpoints</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data?.topSlowEndpoints?.length ? (
+              <div className="space-y-2">
+                {data.topSlowEndpoints.map((ep, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                    <span className="text-sm font-mono truncate max-w-[200px]">{ep.endpoint}</span>
+                    <Badge variant="outline">{ep.p95}ms</Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center p-4 text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                No slow endpoints
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function PerformanceTab() {
+  const { data, isLoading } = useQuery<{ budgets: PerformanceBudget[] }>({
     queryKey: ["/api/system/performance"],
     refetchInterval: 30000,
     staleTime: 10000,
   });
 
-  const { data: jobQueue, isLoading: jobLoading } = useQuery<JobQueueStatus>({
-    queryKey: ["/api/job-queue/status"],
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Performance Budgets (SLO)</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Metric</TableHead>
+              <TableHead>Target</TableHead>
+              <TableHead>Current</TableHead>
+              <TableHead>Window</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data?.budgets?.map((budget, i) => (
+              <TableRow key={i}>
+                <TableCell className="font-medium">{budget.name}</TableCell>
+                <TableCell>
+                  {Object.entries(budget.target).map(([k, v]) => (
+                    <span key={k} className="mr-2">{k}: {v}</span>
+                  ))}
+                </TableCell>
+                <TableCell>{budget.currentValue.toFixed(1)}ms</TableCell>
+                <TableCell>{budget.window}</TableCell>
+                <TableCell>
+                  <Badge variant={
+                    budget.status === "red" ? "destructive" :
+                    budget.status === "yellow" ? "secondary" : "default"
+                  }>
+                    {budget.status === "green" ? "OK" : budget.status === "yellow" ? "Warning" : "Breach"}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HealthTab() {
+  const { data, isLoading } = useQuery<{ checks: HealthCheck[] }>({
+    queryKey: ["/api/system/health"],
     refetchInterval: 30000,
     staleTime: 10000,
   });
 
-  const handleRefresh = () => {
-    refetchStatus();
-    refetchPerf();
-  };
-
-  const isLoading = statusLoading || perfLoading;
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">System Status</h1>
-          <p className="text-muted-foreground">Real-time platform health and performance monitoring</p>
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={handleRefresh}
-          disabled={statusFetching}
-          data-testid="button-refresh-status"
-        >
-          <RefreshCw className={cn("h-4 w-4 mr-2", statusFetching && "animate-spin")} />
-          Refresh
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-4 gap-4">
-        {isLoading ? (
-          <>
-            {[1,2,3,4].map(i => (
-              <Card key={i}>
-                <CardContent className="pt-6">
-                  <Skeleton className="h-16 w-full" />
-                </CardContent>
-              </Card>
+    <Card>
+      <CardHeader>
+        <CardTitle>Health Checks</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Component</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Latency</TableHead>
+              <TableHead>Last Checked</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data?.checks?.map((check, i) => (
+              <TableRow key={i}>
+                <TableCell className="font-medium">{check.component}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {check.status === "pass" ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : check.status === "degraded" ? (
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                    {check.status}
+                  </div>
+                </TableCell>
+                <TableCell>{check.latency}ms</TableCell>
+                <TableCell>{formatTimestamp(check.checkedAt)}</TableCell>
+              </TableRow>
             ))}
-          </>
-        ) : (
-          <>
-            <Card data-testid="card-system-status">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-primary/10">
-                    <Server className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">System Status</p>
-                    <StatusBadge status={status?.status || "offline"} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
 
-            <Card data-testid="card-uptime">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-primary/10">
-                    <Clock className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Uptime</p>
-                    <p className="text-xl font-bold" data-testid="text-uptime">{formatUptime(status?.uptime || 0)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+function AlertsTab() {
+  const { data, isLoading, refetch } = useQuery<{ alerts: Alert[]; stats: { criticalCount: number; warningCount: number } }>({
+    queryKey: ["/api/system/alerts"],
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
 
-            <Card data-testid="card-violations">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-primary/10">
-                    <AlertTriangle className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Violations (15m)</p>
-                    <p className="text-xl font-bold" data-testid="text-violations">{status?.performance?.last15Minutes || 0}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+  const acknowledgeMutation = useMutation({
+    mutationFn: (alertId: string) => apiRequest("POST", `/api/system/alerts/${alertId}/acknowledge`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/system/alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/system/overview"] });
+    },
+  });
 
-            <Card data-testid="card-memory">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-primary/10">
-                    <MemoryStick className="h-5 w-5 text-primary" />
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>System Alerts</CardTitle>
+        <div className="flex gap-2">
+          <Badge variant="destructive">{data?.stats?.criticalCount || 0} Critical</Badge>
+          <Badge variant="secondary">{data?.stats?.warningCount || 0} Warning</Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Severity</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>First Seen</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data?.alerts?.map((alert) => (
+              <TableRow key={alert.id}>
+                <TableCell>
+                  <Badge variant={alert.severity === "critical" ? "destructive" : "secondary"}>
+                    {alert.severity}
+                  </Badge>
+                </TableCell>
+                <TableCell>{alert.source}</TableCell>
+                <TableCell className="max-w-[200px] truncate">{alert.title}</TableCell>
+                <TableCell>{formatDateTimestamp(alert.firstSeenAt)}</TableCell>
+                <TableCell>{alert.status}</TableCell>
+                <TableCell>
+                  {alert.status === "active" && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => acknowledgeMutation.mutate(alert.id)}
+                      disabled={acknowledgeMutation.isPending}
+                    >
+                      Acknowledge
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function IntegrationsTab() {
+  const { data, isLoading } = useQuery<{ integrations: Array<{
+    name: string;
+    status: string;
+    latencyP95: number;
+    errorRate: number;
+    lastSuccessAt: string | null;
+    lastFailureReason: string | null;
+  }> }>({
+    queryKey: ["/api/system/integrations"],
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Integration Health</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Integration</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>p95 Latency</TableHead>
+              <TableHead>Error Rate</TableHead>
+              <TableHead>Last Success</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data?.integrations?.map((int) => (
+              <TableRow key={int.name}>
+                <TableCell className="font-medium capitalize">{int.name}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {int.status === "healthy" ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : int.status === "degraded" ? (
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                    {int.status}
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Memory (RSS)</p>
-                    <p className="text-xl font-bold" data-testid="text-memory-rss">{status?.memory?.rssMb || 0} MB</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
+                </TableCell>
+                <TableCell>{int.latencyP95}ms</TableCell>
+                <TableCell>{(int.errorRate * 100).toFixed(2)}%</TableCell>
+                <TableCell>
+                  {formatDateTimestamp(int.lastSuccessAt)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function JobsTab() {
+  const { data, isLoading } = useQuery<{
+    queuedJobs: number;
+    runningJobs: number;
+    failedJobs15m: number;
+    failedJobs24h: number;
+    oldestJobAge: number;
+    stuckJobCount: number;
+    successRate: number;
+  }>({
+    queryKey: ["/api/system/jobs"],
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPICard title="Queued Jobs" value={data?.queuedJobs || 0} icon={Layers} />
+        <KPICard title="Running Jobs" value={data?.runningJobs || 0} icon={Play} />
+        <KPICard title="Failed (15m)" value={data?.failedJobs15m || 0} icon={XCircle} status={data?.failedJobs15m ? "warning" : "good"} />
+        <KPICard title="Stuck Jobs" value={data?.stuckJobCount || 0} icon={Pause} status={data?.stuckJobCount ? "critical" : "good"} />
       </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Health Panel
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-32 w-full" />
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <Database className="h-5 w-5 text-muted-foreground" />
-                    <span>PostgreSQL Database</span>
-                  </div>
-                  <StatusBadge status={status?.services?.database || "offline"} />
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <Server className="h-5 w-5 text-muted-foreground" />
-                    <span>API Server</span>
-                  </div>
-                  <StatusBadge status={status?.services?.api || "offline"} />
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <Zap className="h-5 w-5 text-muted-foreground" />
-                    <span>AI Integrations</span>
-                  </div>
-                  <StatusBadge status={status?.services?.ai || "offline"} />
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gauge className="h-5 w-5" />
-              Performance Budgets
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-32 w-full" />
-            ) : (
-              <div className="space-y-6">
-                <BudgetIndicator 
-                  label="API Response Time (p95)"
-                  actual={getRecentApiLatency(performance)}
-                  budget={performance?.stats?.budget?.apiResponseTime || 500}
-                  unit="ms"
-                />
-                <BudgetIndicator 
-                  label="Memory Usage (Heap)"
-                  actual={status?.memory?.heapUsedMb || 0}
-                  budget={performance?.stats?.budget?.memoryUsageMb || 512}
-                  unit="MB"
-                />
-                <BudgetIndicator 
-                  label="Query Execution Time"
-                  actual={getRecentQueryLatency(performance)}
-                  budget={performance?.stats?.budget?.queryExecutionTime || 200}
-                  unit="ms"
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HardDrive className="h-5 w-5" />
-              Resource Usage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-32 w-full" />
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Heap Used</span>
-                    <span>{status?.memory?.heapUsedMb || 0} MB / {status?.memory?.heapTotalMb || 0} MB</span>
-                  </div>
-                  <Progress 
-                    value={status?.memory ? (status.memory.heapUsedMb / status.memory.heapTotalMb) * 100 : 0} 
-                    className="h-2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>RSS Memory</span>
-                    <span>{status?.memory?.rssMb || 0} MB</span>
-                  </div>
-                  <Progress 
-                    value={Math.min((status?.memory?.rssMb || 0) / 1024 * 100, 100)} 
-                    className="h-2"
-                  />
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Cpu className="h-5 w-5" />
-              DataQueue Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {jobLoading ? (
-              <Skeleton className="h-32 w-full" />
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 rounded-md bg-muted/50 text-center">
-                  <p className="text-2xl font-bold">{jobQueue?.stats?.pending || 0}</p>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                </div>
-                <div className="p-3 rounded-md bg-muted/50 text-center">
-                  <p className="text-2xl font-bold">{jobQueue?.stats?.running || 0}</p>
-                  <p className="text-sm text-muted-foreground">Running</p>
-                </div>
-                <div className="p-3 rounded-md bg-muted/50 text-center">
-                  <p className="text-2xl font-bold text-green-600">{jobQueue?.stats?.completed || 0}</p>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                </div>
-                <div className="p-3 rounded-md bg-muted/50 text-center">
-                  <p className="text-2xl font-bold text-red-600">{jobQueue?.stats?.failed || 0}</p>
-                  <p className="text-sm text-muted-foreground">Failed</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Timer className="h-5 w-5" />
-            Recent Performance Violations
-          </CardTitle>
+          <CardTitle>Queue Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          {perfLoading ? (
-            <Skeleton className="h-32 w-full" />
-          ) : performance?.violations && performance.violations.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-md bg-muted/50">
+              <p className="text-sm text-muted-foreground">Success Rate</p>
+              <p className="text-2xl font-bold">{data?.successRate?.toFixed(1) || 100}%</p>
+            </div>
+            <div className="p-4 rounded-md bg-muted/50">
+              <p className="text-sm text-muted-foreground">Oldest Job Age</p>
+              <p className="text-2xl font-bold">{data?.oldestJobAge || 0}s</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function DatabaseTab() {
+  const { data, isLoading } = useQuery<{
+    p95Latency: number;
+    p99Latency: number;
+    poolUsed: number;
+    poolTotal: number;
+    poolSaturation: number;
+    slowQueryCount: number;
+    slowQueries: Array<{ query: string; durationMs: number }>;
+  }>({
+    queryKey: ["/api/system/database"],
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPICard title="Query p95" value={data?.p95Latency || 0} unit="ms" icon={Database} />
+        <KPICard title="Query p99" value={data?.p99Latency || 0} unit="ms" icon={Database} />
+        <KPICard title="Pool Saturation" value={data?.poolSaturation || 0} unit="%" icon={Gauge} />
+        <KPICard title="Slow Queries" value={data?.slowQueryCount || 0} icon={Timer} />
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Slow Queries</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data?.slowQueries?.length ? (
             <div className="space-y-2">
-              {performance.violations.slice(0, 10).map((v, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-md bg-muted/50" data-testid={`violation-${i}`}>
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                    <div>
-                      <span className="font-medium">{v.metric}</span>
-                      {v.endpoint && <span className="text-muted-foreground ml-2">{v.endpoint}</span>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Badge variant="destructive">{v.actual.toFixed(0)}{v.unit} / {v.threshold}{v.unit}</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(v.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
+              {data.slowQueries.slice(0, 10).map((q, i) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                  <span className="text-sm font-mono truncate max-w-[400px]">{q.query}</span>
+                  <Badge variant="destructive">{q.durationMs}ms</Badge>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center p-8 text-muted-foreground">
-              <CheckCircle2 className="h-5 w-5 mr-2 text-green-500" />
-              No performance violations recorded
+            <div className="flex items-center justify-center p-4 text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+              No slow queries
             </div>
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function CacheTab() {
+  const { data, isLoading } = useQuery<{
+    redis: { p95Latency: number; cacheHitRate: number; connected: boolean };
+    r2: { p95Latency: number; uploadErrors: number; downloadErrors: number };
+  }>({
+    queryKey: ["/api/system/cache"],
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Redis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span>Status</span>
+              <Badge variant={data?.redis?.connected ? "default" : "destructive"}>
+                {data?.redis?.connected ? "Connected" : "Disconnected"}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>p95 Latency</span>
+              <span className="font-bold">{data?.redis?.p95Latency || 0}ms</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Cache Hit Rate</span>
+              <span className="font-bold">{(data?.redis?.cacheHitRate || 0) * 100}%</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>R2 Object Storage</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span>p95 Latency</span>
+              <span className="font-bold">{data?.r2?.p95Latency || 0}ms</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Upload Errors</span>
+              <span className="font-bold">{data?.r2?.uploadErrors || 0}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Download Errors</span>
+              <span className="font-bold">{data?.r2?.downloadErrors || 0}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AuditTab() {
+  const { data, isLoading } = useQuery<{ records: Array<{
+    id: string;
+    eventType: string;
+    actorEmail: string;
+    description: string;
+    occurredAt: string | null;
+  }> }>({
+    queryKey: ["/api/system/audit"],
+    refetchInterval: 60000,
+    staleTime: 30000,
+  });
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent Audit Events</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Actor</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Time</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data?.records?.length ? data.records.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell><Badge variant="outline">{r.eventType}</Badge></TableCell>
+                <TableCell>{r.actorEmail || "System"}</TableCell>
+                <TableCell className="max-w-[300px] truncate">{r.description}</TableCell>
+                <TableCell>{formatDateTimestamp(r.occurredAt)}</TableCell>
+              </TableRow>
+            )) : (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  No recent audit events
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function SystemStatusPage() {
+  const [isLive, setIsLive] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
+
+  const { data: overview, refetch, isFetching } = useQuery<OverviewData>({
+    queryKey: ["/api/system/overview"],
+    refetchInterval: isLive ? 30000 : false,
+    staleTime: 10000,
+  });
+
+  const acknowledgeAllMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/system/alerts/acknowledge-all"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/system/alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/system/overview"] });
+    },
+  });
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsLive(false);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">System Status</h1>
+          <GlobalStatusIndicator status={overview?.globalStatus || "green"} />
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">
+            Last updated: {formatTimestamp(overview?.lastUpdated)}
+          </span>
+          <div className="flex items-center gap-2">
+            <Switch 
+              checked={isLive} 
+              onCheckedChange={setIsLive}
+              data-testid="switch-live"
+            />
+            <span className="text-sm">{isLive ? "Live" : "Paused"}</span>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            data-testid="button-refresh"
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", isFetching && "animate-spin")} />
+            Refresh
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => acknowledgeAllMutation.mutate()}
+            disabled={acknowledgeAllMutation.isPending}
+            data-testid="button-acknowledge-all"
+          >
+            Acknowledge All
+          </Button>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+          <TabsTrigger value="performance" data-testid="tab-performance">Performance</TabsTrigger>
+          <TabsTrigger value="health" data-testid="tab-health">Health</TabsTrigger>
+          <TabsTrigger value="api" data-testid="tab-api">API & Errors</TabsTrigger>
+          <TabsTrigger value="database" data-testid="tab-database">Database</TabsTrigger>
+          <TabsTrigger value="jobs" data-testid="tab-jobs">Jobs</TabsTrigger>
+          <TabsTrigger value="cache" data-testid="tab-cache">Cache</TabsTrigger>
+          <TabsTrigger value="integrations" data-testid="tab-integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="alerts" data-testid="tab-alerts">Alerts</TabsTrigger>
+          <TabsTrigger value="audit" data-testid="tab-audit">Audit</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-6">
+          <OverviewTab />
+        </TabsContent>
+        <TabsContent value="performance" className="mt-6">
+          <PerformanceTab />
+        </TabsContent>
+        <TabsContent value="health" className="mt-6">
+          <HealthTab />
+        </TabsContent>
+        <TabsContent value="api" className="mt-6">
+          <OverviewTab />
+        </TabsContent>
+        <TabsContent value="database" className="mt-6">
+          <DatabaseTab />
+        </TabsContent>
+        <TabsContent value="jobs" className="mt-6">
+          <JobsTab />
+        </TabsContent>
+        <TabsContent value="cache" className="mt-6">
+          <CacheTab />
+        </TabsContent>
+        <TabsContent value="integrations" className="mt-6">
+          <IntegrationsTab />
+        </TabsContent>
+        <TabsContent value="alerts" className="mt-6">
+          <AlertsTab />
+        </TabsContent>
+        <TabsContent value="audit" className="mt-6">
+          <AuditTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

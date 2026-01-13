@@ -35,7 +35,9 @@ export type DIDTronJobType =
   | "az_destination_import"
   | "az_destination_delete_all"
   | "trash_restore"
-  | "trash_purge";
+  | "trash_purge"
+  | "metrics_collect"
+  | "alert_evaluate";
 
 export interface BaseJobPayload {
   userId?: string;
@@ -176,6 +178,14 @@ export interface TrashPurgePayload extends BaseJobPayload {
   purgeType: "expired" | "all";
 }
 
+export interface MetricsCollectPayload extends BaseJobPayload {
+  collectorTypes?: string[];
+}
+
+export interface AlertEvaluatePayload extends BaseJobPayload {
+  windowMinutes?: number;
+}
+
 export interface DIDTronPayloadMap {
   rate_card_import: RateCardImportPayload;
   rate_card_export: RateCardExportPayload;
@@ -204,6 +214,8 @@ export interface DIDTronPayloadMap {
   az_destination_delete_all: AZDestinationDeleteAllPayload;
   trash_restore: TrashRestorePayload;
   trash_purge: TrashPurgePayload;
+  metrics_collect: MetricsCollectPayload;
+  alert_evaluate: AlertEvaluatePayload;
 }
 
 interface InMemoryJob {
@@ -693,6 +705,8 @@ export const JOB_TYPE_LABELS: Record<DIDTronJobType, string> = {
   az_destination_delete_all: "A-Z Destinations Delete All",
   trash_restore: "Trash Restore",
   trash_purge: "Trash Purge",
+  metrics_collect: "Metrics Collection",
+  alert_evaluate: "Alert Evaluation",
 };
 
 export const JOB_TYPE_CATEGORIES: Record<string, DIDTronJobType[]> = {
@@ -704,7 +718,7 @@ export const JOB_TYPE_CATEGORIES: Record<string, DIDTronJobType[]> = {
   "AI Voice": ["ai_voice_kb_train", "ai_voice_kb_index", "ai_voice_campaign_start", "ai_voice_campaign_call", "ai_voice_agent_sync"],
   "A-Z Database": ["az_destination_import", "az_destination_delete_all"],
   "Audit & Trash": ["audit_cleanup", "trash_restore", "trash_purge"],
-  "System": ["report_generate", "fx_rate_update", "cdr_process"],
+  "System": ["report_generate", "fx_rate_update", "cdr_process", "metrics_collect", "alert_evaluate"],
 };
 
 export type { JobQueue, JobRecord, JobStatus, JobHandler, JobHandlers, Processor };
