@@ -1160,6 +1160,15 @@ async function seedBillingTerms() {
         log(`OpenExchange scheduler failed to start: ${error}`, "scheduler");
       }
 
+      // Start System Status metrics collection scheduler
+      try {
+        const { startMetricsScheduler } = await import("./services/metrics-collector");
+        startMetricsScheduler();
+        log("System Status metrics scheduler started", "system-status");
+      } catch (error) {
+        log(`Metrics scheduler failed to start: ${error}`, "system-status");
+      }
+
       // Initialize Cloudflare R2 storage
       try {
         const { initializeR2Storage } = await import("./services/r2-storage");

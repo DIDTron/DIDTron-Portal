@@ -29,6 +29,8 @@ import {
   AZDestinationDeleteAllPayload,
   TrashRestorePayload,
   TrashPurgePayload,
+  MetricsCollectPayload,
+  AlertEvaluatePayload,
 } from "./job-queue";
 import { azDestinationsRepository } from "./az-destinations-repository";
 import { db } from "./db";
@@ -41,6 +43,8 @@ import {
   handleCampaignCall,
   handleAgentSync,
 } from "./ai-voice-handlers";
+import { handleMetricsCollectJob } from "./services/metrics-collector";
+import { handleAlertEvaluateJob } from "./services/alert-evaluator";
 
 const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
   rate_card_import: async (payload: RateCardImportPayload, signal?: AbortSignal) => {
@@ -255,6 +259,18 @@ const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
       console.error("[TrashJob] Purge failed:", error);
       throw error;
     }
+  },
+  
+  metrics_collect: async (payload: MetricsCollectPayload, signal?: AbortSignal) => {
+    console.log("[MetricsJob] Collecting system metrics");
+    await handleMetricsCollectJob();
+    console.log("[MetricsJob] Metrics collection completed");
+  },
+  
+  alert_evaluate: async (payload: AlertEvaluatePayload, signal?: AbortSignal) => {
+    console.log("[AlertJob] Evaluating alerts");
+    await handleAlertEvaluateJob();
+    console.log("[AlertJob] Alert evaluation completed");
   },
 };
 
