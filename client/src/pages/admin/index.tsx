@@ -177,6 +177,7 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/softswitch/rating/customer-plans/:id": { section: "softswitch", subItem: "softswitch-customer-rating" },
   "/admin/softswitch/rating/supplier-plans": { section: "softswitch", subItem: "softswitch-supplier-rating" },
   "/admin/softswitch/rating/period-exceptions": { section: "softswitch", subItem: "softswitch-period-exceptions" },
+  "/admin/softswitch/rating/az-database/period-exceptions": { section: "softswitch", subItem: "softswitch-period-exceptions" },
   "/admin/softswitch/rating/cdr-rerating": { section: "softswitch", subItem: "softswitch-cdr-rerating" },
   "/admin/softswitch/rating/zone-name": { section: "softswitch", subItem: "softswitch-zone-name" },
   "/admin/softswitch/routing": { section: "softswitch", subItem: "softswitch-routing" },
@@ -335,6 +336,7 @@ export default function AdminLayout() {
                 <Route path="/admin/softswitch/rating/customer-plans/:id" component={RatingPlanDetailPage} />
                 <Route path="/admin/softswitch/rating/supplier-plans" component={SupplierRatingPlansPage} />
                 <Route path="/admin/softswitch/rating/period-exceptions" component={PeriodExceptionsPage} />
+                <Route path="/admin/softswitch/rating/az-database/period-exceptions" component={PeriodExceptionsPage} />
                 <Route path="/admin/softswitch/rating/cdr-rerating" component={CDRReratingPage} />
                 <Route path="/admin/softswitch/rating/zone-name" component={RatingZoneNamePage} />
                 <Route path="/admin/softswitch/rating/import-job/:jobId" component={ImportJobDetailPage} />
