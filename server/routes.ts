@@ -80,7 +80,11 @@ import {
   insertInterconnectMonitoringSettingsSchema,
   insertCustomerRatingPlanSchema,
   supplierImportTemplates,
-  insertSupplierImportTemplateSchema
+  supplierImportTemplateSheets,
+  supplierImportTemplateFields,
+  insertSupplierImportTemplateSchema,
+  insertSupplierImportTemplateSheetSchema,
+  insertSupplierImportTemplateFieldSchema
 } from "@shared/schema";
 
 const registerSchema = z.object({
@@ -3735,7 +3739,15 @@ export async function registerRoutes(
     try {
       const [template] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
       if (!template) return res.status(404).json({ error: "Import template not found" });
-      res.json(template);
+      
+      const sheets = await db.select().from(supplierImportTemplateSheets)
+        .where(eq(supplierImportTemplateSheets.templateId, req.params.id));
+      
+      const fields = await db.select().from(supplierImportTemplateFields)
+        .where(eq(supplierImportTemplateFields.templateId, req.params.id))
+        .orderBy(asc(supplierImportTemplateFields.displayOrder));
+      
+      res.json({ ...template, sheets, fields });
     } catch (error) {
       console.error("[SupplierImportTemplates] Error fetching template:", error);
       res.status(500).json({ error: "Failed to fetch import template" });
@@ -3744,10 +3756,42 @@ export async function registerRoutes(
 
   app.post("/api/supplier-import-templates", async (req, res) => {
     try {
-      const parsed = insertSupplierImportTemplateSchema.safeParse(req.body);
+      const { sheets, fields, ...templateData } = req.body;
+      const parsed = insertSupplierImportTemplateSchema.safeParse(templateData);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors });
+      
       const [template] = await db.insert(supplierImportTemplates).values(parsed.data).returning();
-      res.status(201).json(template);
+      
+      if (sheets && Array.isArray(sheets)) {
+        for (const sheet of sheets) {
+          const sheetParsed = insertSupplierImportTemplateSheetSchema.safeParse({
+            ...sheet,
+            templateId: template.id
+          });
+          if (sheetParsed.success) {
+            await db.insert(supplierImportTemplateSheets).values(sheetParsed.data);
+          }
+        }
+      }
+      
+      if (fields && Array.isArray(fields)) {
+        for (const field of fields) {
+          const fieldParsed = insertSupplierImportTemplateFieldSchema.safeParse({
+            ...field,
+            templateId: template.id
+          });
+          if (fieldParsed.success) {
+            await db.insert(supplierImportTemplateFields).values(fieldParsed.data);
+          }
+        }
+      }
+      
+      const savedSheets = await db.select().from(supplierImportTemplateSheets)
+        .where(eq(supplierImportTemplateSheets.templateId, template.id));
+      const savedFields = await db.select().from(supplierImportTemplateFields)
+        .where(eq(supplierImportTemplateFields.templateId, template.id));
+      
+      res.status(201).json({ ...template, sheets: savedSheets, fields: savedFields });
     } catch (error) {
       console.error("[SupplierImportTemplates] Error creating template:", error);
       res.status(500).json({ error: "Failed to create import template" });
@@ -3758,11 +3802,48 @@ export async function registerRoutes(
     try {
       const [existing] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
       if (!existing) return res.status(404).json({ error: "Import template not found" });
+      
+      const { sheets, fields, ...templateData } = req.body;
+      
       const [template] = await db.update(supplierImportTemplates)
-        .set({ ...req.body, updatedAt: new Date() })
+        .set({ ...templateData, updatedAt: new Date() })
         .where(eq(supplierImportTemplates.id, req.params.id))
         .returning();
-      res.json(template);
+      
+      if (sheets && Array.isArray(sheets)) {
+        await db.delete(supplierImportTemplateSheets)
+          .where(eq(supplierImportTemplateSheets.templateId, req.params.id));
+        for (const sheet of sheets) {
+          const sheetParsed = insertSupplierImportTemplateSheetSchema.safeParse({
+            ...sheet,
+            templateId: req.params.id
+          });
+          if (sheetParsed.success) {
+            await db.insert(supplierImportTemplateSheets).values(sheetParsed.data);
+          }
+        }
+      }
+      
+      if (fields && Array.isArray(fields)) {
+        await db.delete(supplierImportTemplateFields)
+          .where(eq(supplierImportTemplateFields.templateId, req.params.id));
+        for (const field of fields) {
+          const fieldParsed = insertSupplierImportTemplateFieldSchema.safeParse({
+            ...field,
+            templateId: req.params.id
+          });
+          if (fieldParsed.success) {
+            await db.insert(supplierImportTemplateFields).values(fieldParsed.data);
+          }
+        }
+      }
+      
+      const savedSheets = await db.select().from(supplierImportTemplateSheets)
+        .where(eq(supplierImportTemplateSheets.templateId, template.id));
+      const savedFields = await db.select().from(supplierImportTemplateFields)
+        .where(eq(supplierImportTemplateFields.templateId, template.id));
+      
+      res.json({ ...template, sheets: savedSheets, fields: savedFields });
     } catch (error) {
       console.error("[SupplierImportTemplates] Error updating template:", error);
       res.status(500).json({ error: "Failed to update import template" });
