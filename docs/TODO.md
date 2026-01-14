@@ -890,7 +890,20 @@ All performance optimization stages completed:
     - Playwright + Axe tests: 14 passed, 0 skipped
   - **API URLs preserved** (no changes): `/api/system/overview`, `/api/system/performance`, `/api/system/health`, `/api/system/database`, `/api/system/jobs`, `/api/system/cache`, `/api/system/integrations`, `/api/system/portals`, `/api/system/alerts`, `/api/system/audit`, `/api/system/modules`
 
-- [ ] **MOD-02**: Create service layer abstraction
+- [x] **MOD-02**: Extract auth routes into domain module ✅ COMPLETE
+  - Scope: Extract legacy auth endpoints from routes.ts to separate module
+  - **Files changed**:
+    - Created `server/routes/auth.routes.ts` with `registerLegacyAuthRoutes(app)`
+    - Updated `server/routes/index.ts` to include auth module
+    - Updated `server/routes.ts` to import and call new module
+    - Removed registerSchema, loginSchema, and 4 auth endpoints from routes.ts
+  - **No behavior change**: All auth endpoints return identical status codes + JSON keys
+  - **Acceptance criteria met**:
+    - npm run check: PASS (0 errors)
+    - Playwright + Axe tests: 14 passed, 0 skipped (login.spec.ts included)
+  - **API URLs preserved** (no changes): `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`
+
+- [ ] **MOD-03**: Create service layer abstraction
   - Scope: Extract business logic from routes into services
   - Files: `server/services/carrier-service.ts`, `server/services/customer-service.ts`, etc.
   - Acceptance: Routes only handle HTTP, services handle logic

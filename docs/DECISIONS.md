@@ -644,3 +644,39 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - `server/routes/index.ts` (new)
 - `server/routes.ts` (import path updated)
 
+
+---
+
+## 2026-01-15: MOD-02 Auth Routes Modularization
+
+**Decision**: Extracted 4 legacy auth endpoints from `routes.ts` to `server/routes/auth.routes.ts`.
+
+**Reason**: 
+- Auth is a small, isolated domain with no dependencies on other route logic
+- Low-risk extraction - only 4 endpoints with clear boundaries
+- Follows MOD-01 pattern established for route modularization
+
+**Changes Made**:
+1. Created `server/routes/auth.routes.ts` with `registerLegacyAuthRoutes(app)` function
+2. Moved registerSchema and loginSchema to auth module
+3. Updated `server/routes/index.ts` aggregator to include auth module
+4. Updated `server/routes.ts` import and registration
+5. Removed duplicate code from routes.ts
+
+**Endpoints Extracted** (same URLs, no changes):
+- POST `/api/auth/register`
+- POST `/api/auth/login`
+- POST `/api/auth/logout`
+- GET `/api/auth/me`
+
+**Confirmation: NO BEHAVIOR CHANGE**
+- All endpoints return identical status codes (400, 401, 201, etc.)
+- All endpoints return identical JSON keys
+- TypeScript check: PASS
+- Playwright + Axe tests: 14 passed, 0 skipped
+
+**Files Changed**:
+- `server/routes/auth.routes.ts` (new)
+- `server/routes/index.ts` (updated)
+- `server/routes.ts` (import + remove old code)
+
