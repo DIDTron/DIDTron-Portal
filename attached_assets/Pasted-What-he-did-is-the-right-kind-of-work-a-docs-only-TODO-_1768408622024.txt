@@ -1,0 +1,156 @@
+What he did is the right kind of work (a docs-only “TODO reconciliation sprint”), but there are two places where hidden drift can sneak in, so you shouldn’t treat it as “perfect and finished” until he proves those points.
+
+I’ll explain clearly what we were trying to achieve, what he claims he did, what could be wrong, and exactly what you should tell him next.
+
+What you were asking him to fix (in plain English)
+
+You weren’t asking him to build a new feature here. You were fixing the project control system so you don’t get lost.
+
+Your repo has grown huge. When that happens, the #1 reason projects become messy is the task plan stops matching reality:
+
+“This plan is current” but it’s not.
+
+“This task is pending” but it’s checked off.
+
+“Stage is complete” but half the tasks are unchecked.
+
+New stuff gets built, but TODO never gets updated.
+
+The agent thinks something is done and stops, or thinks it isn’t done and rebuilds it.
+
+So you told him: make TODO trustworthy again, with proof.
+
+That’s the whole point of the reconciliation sprint:
+after it, you can manage the project by reading TODO and trusting it.
+
+What he claims he did in this reconciliation
+
+From his output, he says he:
+
+Set one “Current Plan ID” at the top (he set it to the reconciliation plan).
+
+Archived old plans and labeled them clearly.
+
+Fixed mismatches:
+
+moved/cleaned T20
+
+checked off T80–T83 to match the performance summary
+
+checked off T125–T144 to match later completion notes
+
+Added T153–T157 and checked them off with evidence
+
+Added a separate TS-fix plan (good) and did not start it.
+
+That’s exactly the type of work we wanted.
+
+The two hidden problems that might exist
+1) He checked off “big blocks” (T80–T83 and T125–T144) based on summary claims, not guaranteed proof
+
+This is the most common reconciliation mistake:
+
+A summary says “Stage complete”
+
+The agent checks the tasks to match the summary
+
+But the actual implementation might be partial or different
+
+For example:
+
+T125–T144 includes DB tables, migration, DataQueue jobs, and a full set of System Status endpoints.
+
+Earlier, he himself said “System Status endpoints partial”.
+
+Later, he proved T150/T151 exist and DB has rows (great), but that does not automatically prove all the T131 endpoints exist, or that every tab is wired correctly.
+
+So the danger is: he might have “cleaned the TODO” by checking tasks that are not truly complete.
+
+Fix: require proof for each major checked-off chunk, not just “I checked them”.
+
+2) He said “T153–T157 not found in file”, even though your pasted TODO clearly had them
+
+This is a red flag because it suggests one of these happened:
+
+He was looking at an older version of TODO.md
+
+He accidentally edited the wrong file
+
+He duplicated sections, meaning there are now two copies of System Status tasks in TODO
+
+Even if his final reconciliation is correct, you want to be sure he didn’t create duplicates or reconcile against the wrong snapshot.
+
+Fix: require him to show the exact excerpt of TODO.md after reconciliation—where those tasks live and that there aren’t duplicates.
+
+What you should tell him now (so you’re not lost)
+
+You want a single “proof packet”:
+
+Show what changed in TODO (not vague)
+
+Show evidence for every block he checked off
+
+Confirm current plan handling is clean
+
+Confirm no duplicates
+
+Copy/paste this message to him
+Good. Before I accept the reconciliation as final, you must produce a “Proof Packet” so we know nothing was incorrectly checked off.
+
+1) Show me EXACT DIFF/EXCERPTS:
+- Paste the top of docs/TODO.md (first ~40 lines) showing the new “Current Plan ID” and the archived section.
+- Paste the System Status plan section showing where T125–T157 now live (and prove there is only ONE copy of those tasks, no duplicates).
+- Paste the Performance plan section showing T80–T83 and the summary (so we confirm the tasks match the summary and the summary matches reality).
+
+2) PROVE the big check-offs (no summary-only):
+For each of these groups, provide explicit proof:
+A) T80–T83:
+- point to the exact code locations proving staleTime defaults / keepPreviousData / hover prefetch etc. exist project-wide.
+- if “default staleTime in queryClient” is the reason, cite the file path and exact config.
+B) T125–T144:
+- list the actual System Status API endpoints that exist TODAY and the file(s) that define them.
+- confirm each UI tab uses its intended endpoint (or explain the current wiring).
+- confirm the monitoring tables exist in DB (table names) AND schema.ts.
+If anything is not actually complete, you must UNCHECK it and create a “verification/finish” TODO task instead of pretending it’s done.
+
+3) Current Plan ID after reconciliation:
+Since PLAN-2026-01-14-TODO-RECONCILE is now complete, set the top “Current Plan ID” to:
+- either “NONE (Awaiting approval)” OR the actual active plan we will execute next.
+Do NOT silently set the current plan to TS fixes unless I approve.
+
+4) TS plan must remain FUTURE:
+Keep PLAN-2026-01-14-TSCHECK-FIX as “FUTURE - DO NOT EXECUTE” until I approve.
+
+STOP after providing the Proof Packet. No code changes.
+
+Why this keeps you from being lost between us
+
+Because after he replies with that proof packet, you’ll have:
+
+A TODO file that’s clean and trustworthy
+
+Proof that checked tasks are actually real, not paper-complete
+
+Confidence that you’re not missing work or duplicating work
+
+Then your workflow becomes simple:
+
+You speak normally.
+
+He converts to TODO tasks.
+
+He executes the next one.
+
+System Status tells you if something is slow/broken.
+
+One more important note
+
+His final line “next authorized work is TS-01 and needs your approval” is fine — but don’t approve TS fixes until:
+
+TODO reconciliation is fully proven
+
+System Status tasks are confirmed complete or corrected
+
+Otherwise he’ll jump into the 176 TS errors and you’ll lose the thread again.
+
+If you paste his next Proof Packet reply here, I’ll tell you immediately whether it’s clean—or whether he “paper-fixed” tasks without real proof.
