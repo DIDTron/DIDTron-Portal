@@ -585,3 +585,197 @@ Display:
 **Behavior:**
 - Clicking navigates to /admin/system-status
 - Badge updates in real-time (polls with same 30s interval)
+
+---
+
+## Module Map (Atlas)
+
+Generated from repo reality (2026-01-15). This is the authoritative reference for all modules, routes, endpoints, and tables.
+
+### PART 1: Module Index (UI-Level)
+
+#### Super Admin Portal Modules (17 Primary Sidebar Items)
+
+| Module | Surface | Default Route | API Namespace(s) | Key DB Tables | Main TSX Page | Size | Endpoints | Value | Risk Tags |
+|--------|---------|---------------|------------------|---------------|---------------|------|-----------|-------|-----------|
+| **Dashboard** | Super Admin | `/admin` | `/api/admin/sidebar-counts`, `/api/admin/*` | `auditLogs`, `metricsSnapshots` | `admin/index.tsx` | 25KB | 5 | High | - |
+| **VoIP** | Super Admin | `/admin/pops` | `/api/pops`, `/api/voice-tiers`, `/api/codecs`, `/api/routes` | `pops`, `voiceTiers`, `codecs`, `routes` | (multiple) | - | 20+ | High | Integrations |
+| **Wholesale** | Super Admin | `/admin/wholesale/partners` | `/api/carriers`, `/api/customers` | `carriers`, `customers`, `carrierInterconnects` | `admin/partners.tsx` | 30KB | 17 | High | Multi-tenant |
+| **Rate Cards** | Super Admin | `/admin/rate-cards/customer` | `/api/rate-cards/*` | `rateCards`, `rateCardRates` | `admin/rate-cards.tsx` | 49KB | 8 | High | BigData, HeavyQueries |
+| **DID** | Super Admin | `/admin/did-countries` | `/api/did-*` | `didCountries`, `didProviders`, `dids` | (multiple) | - | 10+ | Med | Integrations |
+| **Customers** | Super Admin | `/admin/customers` | `/api/customers`, `/api/kyc/*` | `customers`, `customerKyc`, `customerCategories`, `customerGroups` | `admin/billing/customers.tsx` | 24KB | 12 | High | Multi-tenant |
+| **Billing** | Super Admin | `/admin/invoices` | `/api/invoices`, `/api/payments`, `/api/currencies` | `invoices`, `payments`, `currencies`, `ledgerEntries` | (multiple) | - | 15+ | High | Payments, BigData |
+| **Marketing** | Super Admin | `/admin/social-accounts` | `/api/social-accounts`, `/api/social-posts`, `/api/email-templates` | `socialAccounts`, `socialPosts`, `emailTemplates` | (multiple) | - | 18 | Med | Integrations (Ayrshare/Brevo) |
+| **Monitoring** | Super Admin | `/admin/metrics` | `/api/alerts`, `/api/monitoring-rules` | `alerts`, `monitoringRules`, `routeMetrics` | (multiple) | - | 8 | Med | - |
+| **SIP Tester** | Super Admin | `/admin/sip-tester/new` | `/api/sip-tests/*`, `/api/sip-test-*` | `sipTestConfigs`, `sipTestResults`, `sipTestRuns` | `admin/sip-tester.tsx` | 60KB | 25+ | Med | Integrations (Twilio/Spearline) |
+| **AI Voice** | Super Admin | `/admin/ai-voice/dashboard` | `/api/ai-voice/*`, `/api/admin/ai-voice/*` | `aiVoiceAgents`, `aiVoiceCampaigns`, `aiVoiceCallLogs` | `admin/ai-voice-agents.tsx` | 26KB | 15+ | High | AI, Integrations |
+| **Softswitch** | Super Admin | `/admin/softswitch/carriers` | `/api/softswitch/*`, `/api/carriers/*`, `/api/interconnects/*` | `carriers`, `carrierInterconnects`, `carrierServices`, `supplierRatingPlans`, `customerRatingPlans` | `admin/softswitch.tsx` | 41KB | 40+ | High | BigData, HeavyQueries, Multi-tenant |
+| **Experience** | Super Admin | `/admin/experience-manager` | `/api/em/*`, `/api/cms/*` | `emContentItems`, `cmsPages`, `cmsThemes` | `admin/em-component-library.tsx` | 126KB | 20+ | Med | - |
+| **Admin** | Super Admin | `/admin/admin-users` | `/api/admin-users`, `/api/audit-logs` | `users`, `auditLogs`, `tickets` | (multiple) | - | 10 | High | Security |
+| **Global Settings** | Super Admin | `/admin/global-settings/platform` | `/api/settings/*`, `/api/integrations`, `/api/az-destinations/*` | `platformSettings`, `integrations`, `azDestinations` | `admin/global-settings.tsx` | 56KB | 20+ | High | Integrations |
+| **Settings** | Super Admin | `/admin/settings/general` | `/api/settings/*` | `platformSettings` | (multiple) | - | 5 | Low | - |
+| **System Status** | Super Admin | `/admin/system-status` | `/api/system/*` | `systemAlerts`, `integrationHealth`, `jobMetrics` | `admin/system-status.tsx` | 52KB | 17 | High | - |
+
+#### Customer Portal Modules (11 Primary Sidebar Items)
+
+| Module | Surface | Default Route | API Namespace(s) | Key DB Tables | Main TSX Page | Endpoints | Value | Risk Tags |
+|--------|---------|---------------|------------------|---------------|---------------|-----------|-------|-----------|
+| **Dashboard** | Customer | `/portal` | `/api/my/*` | `customers` | `portal/index.tsx` | 5 | High | Multi-tenant |
+| **Voice** | Customer | `/portal/voice/trunks` | `/api/my/trunks` | `sipTrunks` | - | 5 | High | Multi-tenant |
+| **DIDs** | Customer | `/portal/dids/inventory` | `/api/my/dids` | `dids` | - | 5 | High | Multi-tenant |
+| **Cloud PBX** | Customer | `/portal/pbx/extensions` | `/api/my/extensions`, `/api/my/ivrs`, `/api/my/ring-groups`, `/api/my/queues` | `extensions`, `ivrs`, `ringGroups`, `queues` | - | 15 | Med | Multi-tenant |
+| **AI Agent** | Customer | `/portal/ai-agent/personas` | `/api/my/ai-voice/*` | `aiVoiceAgents`, `aiVoiceTrainingData` | `portal/ai-agents.tsx` | 46KB | 15+ | AI, Multi-tenant |
+| **SIP Tester** | Customer | `/portal/sip-tester/tests` | `/api/my/sip-tests/*` | `sipTestRuns` | `portal/sip-tester.tsx` | 39KB | 8 | Med | Multi-tenant |
+| **Class 4** | Customer | `/portal/class4/rate-cards` | `/api/my/class4/*` | `class4CustomerRateCards`, `class4Cdrs` | - | 10 | High | BigData, Multi-tenant |
+| **Developers** | Customer | `/portal/developers/api-keys` | `/api/my/api-keys`, `/api/my/webhooks` | `customerApiKeys`, `webhooks` | `portal/api-webhooks.tsx` | 25KB | 10 | Med | Multi-tenant |
+| **Billing** | Customer | `/portal/billing` | `/api/my/invoices`, `/api/my/payments` | `invoices`, `payments` | - | 8 | High | Payments, Multi-tenant |
+| **Support** | Customer | `/portal/support` | `/api/my/tickets` | `tickets`, `ticketReplies` | - | 5 | Med | Multi-tenant |
+| **Settings** | Customer | `/portal/settings` | `/api/my/profile` | `customers` | - | 3 | Low | Multi-tenant |
+
+### PART 2: Backend Module Map (Code-Level)
+
+#### Extracted Route Modules (server/routes/*.ts)
+
+| Module File | Lines | Endpoints | Endpoint Types | Heavy Handlers | Middleware Coverage |
+|-------------|-------|-----------|----------------|----------------|---------------------|
+| `system-status.routes.ts` | 690 | 17 | list, detail, command | Health checks, performance metrics | Auth required |
+| `auth.routes.ts` | 183 | 4 | command | OIDC login/logout | None (public) |
+| `jobs.routes.ts` | 187 | 13 | list, command | Job stats, retry operations | Auth required |
+| `files.routes.ts` | 180 | 13 | CRUD, list | File template uploads | Auth required |
+| `az-destinations.routes.ts` | 443 | 11 | CRUD, bulk, list | Bulk import, CSV export | Auth required, has pagination |
+| **index.ts** | 20 | - | Aggregator | - | - |
+
+#### Remaining in routes.ts (~9,989 lines)
+
+| Section (Line Range) | Endpoints Est. | Type | Notes |
+|---------------------|----------------|------|-------|
+| **Referral System** (475-548) | 5 | CRUD | Low complexity |
+| **Customer Branding** (549-653) | 4 | CRUD | Tenant-scoped |
+| **Customer Support Tickets** (654-791) | 6 | CRUD | Tenant-scoped |
+| **Customer AI Voice** (792-1313) | 25+ | CRUD, list | Complex, AI integration |
+| **CRM Integrations** (1314-1619) | 15+ | CRUD, sync | Integration-heavy |
+| **Customer PBX** (1620-2085) | 20+ | CRUD | Extensions, IVRs, Ring Groups, Queues |
+| **Customer SIP Tests** (2086-2366) | 10 | CRUD, command | Multi-tenant |
+| **Customer CDR Exports** (2322-2454) | 3 | list, export | BigData potential |
+| **Customer Class 4** (2367-2574) | 8 | CRUD | BigData potential |
+| **Customer Webhooks/API Keys** (2575-2789) | 8 | CRUD | Tenant-scoped |
+| **Promo Codes/Bonuses** (2790-3444) | 20+ | CRUD, validate | Complex validation |
+| **Customer Categories/Groups** (3445-3611) | 10 | CRUD | Low complexity |
+| **Supplier Import Templates** (3550-3734) | 5 | CRUD | Template management |
+| **Billing Terms** (3612-3734) | 6 | CRUD | Low complexity |
+| **Customers/KYC/Invoices/Payments** (3735-4179) | 20+ | CRUD, list | Multi-tenant, pagination |
+| **ConnexCS Sync** (4900-5400) | 25+ | sync, import | Integration-heavy, BigData |
+| **Carriers/Interconnects** (5300-6640) | 30+ | CRUD, list | Heavy queries, cursor pagination |
+| **Rating Plans** (5800-6400) | 15+ | CRUD, list | BigData, rates tables |
+| **CDR** (8652-8777) | 5 | list, export | BigData (cursor pagination implemented) |
+| **Period Exceptions** (9185-9429) | 8 | CRUD, sync | Moderate |
+| **Experience Manager** (9430-9747) | 15 | CRUD, scan | Moderate |
+| **Testing Engine** (9748-9922) | 10 | CRUD, run | E2E test execution |
+
+### PART 3: Performance Hotspots
+
+#### Top 10 Largest TSX Pages
+
+| Rank | File | Size | Risk Assessment |
+|------|------|------|-----------------|
+| 1 | `admin/interconnect-detail.tsx` | 174 KB | Extreme - needs splitting, 6-9 tabs |
+| 2 | `admin/em-component-library.tsx` | 126 KB | High - component showcase |
+| 3 | `admin/softswitch-rating.tsx` | 124 KB | Extreme - rates data-heavy |
+| 4 | `admin/carrier-detail.tsx` | 121 KB | Extreme - 5 tabs, nested entities |
+| 5 | `admin/softswitch-rating-plan-detail.tsx` | 87 KB | High - rates table |
+| 6 | `admin/sip-tester.tsx` | 60 KB | Moderate |
+| 7 | `admin/import-template-wizard.tsx` | 58 KB | High - file processing |
+| 8 | `admin/global-settings.tsx` | 56 KB | Moderate - multiple tabs |
+| 9 | `admin/system-status.tsx` | 52 KB | Moderate - many data sources |
+| 10 | `admin/rate-cards.tsx` | 49 KB | High - rates data-heavy |
+
+#### Top 10 Heavy Endpoint Groups (Scale Risk)
+
+| Rank | Namespace | Why Heavy | Current Mitigations |
+|------|-----------|-----------|---------------------|
+| 1 | `/api/softswitch/rating/*` | Rates tables (100K+ rows potential) | Cursor pagination, limits |
+| 2 | `/api/rate-cards/*` | Provider/customer rates | Pagination, staleTime |
+| 3 | `/api/cdrs`, `/api/my/cdrs` | CDR records (millions) | Cursor pagination, date range required |
+| 4 | `/api/admin/connexcs/*` | Sync operations, imports | DataQueue batching |
+| 5 | `/api/az-destinations/*` | 10K+ destinations | Pagination, bulk import via job |
+| 6 | `/api/carriers/*` | Nested interconnects, services | Cursor pagination |
+| 7 | `/api/customers/*` | Multi-tenant list | Cursor pagination |
+| 8 | `/api/period-exceptions/*` | Auto-sync with AZ | Moderate risk |
+| 9 | `/api/invoices/*` | Historical invoices | Pagination |
+| 10 | `/api/sip-tests/results/*` | Test result logs | Limits enforced |
+
+#### Endpoints Returning Nested Data (Red Flags)
+
+| Endpoint | Nested Data | Status |
+|----------|-------------|--------|
+| `/api/carriers/:id` | Includes interconnects, contacts, alerts | Lazy load tabs |
+| `/api/interconnects/:id` | Includes services, IP addresses, settings | Lazy load tabs |
+| `/api/softswitch/rating/supplier-plans/:id` | Includes rates (large) | Paginated separately |
+| `/api/my/ai-voice/agents/:id` | Includes training data, flows | Lazy load |
+
+### PART 4: Actionable Guidance Summary
+
+#### Next 3 Modularization Steps (MOD-06, MOD-07, MOD-08)
+
+| Task ID | Target Section | Lines | Endpoints | Reason (smallest safe first) |
+|---------|----------------|-------|-----------|------------------------------|
+| **MOD-06** | Referral System (lines 475-548) | ~75 | 5 | Self-contained, no heavy queries |
+| **MOD-07** | Customer Branding (lines 549-653) | ~105 | 4 | Tenant-scoped, simple CRUD |
+| **MOD-08** | Billing Terms (lines 3612-3734) | ~120 | 6 | Simple CRUD, no external deps |
+
+#### Next 3 Heavy Endpoint Redesign Candidates
+
+| Candidate | Current Issue | Proposed Fix |
+|-----------|---------------|--------------|
+| 1. `/api/softswitch/rating/supplier-plans/:id/rates` | Returns all rates for plan | Add cursor pagination + limit enforcement |
+| 2. `/api/carriers/:id` | Returns nested interconnects | Separate `/api/carriers/:id/interconnects` endpoint |
+| 3. `/api/rate-cards/:id/rates` | Large rate lists | Add prefix search filter + cursor pagination |
+
+#### Next 3 Fast Tabs Refactors
+
+| Page | Issue | Fix |
+|------|-------|-----|
+| 1. `interconnect-detail.tsx` (174KB) | All tabs load on mount | Per-tab `enabled` flag + code splitting |
+| 2. `carrier-detail.tsx` (121KB) | Nested entity fetches | Tab-specific queries + virtualization for lists |
+| 3. `softswitch-rating.tsx` (124KB) | Rates table loads all | Virtual table + infinite scroll |
+
+---
+
+### Database Tables (179 Total)
+
+#### Core Business (35 tables)
+`users`, `sessions`, `loginHistory`, `customers`, `customerKyc`, `customerCategories`, `customerGroups`, `carriers`, `carrierInterconnects`, `carrierServices`, `serviceMatchLists`, `carrierContacts`, `carrierCreditAlerts`, `carrierAssignments`, `interconnectIpAddresses`, `interconnectValidationSettings`, `interconnectTranslationSettings`, `interconnectCodecs`, `interconnectMediaSettings`, `interconnectSignallingSettings`, `interconnectMonitoringSettings`, `customerRatingPlans`, `customerRatingPlanRates`, `supplierRatingPlans`, `supplierRatingPlanRates`, `businessRules`, `billingTerms`
+
+#### VoIP Infrastructure (20 tables)
+`pops`, `popAssignments`, `voiceTiers`, `voiceTierAssignments`, `codecs`, `codecAssignments`, `channelPlans`, `channelPlanAssignments`, `routes`, `routeAssignments`, `routeGroups`, `routeGroupAssignments`, `rateCards`, `rateCardRates`, `rateCardAssignments`, `supplierImportTemplates`, `monitoringRules`, `monitoringConditions`, `monitoringActions`, `alerts`
+
+#### DID/PBX (15 tables)
+`didCountries`, `didCountryAssignments`, `didProviders`, `didProviderAssignments`, `dids`, `sipTrunks`, `extensions`, `ivrs`, `ivrOptions`, `ringGroups`, `ringGroupMembers`, `queues`, `queueAgents`, `voicemails`, `callRecordings`
+
+#### Billing/Payments (15 tables)
+`payments`, `invoices`, `invoiceItems`, `referrals`, `referralClicks`, `promoCodes`, `promoCodeAssignments`, `bonusTypes`, `bonusTypeAssignments`, `currencies`, `fxRates`, `customerCurrencySettings`, `ledgerEntries`, `currencyReconciliations`
+
+#### AI Voice (15 tables)
+`aiVoiceAgents`, `aiVoiceFlows`, `aiVoiceTrainingData`, `aiVoiceCampaigns`, `aiVoiceCallLogs`, `aiVoiceRateConfigs`, `aiVoicePricingTiers`, `aiVoiceKnowledgeBases`, `aiVoiceKbSources`, `aiVoicePhonebooks`, `aiVoiceContacts`, `aiVoiceTemplates`, `aiVoiceUsage`, `aiVoiceAssignments`, `aiVoiceSettings`, `aiVoiceWebhooks`
+
+#### SIP Testing (12 tables)
+`sipTestConfigs`, `sipTestSchedules`, `sipTestResults`, `sipTestSyncPermissions`, `sipTestAlerts`, `sipTestAudioFiles`, `sipTestNumbers`, `sipTestRuns`, `sipTestRunResults`, `sipTestProfiles`, `sipTestSuppliers`, `sipTestSettings`
+
+#### Class 4 Softswitch (9 tables)
+`class4Customers`, `class4Carriers`, `class4ProviderRateCards`, `class4ProviderRates`, `class4CustomerRateCards`, `class4CustomerRates`, `class4LcrRules`, `class4RoutingRules`, `class4Cdrs`
+
+#### CRM/CMS/Marketing (20 tables)
+`crmConnections`, `crmFieldMappings`, `crmSyncSettings`, `crmSyncLogs`, `crmContactMappings`, `cmsPortals`, `cmsThemes`, `cmsPages`, `cmsMenus`, `cmsMediaLibrary`, `tenantBranding`, `portalLoginPages`, `siteSettings`, `websiteSections`, `docCategories`, `docArticles`, `emailTemplates`, `emailLogs`, `socialAccounts`, `socialPosts`
+
+#### System/Monitoring (25 tables)
+`fileTemplates`, `tickets`, `ticketReplies`, `aiAgentActions`, `pcapAnalysis`, `contentAssets`, `auditLogs`, `configVersions`, `trash`, `platformSettings`, `devTests`, `e2eRuns`, `e2eResults`, `emContentItems`, `emContentVersions`, `emValidationResults`, `emPublishHistory`, `cdrs`, `webhooks`, `webhookDeliveries`, `customerApiKeys`, `azDestinations`, `periodExceptions`, `periodExceptionHistory`, `integrations`
+
+#### ConnexCS Sync (13 tables)
+`connexcsSyncLog`, `connexcsSyncJobs`, `connexcsEntityMap`, `connexcsImportCustomers`, `connexcsImportCarriers`, `connexcsImportRateCards`, `connexcsImportCdrs`, `connexcsSyncLogs`, `connexcsImportRoutes`, `connexcsImportBalances`, `connexcsImportScripts`, `connexcsCdrSyncState`, `connexcsCdrStats`
+
+#### Metrics/Health (10 tables)
+`metricsSnapshots`, `systemAlerts`, `integrationHealth`, `jobMetrics`, `portalMetrics`, `auditRecords`, `moduleRegistry`, `routeMetrics`
+
+---
+
+*End of Module Atlas*

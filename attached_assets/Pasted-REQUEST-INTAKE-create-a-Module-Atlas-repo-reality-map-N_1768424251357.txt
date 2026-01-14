@@ -1,0 +1,56 @@
+REQUEST INTAKE → create a “Module Atlas” (repo reality map). No coding.
+
+DOC TARGET: docs/UI_SPEC.md (Module Map section) + docs/DECISIONS.md (entry: “Module Atlas created from repo reality”)
+
+Goal:
+Produce a complete map of ALL modules/submodules/features so we can control scope, performance, and refactors. This must be based on repo reality (file paths), not guesses.
+
+Output must include 4 parts:
+
+PART 1) Module Index (UI-level)
+List every primary sidebar module and its secondary sidebar items.
+For each module/submodule include:
+- UI Label
+- Surface: (Super Admin / Customer Portal / Public Marketing)
+- Frontend route(s) (wouter paths)
+- Backend API namespace(s) (e.g., /api/system/*, /api/auth/*, /api/admin/jobs/*)
+- Key DB tables (from shared/schema.ts identifiers)
+- Main TSX page files (exact paths + file size in KB)
+- # of endpoints in that namespace
+- “Value” score (High/Med/Low) based on business importance
+- “Risk” tags (BigData, HeavyQueries, Integrations, Payments, Multi-tenant critical, AI, etc.)
+
+PART 2) Backend Module Map (code-level)
+List backend route modules (the new modular routing structure):
+- system-status.routes.ts
+- auth.routes.ts
+- jobs.routes.ts
+- files.routes.ts
+- (and remaining parts still in server/routes.ts)
+For each include:
+- endpoints list count
+- largest handlers / heavy endpoints
+- whether endpoints are list vs detail vs command(jobId)
+- middleware coverage (auth/tenant, pagination, max limit, timing, response size)
+
+PART 3) Performance Hotspots (real measurements + proxies)
+Create a “Top 10” list with evidence:
+- Top 10 largest TSX pages (size)
+- Top 10 endpoint groups likely heavy (CDRs/rates/rate-cards/imports)
+- Any endpoints returning nested data (red flag)
+- Which modules are most likely to cause slowness at scale and why
+
+PART 4) Actionable Guidance Summary
+Based on the atlas, propose:
+- the next 3 modularization steps after MOD-05 (smallest safe modules first)
+- the next 3 “heavy endpoint redesign” candidates (list minimal + detail deep + tab endpoints)
+- the next 3 “fast tabs” refactors (enabled per active tab + virtualization + prefetch)
+
+Rules:
+- Use exact file paths + table identifiers + endpoint patterns.
+- Do NOT invent modules that don’t exist.
+- Do NOT change code.
+- After producing the atlas, WRITEBACK:
+  - Add the Module Atlas to docs/UI_SPEC.md under a “Module Map” section.
+  - Append docs/DECISIONS.md entry with date and a short statement that the atlas was generated from repo reality.
+STOP after writing the atlas.

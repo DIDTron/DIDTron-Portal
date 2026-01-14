@@ -813,3 +813,26 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - `server/routes/index.ts` (updated)
 - `server/routes.ts` (removed old code)
 
+
+---
+
+## 2026-01-15: Module Atlas Created from Repo Reality
+
+**Decision**: Generated a comprehensive "Module Atlas" documenting all modules, routes, endpoints, and database tables from actual repo files.
+
+**DOC TARGET**: docs/UI_SPEC.md (Module Map section)
+
+**What was produced (4 parts)**:
+1. **Module Index (UI-Level)**: 17 Super Admin modules + 11 Customer Portal modules with routes, API namespaces, DB tables, page sizes, endpoint counts, value scores, and risk tags
+2. **Backend Module Map**: 5 extracted route modules + remaining routes.ts sections with line ranges, endpoint counts, and handler types
+3. **Performance Hotspots**: Top 10 largest TSX pages, top 10 heavy endpoint groups, nested data red flags
+4. **Actionable Guidance**: Next 3 modularization steps (MOD-06/07/08), next 3 heavy endpoint redesigns, next 3 fast tabs refactors
+
+**Key findings**:
+- 179 database tables total
+- routes.ts still has ~9,989 lines (5 modules extracted so far)
+- Largest TSX pages: interconnect-detail.tsx (174KB), em-component-library.tsx (126KB), softswitch-rating.tsx (124KB)
+- Heaviest API namespaces: /api/my (106 endpoints), /api/admin (52), /api/softswitch (27)
+
+**Source evidence**: All data gathered via grep, find, wc from actual files—no guesses.
+
