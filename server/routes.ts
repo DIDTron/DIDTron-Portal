@@ -9,7 +9,7 @@ import { connexcsTools } from "./connexcs-tools-service";
 import { auditService } from "./audit";
 import { sendWelcomeEmail, sendPaymentReceived, sendReferralReward, sendLowBalanceAlert } from "./brevo";
 import { performanceMonitor } from "./services/performance-monitor";
-import { registerSystemStatusRoutes } from "./system-status-routes";
+import { registerSystemStatusRoutes } from "./routes/system-status.routes";
 import { z } from "zod";
 import { db } from "./db";
 import { e2eRuns, e2eResults } from "@shared/schema";

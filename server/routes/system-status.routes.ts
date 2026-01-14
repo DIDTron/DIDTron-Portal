@@ -1,12 +1,12 @@
 import type { Express, Request, Response } from "express";
-import { db } from "./db";
-import { metricsSnapshots, systemAlerts, integrationHealth, jobMetrics, portalMetrics, auditRecords, moduleRegistry } from "../shared/schema";
+import { db } from "../db";
+import { metricsSnapshots, systemAlerts, integrationHealth, jobMetrics, portalMetrics, auditRecords, moduleRegistry } from "../../shared/schema";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
-import { metricsCollector } from "./services/metrics-collector";
-import { alertEvaluator } from "./services/alert-evaluator";
-import { getJobStats } from "./job-queue";
-import { performanceMonitor } from "./services/performance-monitor";
-import { getCached, setCache, invalidateCacheKey, CACHE_TTL, CACHE_KEYS } from "./services/cache";
+import { metricsCollector } from "../services/metrics-collector";
+import { alertEvaluator } from "../services/alert-evaluator";
+import { getJobStats } from "../job-queue";
+import { performanceMonitor } from "../services/performance-monitor";
+import { getCached, setCache, invalidateCacheKey, CACHE_TTL, CACHE_KEYS } from "../services/cache";
 
 function toISOString(date: Date | string | null | undefined): string | null {
   if (!date) return null;
@@ -223,7 +223,7 @@ export function registerSystemStatusRoutes(app: Express) {
       const redisStart = Date.now();
       let redisStatus = "pass";
       try {
-        const { getRedisClient } = await import("./services/redis-session");
+        const { getRedisClient } = await import("../services/redis-session");
         const redisClient = getRedisClient();
         if (redisClient) {
           await redisClient.ping();
@@ -239,7 +239,7 @@ export function registerSystemStatusRoutes(app: Express) {
       const r2Start = Date.now();
       let r2Status = "pass";
       try {
-        const { isR2Available } = await import("./services/r2-storage");
+        const { isR2Available } = await import("../services/r2-storage");
         if (!isR2Available()) {
           r2Status = "degraded";
         }
@@ -252,7 +252,7 @@ export function registerSystemStatusRoutes(app: Express) {
       const workerStart = Date.now();
       let workerStatus = "pass";
       try {
-        const { isWorkerRunning } = await import("./job-worker");
+        const { isWorkerRunning } = await import("../job-worker");
         if (!isWorkerRunning()) {
           workerStatus = "degraded";
         }

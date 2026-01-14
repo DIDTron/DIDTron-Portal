@@ -609,3 +609,38 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - `client/src/pages/admin/dashboard.tsx`
 - `tests/login.spec.ts`
 
+
+---
+
+## 2026-01-15: MOD-01 Backend Route Modularization (Stage 1)
+
+**Decision**: Created `/server/routes/` directory structure and moved system-status routes as the first modularized domain.
+
+**Reason**: 
+- routes.ts has ~10,800 lines and needs to be split into domain modules for maintainability
+- System-status was chosen as first module because it's already isolated, well-tested, and has no dependencies on other route logic
+
+**Changes Made**:
+1. Created `/server/routes/` directory
+2. Moved `server/system-status-routes.ts` → `server/routes/system-status.routes.ts`
+3. Created `server/routes/index.ts` as router aggregator
+4. Updated import in `server/routes.ts` to use new path
+5. Fixed all relative import paths in moved file
+
+**Pattern Established**:
+- Route modules follow naming: `<domain>.routes.ts`
+- Each module exports a `register<Domain>Routes(app: Express)` function
+- Index aggregator provides `registerAllRoutes` function and re-exports individual modules
+- Main routes.ts imports from `./routes/<module>.routes`
+
+**Confirmation: NO BEHAVIOR CHANGE**
+- All API endpoints return identical JSON responses
+- All API URLs preserved (no changes)
+- TypeScript check: PASS
+- Playwright + Axe tests: 14 passed, 0 skipped
+
+**Files Changed**:
+- `server/routes/system-status.routes.ts` (moved + import paths fixed)
+- `server/routes/index.ts` (new)
+- `server/routes.ts` (import path updated)
+
