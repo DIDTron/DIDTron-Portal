@@ -25,15 +25,13 @@
             - text: Email
             - textbox "Email" [ref=e19]:
               - /placeholder: you@example.com
-              - text: info@didtron.com
           - generic [ref=e20]:
             - generic [ref=e21]:
               - generic [ref=e22]: Password
               - link "Forgot password?" [ref=e23] [cursor=pointer]:
                 - /url: "#"
-            - textbox "Password" [active] [ref=e24]:
+            - textbox "Password" [ref=e24]:
               - /placeholder: Enter your password
-              - text: Adam@0903
           - button "Sign In" [ref=e25] [cursor=pointer]
         - generic [ref=e26]:
           - text: Don't have an account?

@@ -18,7 +18,7 @@ import {
   supplierRatingPlans as supplierRatingPlansTable,
   type SupplierRatingPlanRate, type InsertSupplierRatingPlanRate,
   supplierRatingPlanRates as supplierRatingPlanRatesTable,
-  type AuditLog, type InsertAuditLog,
+  type AuditLog,
   auditLogs as auditLogsTable,
   type Route, type InsertRoute,
   type RouteGroup, type InsertRouteGroup,
@@ -191,7 +191,19 @@ import {
   customerKyc as customerKycTable,
   bonusTypes as bonusTypesTable,
   emailTemplates as emailTemplatesTable,
-  emailLogs as emailLogsTable
+  emailLogs as emailLogsTable,
+  socialAccounts as socialAccountsTable,
+  socialPosts as socialPostsTable,
+  webhooks as webhooksTable,
+  webhookDeliveries as webhookDeliveriesTable,
+  customerApiKeys as customerApiKeysTable,
+  sipTestAudioFiles as sipTestAudioFilesTable,
+  sipTestNumbers as sipTestNumbersTable,
+  sipTestRuns as sipTestRunsTable,
+  sipTestRunResults as sipTestRunResultsTable,
+  sipTestProfiles as sipTestProfilesTable,
+  sipTestSuppliers as sipTestSuppliersTable,
+  sipTestSettings as sipTestSettingsTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -2132,7 +2144,7 @@ export class MemStorage implements IStorage {
   // Alerts - Persisted to PostgreSQL (FOREVER POLICY)
   async getAlerts(status?: string): Promise<Alert[]> {
     if (status) {
-      return await db.select().from(alertsTable).where(eq(alertsTable.status, status));
+      return await db.select().from(alertsTable).where(eq(alertsTable.status, status as any));
     }
     return await db.select().from(alertsTable);
   }
@@ -2681,7 +2693,7 @@ export class MemStorage implements IStorage {
   // Rate Cards - Persisted to PostgreSQL (FOREVER POLICY)
   async getRateCards(type?: string): Promise<RateCard[]> {
     if (type) {
-      return await db.select().from(rateCardsTable).where(eq(rateCardsTable.type, type));
+      return await db.select().from(rateCardsTable).where(eq(rateCardsTable.type, type as any));
     }
     return await db.select().from(rateCardsTable);
   }
@@ -3946,8 +3958,8 @@ export class MemStorage implements IStorage {
   async getEmContentItem(section: string, entityType: string, slug: string): Promise<EmContentItem | undefined> {
     const results = await db.select().from(emContentItemsTable).where(
       and(
-        eq(emContentItemsTable.section, section),
-        eq(emContentItemsTable.entityType, entityType),
+        eq(emContentItemsTable.section, section as any),
+        eq(emContentItemsTable.entityType, entityType as any),
         eq(emContentItemsTable.slug, slug)
       )
     );

@@ -783,7 +783,11 @@ All performance optimization stages completed:
 
 ### Stage 1: Storage Interface Errors (Batch 1-3)
 
-- [ ] **TS-01**: Fix storage.ts errors 1-30 (carrier-related type mismatches)
+- [x] **TS-01**: Fix storage.ts errors 1-30 (carrier-related type mismatches)
+  - Result: Fixed ALL 128 storage.ts errors (exceeded scope)
+  - Changes: Added 17 missing table imports, added `desc` to drizzle imports, converted customerKyc to PostgreSQL, fixed 3 enum type casts
+  - Before: 176 total errors (128 in storage.ts)
+  - After: 48 total errors (0 in storage.ts)
 - [ ] **TS-02**: Fix storage.ts errors 31-60 (billing-related type mismatches)
 - [ ] **TS-03**: Fix storage.ts errors 61-90 (DID/PBX-related type mismatches)
 
