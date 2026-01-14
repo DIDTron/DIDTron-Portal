@@ -96,7 +96,7 @@ class AlertEvaluatorService {
   private lastEmailSentAt: Map<string, Date> = new Map();
 
   constructor() {
-    this.adminEmail = process.env.SUPER_ADMIN_EMAIL || null;
+    this.adminEmail = process.env.SUPER_ADMIN_EMAIL || "info@didtron.com";
   }
 
   setAdminEmail(email: string) {

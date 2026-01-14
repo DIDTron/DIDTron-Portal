@@ -394,3 +394,21 @@ Pattern: Each useQuery now captures `dataUpdatedAt` and displays via `formatAsOf
 - Header notification (T148): Shows all alerts including info (complete notification view)
 
 **Files Changed**: `client/src/components/layout/super-admin/global-header.tsx`
+
+### T149: Brevo Email Alerts (2026-01-14)
+
+**Decision**: Send email alerts for Warning/Critical system alerts via Brevo.
+
+**Implementation** (already existed, fixed email fallback):
+- `AlertEvaluatorService.sendAlertEmail()` sends HTML emails for warning/critical alerts
+- Called when new alert is created (not on update, to avoid spam)
+- 30-minute cooldown per metric (`alertCooldownMs = 30 * 60 * 1000`)
+- Admin email: Uses `SUPER_ADMIN_EMAIL` env var, falls back to "info@didtron.com"
+- Email includes: Severity label (color-coded), metric name, actual value, threshold
+
+**Email Format**:
+- Subject: `[DIDTron WARNING/CRITICAL] Alert Title`
+- HTML body with styled table showing metric details
+- Tags: ["alert", "warning"/"critical"]
+
+**Files Changed**: `server/services/alert-evaluator.ts`
