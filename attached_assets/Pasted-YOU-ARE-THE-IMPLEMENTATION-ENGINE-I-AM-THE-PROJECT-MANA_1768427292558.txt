@@ -1,0 +1,219 @@
+YOU ARE THE IMPLEMENTATION ENGINE. I AM THE PROJECT MANAGER.  
+Follow the FOREVER POLICY and the replit.md bootloader every single message.
+
+ABSOLUTE RULES (NO DRIFT)
+1) No work is allowed unless it exists in docs/TODO.md under the current active Plan ID.
+2) Each change must be small and safe: do ONE task chunk, prove it, write back docs, STOP.
+3) Maintain invariants:
+   - All existing API URLs remain identical during MOD-* route extraction.
+   - No response shape changes during MOD-* route extraction.
+   - No refactors during MOD-* route extraction.
+   - npm run check PASS + Playwright + Axe PASS with 0 skipped after each MOD-*.
+4) If something requires a new rule/decision: update docs/DECISIONS.md (append-only), then update docs/TODO.md, then proceed.
+
+============================================================
+PHASE 0 — DOC CORRECTIONS (DOCS ONLY) — DO THIS FIRST
+============================================================
+DOC TARGET: docs/UI_SPEC.md / Module Map (Atlas) / PART 4
+DOC TARGET: docs/DECISIONS.md
+
+Fix these two issues in PART 4 before any more coding:
+
+DOC FIX 1 (MOD-07 wording):
+- Remove the phrase “no cursor pagination needed”.
+- Replace with:
+  “Pagination/max-limit rules still apply; MOD extraction preserves existing behavior; enforcement and pagination hardening happens in the Heavy Endpoint Redesign phase.”
+
+DOC FIX 2 (Billing file naming consistency):
+- Change MOD-08 target file from billing-readonly.routes.ts to billing.routes.ts
+- MOD-08 remains READ-ONLY scope (GET endpoints only), but the file name is billing.routes.ts for consistency with auth/jobs/files/dids/sip-tester.
+
+DECISIONS update:
+- Append a short entry: “Corrected Module Atlas PART 4: pagination wording + billing route filename standardization.”
+
+STOP after these doc-only updates and paste the updated PART 4 verbatim.
+
+============================================================
+PHASE 1 — CONTINUE MODULAR ROUTE EXTRACTION (ROUTES ONLY)
+(Each MOD task is “move routes only, no behavior change”.)
+============================================================
+
+-------------------------
+MOD-06: DIDs Route Extraction
+-------------------------
+Goal: Extract DID endpoints into server/routes/dids.routes.ts (stable filename).
+Scope:
+- Move ONLY these namespaces (exact, no changes):
+  /api/did-countries*
+  /api/did-providers*
+  /api/dids*
+Rules:
+- Keep URLs identical.
+- Do NOT modify handlers, storage logic, DB queries, or response keys.
+- Only move code and update route registration.
+
+Acceptance Proof Packet (mandatory):
+A) Files changed (exact paths).
+B) Endpoint list before/after (grep proof).
+C) 2–3 live curl key checks (show keys only) to prove same JSON keys.
+D) Tests:
+   - npm run check (PASS)
+   - npx playwright test tests/login.spec.ts tests/system-status.spec.ts --reporter=list (PASS, 0 skipped)
+E) Docs:
+   - docs/TODO.md MOD-06 checked off with file paths + endpoint list
+   - docs/DECISIONS.md appended: “MOD-06 dids routes modularized; no behavior change.”
+STOP after MOD-06 and provide full proof packet.
+
+-------------------------
+MOD-07: SIP Tester Route Extraction
+-------------------------
+Goal: Extract SIP Tester endpoints into server/routes/sip-tester.routes.ts (stable filename).
+Scope:
+- Move ONLY sip-tester namespaces (exact, no changes):
+  /api/sip-tests/*
+  /api/sip-test-*
+Rules:
+- Keep URLs identical.
+- No behavior changes.
+- Only route extraction.
+
+Acceptance Proof Packet: same as MOD-06.
+STOP after MOD-07 and provide proof packet.
+
+-------------------------
+MOD-08: Billing READ-ONLY Route Extraction
+-------------------------
+Goal: Create server/routes/billing.routes.ts and move ONLY GET endpoints.
+Scope (READ ONLY ONLY):
+- ONLY these, and ONLY GET methods:
+  GET /api/invoices
+  GET /api/invoices/:id   (only if already exists and is read-only)
+  GET /api/payments
+  GET /api/payments/:id   (read-only only)
+  /api/fx-rates (GET)
+  /api/billing-terms (GET)
+Rules:
+- Do NOT move billing mutations (POST/PATCH/DELETE) in MOD-08.
+- Keep URLs identical.
+- No behavior changes.
+Acceptance Proof Packet: same as MOD-06.
+STOP after MOD-08 and provide proof packet.
+
+============================================================
+PHASE 2 — GLOBAL MIDDLEWARE STACK (NON-BREAKING FIRST)
+(Separate plan after modular extraction is stable.)
+============================================================
+
+After MOD-06..08 are done and proven, create a new Plan ID:
+PLAN-2026-01-16-MIDDLEWARE-GUARDRAILS
+
+Stage MW-1 (LOG-ONLY / NON-BREAKING):
+- Add global middleware that ONLY logs/records:
+  - timing + p95 aggregation keys
+  - response size logging (bytes)
+  - detect missing pagination (log warning)
+  - detect missing limit/max limit (log warning)
+No enforcement yet.
+
+Stage MW-2 (ENFORCE ON NEW + HIGH-RISK LISTS ONLY):
+- Enforce:
+  - max limit server-side
+  - pagination required (cursor/limit)
+But only for:
+  - newly touched endpoints
+  - known heavy list endpoints (from the Atlas hotspots list)
+No mass enforcement yet.
+
+Each MW stage requires:
+- tests pass
+- system-status shows metrics updating
+- docs updated and STOP.
+
+============================================================
+PHASE 3 — HEAVY ENDPOINT REDESIGN (PERFORMANCE + SCALE)
+============================================================
+
+Create Plan ID:
+PLAN-2026-01-17-HEAVY-ENDPOINTS
+
+Do exactly 3 redesigns first (one at a time, stop each time):
+
+EP-01 Supplier rate grid:
+- Endpoint: /api/softswitch/rating/supplier-plans/:id/rates
+- Add cursor pagination + max limit
+- UI: virtualization + infinite/cursor fetch
+- DB: add needed indexes
+- Tests: Playwright flows + no crash with large dataset
+
+EP-02 Carrier nested response split:
+- Endpoint: /api/carriers/:id (if currently nested)
+- Make it “detail header only”
+- Add separate tab endpoints:
+  /api/carriers/:id/interconnects
+  /api/carriers/:id/contacts
+  /api/carriers/:id/alerts
+- UI tabs load only when active (enabled flag)
+
+EP-03 Rate-card rates:
+- Endpoint: /api/rate-cards/:id/rates
+- Add prefix search filter + cursor pagination + max limit
+- UI virtualization
+
+Each EP task must:
+- preserve correctness
+- add tests proving no crash / no huge RAM usage
+- update UI_SPEC + DB_SCHEMA + DECISIONS + TODO
+- STOP after each EP.
+
+============================================================
+PHASE 4 — FAST TABS REFACTOR (UX “LIGHT SPEED”)
+============================================================
+
+Create Plan ID:
+PLAN-2026-01-18-FAST-TABS
+
+Refactor these pages one by one:
+TAB-01 interconnect-detail.tsx
+TAB-02 carrier-detail.tsx
+TAB-03 softswitch-rating.tsx
+
+Rules for each page:
+- each tab is a separate component
+- each tab query uses enabled: activeTab === 'X'
+- prefetch adjacent tabs on hover
+- virtualization for large grids
+- do not fetch all tab data on mount
+- tests required
+
+STOP after each tab refactor.
+
+============================================================
+PHASE 5 — SOFTSWITCH BOUNDED DOMAIN DESIGN (CONNEXCS SAFE MODE)
+============================================================
+
+Create Plan ID:
+PLAN-2026-01-19-SOFTSWITCH-BOUNDED
+
+Hard rules (mandatory):
+- Reads: from Postgres only
+- Writes: enqueue DataQueue jobs, return jobId
+- ConnexCS calls: ONLY inside DataQueue jobs via a single adapter layer
+- Circuit breaker + per-job concurrency limits
+- sync_status/last_sync_at/last_error tracked in DB
+
+Refactor incrementally by subdomain:
+Carrier Manager → Rating → Routing → BI → Billing → OnCloud
+One subdomain at a time, test, STOP.
+
+============================================================
+REPORTING FORMAT (EVERY STOP REPORT MUST INCLUDE)
+============================================================
+- READ CHECK ✅ list of docs opened
+- Plan ID + Task ID
+- Files changed (exact paths)
+- Endpoint invariants proof (when relevant)
+- Test commands + results pasted
+- Docs updated confirmation (TODO + DECISIONS + any other doc)
+- Proposed next single task
+
+NO NEW WORK UNTIL PREVIOUS TASK IS ACCEPTED.
