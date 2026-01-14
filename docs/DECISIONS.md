@@ -896,3 +896,46 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - Playwright tests: 14 passed, 0 skipped
 - Logs show: GET /api/did-countries 200, GET /api/did-providers 200, GET /api/dids 200
 
+---
+
+## 2026-01-15: MOD-07 SIP Tester Route Extraction
+
+**Task**: MOD-07 — Extract SIP Tester endpoints to `server/routes/sip-tester.routes.ts`
+
+**What moved**:
+- Admin SIP Tester endpoints (22 endpoints):
+  - `/api/sip-tests/configs` (GET, POST, PATCH/:id, DELETE/:id)
+  - `/api/sip-tests/results` (GET, GET/:id, POST)
+  - `/api/sip-tests/schedules` (GET, POST, PATCH/:id, DELETE/:id)
+  - `/api/sip-test-suppliers` (GET, POST, DELETE/:id)
+  - `/api/sip-test-settings` (GET, PUT)
+  - `/api/sip-test-runs` (GET, POST)
+  - `/api/sip-test-numbers` (GET, GET/:id, POST, PATCH/:id, DELETE/:id)
+- Customer Portal SIP Tester endpoints (17 endpoints):
+  - `/api/my/sip-tests/configs` (GET, GET/:id, POST, PATCH/:id, DELETE/:id)
+  - `/api/my/sip-tests/results` (GET)
+  - `/api/my/sip-tests/run` (POST)
+  - `/api/my/sip-tests/schedules` (GET, POST, DELETE/:id)
+  - `/api/my/sip-test-runs` (GET, POST, POST/:id/start, GET/:id, GET/:id/results)
+- **Total: 39 endpoints**
+
+**Why**: Modularization of routes.ts to improve maintainability. SIP Tester is a self-contained domain spanning both admin and customer portal.
+
+**Files changed**:
+- `server/routes/sip-tester.routes.ts` — NEW (822 lines)
+- `server/routes/index.ts` — Added `registerSipTesterRoutes` import and registration
+- `server/routes.ts` — Removed SIP Tester sections (~821 lines), now 8993 lines
+
+**Helper functions moved**:
+- `COUNTRY_CODES` constant
+- `getCountryFromNumber()` function
+- `executeSipTestRun()` function
+
+**Behavior change**: NONE — exact same URLs, status codes, JSON keys preserved. NO BEHAVIOR CHANGE.
+
+**Evidence**:
+- `npm run check`: PASS (0 TypeScript errors)
+- `npx playwright test tests/login.spec.ts tests/system-status.spec.ts --reporter=list`: 14 passed, 0 skipped
+- Server logs confirm: GET /api/sip-tests/configs 200, GET /api/sip-test-suppliers 200, GET /api/sip-test-numbers 200
+- grep proof: `grep -c "/api/sip-test" server/routes.ts` returns 0
+
