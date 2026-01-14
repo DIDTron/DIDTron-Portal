@@ -27,10 +27,11 @@ interface ConnexCSStatus {
 }
 
 interface SystemAlert {
-  id: number;
-  alertType: string;
+  id: string;
+  title: string;
   severity: string;
-  message: string;
+  message?: string;
+  description?: string;
   firstSeenAt: string | null;
   acknowledgedAt: string | null;
 }
@@ -238,8 +239,8 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
                   >
                     {getSeverityIcon(alert.severity)}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{alert.alertType.replace(/_/g, " ")}</p>
-                      <p className="text-xs text-muted-foreground truncate">{alert.message}</p>
+                      <p className="text-sm font-medium truncate">{alert.title || "Alert"}</p>
+                      <p className="text-xs text-muted-foreground truncate">{alert.description || alert.message || "No details"}</p>
                       <p className="text-xs text-muted-foreground mt-1">{formatTimeAgo(alert.firstSeenAt)}</p>
                     </div>
                   </DropdownMenuItem>
