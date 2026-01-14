@@ -6,6 +6,7 @@ import { registerFilesRoutes } from "./files.routes";
 import { registerAzDestinationsRoutes } from "./az-destinations.routes";
 import { registerDidsRoutes } from "./dids.routes";
 import { registerSipTesterRoutes } from "./sip-tester.routes";
+import { registerBillingRoutes } from "./billing.routes";
 
 export function registerAllRoutes(app: Express) {
   registerSystemStatusRoutes(app);
@@ -15,6 +16,7 @@ export function registerAllRoutes(app: Express) {
   registerAzDestinationsRoutes(app);
   registerDidsRoutes(app);
   registerSipTesterRoutes(app);
+  registerBillingRoutes(app);
 }
 
 export { registerSystemStatusRoutes } from "./system-status.routes";
@@ -24,3 +26,4 @@ export { registerFilesRoutes } from "./files.routes";
 export { registerAzDestinationsRoutes } from "./az-destinations.routes";
 export { registerDidsRoutes } from "./dids.routes";
 export { registerSipTesterRoutes } from "./sip-tester.routes";
+export { registerBillingRoutes } from "./billing.routes";
