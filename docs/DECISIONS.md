@@ -854,3 +854,16 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 
 **Reason**: MOD tasks follow the established pattern (system-status/auth/jobs/files/az-destinations) — each extracts a URL namespace to a dedicated route module file.
 
+
+---
+
+## 2026-01-15: Corrected Module Atlas PART 4 Wording
+
+**Decision**: Corrected Module Atlas PART 4 for accuracy:
+
+1. **MOD-07 pagination wording**: Removed "no cursor pagination needed" — replaced with: "pagination/max-limit rules still apply; MOD extraction preserves existing behavior; enforcement and pagination hardening happens in Heavy Endpoint Redesign phase."
+
+2. **MOD-08 billing filename**: Changed `billing-readonly.routes.ts` → `billing.routes.ts` for consistency with other route modules (auth/jobs/files/dids/sip-tester). Scope remains GET-only.
+
+**Reason**: MOD tasks are pure route extractions with no behavior changes. Pagination enforcement is a separate phase (Heavy Endpoint Redesign). Filename standardization follows established pattern.
+

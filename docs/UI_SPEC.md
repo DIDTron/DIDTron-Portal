@@ -722,8 +722,8 @@ Generated from repo reality (2026-01-15). This is the authoritative reference fo
 | Task ID | Target File | URL Namespaces | Endpoints | Source Lines | Why Low-Risk |
 |---------|-------------|----------------|-----------|--------------|--------------|
 | **MOD-06** | `dids.routes.ts` | `/api/did-countries`, `/api/did-providers`, `/api/dids` | 13 | 6976-7016, 8780-8910 | Simple CRUD, no heavy queries, no external integrations, self-contained domain |
-| **MOD-07** | `sip-tester.routes.ts` | `/api/sip-tests/*`, `/api/sip-test-suppliers`, `/api/sip-test-settings`, `/api/sip-test-runs`, `/api/sip-test-numbers` | 24 | 7191-7492 | Contiguous block (~300 lines), minimal cross-dependencies, no cursor pagination needed |
-| **MOD-08** | `billing-readonly.routes.ts` | `/api/invoices` (GET), `/api/payments` (GET), `/api/fx-rates`, `/api/billing-terms` (GET) | 11 | 3614-3634, 3954-4040, 7160-7190 | Read-only endpoints only, no mutations, no ledger writes, low blast radius |
+| **MOD-07** | `sip-tester.routes.ts` | `/api/sip-tests/*`, `/api/sip-test-suppliers`, `/api/sip-test-settings`, `/api/sip-test-runs`, `/api/sip-test-numbers` | 24 | 7191-7492 | Contiguous block (~300 lines), minimal cross-dependencies; pagination/max-limit rules still apply; MOD extraction preserves existing behavior; enforcement and pagination hardening happens in Heavy Endpoint Redesign phase |
+| **MOD-08** | `billing.routes.ts` | `/api/invoices` (GET), `/api/payments` (GET), `/api/fx-rates`, `/api/billing-terms` (GET) | 11 | 3614-3634, 3954-4040, 7160-7190 | Read-only endpoints only (GET), no mutations, no ledger writes, low blast radius |
 
 **Order justification**: DIDs first (smallest, most isolated), then SIP Tester (contiguous block), then billing read-only (scattered but safe reads).
 
