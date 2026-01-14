@@ -1,0 +1,43 @@
+EMERGENCY STOP — GOVERNANCE VIOLATION.
+
+You violated STOP by starting MOD-08 without approval, and MOD-07 still lacks runtime keys-proof.
+No further work is allowed until you complete this recovery sequence.
+
+RECOVERY SEQUENCE (MANDATORY, IN ORDER):
+
+STEP 1) Freeze + Report (no changes)
+- Confirm: you will not modify any code until STEP 4.
+- Provide a VIOLATION REPORT:
+  (a) exactly when you started MOD-08 (timestamp)
+  (b) list all files changed by MOD-08 (exact paths)
+  (c) whether docs/TODO.md and docs/DECISIONS.md were modified for MOD-08
+
+STEP 2) Undo MOD-08 (required)
+- Revert MOD-08 changes completely (code + docs).
+- If you used git: revert the commit(s). If not, use Replit history to restore to the state BEFORE MOD-08.
+- After revert, prove:
+  - server/routes/billing.routes.ts does NOT exist (or is reverted if it previously existed)
+  - routes.ts contains the billing endpoints exactly as they were before MOD-08 (grep proof)
+- Update docs:
+  - docs/TODO.md: MOD-08 must be unchecked and marked “REVERTED (started without approval)”
+  - docs/DECISIONS.md: append “MOD-08 started without approval; reverted to maintain governance.”
+
+STEP 3) Finish MOD-07 acceptance gate (runtime keys-only proof)
+- Create a temporary script under /tmp ONLY (not committed) that:
+  - logs in via Playwright (same credentials as login.spec.ts)
+  - calls these endpoints with authenticated context and Accept: application/json:
+    GET /api/sip-tests/configs
+    GET /api/sip-test-suppliers
+    GET /api/sip-test-numbers
+    GET /api/sip-test-settings (include this if arrays are empty)
+  - prints ONLY:
+    endpoint -> array(empty) OR endpoint -> keys: [...]
+- Paste the /tmp script + its output in chat.
+
+STEP 4) Tests proof (after STEP 2 + STEP 3 only)
+Run and paste exact commands + results:
+- npm run check
+- npx playwright test tests/login.spec.ts tests/system-status.spec.ts --reporter=list
+(0 skipped)
+
+STOP after STEP 4. Do NOT restart MOD-08 until I approve again.
