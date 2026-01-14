@@ -771,3 +771,45 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - `server/routes/index.ts` (updated)
 - `server/routes.ts` (removed old code)
 
+
+---
+
+## 2026-01-15: MOD-05 A-Z Database Routes Modularization
+
+**Decision**: Extracted 11 A-Z destinations endpoints from `routes.ts` to `server/routes/az-destinations.routes.ts`.
+
+**Reason**: 
+- A-Z Database is an isolated, self-contained module
+- Used by Global Settings → A-Z Database tab in Super Admin portal
+- Low-risk extraction - uses storage layer + db for period exception sync
+- Follows MOD-01/02/03/04 pattern established for route modularization
+
+**Changes Made**:
+1. Created `server/routes/az-destinations.routes.ts` with `registerAzDestinationsRoutes(app)` function
+2. Updated `server/routes/index.ts` aggregator to include az-destinations module
+3. Removed ~436 lines of A-Z destinations code from routes.ts
+
+**Endpoints Extracted** (same URLs, no changes):
+- GET `/api/az-destinations` (list with search, region, pagination)
+- GET `/api/az-destinations/regions`
+- GET `/api/az-destinations/normalize/:code`
+- GET `/api/az-destinations/:id`
+- POST `/api/az-destinations`
+- POST `/api/az-destinations/bulk`
+- POST `/api/az-destinations/import-job`
+- PATCH `/api/az-destinations/:id`
+- DELETE `/api/az-destinations/:id`
+- DELETE `/api/az-destinations` (delete all)
+- GET `/api/az-destinations/export/csv`
+
+**Confirmation: NO BEHAVIOR CHANGE**
+- All endpoints return identical status codes and JSON keys
+- Period exception auto-sync logic preserved exactly
+- TypeScript check: PASS
+- Playwright + Axe tests: 14 passed, 0 skipped
+
+**Files Changed**:
+- `server/routes/az-destinations.routes.ts` (new)
+- `server/routes/index.ts` (updated)
+- `server/routes.ts` (removed old code)
+

@@ -934,12 +934,35 @@ All performance optimization stages completed:
     - `/api/sip-test-profiles` (GET, POST)
     - `/api/sip-test-profiles/:id` (DELETE)
 
-- [ ] **MOD-05**: Create service layer abstraction
+- [x] **MOD-05**: Extract A-Z Database routes into domain module ✅ COMPLETE
+  - Scope: Extract A-Z destinations endpoints from routes.ts to separate module
+  - **Files changed**:
+    - Created `server/routes/az-destinations.routes.ts` with `registerAzDestinationsRoutes(app)`
+    - Updated `server/routes/index.ts` to include az-destinations module
+    - Removed 11 endpoints from routes.ts (~436 lines)
+  - **No behavior change**: All A-Z endpoints return identical status codes + JSON keys
+  - **Acceptance criteria met**:
+    - npm run check: PASS (0 errors)
+    - Playwright + Axe tests: 14 passed, 0 skipped
+  - **API URLs preserved** (no changes):
+    - GET `/api/az-destinations` (list with pagination)
+    - GET `/api/az-destinations/regions`
+    - GET `/api/az-destinations/normalize/:code`
+    - GET `/api/az-destinations/:id`
+    - POST `/api/az-destinations`
+    - POST `/api/az-destinations/bulk`
+    - POST `/api/az-destinations/import-job`
+    - PATCH `/api/az-destinations/:id`
+    - DELETE `/api/az-destinations/:id`
+    - DELETE `/api/az-destinations` (delete all)
+    - GET `/api/az-destinations/export/csv`
+
+- [ ] **MOD-06**: Create service layer abstraction
   - Scope: Extract business logic from routes into services
   - Files: `server/services/carrier-service.ts`, `server/services/customer-service.ts`, etc.
   - Acceptance: Routes only handle HTTP, services handle logic
 
-- [ ] **MOD-06**: Create repository pattern for data access
+- [ ] **MOD-07**: Create repository pattern for data access
   - Scope: Extract Drizzle queries from services/routes into repositories
   - Files: `server/repositories/carrier-repository.ts`, etc.
   - Acceptance: Clean separation: routes → services → repositories → database
