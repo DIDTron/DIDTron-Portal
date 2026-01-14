@@ -276,26 +276,28 @@
 
 ---
 
-### Stage 1: Quick Wins (Frontend Caching + Prefetching) ✅ COMPLETE
+### Stage 1: Quick Wins (Frontend Caching + Prefetching) ⚠️ PARTIAL (2 of 4 complete)
 
 - [x] **T80**: Add staleTime to ALL useQuery calls across the project
   - Acceptance: Every useQuery has staleTime (30s for lists, 5min for static)
   - Files: All files in client/src/pages/, client/src/components/
   - Status: ✅ Complete - STALE_TIME constants in client/src/lib/constants.ts, default staleTime in queryClient
 
-- [x] **T81**: Add keepPreviousData to ALL paginated queries
+- [ ] **T81**: Add keepPreviousData to ALL paginated queries ⚠️ PARTIAL / NOT COMPLETE
   - Acceptance: All paginated lists have keepPreviousData: true
-  - Status: ✅ Complete - placeholderData: keepPreviousData pattern applied
+  - Status: ⚠️ Partial - Pattern exists in some pages (ai-voice-*, docs.tsx) but NOT globally applied to all paginated admin queries
+  - **Note**: See PLAN-2026-01-14-PERF-FINISH PF-01 for completion work
 
 - [x] **T82**: Implement route prefetching on sidebar hover
   - Acceptance: Hovering sidebar items prefetches route data
   - Files: client/src/components/layout/super-admin/secondary-sidebar.tsx
   - Status: ✅ Complete - Debounced prefetch with 100ms delay
 
-- [x] **T83**: Implement row hover prefetching for detail pages
+- [ ] **T83**: Implement row hover prefetching for detail pages ⚠️ PARTIAL / NOT COMPLETE
   - Acceptance: Hovering table rows prefetches detail data
   - Files: All list pages with links to detail pages
-  - Status: ✅ Complete - Row hover prefetch pattern applied
+  - Status: ⚠️ Partial - Pattern exists in softswitch.tsx (carriers/interconnects/services) but NOT globally applied to all list pages
+  - **Note**: See PLAN-2026-01-14-PERF-FINISH PF-02 for completion work
 
 ---
 
@@ -736,6 +738,40 @@ All performance optimization stages completed:
     * DataQueue for heavy ops: N/A (simple create)
     * Virtualization: N/A
   - Status: ✅ Complete
+
+---
+
+## PLAN-2026-01-14-PERF-FINISH (FUTURE - DO NOT EXECUTE YET)
+
+**Objective**: Complete partial performance tasks T81 and T83 with global coverage
+**Status**: STAGED - awaiting user approval
+**Acceptance**: All paginated queries use keepPreviousData; all list pages prefetch on row hover
+
+---
+
+### Finish keepPreviousData Coverage
+
+- [ ] **PF-01**: Finish keepPreviousData coverage for ALL paginated queries
+  - Scope: ALL paginated list queries (admin + portal) must use keepPreviousData/placeholderData pattern consistently
+  - Acceptance:
+    a) grep-based evidence list (or scripted check) shows no paginated useQuery missing keepPreviousData
+    b) Playwright smoke verifies pagination does not flicker on at least 5 major lists (carriers, interconnects, services, invoices, cdrs)
+    c) No broken behavior and tests pass (npm run check + Playwright + Axe where relevant)
+  - Related: Completes T81
+
+---
+
+### Finish Row-Hover Prefetch Coverage
+
+- [ ] **PF-02**: Finish row-hover prefetch coverage for ALL list pages
+  - Scope: ALL list pages that navigate to a detail page must prefetch the detail query on row hover
+  - Acceptance:
+    a) Pattern implemented via a shared helper/hook OR standardized in the DataTable row component (preferred)
+    b) Prove coverage for at least the top 15 most-used lists (admin)
+    c) Playwright verifies prefetch does not cause extra navigation bugs
+  - Related: Completes T83
+
+**Note**: Execute only after user approval. These tasks complete the partial work from PLAN-2026-01-13-PERFORMANCE Stage 1.
 
 ---
 
