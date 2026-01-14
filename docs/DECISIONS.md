@@ -867,3 +867,32 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 
 **Reason**: MOD tasks are pure route extractions with no behavior changes. Pagination enforcement is a separate phase (Heavy Endpoint Redesign). Filename standardization follows established pattern.
 
+
+---
+
+## 2026-01-15: MOD-06 DIDs Route Extraction Complete
+
+**Task**: MOD-06 — Extract DID endpoints to `server/routes/dids.routes.ts`
+
+**What moved**:
+- `/api/did-countries` (GET, POST, PATCH/:id, DELETE/:id) — 4 endpoints
+- `/api/did-providers` (GET, GET/:id, POST, PATCH/:id, DELETE/:id) — 5 endpoints
+- `/api/dids` (GET, GET/:id, POST, PATCH/:id) — 4 endpoints
+- **Total: 13 endpoints**
+
+**Files changed**:
+- `server/routes/dids.routes.ts` — NEW (175 lines)
+- `server/routes/index.ts` — Added registration
+- `server/routes.ts` — Removed DID sections (~135 lines)
+
+**Source line ranges removed from routes.ts**:
+- Lines 6974-7014 (DID Countries section)
+- Lines 8736-8868 (DID Providers + DID Inventory sections)
+
+**Behavior change**: NONE — exact same URLs, status codes, JSON keys preserved.
+
+**Evidence**:
+- `npm run check`: PASS
+- Playwright tests: 14 passed, 0 skipped
+- Logs show: GET /api/did-countries 200, GET /api/did-providers 200, GET /api/dids 200
+

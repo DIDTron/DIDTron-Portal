@@ -957,15 +957,35 @@ All performance optimization stages completed:
     - DELETE `/api/az-destinations` (delete all)
     - GET `/api/az-destinations/export/csv`
 
-- [ ] **MOD-06**: Create service layer abstraction
-  - Scope: Extract business logic from routes into services
-  - Files: `server/services/carrier-service.ts`, `server/services/customer-service.ts`, etc.
-  - Acceptance: Routes only handle HTTP, services handle logic
+- [x] **MOD-06**: Extract DIDs routes into domain module ✅ COMPLETE
+  - Scope: Extract DID endpoints from routes.ts to separate module
+  - **Files changed**:
+    - Created `server/routes/dids.routes.ts` with `registerDidsRoutes(app)` (175 lines)
+    - Updated `server/routes/index.ts` to include dids module
+    - Removed 13 endpoints from routes.ts (~135 lines)
+  - **No behavior change**: All DID endpoints return identical status codes + JSON keys
+  - **Acceptance criteria met**:
+    - npm run check: PASS (0 errors)
+    - Playwright + Axe tests: 14 passed, 0 skipped
+  - **API URLs preserved** (no changes):
+    - `/api/did-countries` (GET, POST)
+    - `/api/did-countries/:id` (PATCH, DELETE)
+    - `/api/did-providers` (GET, POST)
+    - `/api/did-providers/:id` (GET, PATCH, DELETE)
+    - `/api/dids` (GET, POST)
+    - `/api/dids/:id` (GET, PATCH)
 
-- [ ] **MOD-07**: Create repository pattern for data access
-  - Scope: Extract Drizzle queries from services/routes into repositories
-  - Files: `server/repositories/carrier-repository.ts`, etc.
-  - Acceptance: Clean separation: routes → services → repositories → database
+- [ ] **MOD-07**: Extract SIP Tester routes into domain module
+  - Scope: Extract SIP tester endpoints from routes.ts to `server/routes/sip-tester.routes.ts`
+  - URL namespaces: `/api/sip-tests/*`, `/api/sip-test-suppliers`, `/api/sip-test-settings`, `/api/sip-test-runs`, `/api/sip-test-numbers`
+  - Estimated: 24 endpoints, ~300 lines
+  - Acceptance: All endpoints preserved, npm run check PASS, Playwright PASS
+
+- [ ] **MOD-08**: Extract Billing READ-ONLY routes into domain module
+  - Scope: Extract billing GET endpoints only from routes.ts to `server/routes/billing.routes.ts`
+  - URL namespaces: GET `/api/invoices`, GET `/api/payments`, GET `/api/fx-rates`, GET `/api/billing-terms`
+  - Estimated: 11 GET endpoints only (no mutations)
+  - Acceptance: All endpoints preserved, npm run check PASS, Playwright PASS
 
 ---
 
