@@ -916,12 +916,30 @@ All performance optimization stages completed:
     - Playwright + Axe tests: 14 passed, 0 skipped
   - **API URLs preserved** (no changes): `/api/admin/jobs`, `/api/admin/jobs/stats`, `/api/admin/jobs/:id`, `/api/admin/jobs/:id/retry`, `/api/admin/jobs/:id/cancel`, `/api/admin/jobs/retry-all-failed`, `/api/admin/jobs/cleanup`, `/api/admin/jobs/reclaim-stuck`, `/api/admin/jobs/worker/status`, `/api/admin/jobs/worker/start`, `/api/admin/jobs/worker/stop`, `/api/admin/jobs/test`, `/api/admin/jobs/az-import-status`
 
-- [ ] **MOD-04**: Create service layer abstraction
+- [x] **MOD-04**: Extract file/template routes into domain module ✅ COMPLETE
+  - Scope: Extract file templates, SIP test audio files, and SIP test profiles endpoints from routes.ts to separate module
+  - **Files changed**:
+    - Created `server/routes/files.routes.ts` with `registerFilesRoutes(app)`
+    - Updated `server/routes/index.ts` to include files module
+    - Removed 13 endpoints from routes.ts (~175 lines)
+  - **No behavior change**: All file endpoints return identical status codes + JSON keys
+  - **Acceptance criteria met**:
+    - npm run check: PASS (0 errors)
+    - Playwright + Axe tests: 14 passed, 0 skipped
+  - **API URLs preserved** (no changes):
+    - `/api/file-templates` (GET, POST)
+    - `/api/file-templates/:id` (GET, PATCH, DELETE)
+    - `/api/sip-test-audio-files` (GET, POST)
+    - `/api/sip-test-audio-files/:id` (GET, PATCH, DELETE)
+    - `/api/sip-test-profiles` (GET, POST)
+    - `/api/sip-test-profiles/:id` (DELETE)
+
+- [ ] **MOD-05**: Create service layer abstraction
   - Scope: Extract business logic from routes into services
   - Files: `server/services/carrier-service.ts`, `server/services/customer-service.ts`, etc.
   - Acceptance: Routes only handle HTTP, services handle logic
 
-- [ ] **MOD-05**: Create repository pattern for data access
+- [ ] **MOD-06**: Create repository pattern for data access
   - Scope: Extract Drizzle queries from services/routes into repositories
   - Files: `server/repositories/carrier-repository.ts`, etc.
   - Acceptance: Clean separation: routes → services → repositories → database

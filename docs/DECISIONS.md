@@ -723,3 +723,51 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - `server/routes/index.ts` (updated)
 - `server/routes.ts` (import + remove old code)
 
+
+---
+
+## 2026-01-15: MOD-04 File/Template Routes Modularization
+
+**Decision**: Extracted 13 file-related endpoints from `routes.ts` to `server/routes/files.routes.ts`.
+
+**Reason**: 
+- File templates, SIP test audio files, and SIP test profiles are isolated and self-contained
+- Low-risk extraction - only uses storage layer, no external dependencies
+- Follows MOD-01/MOD-02/MOD-03 pattern established for route modularization
+
+**Changes Made**:
+1. Created `server/routes/files.routes.ts` with `registerFilesRoutes(app)` function
+2. Updated `server/routes/index.ts` aggregator to include files module
+3. Removed ~175 lines of file-related code from routes.ts
+
+**Endpoints Extracted** (same URLs, no changes):
+
+*File Templates (PDF Generation)*:
+- GET `/api/file-templates`
+- GET `/api/file-templates/:id`
+- POST `/api/file-templates`
+- PATCH `/api/file-templates/:id`
+- DELETE `/api/file-templates/:id`
+
+*SIP Test Audio Files*:
+- GET `/api/sip-test-audio-files`
+- GET `/api/sip-test-audio-files/:id`
+- POST `/api/sip-test-audio-files`
+- PATCH `/api/sip-test-audio-files/:id`
+- DELETE `/api/sip-test-audio-files/:id`
+
+*SIP Test Profiles*:
+- GET `/api/sip-test-profiles`
+- POST `/api/sip-test-profiles`
+- DELETE `/api/sip-test-profiles/:id`
+
+**Confirmation: NO BEHAVIOR CHANGE**
+- All endpoints return identical status codes and JSON keys
+- TypeScript check: PASS
+- Playwright + Axe tests: 14 passed, 0 skipped
+
+**Files Changed**:
+- `server/routes/files.routes.ts` (new)
+- `server/routes/index.ts` (updated)
+- `server/routes.ts` (removed old code)
+
