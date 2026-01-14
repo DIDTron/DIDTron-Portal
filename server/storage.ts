@@ -187,11 +187,15 @@ import {
   emContentVersions as emContentVersionsTable,
   emValidationResults as emValidationResultsTable,
   emPublishHistory as emPublishHistoryTable,
-  devTests as devTestsTable
+  devTests as devTestsTable,
+  customerKyc as customerKycTable,
+  bonusTypes as bonusTypesTable,
+  emailTemplates as emailTemplatesTable,
+  emailLogs as emailLogsTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, or, ne, ilike, gt, asc } from "drizzle-orm";
+import { eq, and, or, ne, ilike, gt, asc, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -1176,26 +1180,29 @@ export class MemStorage implements IStorage {
     return this.updateCustomer(id, { categoryId, groupId: groupId ?? null });
   }
 
-  // Customer KYC
+  // Customer KYC - Persisted to PostgreSQL (FOREVER POLICY)
   async getCustomerKycRequests(status?: string): Promise<CustomerKyc[]> {
-    let requests = Array.from(this.customerKyc.values());
-    if (status) requests = requests.filter(k => k.status === status);
-    return requests.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    if (status) {
+      const results = await db.select().from(customerKycTable)
+        .where(eq(customerKycTable.status, status as any))
+        .orderBy(desc(customerKycTable.createdAt));
+      return results;
+    }
+    return await db.select().from(customerKycTable).orderBy(desc(customerKycTable.createdAt));
   }
 
   async getCustomerKyc(id: string): Promise<CustomerKyc | undefined> {
-    return this.customerKyc.get(id);
+    const results = await db.select().from(customerKycTable).where(eq(customerKycTable.id, id));
+    return results[0];
   }
 
   async getCustomerKycByCustomerId(customerId: string): Promise<CustomerKyc | undefined> {
-    return Array.from(this.customerKyc.values()).find(k => k.customerId === customerId);
+    const results = await db.select().from(customerKycTable).where(eq(customerKycTable.customerId, customerId));
+    return results[0];
   }
 
   async createCustomerKyc(kyc: InsertCustomerKyc): Promise<CustomerKyc> {
-    const id = randomUUID();
-    const now = new Date();
-    const newKyc: CustomerKyc = {
-      id,
+    const results = await db.insert(customerKycTable).values({
       customerId: kyc.customerId,
       stripeIdentityId: kyc.stripeIdentityId ?? null,
       documentType: kyc.documentType ?? null,
@@ -1207,19 +1214,16 @@ export class MemStorage implements IStorage {
       expiresAt: kyc.expiresAt ?? null,
       rejectionReason: kyc.rejectionReason ?? null,
       reviewedBy: kyc.reviewedBy ?? null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.customerKyc.set(id, newKyc);
-    return newKyc;
+    }).returning();
+    return results[0];
   }
 
   async updateCustomerKyc(id: string, data: Partial<InsertCustomerKyc>): Promise<CustomerKyc | undefined> {
-    const existing = this.customerKyc.get(id);
-    if (!existing) return undefined;
-    const updated: CustomerKyc = { ...existing, ...data, updatedAt: new Date() };
-    this.customerKyc.set(id, updated);
-    return updated;
+    const results = await db.update(customerKycTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(customerKycTable.id, id))
+      .returning();
+    return results[0];
   }
 
   // POPs - Persisted to PostgreSQL (FOREVER POLICY)
