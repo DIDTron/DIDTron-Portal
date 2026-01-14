@@ -940,13 +940,13 @@ function DatabaseTab() {
       </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <CardTitle>Slow Queries</CardTitle>
+          <CardTitle className="text-base">All Slow Queries ({">"} 200ms)</CardTitle>
           <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
         </CardHeader>
-        <CardContent>
+        <CardContent className="max-h-80 overflow-y-auto">
           {data?.slowQueries?.length ? (
             <div className="space-y-2">
-              {data.slowQueries.slice(0, 10).map((q, i) => (
+              {data.slowQueries.map((q, i) => (
                 <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                   <span className="text-sm font-mono truncate max-w-[400px]">{q.query}</span>
                   <Badge variant="destructive">{q.durationMs}ms</Badge>
