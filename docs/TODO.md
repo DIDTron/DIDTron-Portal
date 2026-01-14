@@ -553,9 +553,15 @@ All performance optimization stages completed:
     - Fallback: "No data collected yet" when no timestamp available
     - Added to ALL tabs: Overview, API Errors, Performance, Health, Alerts, Integrations, Jobs, Database, Cache, Audit
 
-- [ ] **T147**: Update sidebar System Status widget with alert count badge
+- [x] **T147**: Update sidebar System Status widget with alert count badge ✅ COMPLETE
   - Files: client/src/components/layout/super-admin/primary-sidebar.tsx
   - Acceptance: Red badge with count if alerts > 0, green badge if healthy
+  - **Completion Note (2026-01-13)**:
+    - Added `isAlertDataReady` flag to gate badges behind successful data load
+    - Red badge with count when `activeAlertCount > 0`
+    - Green checkmark badge when data ready AND `activeAlertCount === 0`
+    - No badge shown during loading or error states (prevents false positives)
+    - Both collapsed and expanded sidebar variants updated
 
 ---
 
@@ -596,10 +602,11 @@ All performance optimization stages completed:
     - `server/services/alert-evaluator.ts`: Full implementation with `evaluateAllBudgets()` that inserts to `system_alerts`
     - **DB Proof**: `system_alerts` table has 28 rows (earliest: 2026-01-13 04:52:41 UTC, latest: 2026-01-13 20:01:39 UTC)
 
-- [ ] **T152**: Add System Status badge (red/green) to primary sidebar with alert count
+- [x] **T152**: Add System Status badge (red/green) to primary sidebar with alert count ✅ COMPLETE (Merged with T147)
   - Issue: No status indicator badge beside System Status in sidebar
   - Acceptance: Red badge with count if alerts > 0, green checkmark if healthy
   - Files: client/src/components/layout/super-admin/primary-sidebar.tsx
+  - **Note**: This was a duplicate of T147 - completed as part of T147
 
 - [ ] **T153**: Restore storage usage display (Replit storage metrics)
   - Issue: User lost the storage usage card that was previously designed

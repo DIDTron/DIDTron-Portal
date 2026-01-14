@@ -359,3 +359,19 @@ Pattern: Each useQuery now captures `dataUpdatedAt` and displays via `formatAsOf
 **Rationale**: Global users need clear visibility into data freshness, especially when monitoring production systems across time zones.
 
 **Files Changed**: `client/src/pages/admin/system-status.tsx`
+
+### T147: Sidebar System Status Badge (2026-01-13)
+
+**Decision**: Add status indicator badge to System Status sidebar item.
+
+**Implementation**:
+- Query `/api/system/alerts` with `refetchInterval: 60000` and `staleTime: 30000`
+- `isAlertDataReady` flag gates badges: `!isLoading && !isError && data !== undefined`
+- Badge states:
+  - **Red badge with count**: when `activeAlertCount > 0`
+  - **Green checkmark badge**: when data ready AND no alerts
+  - **No badge**: during loading or on error (prevents false healthy signal)
+
+**Rationale**: Admins need at-a-glance visibility into system health from any page. Green badge only shows when we have confirmed healthy status to avoid misleading users.
+
+**Files Changed**: `client/src/components/layout/super-admin/primary-sidebar.tsx`

@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Bot, Network, Cpu, Globe, Building2, GripVertical, Cog, Receipt, Phone } from "lucide-react";
+import { LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Bot, Network, Cpu, Globe, Building2, GripVertical, Cog, Receipt, Phone, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -149,13 +149,14 @@ export function PrimarySidebar() {
     })
   );
 
-  const { data: alertData } = useQuery<{ stats?: { criticalCount: number; warningCount: number } }>({
+  const { data: alertData, isLoading: isAlertLoading, isError: isAlertError } = useQuery<{ stats?: { criticalCount: number; warningCount: number } }>({
     queryKey: ["/api/system/alerts"],
     refetchInterval: 60000,
     staleTime: 30000,
   });
   
   const activeAlertCount = (alertData?.stats?.criticalCount || 0) + (alertData?.stats?.warningCount || 0);
+  const isAlertDataReady = !isAlertLoading && !isAlertError && alertData !== undefined;
 
   const orderedSections = useMemo(() => {
     if (primarySectionOrder.length === 0) {
@@ -269,11 +270,15 @@ export function PrimarySidebar() {
                 }}
               >
                 <Server className="h-5 w-5" />
-                {activeAlertCount > 0 && (
+                {activeAlertCount > 0 ? (
                   <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white" data-testid="badge-system-alerts">
                     {activeAlertCount > 9 ? "9+" : activeAlertCount}
                   </span>
-                )}
+                ) : isAlertDataReady ? (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-green-500" data-testid="badge-system-healthy">
+                    <Check className="h-2.5 w-2.5 text-white" />
+                  </span>
+                ) : null}
               </div>
             </TooltipTrigger>
             <TooltipContent side="right" className="font-medium">
@@ -299,11 +304,15 @@ export function PrimarySidebar() {
               <Server className="h-5 w-5 shrink-0" />
               <span>System Status</span>
             </div>
-            {activeAlertCount > 0 && (
+            {activeAlertCount > 0 ? (
               <Badge variant="destructive" className="h-5 min-w-5 text-xs px-1.5" data-testid="badge-system-alerts">
                 {activeAlertCount > 99 ? "99+" : activeAlertCount}
               </Badge>
-            )}
+            ) : isAlertDataReady ? (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500" data-testid="badge-system-healthy">
+                <Check className="h-3 w-3 text-white" />
+              </span>
+            ) : null}
           </div>
         )}
       </div>
