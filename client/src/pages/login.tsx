@@ -100,7 +100,7 @@ export default function Login() {
                 data-testid="input-password"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login-submit">
+            <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>

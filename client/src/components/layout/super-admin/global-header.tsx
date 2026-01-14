@@ -129,7 +129,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
           size="icon"
           onClick={toggleBothSidebars}
           aria-label="Toggle sidebar"
-          data-testid="header-toggle-sidebars"
+          data-testid="button-sidebar-toggle"
         >
           <Menu className="h-5 w-5" />
         </Button>

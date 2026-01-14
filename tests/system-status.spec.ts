@@ -8,9 +8,9 @@ test.describe("System Status Page - All Tabs", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
     await page.waitForLoadState("networkidle");
-    await page.fill('[data-testid="input-email"]', SUPER_ADMIN_EMAIL);
-    await page.fill('[data-testid="input-password"]', SUPER_ADMIN_PASSWORD);
-    await page.click('[data-testid="button-login"]');
+    await page.getByTestId("input-email").fill(SUPER_ADMIN_EMAIL);
+    await page.getByTestId("input-password").fill(SUPER_ADMIN_PASSWORD);
+    await page.getByTestId("button-login").click();
     await page.waitForURL("**/admin/**", { timeout: 30000 });
   });
 

@@ -7,36 +7,358 @@
   - generic [ref=e3]:
     - banner [ref=e4]:
       - generic [ref=e5]:
-        - link "DIDTron" [ref=e6] [cursor=pointer]:
-          - /url: /
-          - img [ref=e7]
-          - generic [ref=e9]: DIDTron
-        - button "Toggle theme" [ref=e10] [cursor=pointer]:
+        - button "Toggle sidebar" [ref=e6] [cursor=pointer]:
+          - img
+        - generic [ref=e8]: DIDTron
+      - generic [ref=e10]:
+        - img [ref=e11]
+        - searchbox "Search carriers, routes, customers" [ref=e14]
+        - generic:
+          - generic: Ctrl
+          - text: K
+      - generic [ref=e15]:
+        - button "ConnexCS status" [ref=e16] [cursor=pointer]:
+          - img
+        - button "Notifications" [ref=e17] [cursor=pointer]:
+          - img
+          - generic [ref=e18]: "4"
+        - button "Toggle theme" [ref=e19] [cursor=pointer]:
           - img
           - img
-          - generic [ref=e11]: Toggle theme
-    - main [ref=e12]:
-      - generic [ref=e13]:
-        - generic [ref=e14]:
-          - heading "Welcome Back" [level=1] [ref=e15]
-          - paragraph [ref=e16]: Sign in to your DIDTron account
-        - generic [ref=e17]:
-          - generic [ref=e18]:
-            - text: Email
-            - textbox "Email" [ref=e19]:
-              - /placeholder: you@example.com
-              - text: info@didtron.com
-          - generic [ref=e20]:
-            - generic [ref=e21]:
-              - generic [ref=e22]: Password
-              - link "Forgot password?" [ref=e23] [cursor=pointer]:
-                - /url: "#"
-            - textbox "Password" [active] [ref=e24]:
-              - /placeholder: Enter your password
-              - text: Adam@0903
-          - button "Sign In" [ref=e25] [cursor=pointer]
-        - generic [ref=e26]:
-          - text: Don't have an account?
-          - link "Sign up" [ref=e27] [cursor=pointer]:
-            - /url: /register
+          - generic [ref=e20]: Toggle theme
+        - button "User menu" [ref=e21] [cursor=pointer]:
+          - generic [ref=e23]: IN
+          - generic [ref=e24]: info@didtron.com
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - navigation [ref=e30]:
+          - generic [ref=e31] [cursor=pointer]:
+            - button "Reorder Dashboard" [ref=e32]:
+              - img [ref=e33]
+            - button "Dashboard" [ref=e40]:
+              - img [ref=e41]
+              - generic [ref=e46]: Dashboard
+          - generic [ref=e47] [cursor=pointer]:
+            - button "Reorder VoIP" [ref=e48]:
+              - img [ref=e49]
+            - button "VoIP" [ref=e56]:
+              - img [ref=e57]
+              - generic [ref=e59]: VoIP
+          - generic [ref=e60] [cursor=pointer]:
+            - button "Reorder Wholesale" [ref=e61]:
+              - img [ref=e62]
+            - button "Wholesale" [ref=e69]:
+              - img [ref=e70]
+              - generic [ref=e74]: Wholesale
+          - generic [ref=e75] [cursor=pointer]:
+            - button "Reorder Rate Cards" [ref=e76]:
+              - img [ref=e77]
+            - button "Rate Cards" [ref=e84]:
+              - img [ref=e85]
+              - generic [ref=e88]: Rate Cards
+          - generic [ref=e89] [cursor=pointer]:
+            - button "Reorder DID" [ref=e90]:
+              - img [ref=e91]
+            - button "DID" [ref=e98]:
+              - img [ref=e99]
+              - generic [ref=e102]: DID
+          - generic [ref=e103] [cursor=pointer]:
+            - button "Reorder Customers" [ref=e104]:
+              - img [ref=e105]
+            - button "Customers" [ref=e112]:
+              - img [ref=e113]
+              - generic [ref=e118]: Customers
+          - generic [ref=e119] [cursor=pointer]:
+            - button "Reorder Billing" [ref=e120]:
+              - img [ref=e121]
+            - button "Billing" [ref=e128]:
+              - img [ref=e129]
+              - generic [ref=e131]: Billing
+          - generic [ref=e132] [cursor=pointer]:
+            - button "Reorder Marketing" [ref=e133]:
+              - img [ref=e134]
+            - button "Marketing" [ref=e141]:
+              - img [ref=e142]
+              - generic [ref=e145]: Marketing
+          - generic [ref=e146] [cursor=pointer]:
+            - button "Reorder Monitoring" [ref=e147]:
+              - img [ref=e148]
+            - button "Monitoring" [ref=e155]:
+              - img [ref=e156]
+              - generic [ref=e158]: Monitoring
+          - generic [ref=e159] [cursor=pointer]:
+            - button "Reorder SIP Tester" [ref=e160]:
+              - img [ref=e161]
+            - button "SIP Tester" [ref=e168]:
+              - img [ref=e169]
+              - generic [ref=e172]: SIP Tester
+          - generic [ref=e173] [cursor=pointer]:
+            - button "Reorder AI Voice" [ref=e174]:
+              - img [ref=e175]
+            - button "AI Voice" [ref=e182]:
+              - img [ref=e183]
+              - generic [ref=e186]: AI Voice
+          - generic [ref=e187] [cursor=pointer]:
+            - button "Reorder Softswitch" [ref=e188]:
+              - img [ref=e189]
+            - button "Softswitch" [ref=e196]:
+              - img [ref=e197]
+              - generic [ref=e202]: Softswitch
+          - generic [ref=e203] [cursor=pointer]:
+            - button "Reorder Experience" [ref=e204]:
+              - img [ref=e205]
+            - button "Experience" [ref=e212]:
+              - img [ref=e213]
+              - generic [ref=e216]: Experience
+          - generic [ref=e217] [cursor=pointer]:
+            - button "Reorder Admin" [ref=e218]:
+              - img [ref=e219]
+            - button "Admin" [ref=e226]:
+              - img [ref=e227]
+              - generic [ref=e229]: Admin
+          - generic [ref=e230] [cursor=pointer]:
+            - button "Reorder Global Settings" [ref=e231]:
+              - img [ref=e232]
+            - button "Global Settings" [ref=e239]:
+              - img [ref=e240]
+              - generic [ref=e251]: Global Settings
+          - generic [ref=e252] [cursor=pointer]:
+            - button "Reorder Settings" [ref=e253]:
+              - img [ref=e254]
+            - button "Settings" [ref=e261]:
+              - img [ref=e262]
+              - generic [ref=e265]: Settings
+          - status [ref=e266]
+        - generic [ref=e268] [cursor=pointer]:
+          - generic [ref=e269]:
+            - img [ref=e270]
+            - generic [ref=e273]: System Status
+          - generic [ref=e274]: "4"
+      - generic [ref=e275]:
+        - generic [ref=e277]: No tabs open - select an item from the sidebar
+        - main [ref=e278]:
+          - generic [ref=e279]:
+            - generic [ref=e280]:
+              - generic [ref=e281]:
+                - heading "Super Admin Dashboard" [level=1] [ref=e282]
+                - paragraph [ref=e283]: System overview and quick actions
+              - generic [ref=e284]:
+                - generic [ref=e285]:
+                  - img [ref=e286]
+                  - text: "Last sync: Not synced yet"
+                - button "Sync All" [ref=e289] [cursor=pointer]:
+                  - img
+                  - text: Sync All
+            - generic [ref=e290]:
+              - generic [ref=e291] [cursor=pointer]:
+                - generic [ref=e292]:
+                  - generic [ref=e293]: Partners
+                  - img [ref=e294]
+                - generic [ref=e298]:
+                  - generic [ref=e299]: "0"
+                  - paragraph [ref=e300]: Wholesale partners
+              - generic [ref=e301] [cursor=pointer]:
+                - generic [ref=e302]:
+                  - generic [ref=e303]: Routes
+                  - img [ref=e304]
+                - generic [ref=e308]:
+                  - generic [ref=e309]: "0"
+                  - paragraph [ref=e310]: Voice routes
+              - generic [ref=e311] [cursor=pointer]:
+                - generic [ref=e312]:
+                  - generic [ref=e313]: POPs
+                  - img [ref=e314]
+                - generic [ref=e317]:
+                  - generic [ref=e318]: "0"
+                  - paragraph [ref=e319]: Points of Presence
+              - generic [ref=e320] [cursor=pointer]:
+                - generic [ref=e321]:
+                  - generic [ref=e322]: DID Countries
+                  - img [ref=e323]
+                - generic [ref=e326]:
+                  - generic [ref=e327]: "0"
+                  - paragraph [ref=e328]: Available countries
+              - generic [ref=e329] [cursor=pointer]:
+                - generic [ref=e330]:
+                  - generic [ref=e331]: Customers
+                  - img [ref=e332]
+                - generic [ref=e337]:
+                  - generic [ref=e338]: "0"
+                  - paragraph [ref=e339]: Active customers
+              - generic [ref=e340] [cursor=pointer]:
+                - generic [ref=e341]:
+                  - generic [ref=e342]: Invoices
+                  - img [ref=e343]
+                - generic [ref=e345]:
+                  - generic [ref=e346]: "0"
+                  - paragraph [ref=e347]: 0 pending
+              - generic [ref=e348] [cursor=pointer]:
+                - generic [ref=e349]:
+                  - generic [ref=e350]: Payments
+                  - img [ref=e351]
+                - generic [ref=e353]:
+                  - generic [ref=e354]: "0"
+                  - paragraph [ref=e355]: $0.00 total
+              - generic [ref=e356] [cursor=pointer]:
+                - generic [ref=e357]:
+                  - generic [ref=e358]: Referrals
+                  - img [ref=e359]
+                - generic [ref=e361]:
+                  - generic [ref=e362]: "0"
+                  - paragraph [ref=e363]: 0 converted
+            - generic [ref=e364]:
+              - generic [ref=e365]:
+                - generic [ref=e366]:
+                  - generic [ref=e367]:
+                    - img [ref=e368]
+                    - text: AI Insights
+                  - generic [ref=e370]: AI-generated recommendations for your platform
+                - generic [ref=e372]:
+                  - generic [ref=e374]:
+                    - generic [ref=e375]:
+                      - heading "Add more partners for USA routes" [level=4] [ref=e376]
+                      - paragraph [ref=e377]: Your USA termination has only 1 partner. Adding 2 more partners would improve redundancy and potentially reduce costs by 15%.
+                    - button "Add Partner" [ref=e378] [cursor=pointer]:
+                      - text: Add Partner
+                      - img
+                  - generic [ref=e380]:
+                    - generic [ref=e381]:
+                      - heading "Low channel utilization detected" [level=4] [ref=e382]
+                      - paragraph [ref=e383]: Your channel plans are using only 23% capacity. Consider offering promotions to increase usage.
+                    - button "View Plans" [ref=e384] [cursor=pointer]:
+                      - text: View Plans
+                      - img
+                  - generic [ref=e386]:
+                    - generic [ref=e387]:
+                      - heading "New DID region available" [level=4] [ref=e388]
+                      - paragraph [ref=e389]: New DID inventory is available for UAE. Your customers have requested this region 12 times.
+                    - button "Add Region" [ref=e390] [cursor=pointer]:
+                      - text: Add Region
+                      - img
+              - generic [ref=e391]:
+                - generic [ref=e392]:
+                  - generic [ref=e393]:
+                    - img [ref=e394]
+                    - text: Platform Status
+                  - generic [ref=e396]: Real-time connection status
+                - generic [ref=e398]:
+                  - generic [ref=e399]:
+                    - generic [ref=e400]: API Connection
+                    - generic [ref=e403]: online
+                  - generic [ref=e404]:
+                    - generic [ref=e405]: CDR Stream
+                    - generic [ref=e408]: online
+                  - generic [ref=e409]:
+                    - generic [ref=e410]: Metrics Feed
+                    - generic [ref=e413]: online
+                  - generic [ref=e414]:
+                    - generic [ref=e415]: Last Sync
+                    - generic [ref=e418]: 2 min ago
+                  - generic [ref=e420]:
+                    - generic [ref=e421]: Mode
+                    - generic [ref=e422]: Mock
+              - generic [ref=e423]:
+                - generic [ref=e424]:
+                  - generic [ref=e425]:
+                    - img [ref=e426]
+                    - text: Customer Categories
+                  - generic [ref=e431]: Customer segmentation
+                - generic [ref=e433]:
+                  - generic [ref=e434]:
+                    - generic [ref=e435]: SIP Trunk
+                    - generic [ref=e436]: sip-trunk
+                  - generic [ref=e437]:
+                    - generic [ref=e438]: Enterprise
+                    - generic [ref=e439]: enterprise
+                  - generic [ref=e440]:
+                    - generic [ref=e441]: Call Center
+                    - generic [ref=e442]: call-center
+                  - generic [ref=e443]:
+                    - generic [ref=e444]: Individual
+                    - generic [ref=e445]: individual
+              - generic [ref=e446]:
+                - generic [ref=e447]:
+                  - generic [ref=e448]:
+                    - img [ref=e449]
+                    - text: Customer Groups
+                  - generic [ref=e453]: Sub-groups for organization
+                - generic [ref=e455]:
+                  - generic [ref=e456]:
+                    - generic [ref=e457]: Standard
+                    - generic [ref=e458]: sip-standard
+                  - generic [ref=e459]:
+                    - generic [ref=e460]: Small Business
+                    - generic [ref=e461]: ent-smb
+                  - generic [ref=e462]:
+                    - generic [ref=e463]: Inbound
+                    - generic [ref=e464]: cc-inbound
+                  - generic [ref=e465]:
+                    - generic [ref=e466]: Basic
+                    - generic [ref=e467]: ind-basic
+                  - generic [ref=e468]:
+                    - generic [ref=e469]: Premium
+                    - generic [ref=e470]: sip-premium
+                  - generic [ref=e471]:
+                    - generic [ref=e472]: Mid-Market
+                    - generic [ref=e473]: ent-mid
+                  - generic [ref=e474]:
+                    - generic [ref=e475]: Outbound
+                    - generic [ref=e476]: cc-outbound
+                  - generic [ref=e477]:
+                    - generic [ref=e478]: Power User
+                    - generic [ref=e479]: ind-power
+                  - generic [ref=e480]:
+                    - generic [ref=e481]: Wholesale
+                    - generic [ref=e482]: sip-wholesale
+                  - generic [ref=e483]:
+                    - generic [ref=e484]: Large Enterprise
+                    - generic [ref=e485]: ent-large
+                  - generic [ref=e486]:
+                    - generic [ref=e487]: Blended
+                    - generic [ref=e488]: cc-blended
+              - generic [ref=e489]:
+                - generic [ref=e490]:
+                  - generic [ref=e491]:
+                    - img [ref=e492]
+                    - text: System Status
+                  - generic [ref=e494]: Service health
+                - generic [ref=e496]:
+                  - generic [ref=e497]:
+                    - generic [ref=e498]: API Server
+                    - generic [ref=e501]: online
+                  - generic [ref=e502]:
+                    - generic [ref=e503]: Database
+                    - generic [ref=e506]: online
+                  - generic [ref=e507]:
+                    - generic [ref=e508]: AI Service
+                    - generic [ref=e511]: online
+                  - generic [ref=e512]:
+                    - generic [ref=e513]: Email (Brevo)
+                    - generic [ref=e516]: Not configured
+              - generic [ref=e517]:
+                - generic [ref=e518]:
+                  - generic [ref=e519]:
+                    - img [ref=e520]
+                    - text: Active Alerts
+                  - generic [ref=e522]: System notifications
+                - generic [ref=e524]:
+                  - generic [ref=e527]: Platform API key not configured
+                  - generic [ref=e530]: Stripe not connected
+            - generic [ref=e531]:
+              - generic [ref=e533]:
+                - img [ref=e534]
+                - text: Platform Overview
+              - generic [ref=e538]:
+                - generic [ref=e539]:
+                  - generic [ref=e540]: "0"
+                  - generic [ref=e541]: Active Customers
+                - generic [ref=e542]:
+                  - generic [ref=e543]: "0"
+                  - generic [ref=e544]: Active Trunks
+                - generic [ref=e545]:
+                  - generic [ref=e546]: $0
+                  - generic [ref=e547]: Monthly Revenue
+                - generic [ref=e548]:
+                  - generic [ref=e549]: "0"
+                  - generic [ref=e550]: DIDs Active
 ```
