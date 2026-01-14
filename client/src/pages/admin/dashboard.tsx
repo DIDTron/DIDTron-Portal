@@ -481,7 +481,7 @@ function InsightItem({
     <div className={`p-4 border-l-4 ${typeStyles[type]} bg-muted/30 rounded-r-md`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <h4 className="font-medium mb-1">{title}</h4>
+          <h2 className="text-base font-medium mb-1">{title}</h2>
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
         <Button variant="outline" size="sm" onClick={onAction}>

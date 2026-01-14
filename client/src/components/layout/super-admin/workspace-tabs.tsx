@@ -18,9 +18,9 @@ export function WorkspaceTabs() {
 
   if (tabs.length === 0) {
     return (
-      <div className="flex h-10 items-center border-b bg-muted/30 px-4">
+      <nav aria-label="Workspace tabs" className="flex h-10 items-center border-b bg-muted/30 px-4">
         <span className="text-sm text-muted-foreground">No tabs open - select an item from the sidebar</span>
-      </div>
+      </nav>
     );
   }
 
@@ -44,7 +44,7 @@ export function WorkspaceTabs() {
   };
 
   return (
-    <div className="flex h-10 items-center border-b bg-muted/30">
+    <nav aria-label="Workspace tabs" className="flex h-10 items-center border-b bg-muted/30">
       <ScrollArea className="w-full">
         <div className="flex h-10 items-center gap-0.5 px-2">
           {tabs.map((tab: WorkspaceTab, index: number) => {
@@ -118,6 +118,6 @@ export function WorkspaceTabs() {
         </div>
         <ScrollBar orientation="horizontal" className="h-1.5" />
       </ScrollArea>
-    </div>
+    </nav>
   );
 }

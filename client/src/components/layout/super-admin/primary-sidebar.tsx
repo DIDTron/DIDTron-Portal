@@ -251,7 +251,7 @@ export function PrimarySidebar() {
         </nav>
       </ScrollArea>
 
-      <div className={cn("border-t", isCollapsed ? "p-1" : "p-2")}>
+      <nav aria-label="System status" className={cn("border-t", isCollapsed ? "p-1" : "p-2")}>
         {isCollapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -315,7 +315,7 @@ export function PrimarySidebar() {
             ) : null}
           </div>
         )}
-      </div>
+      </nav>
     </div>
   );
 }
