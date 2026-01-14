@@ -625,8 +625,8 @@ export async function registerRoutes(
         // Send confirmation email
         try {
           await sendPaymentReceived(storage, {
-            email: customer.email,
-            firstName: customer.firstName || "Customer",
+            email: customer.billingEmail || "",
+            firstName: customer.companyName || "Customer",
             amount: payment.amount,
             paymentMethod: payment.paymentMethod || "Credit Card",
             transactionId: transactionId || payment.id,
@@ -7707,7 +7707,8 @@ export async function registerRoutes(
 
   app.get("/api/sip-test-settings", async (req, res) => {
     try {
-      const customerId = req.user?.customerId || req.user?.id;
+      const user = req.user as { customerId?: string; id?: string } | undefined;
+      const customerId = user?.customerId || user?.id;
       const settings = await storage.getSipTestSettings(customerId);
       res.json(settings || {});
     } catch (error) {
@@ -7717,7 +7718,8 @@ export async function registerRoutes(
 
   app.put("/api/sip-test-settings", async (req, res) => {
     try {
-      const customerId = req.user?.customerId || req.user?.id;
+      const user = req.user as { customerId?: string; id?: string } | undefined;
+      const customerId = user?.customerId || user?.id;
       const settings = await storage.upsertSipTestSettings({
         customerId,
         concurrentCalls: req.body.concurrentCalls,
@@ -7748,7 +7750,8 @@ export async function registerRoutes(
 
   app.post("/api/sip-test-runs", async (req, res) => {
     try {
-      const customerId = req.user?.customerId || req.user?.id || 'admin';
+      const user = req.user as { customerId?: string; id?: string } | undefined;
+      const customerId = user?.customerId || user?.id || 'admin';
       const run = await storage.createSipTestRun({
         customerId,
         testName: req.body.testName,
@@ -7838,7 +7841,8 @@ export async function registerRoutes(
   app.get("/api/my/sip-test-runs", async (req, res) => {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-      const runs = await storage.getSipTestRuns(req.user.customerId || req.user.id);
+      const user = req.user as { customerId?: string; id?: string };
+      const runs = await storage.getSipTestRuns(user.customerId || user.id);
       res.json(runs);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch test runs" });
@@ -7848,8 +7852,9 @@ export async function registerRoutes(
   app.post("/api/my/sip-test-runs", async (req, res) => {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const user = req.user as { customerId?: string; id?: string };
       const run = await storage.createSipTestRun({
-        customerId: req.user.customerId || req.user.id,
+        customerId: user.customerId || user.id,
         testName: req.body.testName,
         testMode: req.body.testMode || 'standard',
         routeSource: req.body.routeSource,
@@ -7883,9 +7888,10 @@ export async function registerRoutes(
   app.post("/api/my/sip-test-runs/:id/start", async (req, res) => {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const user = req.user as { customerId?: string; id?: string };
       const run = await storage.getSipTestRun(req.params.id);
       if (!run) return res.status(404).json({ error: "Test run not found" });
-      if (run.customerId !== req.user.customerId && run.customerId !== req.user.id) {
+      if (run.customerId !== user.customerId && run.customerId !== user.id) {
         return res.status(403).json({ error: "Forbidden" });
       }
 
@@ -7904,9 +7910,10 @@ export async function registerRoutes(
   app.get("/api/my/sip-test-runs/:id", async (req, res) => {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const user = req.user as { customerId?: string; id?: string };
       const run = await storage.getSipTestRun(req.params.id);
       if (!run) return res.status(404).json({ error: "Test run not found" });
-      if (run.customerId !== req.user.customerId && run.customerId !== req.user.id) {
+      if (run.customerId !== user.customerId && run.customerId !== user.id) {
         return res.status(403).json({ error: "Forbidden" });
       }
       res.json(run);
@@ -7918,9 +7925,10 @@ export async function registerRoutes(
   app.get("/api/my/sip-test-runs/:id/results", async (req, res) => {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const user = req.user as { customerId?: string; id?: string };
       const run = await storage.getSipTestRun(req.params.id);
       if (!run) return res.status(404).json({ error: "Test run not found" });
-      if (run.customerId !== req.user.customerId && run.customerId !== req.user.id) {
+      if (run.customerId !== user.customerId && run.customerId !== user.id) {
         return res.status(403).json({ error: "Forbidden" });
       }
       const results = await storage.getSipTestRunResults(req.params.id);

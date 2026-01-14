@@ -788,8 +788,16 @@ All performance optimization stages completed:
   - Before: 176 total errors (128 in storage.ts)
   - After: 48 total errors (0 in storage.ts)
   - Summary: Added 17 missing table imports, added `desc` to drizzle-orm imports, converted non-functional customerKyc (Map never declared) to PostgreSQL (canonical per FOREVER POLICY), fixed 3 enum type casts
-- [ ] **TS-02**: Fix routes.ts errors 1-20 (EmailTriggerStorage + property type mismatches)
-- [ ] **TS-03**: Fix storage.ts errors 61-90 (DID/PBX-related type mismatches)
+- [x] **TS-02**: Fix routes.ts errors 1-20 ✅ COMPLETE
+  - Files changed: server/routes.ts, server/brevo.ts
+  - Before: 48 total errors (29 in routes.ts)
+  - After: 30 total errors (11 in routes.ts)
+  - Errors fixed (18 total):
+    - Lines 346, 627: Updated EmailTriggerStorage interface to accept `htmlContent: string | null`
+    - Lines 628-629: Fixed `customer.email` → `customer.billingEmail`, `customer.firstName` → `customer.companyName`
+    - Lines 7710, 7720, 7751, 7841, 7852, 7888, 7909, 7923: Fixed `req.user` typing with type assertions for `customerId` and `id` properties
+  - Justification: Type casts on req.user are narrow and justified (Express.User not augmented for this project)
+- [ ] **TS-03**: Fix remaining routes.ts errors (11 left) + job-queue.ts errors (9)
 
 ### Stage 2: Storage Interface Errors (Batch 4-6)
 
@@ -804,3 +812,23 @@ All performance optimization stages completed:
 - [ ] **TS-09**: Regression test - verify no runtime breaks
 
 **Note**: These errors are pre-existing and do not block current functionality. Fix only after TODO reconciliation is verified complete.
+
+---
+
+## PLAN-2026-01-14-TEST-FIX (FUTURE - DO NOT EXECUTE YET)
+
+**Objective**: Fix Playwright and Axe test failures on login page
+**Status**: FUTURE - staged for execution after TypeScript errors resolved
+**Acceptance**: Playwright + Axe pass on login page
+
+- [ ] **TF-01**: Fix Playwright login selector timeout
+  - Issue: `[data-testid="button-login"]` selector times out
+  - Scope: Login page test selectors and test stability
+  - Acceptance: Playwright login tests pass consistently
+
+- [ ] **TF-02**: Fix Axe failures on login page
+  - Issues: Color contrast (3.63:1 vs required 4.5:1), region landmark violations
+  - Scope: Login page accessibility improvements
+  - Acceptance: Axe scan passes on login page
+
+**Note**: Execute only after PLAN-2026-01-14-TSCHECK-FIX is complete.

@@ -477,3 +477,30 @@ Pattern: Each useQuery now captures `dataUpdatedAt` and displays via `formatAsOf
 - After: 48 total errors (0 in storage.ts)
 
 **Files Changed**: `server/storage.ts`
+
+---
+
+## 2026-01-14: TS-02 Completed - Routes.ts TypeScript Fixes
+
+### PLAN-2026-01-14-TSCHECK-FIX Task TS-02
+
+**Decision**: Fixed 18 TypeScript errors in server/routes.ts and server/brevo.ts using targeted type corrections.
+
+**Changes Made**:
+1. Updated `EmailTriggerStorage` interface in brevo.ts to accept `htmlContent: string | null` (matches actual storage return type)
+2. Fixed `customer.email` → `customer.billingEmail` (line 628) - Customer schema uses billingEmail, not email
+3. Fixed `customer.firstName` → `customer.companyName` (line 629) - Customer schema has no firstName field
+4. Added narrow type assertions for `req.user` at 8 locations (lines 7710-7923) to access `customerId` and `id` properties
+
+**Why Type Assertions**:
+- Express.User type is not properly augmented in this project to match the actual User schema
+- Schema correctly defines `id` and `customerId` on users table
+- Narrow cast `as { customerId?: string; id?: string }` is minimal and matches schema
+- Alternative (global type augmentation) would require broader changes outside TS-02 scope
+
+**Results**:
+- Before: 48 total errors (29 in routes.ts)
+- After: 30 total errors (11 in routes.ts)
+- Errors fixed: 18
+
+**Files Changed**: `server/routes.ts`, `server/brevo.ts`

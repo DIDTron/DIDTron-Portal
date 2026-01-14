@@ -702,7 +702,7 @@ export const defaultEmailTemplates = [
 
 // Email trigger helper functions
 interface EmailTriggerStorage {
-  getEmailTemplateBySlug: (slug: string) => Promise<{ subject: string; htmlContent: string } | undefined>;
+  getEmailTemplateBySlug: (slug: string) => Promise<{ subject: string; htmlContent: string | null } | undefined>;
   getIntegrationByProvider: (provider: string) => Promise<{ credentials?: unknown; isEnabled?: boolean | null } | undefined>;
 }
 
@@ -724,8 +724,9 @@ export async function sendWelcomeEmail(
       ["welcome", "onboarding"]
     );
   }
+  const html = template.htmlContent || defaultEmailTemplates.find(t => t.slug === "welcome")?.htmlContent || "";
   return brevoService.sendTemplatedEmail(
-    template.htmlContent,
+    html,
     template.subject,
     params.email,
     `${params.firstName} ${params.lastName}`,
