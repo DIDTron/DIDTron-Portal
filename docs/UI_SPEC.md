@@ -715,29 +715,33 @@ Generated from repo reality (2026-01-15). This is the authoritative reference fo
 
 ### PART 4: Actionable Guidance Summary
 
-#### Next 3 Modularization Steps (MOD-06, MOD-07, MOD-08)
+#### Next 3 Route Extractions (MOD-06, MOD-07, MOD-08)
 
-| Task ID | Target Section | Lines | Endpoints | Reason (smallest safe first) |
-|---------|----------------|-------|-----------|------------------------------|
-| **MOD-06** | Referral System (lines 475-548) | ~75 | 5 | Self-contained, no heavy queries |
-| **MOD-07** | Customer Branding (lines 549-653) | ~105 | 4 | Tenant-scoped, simple CRUD |
-| **MOD-08** | Billing Terms (lines 3612-3734) | ~120 | 6 | Simple CRUD, no external deps |
+**Note**: MOD tasks = route-module extractions to new files in `server/routes/`, NOT feature themes.
+
+| Task ID | Target File | URL Namespaces | Endpoints | Source Lines | Why Low-Risk |
+|---------|-------------|----------------|-----------|--------------|--------------|
+| **MOD-06** | `dids.routes.ts` | `/api/did-countries`, `/api/did-providers`, `/api/dids` | 13 | 6976-7016, 8780-8910 | Simple CRUD, no heavy queries, no external integrations, self-contained domain |
+| **MOD-07** | `sip-tester.routes.ts` | `/api/sip-tests/*`, `/api/sip-test-suppliers`, `/api/sip-test-settings`, `/api/sip-test-runs`, `/api/sip-test-numbers` | 24 | 7191-7492 | Contiguous block (~300 lines), minimal cross-dependencies, no cursor pagination needed |
+| **MOD-08** | `billing-readonly.routes.ts` | `/api/invoices` (GET), `/api/payments` (GET), `/api/fx-rates`, `/api/billing-terms` (GET) | 11 | 3614-3634, 3954-4040, 7160-7190 | Read-only endpoints only, no mutations, no ledger writes, low blast radius |
+
+**Order justification**: DIDs first (smallest, most isolated), then SIP Tester (contiguous block), then billing read-only (scattered but safe reads).
 
 #### Next 3 Heavy Endpoint Redesign Candidates
 
-| Candidate | Current Issue | Proposed Fix |
-|-----------|---------------|--------------|
-| 1. `/api/softswitch/rating/supplier-plans/:id/rates` | Returns all rates for plan | Add cursor pagination + limit enforcement |
-| 2. `/api/carriers/:id` | Returns nested interconnects | Separate `/api/carriers/:id/interconnects` endpoint |
-| 3. `/api/rate-cards/:id/rates` | Large rate lists | Add prefix search filter + cursor pagination |
+| Rank | Endpoint Path | Current Issue | Data Scale | Proposed Fix |
+|------|---------------|---------------|------------|--------------|
+| 1 | `/api/softswitch/rating/supplier-plans/:id/rates` | Returns all rates for plan | 100K+ rows potential | Add cursor pagination + limit enforcement (max 100) |
+| 2 | `/api/carriers/:id` | Returns nested interconnects, contacts, alerts in single response | 10-50 nested entities | Split to `/api/carriers/:id/interconnects` separate endpoint, lazy load tabs |
+| 3 | `/api/rate-cards/:id/rates` | Large rate lists unbounded | 50K+ rates per card | Add prefix search filter + cursor pagination (BigData risk) |
 
 #### Next 3 Fast Tabs Refactors
 
-| Page | Issue | Fix |
-|------|-------|-----|
-| 1. `interconnect-detail.tsx` (174KB) | All tabs load on mount | Per-tab `enabled` flag + code splitting |
-| 2. `carrier-detail.tsx` (121KB) | Nested entity fetches | Tab-specific queries + virtualization for lists |
-| 3. `softswitch-rating.tsx` (124KB) | Rates table loads all | Virtual table + infinite scroll |
+| Rank | Page Path | Size | Issue | Fix |
+|------|-----------|------|-------|-----|
+| 1 | `client/src/pages/admin/interconnect-detail.tsx` | 174KB | All 6-9 tabs load data on mount, heavy nested queries | Per-tab `enabled: activeTab === 'x'` flag + React.lazy code splitting |
+| 2 | `client/src/pages/admin/carrier-detail.tsx` | 121KB | 5 tabs fetch nested entities simultaneously | Tab-specific queries with staleTime, virtualization for interconnects list |
+| 3 | `client/src/pages/admin/softswitch-rating.tsx` | 124KB | Rates table loads all rows, no virtualization | @tanstack/react-virtual for table rows + infinite scroll pagination |
 
 ---
 

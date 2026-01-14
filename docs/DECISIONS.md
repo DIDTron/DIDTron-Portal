@@ -836,3 +836,21 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 
 **Source evidence**: All data gathered via grep, find, wc from actual files—no guesses.
 
+
+---
+
+## 2026-01-15: Corrected PART 4 of Module Atlas
+
+**Decision**: Fixed PART 4 "Actionable Guidance" to reflect that MOD tasks = route-module extractions (backend code splitting), NOT product feature themes.
+
+**DOC TARGET**: docs/UI_SPEC.md / Module Map (Atlas) / PART 4
+
+**Correction**:
+- OLD (wrong): MOD-06/07/08 listed as "Referral System", "Customer Branding", "Billing Terms" — these are feature themes, not route extractions
+- NEW (correct): MOD-06/07/08 are route extractions to new files in `server/routes/`:
+  - MOD-06: `dids.routes.ts` (13 endpoints, lines 6976-7016, 8780-8910)
+  - MOD-07: `sip-tester.routes.ts` (24 endpoints, lines 7191-7492)
+  - MOD-08: `billing-readonly.routes.ts` (11 GET endpoints, scattered lines)
+
+**Reason**: MOD tasks follow the established pattern (system-status/auth/jobs/files/az-destinations) — each extracts a URL namespace to a dedicated route module file.
+
