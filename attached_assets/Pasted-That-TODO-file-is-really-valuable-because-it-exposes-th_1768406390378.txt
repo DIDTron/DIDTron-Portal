@@ -1,0 +1,143 @@
+That TODO file is really valuable, because it exposes the main problem right now:
+
+Your project isn’t “slow” only because of code — it’s also slow because the plan/log is inconsistent
+
+I can already see multiple TODO hygiene issues that will cause drift and wasted work:
+
+Plan confusion: top says current plan PLAN-2026-01-11-01, but you’re actively working in PLAN-2026-01-13-SYSTEMSTATUS.
+
+Status mismatch: T20 is shown under “Pending Tasks” but is marked [x] ✅ complete.
+
+Performance phase mismatch: Stage 1 tasks T80–T83 are unchecked, but later you have a summary claiming “Stage 1 complete”.
+
+System Status mismatch: you have T125–T144 unchecked (schema/jobs/api/ui), but later you show T145–T151 complete and DB proof exists — meaning earlier tasks may already be done but not checked off (or the plan is outdated).
+
+And the biggest blocker for “production-fast forever”:
+
+npm run check fails with 176 TS errors. Even if “pre-existing”, that blocks a clean release and will keep breaking confidence in every change.
+
+What you should ask the agent to organize (in the right order)
+1) Do a “TODO Reconciliation Sprint” (1-time cleanup)
+
+Goal: make docs/TODO.md trustworthy again so the agent stops drifting.
+
+Rules for this sprint:
+
+Do not change product code except what is needed to verify reality.
+
+For each task, either:
+
+mark it ✅ Pre-verified complete (with file paths + evidence), or
+
+keep it pending with clear acceptance criteria.
+
+Outcome: you will have exactly ONE active plan, and everything else archived/closed correctly.
+
+2) Create a separate Plan to fix the TypeScript errors (because npm run check is your gate)
+
+You cannot keep saying “tests fail but not my fault” forever. For production, this must be fixed.
+
+Approach:
+
+Fix by categories:
+
+missing types / incorrect imports
+
+Drizzle types
+
+route handler typing
+
+frontend prop types
+
+Fix in small batches (e.g., 20–30 errors at a time).
+
+Do not refactor architecture while fixing types.
+
+Outcome: npm run check becomes a reliable gate again.
+
+3) Finish the remaining System Status tasks (now that core wiring exists)
+
+From your TODO, the remaining user-facing value is:
+
+T153 storage usage card
+
+T154 API & Errors tab unique content per spec
+
+T155 all slow endpoints/queries cards
+
+T156 active alerts card populated correctly
+
+T157 audit tab real data
+
+Outcome: System Status becomes your real enforcement dashboard.
+
+4) Only after that: Softswitch bounded-context refactor (the big structural work)
+
+Your agent is right that it should be phased, but it must wait until:
+
+System Status shows measured reality
+
+TypeScript gate passes
+
+TODO is clean
+
+Copy/paste this instruction to the Replit AI agent
+
+This is the exact message that will make him organize the project correctly and faster UX-wise without drift:
+
+Follow Bootloader + FOREVER POLICY. No guessing.
+
+NEW PRIORITY: TODO TRUSTWORTHINESS + TS CHECK GATE + System Status finish.
+Do NOT start Softswitch refactor until these are done.
+
+1) READ CHECK ✅ with full doc list.
+
+2) TODO RECONCILIATION SPRINT (DOC ONLY FIRST):
+DOC TARGET: docs/TODO.md
+- Create a new Plan ID: PLAN-2026-01-14-TODO-RECONCILE
+- Goal: make TODO consistent and trustworthy.
+- Actions:
+  a) Identify and fix inconsistencies (examples: tasks marked [x] under “Pending”, Stage summaries claiming complete while tasks unchecked, multiple “Current Plan ID” headers).
+  b) For each Plan section, either:
+     - mark tasks ✅ Pre-verified complete with file paths/evidence, OR
+     - keep them pending with clear acceptance criteria.
+  c) Ensure there is ONE active Plan ID at a time and archive old plans as completed.
+- Do not change product code in this step unless necessary to verify a claim.
+
+3) TS CHECK GATE PLAN (SEPARATE PLAN):
+DOC TARGET: docs/TODO.md
+- Create Plan ID: PLAN-2026-01-14-TSCHECK-FIX
+- Add tasks to reduce 176 TS errors in small batches (20–30 at a time).
+- Acceptance: npm run check eventually PASS. No architecture refactor while fixing types.
+
+4) SYSTEM STATUS FINISH (continue existing plan after TODO cleanup):
+Return to PLAN-2026-01-13-SYSTEMSTATUS and complete ONLY remaining tasks:
+T153, T154, T155, T156, T157 (one task at a time).
+For each task:
+- update docs/TODO.md checkoff with file paths
+- update docs/DECISIONS.md with what/why
+- run Playwright + Axe for System Status
+- report results
+
+5) STOP AFTER EACH TASK:
+After each completed task, STOP and report:
+- Plan ID + task ID checked off
+- files changed (high level)
+- tests run + pass/fail
+
+No Softswitch refactor until:
+- TODO reconciliation is complete
+- npm run check is PASS (or a clearly staged plan is underway)
+- System Status remaining tasks are complete
+
+Why this will make UX faster (not just cleaner docs)
+
+Because once TODO is accurate + TypeScript check is reliable + System Status is complete, you get:
+
+faster dev iteration (less breakage)
+
+fewer regressions (measurable performance budgets)
+
+faster portal UX because you can target real offenders (API/DB/jobs), not guess based on file size
+
+If you want, paste the agent’s next response after the TODO reconciliation step, and I’ll tell you exactly which System Status task (T153–T157) will give the biggest immediate value first.

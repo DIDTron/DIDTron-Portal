@@ -1,0 +1,73 @@
+His reply is not compliant yet, and you should not answer his “Do you want me to…?” question. Under your FOREVER POLICY, he must do it, not ask.
+
+What’s wrong in his reply (quick)
+
+READ CHECK is incomplete: he only read 3 files. He must read the full required list (AGENT_BRIEF, TODO, UI_SPEC, DESIGN_SYSTEM, DB_SCHEMA, DECISIONS + REFERENCES/UI_DEBT if present, and follow your replit.md bootloader).
+
+He claimed “T153–T157 already complete” without showing proof (file paths + endpoint evidence + DB evidence).
+
+He is asking permission instead of writing the plan into TODO and executing the next safe chunk.
+
+Copy/paste this to the Replit AI agent (do not edit)
+No questions. Execute policy.
+
+1) READ CHECK — redo properly:
+Open and read ALL required docs per the replit.md bootloader (not “referenced in context”):
+- docs/AGENT_BRIEF.md
+- docs/TODO.md
+- docs/UI_SPEC.md
+- DESIGN_SYSTEM.md
+- docs/DB_SCHEMA.md
+- docs/DECISIONS.md
+- docs/REFERENCES.md (if exists)
+- UI_DEBT.md (if exists)
+(+ docs/PERFORMANCE.md ONLY IF the bootloader explicitly requires it)
+Then reply with READ CHECK ✅ listing every file you opened.
+
+2) STOP ASKING “Do you want me to…”
+Under FOREVER POLICY, you must do REQUEST INTAKE + TODO hygiene automatically.
+
+3) TODO RECONCILIATION SPRINT (do it now):
+DOC TARGET: docs/TODO.md
+Create/confirm Plan ID: PLAN-2026-01-14-TODO-RECONCILE
+Tasks (dedupe first):
+A) Fix “Current Plan ID” confusion (only ONE current active plan at the top).
+B) Fix checkbox inconsistencies (no task can be under Pending while marked [x]).
+C) Fix phase summary mismatches (if Stage 1 claims complete, T80–T83 must be checked with evidence OR summary must be corrected).
+D) System Status section: reconcile T125–T157 vs reality with proof.
+
+4) CLAIMS REQUIRE PROOF (no “trust me”):
+You claimed T153–T157 are complete. Prove it:
+- Provide exact file paths + what changed for each task
+- Provide exact endpoints used for each tab
+- Provide DB table evidence if applicable
+Only then check off each task in docs/TODO.md with completion notes + evidence.
+
+5) TS CHECK FAIL (176 errors):
+Do NOT fix TS errors inside TODO reconciliation.
+DOC TARGET: docs/TODO.md
+Create separate Plan ID: PLAN-2026-01-14-TSCHECK-FIX
+Add staged tasks to reduce errors in batches (20–30 at a time) with acceptance: npm run check PASS.
+
+6) Output format (mandatory):
+After you update docs/TODO.md, STOP and report:
+- READ CHECK ✅ list
+- Active Plan ID
+- Exactly what you changed in TODO (high level)
+- Which tasks you checked off (with proof references)
+- What the next SINGLE task is
+No coding in this step unless strictly required to verify a claim.
+
+What you should expect after sending this
+
+He should come back with:
+
+a corrected READ CHECK list (including UI_SPEC/DESIGN_SYSTEM/DB_SCHEMA/DECISIONS)
+
+a new Plan ID for TODO reconciliation
+
+a cleaned TODO that’s consistent
+
+proof-backed check-offs (or honest “not done”)
+
+That’s the point where the project becomes easy to manage + faster to improve without drift.
