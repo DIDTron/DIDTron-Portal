@@ -45,8 +45,10 @@ Before building ANY UI element:
 #### Primary Colors (DIDTron Blue)
 | Token | Light Mode | Dark Mode | Usage |
 |-------|------------|-----------|-------|
-| `--primary` | `217 91% 60%` (#2563EB) | `217 91% 60%` | Primary actions, links, active states |
+| `--primary` | `217 91% 48%` (#1d4ed8) | `217 91% 48%` | Primary actions, links, active states |
 | `--primary-foreground` | `0 0% 100%` | `0 0% 100%` | Text on primary backgrounds |
+
+> **Accessibility Note**: Primary blue adjusted from 60% to 48% lightness (2026-01-15) to meet WCAG 2.0 AA 4.5:1 contrast with white foreground. See docs/DECISIONS.md.
 
 #### Semantic Colors
 | Token | Light Mode | Dark Mode | Usage |
@@ -68,7 +70,7 @@ Before building ANY UI element:
 #### Chart Colors
 | Token | Color | Usage |
 |-------|-------|-------|
-| `--chart-1` | Blue #2563EB | Primary metric |
+| `--chart-1` | Blue #1d4ed8 | Primary metric (accessibility-adjusted) |
 | `--chart-2` | Green #10B981 | Success/positive |
 | `--chart-3` | Yellow #F59E0B | Warning/attention |
 | `--chart-4` | Purple #8B5CF6 | Tertiary data |

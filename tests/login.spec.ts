@@ -22,7 +22,7 @@ test.describe("Login Page", () => {
     await expect(page.getByText("Login failed").first()).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip("should pass accessibility scan", async ({ page }) => {
+  test("should pass accessibility scan", async ({ page }) => {
     await page.goto("/login");
     await page.waitForLoadState("networkidle");
     
@@ -45,7 +45,11 @@ test.describe("Dashboard", () => {
     await expect(page.getByTestId("button-sidebar-toggle")).toBeVisible({ timeout: 10000 });
   });
 
+  // TF-02 scope: Dashboard Axe test skipped - requires fixing page-specific components
+  // (softswitch tables, Toast aria-role, workspace-tabs landmarks, color contrast)
+  // Future task: TF-03 dashboard accessibility
   test.skip("should pass accessibility scan on dashboard", async ({ page }) => {
+    await page.waitForLoadState("networkidle");
     const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
     expect(accessibilityScanResults.violations).toEqual([]);
   });

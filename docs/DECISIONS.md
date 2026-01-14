@@ -555,3 +555,27 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - Before: 30 total errors
 - After: 0 total errors
 - npm run check: PASS
+
+---
+
+## 2026-01-15: TF-02 Accessibility Fixes for Login Page
+
+**Decision**: Adjusted `--primary` color from `217 91% 60%` (#2563EB) to `217 91% 48%` (#1d4ed8) to meet WCAG 2.0 AA 4.5:1 contrast requirement.
+
+**Reason**: Axe accessibility scan failed on login button - white text (#ffffff) on primary blue background had only 3.63:1 contrast ratio. Required 4.5:1 minimum for normal text. New color provides 4.95:1 ratio.
+
+**Impact**:
+- Primary buttons site-wide are now slightly darker blue
+- No visual design drift - still within DIDTron Blue family
+- Meets DESIGN_SYSTEM.md section 9.2 requirement (4.5:1 minimum for normal text)
+
+**Additional Fix**: Added `aria-hidden="true"` to decorative canvas in `floating-particles.tsx` to resolve region landmark violation.
+
+**Files Changed**:
+- `client/src/index.css` - Updated all tokens: `--primary`, `--sidebar-primary`, `--sidebar-ring`, `--ring`, `--chart-1` in both light and dark modes
+- `client/src/components/ui/floating-particles.tsx` (line 200)
+- `tests/login.spec.ts`
+- `DESIGN_SYSTEM.md` - Updated primary color documentation
+
+**Test Results**: 13 passed, 1 skipped (dashboard Axe - staged for TF-03)
+

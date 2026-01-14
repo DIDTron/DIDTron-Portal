@@ -846,12 +846,23 @@ All performance optimization stages completed:
     - `tests/system-status.spec.ts` - Updated login flow, simplified tab assertions, moved navigation to beforeEach
   - **Results**: 12 tests pass (3 login + 9 system-status), 2 skipped (Axe tests for TF-02)
 
-- [ ] **TF-02**: Fix Axe failures on login page
+- [x] **TF-02**: Fix Axe failures on login page ✅ COMPLETE
   - Issues: Color contrast (3.63:1 vs required 4.5:1), region landmark violations
   - Scope: Login page accessibility improvements
   - Acceptance: Axe scan passes on login page
+  - **Files changed**:
+    - `client/src/index.css` - Changed all primary-derived tokens from `217 91% 60%` to `217 91% 48%` (both light/dark mode) for 4.95:1 contrast with white: `--primary`, `--sidebar-primary`, `--sidebar-ring`, `--ring`, `--chart-1`
+    - `client/src/components/ui/floating-particles.tsx` - Added `aria-hidden="true"` to decorative canvas element
+    - `tests/login.spec.ts` - Enabled login page Axe test, skipped dashboard Axe test (out of scope)
+    - `DESIGN_SYSTEM.md` - Updated primary color documentation with accessibility note
+  - **Results**: 13 tests pass (4 login including Axe + 9 system-status), 1 skipped (dashboard Axe for future TF-03)
 
-**Note**: Execute only after PLAN-2026-01-14-TSCHECK-FIX is complete.
+- [ ] **TF-03**: Fix Axe failures on dashboard (FUTURE)
+  - Issues: Toast aria-role, workspace-tabs landmarks, page-specific color contrast (softswitch tables, primary links on light backgrounds)
+  - Scope: Dashboard accessibility - requires broader component fixes
+  - Acceptance: Axe scan passes on dashboard page
+
+**Note**: TF-01 and TF-02 complete. TF-03 staged for future work.
 
 ---
 
