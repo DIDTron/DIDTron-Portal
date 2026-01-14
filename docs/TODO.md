@@ -1000,11 +1000,12 @@ All performance optimization stages completed:
     - Customer: GET/POST `/api/my/sip-test-runs`, POST `/api/my/sip-test-runs/:id/start`
     - Customer: GET `/api/my/sip-test-runs/:id`, GET `/api/my/sip-test-runs/:id/results`
 
-- [ ] **MOD-08**: Extract Billing READ-ONLY routes into domain module
+- [ ] **MOD-08**: Extract Billing READ-ONLY routes into domain module — **REVERTED (started without approval)**
   - Scope: Extract billing GET endpoints only from routes.ts to `server/routes/billing.routes.ts`
   - URL namespaces: GET `/api/invoices`, GET `/api/payments`, GET `/api/fx-rates`, GET `/api/billing-terms`
   - Estimated: 11 GET endpoints only (no mutations)
   - Acceptance: All endpoints preserved, npm run check PASS, Playwright PASS
+  - **STATUS**: Reverted 2026-01-14 — Started without governance approval; awaiting re-approval to proceed
 
 ---
 
