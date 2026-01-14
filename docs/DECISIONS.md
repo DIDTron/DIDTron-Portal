@@ -375,3 +375,22 @@ Pattern: Each useQuery now captures `dataUpdatedAt` and displays via `formatAsOf
 **Rationale**: Admins need at-a-glance visibility into system health from any page. Green badge only shows when we have confirmed healthy status to avoid misleading users.
 
 **Files Changed**: `client/src/components/layout/super-admin/primary-sidebar.tsx`
+
+### T148: In-App Notification System (2026-01-14)
+
+**Decision**: Implement notification bell dropdown in header for real-time alert visibility.
+
+**Implementation**:
+- Query `/api/system/alerts?status=active` with `refetchInterval: 60000`
+- Bell icon in header with red badge showing active alert count
+- Dropdown shows up to 5 recent alerts with severity-appropriate icons
+- Severity icons: Critical (red AlertCircle), Warning (yellow AlertTriangle), Info (blue Info)
+- "All systems healthy" state when no alerts
+- Navigation to System Status page for full alert management
+- "Acknowledge all" button to clear all active alerts
+
+**Design Distinction**:
+- Sidebar badge (T147): Shows critical + warning only (system health indicator)
+- Header notification (T148): Shows all alerts including info (complete notification view)
+
+**Files Changed**: `client/src/components/layout/super-admin/global-header.tsx`

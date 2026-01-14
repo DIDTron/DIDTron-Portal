@@ -567,8 +567,17 @@ All performance optimization stages completed:
 
 ### Stage 7: In-App Notifications
 
-- [ ] **T148**: Implement in-app notification system for alerts
+- [x] **T148**: Implement in-app notification system for alerts ✅ COMPLETE
   - Acceptance: Warning/Critical/Info notifications displayed in app
+  - **Completion Note (2026-01-14)**:
+    - Added notification dropdown to `global-header.tsx`
+    - Query `/api/system/alerts?status=active` with 60s refetch
+    - Bell icon shows red badge with count when any alerts exist
+    - Dropdown shows up to 5 recent alerts with severity icons (red/yellow/blue)
+    - "All systems healthy" message when no alerts
+    - "View all in System Status" link navigates to System Status page
+    - "Acknowledge all" button clears all active alerts
+    - Active count includes critical + warning + info severities
 
 ---
 
