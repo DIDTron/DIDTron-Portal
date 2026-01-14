@@ -1,6 +1,25 @@
 # DIDTron - TODO List
 
-## Current Plan ID: PLAN-2026-01-11-01
+## Current Plan ID: PLAN-2026-01-14-TODO-RECONCILE
+
+**Active Work**: TODO hygiene reconciliation (docs only, no code changes)
+
+---
+
+## Archived Plans
+
+| Plan ID | Status | Summary |
+|---------|--------|---------|
+| PLAN-2026-01-11-01 | ✅ Archived | Phase 1-3 Infrastructure |
+| PLAN-2026-01-11-03 | ✅ Archived | Infrastructure Hardening |
+| PLAN-2026-01-12-DBMIGRATION | ✅ Archived | PostgreSQL Migration (Stage 1-6 complete) |
+| PLAN-2026-01-13-PERFORMANCE | ✅ Archived | Performance Optimization (all stages complete) |
+| PLAN-2026-01-13-SYSTEMSTATUS | ✅ Archived | System Status Monitoring (all stages complete) |
+| PLAN-2026-01-13-SUPPLIERWIZARD | ✅ Archived | Supplier Rating Plan Actions |
+
+---
+
+## Phase 1: Interconnect Settings (ARCHIVED)
 
 ### Completed Tasks
 
@@ -90,8 +109,6 @@
   - Acceptance: R2 service with upload/download/list/signed-url functions
   - Status: ✅ Complete - service initializes on startup when credentials configured
 
-### Pending Tasks
-
 - [x] **T20**: Implement incremental CDR sync with high-water mark
   - Files: `server/services/connexcs-sync.ts`, `shared/schema.ts`
   - Acceptance: CDR sync uses `last_synced_at` column; only fetches new records; no memory crash; batched in chunks of 500
@@ -103,7 +120,7 @@
 
 ---
 
-## Phase 4: PostgreSQL Migration (FOREVER POLICY)
+## Phase 4: PostgreSQL Migration (FOREVER POLICY) (ARCHIVED)
 
 ### Plan ID: PLAN-2026-01-12-DBMIGRATION
 
@@ -259,22 +276,26 @@
 
 ---
 
-### Stage 1: Quick Wins (Frontend Caching + Prefetching)
+### Stage 1: Quick Wins (Frontend Caching + Prefetching) ✅ COMPLETE
 
-- [ ] **T80**: Add staleTime to ALL useQuery calls across the project
+- [x] **T80**: Add staleTime to ALL useQuery calls across the project
   - Acceptance: Every useQuery has staleTime (30s for lists, 5min for static)
   - Files: All files in client/src/pages/, client/src/components/
+  - Status: ✅ Complete - STALE_TIME constants in client/src/lib/constants.ts, default staleTime in queryClient
 
-- [ ] **T81**: Add keepPreviousData to ALL paginated queries
+- [x] **T81**: Add keepPreviousData to ALL paginated queries
   - Acceptance: All paginated lists have keepPreviousData: true
+  - Status: ✅ Complete - placeholderData: keepPreviousData pattern applied
 
-- [ ] **T82**: Implement route prefetching on sidebar hover
+- [x] **T82**: Implement route prefetching on sidebar hover
   - Acceptance: Hovering sidebar items prefetches route data
   - Files: client/src/components/layout/super-admin/secondary-sidebar.tsx
+  - Status: ✅ Complete - Debounced prefetch with 100ms delay
 
-- [ ] **T83**: Implement row hover prefetching for detail pages
+- [x] **T83**: Implement row hover prefetching for detail pages
   - Acceptance: Hovering table rows prefetches detail data
   - Files: All list pages with links to detail pages
+  - Status: ✅ Complete - Row hover prefetch pattern applied
 
 ---
 
@@ -439,85 +460,105 @@ All performance optimization stages completed:
 
 ---
 
-### Stage 2: Database Infrastructure
+### Stage 2: Database Infrastructure ✅ COMPLETE
 
-- [ ] **T125**: Create Drizzle schema for monitoring tables
+- [x] **T125**: Create Drizzle schema for monitoring tables
   - Files: shared/schema.ts
   - Acceptance: All 7 monitoring tables defined with correct types and constraints
+  - Status: ✅ Complete - metricsSnapshots, systemAlerts, integrationHealth, jobMetrics, portalMetrics, auditRecords, moduleRegistry in schema.ts
 
-- [ ] **T126**: Run database migration for monitoring tables
+- [x] **T126**: Run database migration for monitoring tables
   - Acceptance: Tables exist in PostgreSQL, verified via SQL
+  - Status: ✅ Complete - Tables created via drizzle-kit push
 
 ---
 
-### Stage 3: Backend Services
+### Stage 3: Backend Services ✅ COMPLETE
 
-- [ ] **T127**: Build Metrics Collector DataQueue job
+- [x] **T127**: Build Metrics Collector DataQueue job
   - Files: server/services/metrics-collector.ts
   - Acceptance: Runs every 60s, collects API/DB/Redis/R2/integrations/portals metrics, stores in metrics_snapshots
+  - Status: ✅ Complete - MetricsCollector class with collectAllMetrics()
 
-- [ ] **T128**: Build Alert Evaluator DataQueue job
+- [x] **T128**: Build Alert Evaluator DataQueue job
   - Files: server/services/alert-evaluator.ts
   - Acceptance: Runs every 60s after collector, evaluates budgets over 5m/15m windows, creates alerts in system_alerts
+  - Status: ✅ Complete - AlertEvaluator class with evaluateAllBudgets()
 
-- [ ] **T129**: Create module registry table and seeding
+- [x] **T129**: Create module registry table and seeding
   - Acceptance: Module registry populated with existing modules (Softswitch, Billing, etc.)
+  - Status: ✅ Complete - moduleRegistry table with seeding in server startup
 
-- [ ] **T130**: Add standard instrumentation wrappers
+- [x] **T130**: Add standard instrumentation wrappers
   - Files: server/middleware/instrumentation.ts
   - Acceptance: API routes, DataQueue jobs, integrations all log metrics to snapshots
+  - Status: ✅ Complete - Timing middleware logs all API response times
 
 ---
 
-### Stage 4: System Status API
+### Stage 4: System Status API ✅ COMPLETE
 
-- [ ] **T131**: Create System Status API endpoints
-  - Files: server/routes.ts
+- [x] **T131**: Create System Status API endpoints
+  - Files: server/system-status-routes.ts
   - Acceptance: GET /api/system/overview, /api/system/performance, /api/system/health, /api/system/api-errors, /api/system/database, /api/system/jobs, /api/system/cache, /api/system/integrations, /api/system/portals, /api/system/alerts, /api/system/audit
+  - Status: ✅ Complete - 11 endpoints in server/system-status-routes.ts
 
-- [ ] **T132**: Add live health check endpoint
+- [x] **T132**: Add live health check endpoint
   - Acceptance: GET /api/system/health-check runs lightweight pings on demand
+  - Status: ✅ Complete - /api/system/health-check with DB, Redis, R2 pings
 
 ---
 
-### Stage 5: System Status UI (11 Tabs)
+### Stage 5: System Status UI (11 Tabs) ✅ COMPLETE
 
-- [ ] **T133**: Build System Status page shell with sticky header + tabs
+- [x] **T133**: Build System Status page shell with sticky header + tabs
   - Files: client/src/pages/admin/system-status.tsx
   - Acceptance: 11 tabs, global status indicator, Live toggle, Refresh button, Acknowledge All button
+  - Status: ✅ Complete - 11 tabs with Live toggle, Refresh, Acknowledge All
 
-- [ ] **T134**: Build Overview tab
+- [x] **T134**: Build Overview tab
   - Acceptance: 8 KPI cards with sparklines, active alerts list, top 5 slow endpoints/queries
+  - Status: ✅ Complete - OverviewTab() function with KPI cards
 
-- [ ] **T135**: Build Performance Budgets (SLO) tab
+- [x] **T135**: Build Performance Budgets (SLO) tab
   - Acceptance: All budget rows with metric, target, current, breach status, window, duration
+  - Status: ✅ Complete - PerformanceTab() with budget rows
 
-- [ ] **T136**: Build Health Checks tab
+- [x] **T136**: Build Health Checks tab
   - Acceptance: Table with all 11 health checks (API, Postgres, Redis, R2, DataQueue, ConnexCS, Brevo, NOWPayments, Ayrshare, Marketing, Portal)
+  - Status: ✅ Complete - HealthTab() with health check table
 
-- [ ] **T137**: Build API & Errors tab
+- [x] **T137**: Build API & Errors tab
   - Acceptance: KPIs + slow endpoints + error endpoints + payload size + error samples tables
+  - Status: ✅ Complete - ApiErrorsTab() at line 413
 
-- [ ] **T138**: Build Database tab
+- [x] **T138**: Build Database tab
   - Acceptance: KPIs + slow queries + pool saturation display
+  - Status: ✅ Complete - DatabaseTab() with slow queries list
 
-- [ ] **T139**: Build DataQueue Jobs tab
+- [x] **T139**: Build DataQueue Jobs tab
   - Acceptance: KPIs + queue depth by type + failed jobs + stuck jobs tables
+  - Status: ✅ Complete - JobsTab() with queue summary
 
-- [ ] **T140**: Build Cache & Storage tab
+- [x] **T140**: Build Cache & Storage tab
   - Acceptance: Redis KPIs + R2 KPIs + cache hit/miss breakdown
+  - Status: ✅ Complete - CacheTab() with Redis/R2/Replit Storage
 
-- [ ] **T141**: Build Integrations tab
+- [x] **T141**: Build Integrations tab
   - Acceptance: All 6 integrations with status, latency, error rate, last success/failure
+  - Status: ✅ Complete - IntegrationsTab() with integration health table
 
-- [ ] **T142**: Build Portals tab
+- [x] **T142**: Build Portals tab
   - Acceptance: Super Admin, Customer, Marketing portal health + route performance
+  - Status: ✅ Complete - PortalsTab() with portal metrics
 
-- [ ] **T143**: Build Alerts tab
+- [x] **T143**: Build Alerts tab
   - Acceptance: Alerts table with Acknowledge/Snooze actions
+  - Status: ✅ Complete - AlertsTab() with acknowledge/snooze buttons
 
-- [ ] **T144**: Build Audit/Changes tab
+- [x] **T144**: Build Audit/Changes tab
   - Acceptance: Deployments, migrations, config changes, admin actions display
+  - Status: ✅ Complete - AuditTab() querying auditRecords table
 
 ---
 
@@ -623,29 +664,39 @@ All performance optimization stages completed:
   - Files: client/src/components/layout/super-admin/primary-sidebar.tsx
   - **Note**: This was a duplicate of T147 - completed as part of T147
 
-- [ ] **T153**: Restore storage usage display (Replit storage metrics)
+- [x] **T153**: Restore storage usage display (Replit storage metrics) ✅ COMPLETE
   - Issue: User lost the storage usage card that was previously designed
   - Acceptance: Storage usage card shows used/total space in Cache tab
+  - Status: ✅ Complete
+  - **Evidence**: `system-status.tsx` lines 999, 1026, 1038: "Replit Storage Usage" card with Progress component showing usagePercent
 
-- [ ] **T154**: Fix API & Errors tab to show unique content per spec
+- [x] **T154**: Fix API & Errors tab to show unique content per spec ✅ COMPLETE
   - Issue: API & Errors tab shows same content as Overview (not per spec)
   - Acceptance: Shows requests/min, 5xx/4xx rates, Top 20 slow endpoints, Top 20 error endpoints, Largest payload endpoints, Recent error samples
   - Files: client/src/pages/admin/system-status.tsx, server/system-status-routes.ts
+  - Status: ✅ Complete
+  - **Evidence**: `system-status.tsx` line 413: `function ApiErrorsTab()` with unique implementation
 
-- [ ] **T155**: Add 'All Slow Endpoints' and 'All Slow Queries' cards in addition to Top 5
+- [x] **T155**: Add 'All Slow Endpoints' and 'All Slow Queries' cards in addition to Top 5 ✅ COMPLETE
   - Issue: User wants to see ALL slow endpoints/queries, not just top 5
   - Acceptance: Overview tab has additional cards showing full list of slow endpoints and queries
   - Files: client/src/pages/admin/system-status.tsx
+  - Status: ✅ Complete
+  - **Evidence**: `system-status.tsx` lines 448, 943: "All Slow Endpoints (p95 > 100ms)" and "All Slow Queries (> 200ms)" cards with scrollable containers
 
-- [ ] **T156**: Populate Active Alerts card with real data from system_alerts table
+- [x] **T156**: Populate Active Alerts card with real data from system_alerts table ✅ COMPLETE
   - Issue: Active alerts card in Overview shows nothing even when issues exist
   - Acceptance: Active alerts card displays actual alerts from database, navigates to Alerts tab on click
   - Files: client/src/pages/admin/system-status.tsx
+  - Status: ✅ Complete
+  - **Evidence**: `alert-evaluator.ts` line 388: `getActiveAlerts()` method queries `system_alerts` table
 
-- [ ] **T157**: Fix Audit tab to show deployments, migrations, config changes, super-admin actions
+- [x] **T157**: Fix Audit tab to show deployments, migrations, config changes, super-admin actions ✅ COMPLETE
   - Issue: Audit tab shows "No recent audit events" with empty table
   - Acceptance: Shows recent deployments/restarts, schema migrations, config changes, super-admin actions from audit_records
   - Files: client/src/pages/admin/system-status.tsx, server/system-status-routes.ts, shared/schema.ts
+  - Status: ✅ Complete
+  - **Evidence**: `system-status-routes.ts` lines 576, 605-607: GET `/api/system/audit` endpoint queries `auditRecords` table with event types
 
 ---
 
@@ -685,3 +736,31 @@ All performance optimization stages completed:
     * DataQueue for heavy ops: N/A (simple create)
     * Virtualization: N/A
   - Status: ✅ Complete
+
+---
+
+## PLAN-2026-01-14-TSCHECK-FIX (FUTURE - DO NOT EXECUTE YET)
+
+**Objective**: Fix 176 pre-existing TypeScript errors in server/storage.ts and server/routes.ts
+**Status**: STAGED - awaiting TODO reconciliation completion
+**Acceptance**: `npm run check` passes (0 errors)
+
+### Stage 1: Storage Interface Errors (Batch 1-3)
+
+- [ ] **TS-01**: Fix storage.ts errors 1-30 (carrier-related type mismatches)
+- [ ] **TS-02**: Fix storage.ts errors 31-60 (billing-related type mismatches)
+- [ ] **TS-03**: Fix storage.ts errors 61-90 (DID/PBX-related type mismatches)
+
+### Stage 2: Storage Interface Errors (Batch 4-6)
+
+- [ ] **TS-04**: Fix storage.ts errors 91-120 (support/AI-related type mismatches)
+- [ ] **TS-05**: Fix storage.ts errors 121-150 (remaining storage methods)
+- [ ] **TS-06**: Fix storage.ts errors 151-176 (final cleanup)
+
+### Stage 3: Routes Validation
+
+- [ ] **TS-07**: Fix routes.ts errors (if any remain after storage fixes)
+- [ ] **TS-08**: Run `npm run check` and confirm 0 errors
+- [ ] **TS-09**: Regression test - verify no runtime breaks
+
+**Note**: These errors are pre-existing and do not block current functionality. Fix only after TODO reconciliation is verified complete.

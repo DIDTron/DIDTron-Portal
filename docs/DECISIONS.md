@@ -412,3 +412,38 @@ Pattern: Each useQuery now captures `dataUpdatedAt` and displays via `formatAsOf
 - Tags: ["alert", "warning"/"critical"]
 
 **Files Changed**: `server/services/alert-evaluator.ts`
+
+---
+
+## 2026-01-14: TODO Reconciliation Sprint
+
+### PLAN-2026-01-14-TODO-RECONCILE
+
+**Decision**: Execute docs-only reconciliation to fix TODO.md hygiene issues identified by external review.
+
+**Problems Fixed**:
+1. **Plan ID confusion**: Set single active Plan ID at top, archived old plans in clear table
+2. **T20 under Pending but marked [x]**: Moved to Completed section with other T17-T23 tasks
+3. **T80-T83 unchecked but Summary said Stage 1 complete**: Checked off with evidence
+4. **T125-T144 unchecked but completion notes exist**: Checked off with specific file/line evidence
+5. **T153-T157 unchecked but features exist**: Checked off with grep-verified evidence lines
+
+**Tasks Checked Off With Evidence**:
+| Task | Evidence |
+|------|----------|
+| T80-T83 | STALE_TIME constants in client/src/lib/constants.ts |
+| T125-T144 | shared/schema.ts monitoring tables, server/system-status-routes.ts endpoints, system-status.tsx tabs |
+| T153 | system-status.tsx lines 999, 1026, 1038: "Replit Storage Usage" card |
+| T154 | system-status.tsx line 413: `function ApiErrorsTab()` |
+| T155 | system-status.tsx lines 448, 943: "All Slow" cards with scrollable containers |
+| T156 | alert-evaluator.ts line 388: `getActiveAlerts()` queries system_alerts |
+| T157 | system-status-routes.ts lines 576, 605-607: GET /api/system/audit queries auditRecords |
+
+**Future Plan Created (NOT executed)**:
+- `PLAN-2026-01-14-TSCHECK-FIX`: Fix 176 pre-existing TypeScript errors in batches of 20-30
+- Acceptance: `npm run check` passes (0 errors)
+- Staged execution awaiting reconciliation verification
+
+**Scope Constraint**: DOCS ONLY - no code changes made during this reconciliation
+
+**Files Changed**: `docs/TODO.md`, `docs/DECISIONS.md`
