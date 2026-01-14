@@ -255,7 +255,7 @@ const jobHandlers: JobHandlers<DIDTronPayloadMap> = {
           code: d.code,
           destination: d.destination,
           region: d.region || null,
-          billingIncrement: d.billingIncrement || "60/60",
+          billingIncrement: (d.billingIncrement || "60/60") as "30/30" | "1/1" | "6/6" | "60/60" | "30/6" | "60/6" | "60/1",
         })));
         
         totalInserted += result.inserted;

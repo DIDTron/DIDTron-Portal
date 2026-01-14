@@ -1,6 +1,5 @@
 import { chromium, Browser, Page, BrowserContext } from "playwright";
-import { testingEngineRepository } from "./testing-engine-repository";
-import type { TestModule, TestPage } from "@shared/schema";
+import { testingEngineRepository, TestModule, TestPage } from "./testing-engine-repository";
 
 export interface E2ETestResult {
   moduleName: string;

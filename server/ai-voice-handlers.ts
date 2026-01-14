@@ -48,7 +48,7 @@ async function extractTopicsAndFAQs(content: string): Promise<{
   if (!openai) {
     console.log("[KBTrain] OpenAI not configured, using fallback extraction");
     const words = content.split(/\s+/).slice(0, 500);
-    const keyPhrases = [...new Set(words.filter(w => w.length > 5))].slice(0, 15);
+    const keyPhrases = Array.from(new Set(words.filter(w => w.length > 5))).slice(0, 15);
     return {
       topics: ["General Information"],
       faqs: [],
@@ -125,9 +125,9 @@ async function processSourceChunks(
   }
 
   return {
-    topics: [...new Set(allTopics)],
+    topics: Array.from(new Set(allTopics)),
     faqs: allFaqs,
-    keyPhrases: [...new Set(allKeyPhrases)],
+    keyPhrases: Array.from(new Set(allKeyPhrases)),
     summaries: allSummaries,
     tokenCount,
   };
@@ -209,8 +209,8 @@ export async function handleKBTrain(payload: AIVoiceKBTrainPayload, signal?: Abo
       }
     }
 
-    const uniqueTopics = [...new Set(aggregatedTopics)];
-    const uniqueKeyPhrases = [...new Set(aggregatedKeyPhrases)];
+    const uniqueTopics = Array.from(new Set(aggregatedTopics));
+    const uniqueKeyPhrases = Array.from(new Set(aggregatedKeyPhrases));
     const dedupedFaqs = aggregatedFaqs.reduce((acc, faq) => {
       if (!acc.some(f => f.question.toLowerCase() === faq.question.toLowerCase())) {
         acc.push(faq);

@@ -7088,7 +7088,7 @@ export async function registerRoutes(
       
       // Handle bulk upload
       if (Array.isArray(req.body)) {
-        const rates = req.body.map((r: Record<string, unknown>) => ({ ...r, rateCardId }));
+        const rates = req.body.map((r: Record<string, unknown>) => ({ ...r, rateCardId })) as Array<{ prefix: string; rate: string; rateCardId: string; destination?: string | null; connectionFee?: string | null; billingIncrement?: number | null }>;
         const created = await storage.createRateCardRatesBulk(rates);
         // Update rates count on card
         const allRates = await storage.getRateCardRates(rateCardId);
@@ -7842,7 +7842,8 @@ export async function registerRoutes(
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
       const user = req.user as { customerId?: string; id?: string };
-      const runs = await storage.getSipTestRuns(user.customerId || user.id);
+      const customerId = user.customerId || user.id || "";
+      const runs = await storage.getSipTestRuns(customerId);
       res.json(runs);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch test runs" });
@@ -7853,8 +7854,9 @@ export async function registerRoutes(
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
       const user = req.user as { customerId?: string; id?: string };
+      const customerId = user.customerId || user.id || "";
       const run = await storage.createSipTestRun({
-        customerId: user.customerId || user.id,
+        customerId,
         testName: req.body.testName,
         testMode: req.body.testMode || 'standard',
         routeSource: req.body.routeSource,
@@ -9690,7 +9692,6 @@ export async function registerRoutes(
       }
       
       const jobId = await enqueueJob(jobType, payload ?? {}, {
-        userId: req.session?.userId,
         tags: ["test"],
       });
       
@@ -10129,7 +10130,7 @@ export async function registerRoutes(
       const result = await storage.getAzDestinations({ limit: 100000, offset: 0 });
       const destinations = result.destinations;
       
-      const escapeCSV = (val: string | null | undefined): string => {
+      const escapeCSV = (val: string | number | null | undefined): string => {
         const str = val == null ? "" : String(val);
         if (str.includes(",") || str.includes('"') || str.includes("\n")) {
           return `"${str.replace(/"/g, '""')}"`;
@@ -10137,9 +10138,9 @@ export async function registerRoutes(
         return str;
       };
       
-      const header = "code,destination,region,billingIncrement,connectionFee,gracePeriod\n";
+      const header = "code,destination,region,billingIncrement,gracePeriod\n";
       const rows = destinations.map(d => 
-        [d.code, d.destination, d.region, d.billingIncrement, d.connectionFee, d.gracePeriod]
+        [d.code, d.destination, d.region, d.billingIncrement, d.gracePeriod]
           .map(escapeCSV)
           .join(",")
       ).join("\n");
@@ -10649,7 +10650,7 @@ export async function registerRoutes(
       const revertedVersion = await storage.createEmContentVersion({
         contentItemId: contentItem.id,
         version: newVersion,
-        data: targetVersion.data,
+        data: targetVersion.data as Record<string, unknown>,
         changeDescription: `Reverted to version ${targetVersion.version}`,
         createdBy: userId,
       });
@@ -10773,7 +10774,7 @@ export async function registerRoutes(
       const existing = await devTestsRepository.getById(req.params.id);
       if (!existing) return res.status(404).json({ error: "Dev test not found" });
 
-      const allowedFields: (keyof typeof req.body)[] = [
+      const allowedFields: string[] = [
         "name", "description", "module", "testSteps", "expectedResult",
         "actualResult", "status", "duration", "errorMessage",
         "createdTestData", "cleanedUp", "testedBy", "testedAt"
@@ -10786,7 +10787,7 @@ export async function registerRoutes(
       }
 
       const test = await devTestsRepository.update(req.params.id, sanitizedUpdate);
-      await auditService.logUpdate("dev_tests", req.params.id, existing.name, existing, test, userId);
+      await auditService.logUpdate("dev_tests", req.params.id, existing.name, existing as Record<string, unknown>, test as Record<string, unknown>, userId);
       res.json(test);
     } catch (error) {
       console.error("Failed to update dev test:", error);
@@ -10801,7 +10802,7 @@ export async function registerRoutes(
       if (!existing) return res.status(404).json({ error: "Dev test not found" });
 
       await devTestsRepository.delete(req.params.id);
-      await auditService.logDelete("dev_tests", req.params.id, existing.name, existing, userId);
+      await auditService.logDelete("dev_tests", req.params.id, existing.name, userId);
       res.status(204).send();
     } catch (error) {
       console.error("Failed to delete dev test:", error);
@@ -10948,7 +10949,6 @@ export async function registerRoutes(
       if (parsed.data.apiResponseTime !== undefined) updates.apiResponseTime = parsed.data.apiResponseTime;
       if (parsed.data.queryExecutionTime !== undefined) updates.queryExecutionTime = parsed.data.queryExecutionTime;
       if (parsed.data.memoryUsageMb !== undefined) updates.memoryUsageMb = parsed.data.memoryUsageMb;
-      if (parsed.data.cpuUsagePercent !== undefined) updates.cpuUsagePercent = parsed.data.cpuUsagePercent;
       performanceMonitor.setBudget(updates);
       res.json({ success: true, budget: performanceMonitor.getBudget() });
     } catch (error) {

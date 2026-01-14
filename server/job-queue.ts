@@ -296,7 +296,7 @@ class InMemoryJobQueue {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - olderThanDays);
     let count = 0;
-    for (const [id, job] of this.jobs.entries()) {
+    for (const [id, job] of Array.from(this.jobs.entries())) {
       if (job.completedAt && job.completedAt < cutoff) {
         this.jobs.delete(id);
         count++;
@@ -339,7 +339,7 @@ class InMemoryJobQueue {
     const cutoff = new Date();
     cutoff.setMinutes(cutoff.getMinutes() - maxProcessingMinutes);
     let count = 0;
-    for (const job of this.jobs.values()) {
+    for (const job of Array.from(this.jobs.values())) {
       if (job.status === "processing" && job.lockedAt && job.lockedAt < cutoff) {
         job.status = "pending";
         job.lockedAt = null;
@@ -428,7 +428,7 @@ class MockProcessor {
     });
 
     try {
-      await handler(job.payload as any);
+      await (handler as (payload: unknown) => Promise<void>)(job.payload);
       await this.queue.updateJob(job.id, { 
         status: "completed", 
         completedAt: new Date() 
@@ -465,8 +465,7 @@ async function initializeJobQueue(): Promise<JobQueue> {
         databaseConfig: {
           connectionString: databaseUrl,
         },
-        tableName: "job_queue",
-      });
+      } as any);
       isUsingMockQueue = false;
       console.log("[JobQueue] Running in database mode (PostgreSQL)");
       return queue;
@@ -534,7 +533,7 @@ export async function enqueueJob<T extends DIDTronJobType>(
     maxAttempts: options?.maxAttempts ?? 3,
     timeoutMs: options?.timeoutMs ?? 300000,
     tags: options?.tags ?? [jobType],
-  });
+  } as any);
   
   return jobId;
 }
@@ -602,13 +601,13 @@ export async function getJobs(
   let jobs: JobRecord<DIDTronPayloadMap, DIDTronJobType>[];
   
   if (options?.status) {
-    jobs = await queue.getJobsByStatus(options.status, options.limit ?? 50, options.offset ?? 0);
+    jobs = await queue.getJobsByStatus(options.status, options.limit ?? 50, options.offset ?? 0) as JobRecord<DIDTronPayloadMap, DIDTronJobType>[];
   } else if (options?.tags && options.tags.length > 0) {
-    jobs = await queue.getJobsByTags(options.tags, "any", options.limit ?? 50, options.offset ?? 0);
+    jobs = await queue.getJobsByTags(options.tags, "any", options.limit ?? 50, options.offset ?? 0) as JobRecord<DIDTronPayloadMap, DIDTronJobType>[];
   } else if (options?.jobType) {
-    jobs = await queue.getJobs({ jobType: options.jobType });
+    jobs = await queue.getJobs({ jobType: options.jobType }) as JobRecord<DIDTronPayloadMap, DIDTronJobType>[];
   } else {
-    jobs = await queue.getAllJobs(options?.limit ?? 50, options?.offset ?? 0);
+    jobs = await queue.getAllJobs(options?.limit ?? 50, options?.offset ?? 0) as JobRecord<DIDTronPayloadMap, DIDTronJobType>[];
   }
   
   return jobs;

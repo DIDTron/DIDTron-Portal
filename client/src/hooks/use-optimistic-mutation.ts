@@ -73,7 +73,7 @@ export function useOptimisticCreate<TData extends { id?: string }, TVariables>({
       
       queryClient.setQueryData<TData[]>(queryKey, (old = []) => [
         ...old,
-        { ...newData, id: `temp-${Date.now()}` } as TData,
+        { ...newData, id: `temp-${Date.now()}` } as unknown as TData,
       ]);
       
       return { previous };
