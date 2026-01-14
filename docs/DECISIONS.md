@@ -680,3 +680,46 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - `server/routes/index.ts` (updated)
 - `server/routes.ts` (import + remove old code)
 
+
+---
+
+## 2026-01-15: MOD-03 Job Queue Routes Modularization
+
+**Decision**: Extracted 13 job queue admin endpoints from `routes.ts` to `server/routes/jobs.routes.ts`.
+
+**Reason**: 
+- Job queue admin routes are isolated and self-contained
+- Low-risk extraction - only uses dynamic imports to job-queue.ts and job-worker.ts
+- Follows MOD-01/MOD-02 pattern established for route modularization
+
+**Changes Made**:
+1. Created `server/routes/jobs.routes.ts` with `registerJobsRoutes(app)` function
+2. Updated `server/routes/index.ts` aggregator to include jobs module
+3. Updated `server/routes.ts` import and registration
+4. Removed ~188 lines of job queue code from routes.ts
+
+**Endpoints Extracted** (same URLs, no changes):
+- GET `/api/admin/jobs/stats`
+- GET `/api/admin/jobs`
+- GET `/api/admin/jobs/:id`
+- POST `/api/admin/jobs/:id/retry`
+- POST `/api/admin/jobs/:id/cancel`
+- POST `/api/admin/jobs/retry-all-failed`
+- POST `/api/admin/jobs/cleanup`
+- POST `/api/admin/jobs/reclaim-stuck`
+- GET `/api/admin/jobs/worker/status`
+- POST `/api/admin/jobs/worker/start`
+- POST `/api/admin/jobs/worker/stop`
+- POST `/api/admin/jobs/test`
+- GET `/api/admin/jobs/az-import-status`
+
+**Confirmation: NO BEHAVIOR CHANGE**
+- All endpoints return identical status codes and JSON keys
+- TypeScript check: PASS
+- Playwright + Axe tests: 14 passed, 0 skipped
+
+**Files Changed**:
+- `server/routes/jobs.routes.ts` (new)
+- `server/routes/index.ts` (updated)
+- `server/routes.ts` (import + remove old code)
+
