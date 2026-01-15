@@ -127,6 +127,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
         <Button
           variant="ghost"
           size="icon"
+          className="-ml-1"
           onClick={toggleBothSidebars}
           aria-label="Toggle sidebar"
           data-testid="button-sidebar-toggle"
