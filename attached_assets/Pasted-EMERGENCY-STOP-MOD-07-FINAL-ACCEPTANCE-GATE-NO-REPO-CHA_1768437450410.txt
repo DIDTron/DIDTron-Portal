@@ -1,0 +1,81 @@
+EMERGENCY STOP — MOD-07 FINAL ACCEPTANCE GATE (NO REPO CHANGES)
+
+READ CHECK ✅ must include: docs/AGENT_BRIEF.md, docs/TODO.md, docs/UI_SPEC.md, docs/DECISIONS.md, docs/PERFORMANCE.md
+Plan ID: PLAN-2026-01-15-MODULARIZE
+Task: MOD-07 FINAL ACCEPTANCE GATE — STEP 3 RETRY
+DOC TARGET: NONE (evidence only)
+HARD RULE: Do NOT modify any repo files. Do NOT touch MOD-08. Do NOT update Atlas. Evidence only.
+
+STEP 3 (RETRY) — AUTHENTICATED RUNTIME KEYS-ONLY PROOF (MANDATORY)
+
+Create a temporary script NOT committed at:
+
+/tmp/mod07-keys-proof.mjs
+
+The script MUST:
+
+Launch Playwright.
+
+Log in using the same credentials/flow used by tests/login.spec.ts (same selectors and password source).
+
+Use authenticated Playwright APIRequestContext (this is mandatory — no manual cookie fetch, no fetch() with Cookie headers):
+
+const resp = await context.request.get("http://127.0.0.1:5000/api/...", {
+  headers: { Accept: "application/json" }
+});
+
+
+Print ONLY:
+
+endpoint
+
+HTTP status
+
+content-type
+
+response shape:
+
+if array: array(empty) OR keys of first element
+
+if object: keys
+
+Endpoints to prove (use exactly these):
+
+GET http://127.0.0.1:5000/api/sip-tests/configs
+
+GET http://127.0.0.1:5000/api/sip-test-suppliers
+
+GET http://127.0.0.1:5000/api/sip-test-numbers
+
+GET http://127.0.0.1:5000/api/sip-test-settings
+
+Output format (exact style):
+
+/api/sip-tests/configs => 200 application/json => array(empty)
+
+/api/sip-test-settings => 200 application/json => keys: [id, customerId, ...]
+
+FAILURE RULE (MANDATORY)
+
+If ANY endpoint returns text/html or non-JSON:
+
+print: endpoint, status, content-type
+
+print the first 120 chars of the body
+
+STOP immediately (do not try “fixes”, do not touch code)
+
+DELIVERABLES (same reply)
+
+A) Paste the full script content (verbatim)
+B) Paste the exact output (verbatim)
+
+STOP after A+B. No other work.
+
+Why this fixes it “forever”
+
+It enforces your acceptance gate exactly: authenticated runtime proof or stop.
+
+It prevents the agent from “hand-waving” with schema/handler keys or logs.
+
+It blocks the drift pattern where they start MOD-08 before MOD-07 is truly accepted.
