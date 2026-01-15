@@ -420,6 +420,41 @@ export function registerSystemStatusRoutes(app: Express) {
     }
   });
 
+  app.post("/api/system/integrations/refresh", async (req: Request, res: Response) => {
+    try {
+      console.log("[SystemStatus] Triggering live integration health checks...");
+      
+      await metricsCollector.refreshIntegrationHealth();
+      
+      const integrations = await db.select().from(integrationHealth);
+      const latestCheckedAt = integrations.reduce((latest, i) => 
+        i.checkedAt && (!latest || i.checkedAt > latest) ? i.checkedAt : latest, 
+        null as Date | null
+      );
+      
+      console.log("[SystemStatus] Live integration checks complete");
+      
+      res.json({
+        success: true,
+        message: "Integration health checks completed",
+        integrations: integrations.map(i => ({
+          name: i.integrationName,
+          status: i.status,
+          latencyP95: i.latencyP95 || 0,
+          errorRate: parseFloat(i.errorRate?.toString() || "0"),
+          lastSuccessAt: i.lastSuccessAt ? toISOString(i.lastSuccessAt) : null,
+          lastFailureAt: i.lastFailureAt ? toISOString(i.lastFailureAt) : null,
+          lastFailureReason: i.lastFailureReason,
+          checkedAt: i.checkedAt ? toISOString(i.checkedAt) : null,
+        })),
+        lastUpdated: toISOStringNow(latestCheckedAt),
+      });
+    } catch (error) {
+      console.error("[SystemStatus] Error refreshing integrations:", error);
+      res.status(500).json({ error: "Failed to refresh integrations", success: false });
+    }
+  });
+
   app.get("/api/system/portals", async (req: Request, res: Response) => {
     try {
       const now = new Date();

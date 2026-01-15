@@ -81,6 +81,7 @@ interface StorageMetrics {
 class MetricsCollectorService {
   private lastCollectionTime: Date | null = null;
   private isCollecting = false;
+  private isRefreshingIntegrations = false;
 
   async collectAllMetrics(): Promise<void> {
     if (this.isCollecting) {
@@ -110,6 +111,24 @@ class MetricsCollectorService {
       console.error("[MetricsCollector] Error collecting metrics:", error);
     } finally {
       this.isCollecting = false;
+    }
+  }
+
+  async refreshIntegrationHealth(): Promise<{ success: boolean; skipped?: boolean }> {
+    if (this.isRefreshingIntegrations) {
+      console.log("[MetricsCollector] Integration refresh already in progress, skipping");
+      return { success: true, skipped: true };
+    }
+    
+    this.isRefreshingIntegrations = true;
+    try {
+      const collectedAt = new Date();
+      console.log("[MetricsCollector] Triggering live integration health checks at", collectedAt.toISOString());
+      await this.collectIntegrationMetrics(collectedAt);
+      console.log("[MetricsCollector] Live integration health checks complete");
+      return { success: true };
+    } finally {
+      this.isRefreshingIntegrations = false;
     }
   }
 

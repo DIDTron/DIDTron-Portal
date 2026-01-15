@@ -793,7 +793,7 @@ function AlertsTab() {
 }
 
 function IntegrationsTab() {
-  const { data, isLoading, dataUpdatedAt } = useQuery<{ integrations: Array<{
+  const { data, isLoading, dataUpdatedAt, refetch } = useQuery<{ integrations: Array<{
     name: string;
     status: string;
     latencyP95: number;
@@ -806,6 +806,17 @@ function IntegrationsTab() {
     staleTime: STALE_TIME.REALTIME,
   });
 
+  const refreshMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/system/integrations/refresh");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/system/integrations"] });
+      refetch();
+    },
+  });
+
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
   const lastUpdatedStr = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null;
@@ -815,7 +826,19 @@ function IntegrationsTab() {
       <StaleBanner dataUpdatedAt={dataUpdatedAt} />
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <CardTitle>Integration Health</CardTitle>
+          <div className="flex items-center gap-3">
+            <CardTitle>Integration Health</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refreshMutation.mutate()}
+              disabled={refreshMutation.isPending}
+              data-testid="button-refresh-integrations"
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", refreshMutation.isPending && "animate-spin")} />
+              {refreshMutation.isPending ? "Testing APIs..." : "Refresh Live"}
+            </Button>
+          </div>
           <span className="text-xs text-muted-foreground">{formatAsOf(lastUpdatedStr)}</span>
         </CardHeader>
         <CardContent>
