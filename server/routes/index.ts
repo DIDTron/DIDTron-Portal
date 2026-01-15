@@ -11,6 +11,7 @@ import { registerSoftswitchRoutes } from "./softswitch.routes";
 import { registerPortalAiVoiceRoutes } from "./portal-ai-voice.routes";
 import { registerPortalPbxRoutes } from "./portal-pbx.routes";
 import { registerPortalCrmRoutes } from "./portal-crm.routes";
+import { registerConnexCSRoutes } from "./connexcs.routes";
 
 export function registerAllRoutes(app: Express) {
   registerSystemStatusRoutes(app);
@@ -25,6 +26,7 @@ export function registerAllRoutes(app: Express) {
   registerPortalAiVoiceRoutes(app);
   registerPortalPbxRoutes(app);
   registerPortalCrmRoutes(app);
+  registerConnexCSRoutes(app);
 }
 
 export { registerSystemStatusRoutes } from "./system-status.routes";
@@ -39,3 +41,4 @@ export { registerSoftswitchRoutes } from "./softswitch.routes";
 export { registerPortalAiVoiceRoutes } from "./portal-ai-voice.routes";
 export { registerPortalPbxRoutes } from "./portal-pbx.routes";
 export { registerPortalCrmRoutes } from "./portal-crm.routes";
+export { registerConnexCSRoutes } from "./connexcs.routes";
