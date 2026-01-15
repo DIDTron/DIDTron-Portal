@@ -41,3 +41,11 @@ For every task:
 5. STOP and wait.
 
 If you are unsure: STOP and ask. Do NOT invent.
+
+## RULE 8 — SPA NAVIGATION (NO PAGE RELOADS)
+- All internal navigation MUST use wouter `<Link>` component or `useLocation` hook's `navigate()`.
+- NEVER use `<a href="/...">` for internal routes (causes full page reload).
+- NEVER use `window.location.href = "/..."` for internal routes (causes full page reload).
+- External links (http://, mailto:, tel:, file downloads) may use `<a href>` with `target="_blank"`.
+- This rule applies to ALL clickable names in tables, breadcrumbs, buttons, and navigation elements.
+- Violation of this rule destroys the SPA experience and causes slow page loads.
