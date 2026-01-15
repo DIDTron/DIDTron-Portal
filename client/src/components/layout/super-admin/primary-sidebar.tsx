@@ -326,7 +326,10 @@ export function PrimarySidebar() {
           </Tooltip>
         ) : (
           <div 
-            className="flex items-center justify-between gap-3 px-3 py-2 rounded-md text-sm cursor-pointer text-sidebar-foreground hover-elevate"
+            className={cn(
+              "flex items-center justify-between gap-3 px-3 py-2 rounded-md text-sm cursor-pointer hover-elevate",
+              activeAlertCount > 0 ? "text-red-500" : isAlertDataReady ? "text-green-500" : "text-sidebar-foreground"
+            )}
             data-testid="nav-section-system-status"
             onClick={() => {
               setActiveSection("system-status");
@@ -341,7 +344,7 @@ export function PrimarySidebar() {
           >
             <div className="flex items-center gap-3">
               <Server className="h-5 w-5 shrink-0" />
-              <span>System Status</span>
+              <span className="whitespace-nowrap">System Status</span>
             </div>
             {activeAlertCount > 0 ? (
               <Badge variant="destructive" className="h-5 min-w-5 text-xs px-1.5" data-testid="badge-system-alerts">
