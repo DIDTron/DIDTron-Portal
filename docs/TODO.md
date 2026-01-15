@@ -1,43 +1,53 @@
 # DIDTron - TODO List
 
-## Current Plan ID: PLAN-2026-01-15-SOFTSWITCH-FIX
+## Current Plan ID: PLAN-2026-01-15-SOFTSWITCH-PERF
 
-**Status**: ✅ Complete - Violations V-01, V-02 fixed. Balance & Spend deleted. Routes modularized.
+**Status**: ✅ Complete - All Softswitch performance optimizations applied.
+
+---
+
+## PLAN-2026-01-15-SOFTSWITCH-PERF: Softswitch Performance Optimization
+
+**Objective**: Add enabled flags and verify staleTime on all Softswitch module queries for maximum performance.
+
+### Completed Tasks
+
+- [x] **PERF-01**: Fix interconnect-detail.tsx queries
+  - Added `enabled: !!interconnectId` to serversData query
+  - Added `enabled: !!interconnectId` to supplierRatingPlansData query
+  - Updated to handle cursor pagination response format { items, nextCursor }
+  - Status: ✅ Complete (architect reviewed)
+
+- [x] **PERF-02**: Fix carrier-detail.tsx queries
+  - Added `enabled: !!carrierId` to currencies query
+  - Added `enabled: !!carrierId` to emailTemplates query
+  - Added `enabled: !!carrierId` to users query
+  - Status: ✅ Complete (architect reviewed)
+
+- [x] **PERF-03**: Verify class4-softswitch.tsx structure
+  - Confirmed these are route-based separate page components (lazy loaded)
+  - Not tabs within one component - queries already correctly scoped
+  - Status: ✅ No changes needed
+
+- [x] **PERF-04**: Verify staleTime on all Softswitch queries
+  - softswitch.tsx: 5 queries with staleTime ✅
+  - carrier-detail.tsx: 7 queries with staleTime ✅
+  - interconnect-detail.tsx: 15 queries with staleTime ✅
+  - Status: ✅ Complete (architect reviewed)
 
 ---
 
 ## PLAN-2026-01-15-SOFTSWITCH-FIX: Fix Audit Violations
 
-**Objective**: Fix violations from PLAN-2026-01-15-SOFTSWITCH-AUDIT and modularize Softswitch backend.
+**Status**: ✅ Complete - Violations V-01, V-02, V-03 fixed. Balance & Spend deleted. Routes modularized.
 
 ### Completed Tasks
 
 - [x] **SS-01**: Delete Balance & Spend from sidebars
-  - Removed Balance & Spend section from secondary-sidebar.tsx
-  - Status: ✅ Complete (architect reviewed)
-
-- [x] **SS-02**: Remove Balance & Spend routes and page
-  - Removed lazy imports, route mappings, Route components from admin/index.tsx
-  - Deleted softswitch-balance.tsx file
-  - Status: ✅ Complete (architect reviewed)
-
-- [x] **SS-03**: Extract Softswitch routes to server/routes/softswitch.routes.ts
-  - Moved ~1350 lines from routes.ts
-  - Registered in server/routes/index.ts
-  - Status: ✅ Complete (architect reviewed)
-
-- [x] **SS-04**: Fix V-01 - Add enabled flags to softswitch-rating.tsx
-  - Added `enabled: tab === "rating-plans"` to customer-plans query
-  - Added `enabled: tab === "rating-plans"` to supplier-plans query  
-  - Added `enabled: tab === "import-settings"` to business-rules query
-  - Added `enabled: tab === "import-templates"` to import-templates query
-  - Status: ✅ Complete (architect reviewed)
-
+- [x] **SS-02**: Remove Balance & Spend routes and delete softswitch-balance.tsx
+- [x] **SS-03**: Extract Softswitch routes to server/routes/softswitch.routes.ts (~1350 lines)
+- [x] **SS-04**: Fix V-01 - Add enabled flags to softswitch-rating.tsx (4 queries)
 - [x] **SS-05**: Fix V-02 - Add cursor pagination to rating plan endpoints
-  - Added getCustomerRatingPlansWithCursor/getSupplierRatingPlansWithCursor to storage
-  - Updated endpoints to use parseCursorParams/buildCursorResponse
-  - Updated frontend queries to handle { items, nextCursor } response
-  - Status: ✅ Complete (architect reviewed)
 
 ### Violations Status
 
@@ -45,7 +55,7 @@
 |----|------|-----------|--------|
 | V-01 | `softswitch-rating.tsx` | 4 queries with NO enabled flags | ✅ Fixed (SS-04) |
 | V-02 | Rating endpoints | No cursor pagination | ✅ Fixed (SS-05) |
-| V-03 | `interconnect-detail.tsx` | 2 dropdown queries lack enabled | 🔶 Pending |
+| V-03 | `interconnect-detail.tsx` | 2 dropdown queries lack enabled | ✅ Fixed (PERF-01) |
 
 ---
 
@@ -73,7 +83,8 @@
 
 | Plan ID | Status | Summary |
 |---------|--------|---------|
-| PLAN-2026-01-15-SOFTSWITCH-FIX | ✅ Complete | SS-01→05: V-01/V-02 violations fixed, Balance & Spend deleted, routes modularized |
+| PLAN-2026-01-15-SOFTSWITCH-PERF | ✅ Complete | PERF-01→04: All Softswitch enabled flags + staleTime verified |
+| PLAN-2026-01-15-SOFTSWITCH-FIX | ✅ Complete | SS-01→05: V-01/V-02/V-03 violations fixed, Balance & Spend deleted, routes modularized |
 | PLAN-2026-01-15-SOFTSWITCH-AUDIT | ✅ Complete | Softswitch Reality + Performance Proof Pack (docs-only, grep evidence) |
 | PLAN-2026-01-15-MODULARIZE | ✅ Complete | MOD-01→08: Route modularization, routes.ts 8997→8912 lines |
 | PLAN-2026-01-15-ADMINJOBS-AUTHFIX | ✅ Complete | SEC-01: Protected /api/admin/jobs/* with super_admin guard + Playwright proof |
