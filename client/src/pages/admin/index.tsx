@@ -65,9 +65,6 @@ const SupplierRatingPlansPage = lazy(() => import("./softswitch-rating").then(m 
 const PeriodExceptionsPage = lazy(() => import("./period-exceptions"));
 const CDRReratingPage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.CDRReratingPage })));
 const RatingZoneNamePage = lazy(() => import("./softswitch-rating").then(m => ({ default: m.RatingZoneNamePage })));
-const CarrierBalancesPage = lazy(() => import("./softswitch-balance").then(m => ({ default: m.CarrierBalancesPage })));
-const TwentyFourHourSpendPage = lazy(() => import("./softswitch-balance").then(m => ({ default: m.TwentyFourHourSpendPage })));
-const BalanceTotalsPage = lazy(() => import("./softswitch-balance").then(m => ({ default: m.BalanceTotalsPage })));
 const RatingPlanDetailPage = lazy(() => import("./softswitch-rating-plan-detail"));
 const SupplierRatingPlanDetailPage = lazy(() => import("./supplier-rating-plan-detail"));
 const ImportJobDetailPage = lazy(() => import("./import-job-detail"));
@@ -183,9 +180,6 @@ const routeToSection: Record<string, { section: string; subItem: string }> = {
   "/admin/softswitch/rating/cdr-rerating": { section: "softswitch", subItem: "softswitch-cdr-rerating" },
   "/admin/softswitch/rating/zone-name": { section: "softswitch", subItem: "softswitch-zone-name" },
   "/admin/softswitch/routing": { section: "softswitch", subItem: "softswitch-routing" },
-  "/admin/softswitch/balance/carrier-balances": { section: "softswitch", subItem: "softswitch-carrier-balances" },
-  "/admin/softswitch/balance/24h-spend": { section: "softswitch", subItem: "softswitch-24h-spend" },
-  "/admin/softswitch/balance/totals": { section: "softswitch", subItem: "softswitch-balance-totals" },
   "/admin/softswitch": { section: "softswitch", subItem: "softswitch-carriers" },
   "/admin/experience-manager": { section: "experience-manager", subItem: "em-dashboard" },
   "/admin/experience-manager/marketing": { section: "experience-manager", subItem: "em-marketing" },
@@ -346,9 +340,6 @@ export default function AdminLayout() {
                 <Route path="/admin/softswitch/rating/business-rule/:ruleId" component={BusinessRuleDetailPage} />
                 <Route path="/admin/softswitch/rating/supplier-rating/import-template/:id" component={ImportTemplateWizardPage} />
                 <Route path="/admin/softswitch/routing">{() => <PlaceholderPage title="Routing" />}</Route>
-                <Route path="/admin/softswitch/balance/carrier-balances" component={CarrierBalancesPage} />
-                <Route path="/admin/softswitch/balance/24h-spend" component={TwentyFourHourSpendPage} />
-                <Route path="/admin/softswitch/balance/totals" component={BalanceTotalsPage} />
                 <Route path="/admin/experience-manager" component={ExperienceManagerPage} />
                 <Route path="/admin/experience-manager/marketing" component={EMMarketingPage} />
                 <Route path="/admin/experience-manager/portal-themes" component={EMPortalThemesPage} />

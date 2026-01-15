@@ -684,11 +684,14 @@ export function CustomerRatingPlansPage() {
 
   const { toast } = useToast();
   
-  const { data: plans = [], isLoading, isFetching, refetch, isError } = useQuery<APICustomerRatingPlan[]>({
+  // Fetch customer rating plans - enabled only when rating-plans tab is active
+  const { data: plansResponse, isLoading, isFetching, refetch, isError } = useQuery<{ items: APICustomerRatingPlan[], nextCursor: string | null }>({
     queryKey: ["/api/softswitch/rating/customer-plans"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
+    enabled: tab === "rating-plans",
   });
+  const plans = plansResponse?.items ?? [];
 
   useEffect(() => {
     if (isError) {
@@ -1284,25 +1287,29 @@ export function SupplierRatingPlansPage() {
   
   const { toast } = useToast();
   
-  // Fetch supplier rating plans from database
-  const { data: supplierPlansData = [], refetch: refetchSupplierPlans, isFetching: isSupplierPlansFetching } = useQuery<SupplierRatingPlanAPI[]>({
+  // Fetch supplier rating plans from database - enabled only when rating-plans tab is active
+  const { data: supplierPlansResponse, refetch: refetchSupplierPlans, isFetching: isSupplierPlansFetching } = useQuery<{ items: SupplierRatingPlanAPI[], nextCursor: string | null }>({
     queryKey: ["/api/softswitch/rating/supplier-plans"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
+    enabled: tab === "rating-plans",
   });
+  const supplierPlansData = supplierPlansResponse?.items ?? [];
 
-  // Fetch business rules from database
+  // Fetch business rules from database - enabled only when import-settings tab is active
   const { data: businessRulesData = [], refetch: refetchBusinessRules } = useQuery<BusinessRuleAPI[]>({
     queryKey: ["/api/softswitch/rating/business-rules"],
     staleTime: STALE_TIME.STATIC,
     placeholderData: keepPreviousData,
+    enabled: tab === "import-settings",
   });
 
-  // Fetch import templates from database
+  // Fetch import templates from database - enabled only when import-templates tab is active
   const { data: importTemplatesData = [], refetch: refetchImportTemplates, isFetching: isImportTemplatesFetching } = useQuery<SupplierImportTemplate[]>({
     queryKey: ["/api/supplier-import-templates"],
     staleTime: STALE_TIME.STATIC,
     placeholderData: keepPreviousData,
+    enabled: tab === "import-templates",
   });
   
   // Delete import template mutation

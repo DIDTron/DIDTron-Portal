@@ -294,6 +294,7 @@ export interface IStorage {
 
   // Customer Rating Plans
   getCustomerRatingPlans(): Promise<CustomerRatingPlan[]>;
+  getCustomerRatingPlansWithCursor(cursor: string | null, limit: number): Promise<CustomerRatingPlan[]>;
   getCustomerRatingPlan(id: string): Promise<CustomerRatingPlan | undefined>;
   getCustomerRatingPlanByShortCode(shortCode: string): Promise<CustomerRatingPlan | undefined>;
   resolveCustomerRatingPlan(identifier: string): Promise<CustomerRatingPlan | undefined>;
@@ -315,6 +316,7 @@ export interface IStorage {
 
   // Supplier Rating Plans
   getSupplierRatingPlans(): Promise<SupplierRatingPlan[]>;
+  getSupplierRatingPlansWithCursor(cursor: string | null, limit: number): Promise<SupplierRatingPlan[]>;
   getSupplierRatingPlan(id: string): Promise<SupplierRatingPlan | undefined>;
   getSupplierRatingPlanByShortCode(shortCode: string): Promise<SupplierRatingPlan | undefined>;
   resolveSupplierRatingPlan(identifier: string): Promise<SupplierRatingPlan | undefined>;
@@ -1414,6 +1416,20 @@ export class MemStorage implements IStorage {
     return await db.select().from(customerRatingPlansTable);
   }
 
+  async getCustomerRatingPlansWithCursor(cursor: string | null, limit: number): Promise<CustomerRatingPlan[]> {
+    if (cursor) {
+      return await db.select()
+        .from(customerRatingPlansTable)
+        .where(gt(customerRatingPlansTable.id, cursor))
+        .orderBy(asc(customerRatingPlansTable.id))
+        .limit(limit);
+    }
+    return await db.select()
+      .from(customerRatingPlansTable)
+      .orderBy(asc(customerRatingPlansTable.id))
+      .limit(limit);
+  }
+
   async getCustomerRatingPlan(id: string): Promise<CustomerRatingPlan | undefined> {
     const results = await db.select().from(customerRatingPlansTable).where(eq(customerRatingPlansTable.id, id));
     return results[0];
@@ -1498,6 +1514,20 @@ export class MemStorage implements IStorage {
   // Supplier Rating Plans
   async getSupplierRatingPlans(): Promise<SupplierRatingPlan[]> {
     return await db.select().from(supplierRatingPlansTable);
+  }
+
+  async getSupplierRatingPlansWithCursor(cursor: string | null, limit: number): Promise<SupplierRatingPlan[]> {
+    if (cursor) {
+      return await db.select()
+        .from(supplierRatingPlansTable)
+        .where(gt(supplierRatingPlansTable.id, cursor))
+        .orderBy(asc(supplierRatingPlansTable.id))
+        .limit(limit);
+    }
+    return await db.select()
+      .from(supplierRatingPlansTable)
+      .orderBy(asc(supplierRatingPlansTable.id))
+      .limit(limit);
   }
 
   async getSupplierRatingPlan(id: string): Promise<SupplierRatingPlan | undefined> {

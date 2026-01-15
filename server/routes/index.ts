@@ -7,6 +7,7 @@ import { registerAzDestinationsRoutes } from "./az-destinations.routes";
 import { registerDidsRoutes } from "./dids.routes";
 import { registerSipTesterRoutes } from "./sip-tester.routes";
 import { registerBillingRoutes } from "./billing.routes";
+import { registerSoftswitchRoutes } from "./softswitch.routes";
 
 export function registerAllRoutes(app: Express) {
   registerSystemStatusRoutes(app);
@@ -17,6 +18,7 @@ export function registerAllRoutes(app: Express) {
   registerDidsRoutes(app);
   registerSipTesterRoutes(app);
   registerBillingRoutes(app);
+  registerSoftswitchRoutes(app);
 }
 
 export { registerSystemStatusRoutes } from "./system-status.routes";
@@ -27,3 +29,4 @@ export { registerAzDestinationsRoutes } from "./az-destinations.routes";
 export { registerDidsRoutes } from "./dids.routes";
 export { registerSipTesterRoutes } from "./sip-tester.routes";
 export { registerBillingRoutes } from "./billing.routes";
+export { registerSoftswitchRoutes } from "./softswitch.routes";
