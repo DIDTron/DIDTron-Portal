@@ -45,12 +45,23 @@ import {
 import type { Integration } from "@shared/schema";
 import { DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ChevronDown, ChevronUp, TestTube2, XCircle } from "lucide-react";
 
 interface ConnexCSStatus {
   connected: boolean;
   mockMode: boolean;
   message: string;
   tokenDaysRemaining?: number;
+  error?: string;
+}
+
+interface TestResult {
+  success: boolean;
+  message: string;
+  rawResponse: string;
+  timestamp: string;
 }
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -131,6 +142,8 @@ export default function IntegrationsPage() {
   const [credentialValues, setCredentialValues] = useState<Record<string, string>>({});
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [apiKeyCopied, setApiKeyCopied] = useState(false);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [showRawResponse, setShowRawResponse] = useState(false);
 
   const { data: integrations, isLoading } = useQuery<Integration[]>({
     queryKey: ["/api/integrations"],
@@ -139,9 +152,9 @@ export default function IntegrationsPage() {
   });
 
   // Fetch ConnexCS status to show mock mode indicator
-  const { data: connexcsStatus } = useQuery<ConnexCSStatus>({
+  const { data: connexcsStatus, refetch: refetchConnexcsStatus } = useQuery<ConnexCSStatus>({
     queryKey: ["/api/connexcs/status"],
-    staleTime: 30000,
+    staleTime: 10000,
     enabled: editingIntegration?.provider === "connexcs",
   });
 
@@ -213,6 +226,40 @@ export default function IntegrationsPage() {
     },
     onError: () => {
       toast({ title: "Failed to toggle integration", variant: "destructive" });
+    },
+  });
+
+  // Live test mutation that returns raw API response
+  const liveTestMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("GET", "/api/connexcs/status/detailed");
+      const data = await res.json();
+      return {
+        success: data.connected === true,
+        message: data.message || "Test completed",
+        rawResponse: JSON.stringify(data, null, 2),
+        timestamp: new Date().toISOString(),
+      };
+    },
+    onSuccess: (result) => {
+      setTestResult(result);
+      setShowRawResponse(true);
+      refetchConnexcsStatus();
+      toast({
+        title: result.success ? "Live Test Passed" : "Live Test Failed",
+        description: result.message,
+        variant: result.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: any) => {
+      setTestResult({
+        success: false,
+        message: error.message || "Test failed",
+        rawResponse: JSON.stringify({ error: error.message || "Unknown error" }, null, 2),
+        timestamp: new Date().toISOString(),
+      });
+      setShowRawResponse(true);
+      toast({ title: "Live test failed", variant: "destructive" });
     },
   });
 
@@ -349,6 +396,8 @@ export default function IntegrationsPage() {
                         setCredentialValues({});
                         setApiKey(null);
                         setApiKeyCopied(false);
+                        setTestResult(null);
+                        setShowRawResponse(false);
                       }}
                       data-testid={`button-configure-${integration.provider}`}
                     >
@@ -376,7 +425,7 @@ export default function IntegrationsPage() {
         </div>
       ))}
 
-      <Dialog open={!!editingIntegration} onOpenChange={(open) => { if (!open) { setEditingIntegration(null); setApiKey(null); setApiKeyCopied(false); } }}>
+      <Dialog open={!!editingIntegration} onOpenChange={(open) => { if (!open) { setEditingIntegration(null); setApiKey(null); setApiKeyCopied(false); setTestResult(null); setShowRawResponse(false); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Configure {editingIntegration?.displayName}</DialogTitle>
@@ -390,20 +439,36 @@ export default function IntegrationsPage() {
           {/* ConnexCS-specific dialog with step indicators */}
           {editingIntegration?.provider === "connexcs" ? (
             <div className="space-y-5 py-2">
-              {/* Connection Status Banner */}
+              {/* Connection Status Banner - Shows actual connection state */}
               {connexcsStatus && (
-                <Alert className={connexcsStatus.mockMode ? "border-amber-500 bg-amber-500/10" : "border-green-500 bg-green-500/10"}>
+                <Alert className={
+                  connexcsStatus.connected 
+                    ? "border-green-500 bg-green-500/10" 
+                    : connexcsStatus.mockMode 
+                      ? "border-amber-500 bg-amber-500/10"
+                      : "border-red-500 bg-red-500/10"
+                }>
                   <div className="flex items-center gap-2">
-                    {connexcsStatus.mockMode ? (
+                    {connexcsStatus.connected ? (
+                      <Wifi className="w-4 h-4 text-green-600" />
+                    ) : connexcsStatus.mockMode ? (
                       <WifiOff className="w-4 h-4 text-amber-600" />
                     ) : (
-                      <Wifi className="w-4 h-4 text-green-600" />
+                      <XCircle className="w-4 h-4 text-red-600" />
                     )}
-                    <AlertDescription className={connexcsStatus.mockMode ? "text-amber-700 dark:text-amber-400" : "text-green-700 dark:text-green-400"}>
-                      {connexcsStatus.mockMode ? (
-                        <span className="font-medium">Mock Mode - Enter credentials to connect to live API</span>
+                    <AlertDescription className={
+                      connexcsStatus.connected 
+                        ? "text-green-700 dark:text-green-400"
+                        : connexcsStatus.mockMode 
+                          ? "text-amber-700 dark:text-amber-400"
+                          : "text-red-700 dark:text-red-400"
+                    }>
+                      {connexcsStatus.connected ? (
+                        <span className="font-medium">Connected to Live ConnexCS API{connexcsStatus.tokenDaysRemaining ? ` (${connexcsStatus.tokenDaysRemaining} days remaining)` : ''}</span>
+                      ) : connexcsStatus.mockMode ? (
+                        <span className="font-medium">Not Connected - Enter credentials to connect to live API</span>
                       ) : (
-                        <span className="font-medium">Connected to Live ConnexCS API ({connexcsStatus.tokenDaysRemaining} days remaining)</span>
+                        <span className="font-medium">Connection Failed - {connexcsStatus.error || connexcsStatus.message}</span>
                       )}
                     </AlertDescription>
                   </div>
@@ -513,27 +578,99 @@ export default function IntegrationsPage() {
                 )}
               </div>
 
-              {/* Step 3: Connection Verified */}
+              {/* Step 3: Test & Verify Connection */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  {apiKey && !connexcsStatus?.mockMode ? (
+                  {testResult?.success ? (
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  ) : testResult && !testResult.success ? (
+                    <XCircle className="w-5 h-5 text-red-600" />
                   ) : (
                     <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center text-xs text-muted-foreground">3</div>
                   )}
-                  <span className={`font-medium ${apiKey && !connexcsStatus?.mockMode ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
-                    Live API Connected
+                  <span className={`font-medium ${
+                    testResult?.success 
+                      ? "text-green-600 dark:text-green-400" 
+                      : testResult && !testResult.success 
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-muted-foreground"
+                  }`}>
+                    Test & Verify Connection
                   </span>
                 </div>
                 
-                {apiKey && !connexcsStatus?.mockMode && (
-                  <div className="ml-7">
+                <div className="ml-7 space-y-3">
+                  {/* Test Integration Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => liveTestMutation.mutate()}
+                    disabled={liveTestMutation.isPending}
+                    className="w-full"
+                    data-testid="button-test-connexcs-live"
+                  >
+                    {liveTestMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <TestTube2 className="w-4 h-4 mr-2" />
+                    )}
+                    Run Live API Test
+                  </Button>
+
+                  {/* Test Result with Collapsible Raw Response */}
+                  {testResult && (
+                    <div className={`p-3 rounded-lg border ${
+                      testResult.success 
+                        ? "border-green-500 bg-green-500/5" 
+                        : "border-red-500 bg-red-500/5"
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        {testResult.success ? (
+                          <ShieldCheck className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-600" />
+                        )}
+                        <span className={`text-sm font-medium ${
+                          testResult.success ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+                        }`}>
+                          {testResult.success ? "Live API Test Passed!" : "Test Failed"}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {new Date(testResult.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{testResult.message}</p>
+                      
+                      {/* Collapsible Raw Response */}
+                      <Collapsible open={showRawResponse} onOpenChange={setShowRawResponse}>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm" className="w-full justify-between p-2 h-auto">
+                            <span className="text-xs font-medium">View Raw API Response</span>
+                            {showRawResponse ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <ScrollArea className="h-48 mt-2 rounded border bg-muted/50">
+                            <pre className="p-3 text-xs font-mono whitespace-pre-wrap">
+                              {testResult.rawResponse}
+                            </pre>
+                          </ScrollArea>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </div>
+                  )}
+
+                  {!testResult && connexcsStatus?.connected && (
                     <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                       <ShieldCheck className="w-4 h-4" />
-                      <span className="text-sm font-medium">You're connected to live ConnexCS - Not in mock mode!</span>
+                      <span className="text-sm">Connected to live API - run test to verify</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ) : (
@@ -562,7 +699,7 @@ export default function IntegrationsPage() {
           )}
           
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => { setEditingIntegration(null); setApiKey(null); setApiKeyCopied(false); }}>
+            <Button variant="outline" onClick={() => { setEditingIntegration(null); setApiKey(null); setApiKeyCopied(false); setTestResult(null); setShowRawResponse(false); }}>
               {apiKey ? "Close" : "Cancel"}
             </Button>
             {!apiKey && (
