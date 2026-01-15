@@ -573,13 +573,17 @@ export async function handleMetricsCollectJob(): Promise<void> {
 let metricsSchedulerStarted = false;
 let metricsIntervalId: NodeJS.Timeout | null = null;
 
+const IS_DEV = process.env.NODE_ENV !== "production";
+const METRICS_INTERVAL_MS = IS_DEV ? 300000 : 60000;
+
 export function startMetricsScheduler(): void {
   if (metricsSchedulerStarted) {
     console.log("[MetricsScheduler] Already running");
     return;
   }
 
-  console.log("[MetricsScheduler] Starting metrics collection scheduler (every 60 seconds)");
+  const intervalDesc = IS_DEV ? "5 minutes (DEV)" : "60 seconds (PROD)";
+  console.log(`[MetricsScheduler] Starting metrics collection scheduler (every ${intervalDesc})`);
   metricsSchedulerStarted = true;
 
   // Run immediately on startup with minimal delay for services to stabilize
@@ -593,14 +597,14 @@ export function startMetricsScheduler(): void {
     }
   }, 1000); // Wait 1 second for basic services to initialize
 
-  // Schedule recurring collection every 60 seconds
+  // Schedule recurring collection - DEV: 5 min, PROD: 60 sec
   metricsIntervalId = setInterval(async () => {
     try {
       await metricsCollector.collectAllMetrics();
     } catch (error) {
       console.error("[MetricsScheduler] Scheduled collection failed:", error);
     }
-  }, 60000);
+  }, METRICS_INTERVAL_MS);
 }
 
 export function stopMetricsScheduler(): void {

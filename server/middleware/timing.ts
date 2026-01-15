@@ -3,6 +3,20 @@ import { performanceMonitor } from "../services/performance-monitor";
 
 const SLOW_THRESHOLD_MS = 1000;
 
+const EXCLUDED_PATHS = [
+  "/api/system/",
+  "/api/metrics",
+  "/api/health",
+];
+
+function shouldRecordMetrics(path: string): boolean {
+  if (!path.startsWith("/api/")) return false;
+  for (const excluded of EXCLUDED_PATHS) {
+    if (path.startsWith(excluded)) return false;
+  }
+  return true;
+}
+
 export function timingMiddleware(req: Request, res: Response, next: NextFunction) {
   const start = Date.now();
   
@@ -12,10 +26,12 @@ export function timingMiddleware(req: Request, res: Response, next: NextFunction
     const duration = Date.now() - start;
     const endpoint = `${req.method} ${req.path}`;
     
-    performanceMonitor.recordApiResponseTime(endpoint, duration);
-    
-    if (duration > SLOW_THRESHOLD_MS) {
-      console.warn(`[SLOW API] ${endpoint} took ${duration}ms`);
+    if (shouldRecordMetrics(req.path)) {
+      performanceMonitor.recordApiResponseTime(endpoint, duration);
+      
+      if (duration > SLOW_THRESHOLD_MS) {
+        console.warn(`[SLOW API] ${endpoint} took ${duration}ms`);
+      }
     }
     
     if (!res.headersSent) {
