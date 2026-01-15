@@ -115,7 +115,6 @@ export default function IntegrationsPage() {
   const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
   const [credentialValues, setCredentialValues] = useState<Record<string, string>>({});
   const [apiKey, setApiKey] = useState<string | null>(null);
-  const [isGeneratingApiKey, setIsGeneratingApiKey] = useState(false);
 
   const { data: integrations, isLoading } = useQuery<Integration[]>({
     queryKey: ["/api/integrations"],
@@ -128,14 +127,34 @@ export default function IntegrationsPage() {
       const res = await apiRequest("PATCH", `/api/integrations/${id}`, data);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/integrations"] });
-      toast({ 
-        title: "Credentials saved successfully",
-        description: "Click 'Test Connection' to verify the credentials work."
-      });
-      setEditingIntegration(null);
-      setCredentialValues({});
+      
+      // Check if ConnexCS API key was auto-generated
+      if (data.apiKeyResult?.success && data.apiKeyResult?.apiKey) {
+        setApiKey(data.apiKeyResult.apiKey);
+        toast({ 
+          title: "Credentials saved & API Key generated",
+          description: `Token valid for ${data.apiKeyResult.daysRemaining || 30} days. Copy it now!`
+        });
+        // Don't close dialog - show the API key for copying
+        setCredentialValues({});
+      } else if (data.apiKeyResult?.error) {
+        toast({ 
+          title: "Credentials saved but API Key generation failed",
+          description: data.apiKeyResult.error,
+          variant: "destructive"
+        });
+        setEditingIntegration(null);
+        setCredentialValues({});
+      } else {
+        toast({ 
+          title: "Credentials saved successfully",
+          description: "Click 'Test Connection' to verify the credentials work."
+        });
+        setEditingIntegration(null);
+        setCredentialValues({});
+      }
     },
     onError: () => {
       toast({ title: "Failed to save credentials", variant: "destructive" });
@@ -189,39 +208,6 @@ export default function IntegrationsPage() {
       id: editingIntegration.id,
       data: { credentials }
     });
-  };
-
-  const handleGenerateApiKey = async () => {
-    if (!editingIntegration || editingIntegration.provider !== "connexcs") return;
-    
-    setIsGeneratingApiKey(true);
-    try {
-      const res = await apiRequest("POST", `/api/integrations/${editingIntegration.id}/generate-api-key`);
-      const data = await res.json();
-      
-      if (data.success && data.apiKey) {
-        setApiKey(data.apiKey);
-        queryClient.invalidateQueries({ queryKey: ["/api/integrations"] });
-        toast({
-          title: "API Key generated successfully",
-          description: `Token valid for ${data.daysRemaining || 30} days. Copy it now - it won't be shown again.`,
-        });
-      } else {
-        toast({
-          title: "Failed to generate API Key",
-          description: data.error || "Please check your username and password",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Failed to generate API Key",
-        description: "Please verify your credentials and try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingApiKey(false);
-    }
   };
 
   const handleCopyApiKey = async () => {
@@ -417,37 +403,14 @@ export default function IntegrationsPage() {
                         <Copy className="w-4 h-4" />
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                       Copy this API key now. It will not be shown again after closing this dialog.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Button
-                      variant="secondary"
-                      onClick={handleGenerateApiKey}
-                      disabled={isGeneratingApiKey || !editingIntegration.credentials}
-                      className="w-full"
-                      data-testid="button-generate-api-key"
-                    >
-                      {isGeneratingApiKey ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Key className="w-4 h-4 mr-2" />
-                          Generate API Key
-                        </>
-                      )}
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      {editingIntegration.credentials 
-                        ? "Generate a 30-day JWT refresh token using your saved credentials. This exits mock mode and enables real ConnexCS API access."
-                        : "Save your username and password first, then generate the API key."}
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    API Key will be auto-generated when you save your username and password.
+                  </p>
                 )}
               </div>
             )}

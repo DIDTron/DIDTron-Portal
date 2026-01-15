@@ -236,9 +236,50 @@ export async function registerRoutes(
         newValues: { isEnabled: integration?.isEnabled, status: integration?.status }
       });
       
+      // Auto-generate API Key for ConnexCS when credentials are saved
+      let apiKeyResult: { success: boolean; apiKey?: string; daysRemaining?: number; error?: string } | null = null;
+      let finalIntegration = integration;
+      
+      if (existing.provider === "connexcs" && updateData.credentials?.username && updateData.credentials?.password) {
+        try {
+          // Generate API key using connexcs-tools service
+          apiKeyResult = await connexcsTools.generateApiKey(storage);
+          
+          if (apiKeyResult.success && apiKeyResult.apiKey) {
+            // Store the refresh token in credentials (use already-merged updateData.credentials) and update status
+            finalIntegration = await storage.updateIntegration(req.params.id, {
+              credentials: { ...updateData.credentials, refreshToken: apiKeyResult.apiKey },
+              status: "connected",
+              lastTestedAt: new Date(),
+              testResult: `API Key generated - valid for ${apiKeyResult.daysRemaining} days`
+            });
+            
+            console.log(`[ConnexCS] API Key auto-generated on credential save - ${apiKeyResult.daysRemaining} days validity`);
+          } else {
+            // API key generation failed - update status to show failure but keep credentials saved
+            finalIntegration = await storage.updateIntegration(req.params.id, {
+              status: "error",
+              lastTestedAt: new Date(),
+              testResult: apiKeyResult?.error || "API Key generation failed"
+            });
+          }
+        } catch (e: any) {
+          console.error("[ConnexCS] Failed to auto-generate API key:", e.message);
+          apiKeyResult = { success: false, error: e.message };
+          // Update status to reflect error
+          finalIntegration = await storage.updateIntegration(req.params.id, {
+            status: "error",
+            lastTestedAt: new Date(),
+            testResult: e.message || "API Key generation failed"
+          });
+        }
+      }
+      
       res.json({
-        ...integration,
-        credentials: integration?.credentials ? { configured: true } : null
+        ...finalIntegration,
+        credentials: finalIntegration?.credentials ? { configured: true } : null,
+        // Include API key result for ConnexCS so frontend can display it
+        ...(apiKeyResult && { apiKeyResult })
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to update integration" });
