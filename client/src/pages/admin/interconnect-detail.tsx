@@ -402,14 +402,17 @@ export default function InterconnectDetailPage() {
     queryKey: ["/api/connexcs/servers"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
+    enabled: !!interconnectId,
   });
 
   // Fetch supplier rating plans from the Softswitch module
-  const { data: supplierRatingPlansData } = useQuery<Array<{ id: string; name: string; shortCode?: string | null; currency: string }>>({
+  const { data: supplierRatingPlansResponse } = useQuery<{ items: Array<{ id: string; name: string; shortCode?: string | null; currency: string }>, nextCursor: string | null }>({
     queryKey: ["/api/softswitch/rating/supplier-plans"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
+    enabled: !!interconnectId,
   });
+  const supplierRatingPlansData = supplierRatingPlansResponse?.items ?? [];
 
   const [formData, setFormData] = useState({
     name: "",

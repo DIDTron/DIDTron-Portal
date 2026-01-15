@@ -86,6 +86,7 @@ export default function CarrierDetailPage() {
   const { data: currencies } = useQuery<Currency[]>({
     queryKey: ["/api/currencies"],
     staleTime: STALE_TIME.STATIC,
+    enabled: !!carrierId,
   });
 
   const { data: interconnects } = useQuery<CarrierInterconnect[]>({
@@ -112,12 +113,14 @@ export default function CarrierDetailPage() {
   const { data: emailTemplates } = useQuery<EmailTemplate[]>({
     queryKey: ["/api/email-templates"],
     staleTime: STALE_TIME.STATIC,
+    enabled: !!carrierId,
   });
 
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/users"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
+    enabled: !!carrierId,
   });
 
   const [formData, setFormData] = useState({
