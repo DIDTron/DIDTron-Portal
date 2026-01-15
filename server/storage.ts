@@ -241,6 +241,8 @@ export interface IStorage {
   // Customers
   getCustomers(categoryId?: string, groupId?: string): Promise<Customer[]>;
   getCustomer(id: string): Promise<Customer | undefined>;
+  getCustomerByShortId(shortId: number): Promise<Customer | undefined>;
+  resolveCustomer(identifier: string): Promise<Customer | undefined>;
   getCustomerByReferralCode(code: string): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: string, data: Partial<InsertCustomer>): Promise<Customer | undefined>;
@@ -457,6 +459,8 @@ export interface IStorage {
   // DID Providers
   getDidProviders(): Promise<DidProvider[]>;
   getDidProvider(id: string): Promise<DidProvider | undefined>;
+  getDidProviderByShortId(shortId: number): Promise<DidProvider | undefined>;
+  resolveDidProvider(identifier: string): Promise<DidProvider | undefined>;
   createDidProvider(provider: InsertDidProvider): Promise<DidProvider>;
   updateDidProvider(id: string, data: Partial<InsertDidProvider>): Promise<DidProvider | undefined>;
   deleteDidProvider(id: string): Promise<boolean>;
@@ -464,6 +468,8 @@ export interface IStorage {
   // DIDs
   getDids(customerId?: string): Promise<Did[]>;
   getDid(id: string): Promise<Did | undefined>;
+  getDidByShortId(shortId: number): Promise<Did | undefined>;
+  resolveDid(identifier: string): Promise<Did | undefined>;
   createDid(did: InsertDid): Promise<Did>;
   updateDid(id: string, data: Partial<InsertDid>): Promise<Did | undefined>;
 
@@ -1142,6 +1148,24 @@ export class MemStorage implements IStorage {
   async getCustomer(id: string): Promise<Customer | undefined> {
     const results = await db.select().from(customersTable).where(eq(customersTable.id, id));
     return results[0];
+  }
+
+  async getCustomerByShortId(shortId: number): Promise<Customer | undefined> {
+    const results = await db.select().from(customersTable).where(eq(customersTable.shortId, shortId));
+    return results[0];
+  }
+
+  async resolveCustomer(identifier: string): Promise<Customer | undefined> {
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return this.getCustomer(identifier);
+    }
+    const numericId = parseInt(identifier, 10);
+    if (!isNaN(numericId) && numericId > 0) {
+      return this.getCustomerByShortId(numericId);
+    }
+    const byAccountNumber = await db.select().from(customersTable).where(eq(customersTable.accountNumber, identifier));
+    return byAccountNumber[0];
   }
   
   async getCustomerByReferralCode(code: string): Promise<Customer | undefined> {
@@ -2352,6 +2376,24 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getDidProviderByShortId(shortId: number): Promise<DidProvider | undefined> {
+    const results = await db.select().from(didProvidersTable).where(eq(didProvidersTable.shortId, shortId));
+    return results[0];
+  }
+
+  async resolveDidProvider(identifier: string): Promise<DidProvider | undefined> {
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return this.getDidProvider(identifier);
+    }
+    const numericId = parseInt(identifier, 10);
+    if (!isNaN(numericId) && numericId > 0) {
+      return this.getDidProviderByShortId(numericId);
+    }
+    const byCode = await db.select().from(didProvidersTable).where(eq(didProvidersTable.code, identifier));
+    return byCode[0];
+  }
+
   async createDidProvider(provider: InsertDidProvider): Promise<DidProvider> {
     const results = await db.insert(didProvidersTable).values(provider).returning();
     return results[0];
@@ -2381,6 +2423,24 @@ export class MemStorage implements IStorage {
   async getDid(id: string): Promise<Did | undefined> {
     const results = await db.select().from(didsTable).where(eq(didsTable.id, id));
     return results[0];
+  }
+
+  async getDidByShortId(shortId: number): Promise<Did | undefined> {
+    const results = await db.select().from(didsTable).where(eq(didsTable.shortId, shortId));
+    return results[0];
+  }
+
+  async resolveDid(identifier: string): Promise<Did | undefined> {
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return this.getDid(identifier);
+    }
+    const numericId = parseInt(identifier, 10);
+    if (!isNaN(numericId) && numericId > 0) {
+      return this.getDidByShortId(numericId);
+    }
+    const byNumber = await db.select().from(didsTable).where(eq(didsTable.number, identifier));
+    return byNumber[0];
   }
 
   async createDid(did: InsertDid): Promise<Did> {

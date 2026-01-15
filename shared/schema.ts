@@ -239,6 +239,7 @@ export const loginHistory = pgTable("login_history", {
 
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   accountNumber: text("account_number").notNull().unique(),
   companyName: text("company_name").notNull(),
   categoryId: varchar("category_id").references(() => customerCategories.id),
@@ -1160,6 +1161,7 @@ export const didCountryAssignments = pgTable("did_country_assignments", {
 
 export const didProviders = pgTable("did_providers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
   apiEndpoint: text("api_endpoint"),
@@ -1182,6 +1184,7 @@ export const didProviderAssignments = pgTable("did_provider_assignments", {
 
 export const dids = pgTable("dids", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   number: text("number").notNull().unique(),
   countryId: varchar("country_id").references(() => didCountries.id),
   providerId: varchar("provider_id").references(() => didProviders.id),
