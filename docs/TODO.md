@@ -2,7 +2,7 @@
 
 ## Current Plan ID: PLAN-2026-01-15-MODULARIZE
 
-**Status**: Route modularization in progress. MOD-01 through MOD-07 complete. MOD-08 pending approval.
+**Status**: Route modularization in progress. MOD-01 through MOD-08 complete. routes.ts reduced from 8997 to 8912 lines.
 
 ---
 
@@ -1001,12 +1001,20 @@ All performance optimization stages completed:
     - Customer: GET/POST `/api/my/sip-test-runs`, POST `/api/my/sip-test-runs/:id/start`
     - Customer: GET `/api/my/sip-test-runs/:id`, GET `/api/my/sip-test-runs/:id/results`
 
-- [ ] **MOD-08**: Extract Billing READ-ONLY routes into domain module — **REVERTED (started without approval)**
+- [x] **MOD-08**: Extract Billing READ-ONLY routes into domain module — **COMPLETE**
   - Scope: Extract billing GET endpoints only from routes.ts to `server/routes/billing.routes.ts`
   - URL namespaces: GET `/api/invoices`, GET `/api/payments`, GET `/api/fx-rates`, GET `/api/billing-terms`
-  - Estimated: 11 GET endpoints only (no mutations)
-  - Acceptance: All endpoints preserved, npm run check PASS, Playwright PASS
-  - **STATUS**: Reverted 2026-01-14 — Started without governance approval; awaiting re-approval to proceed
+  - Endpoints moved (8 total):
+    - GET `/api/billing-terms` (list)
+    - GET `/api/billing-terms/:id` (by id)
+    - GET `/api/invoices` (list with cursor pagination)
+    - GET `/api/invoices/:id` (by id)
+    - GET `/api/payments` (list)
+    - GET `/api/payments/:id` (by id)
+    - GET `/api/fx-rates` (list)
+    - GET `/api/fx-rates/latest/:currency` (by currency)
+  - Acceptance: All endpoints preserved, npm run check PASS (0 errors), Playwright PASS (16/16)
+  - **STATUS**: ✅ Complete 2026-01-15 — Approved, extracted, tested
 
 ---
 

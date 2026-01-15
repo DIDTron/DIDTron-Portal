@@ -1,5 +1,32 @@
 # DIDTron - Decisions Log
 
+## 2026-01-15: MOD-08 Billing Read-Only Route Extraction
+
+**Decision**: Extracted 8 GET billing endpoints from routes.ts to `server/routes/billing.routes.ts`.
+
+**Reason**: Routes.ts modularization to reduce monolith size and improve maintainability. NO BEHAVIOR CHANGE.
+
+**Endpoints Moved**:
+- GET `/api/billing-terms` - List all billing terms
+- GET `/api/billing-terms/:id` - Get billing term by ID
+- GET `/api/invoices` - List invoices with cursor pagination
+- GET `/api/invoices/:id` - Get invoice by ID
+- GET `/api/payments` - List payments
+- GET `/api/payments/:id` - Get payment by ID
+- GET `/api/fx-rates` - List FX rates
+- GET `/api/fx-rates/latest/:currency` - Get latest FX rate for currency
+
+**Files Changed**:
+- `server/routes/billing.routes.ts` (NEW - 97 lines)
+- `server/routes/index.ts` (updated exports)
+- `server/routes.ts` (removed GET endpoints, kept mutations)
+
+**Impact**: routes.ts reduced from 8997 → 8912 lines (-85 lines)
+
+**Testing**: TypeScript check (0 errors), Playwright (16/16 pass), curl verification all endpoints
+
+---
+
 ## 2026-01-11: Adopted Repository Documentation Workflow
 
 **Decision**: Implemented structured documentation-driven development workflow mid-project.

@@ -13,6 +13,7 @@ import { registerSystemStatusRoutes } from "./routes/system-status.routes";
 import { registerLegacyAuthRoutes } from "./routes/auth.routes";
 import { registerJobsRoutes } from "./routes/jobs.routes";
 import { registerSipTesterRoutes } from "./routes/sip-tester.routes";
+import { registerBillingRoutes } from "./routes/billing.routes";
 import { z } from "zod";
 import { db } from "./db";
 import { e2eRuns, e2eResults } from "@shared/schema";
@@ -109,6 +110,9 @@ export async function registerRoutes(
 
   // ==================== SIP TESTER ROUTES ====================
   registerSipTesterRoutes(app);
+
+  // ==================== BILLING READ-ONLY ROUTES ====================
+  registerBillingRoutes(app);
 
   // Get logged-in user's customer profile with balance
   app.get("/api/my/profile", async (req, res) => {
@@ -3198,26 +3202,7 @@ export async function registerRoutes(
     }
   });
 
-  // ==================== BILLING TERMS ====================
-
-  app.get("/api/billing-terms", async (req, res) => {
-    try {
-      const terms = await storage.getBillingTerms();
-      res.json(terms);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch billing terms" });
-    }
-  });
-
-  app.get("/api/billing-terms/:id", async (req, res) => {
-    try {
-      const term = await storage.getBillingTerm(req.params.id);
-      if (!term) return res.status(404).json({ error: "Billing term not found" });
-      res.json(term);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch billing term" });
-    }
-  });
+  // ==================== BILLING TERMS (MUTATIONS ONLY - GET moved to billing.routes.ts) ====================
 
   const validateBillingTermAnchorConfig = (cycleType: string, anchorConfig: unknown): string | null => {
     if (!anchorConfig || typeof anchorConfig !== "object") {
@@ -3539,38 +3524,7 @@ export async function registerRoutes(
     }
   });
 
-  // ==================== INVOICES ====================
-  app.get("/api/invoices", async (req, res) => {
-    try {
-      const { customerId, cursor, limit = "50" } = req.query;
-      const parsedLimit = Math.min(parseInt(String(limit)) || 50, 100);
-      const invoices = await storage.getInvoices(customerId as string | undefined);
-      
-      // Apply cursor pagination
-      let startIndex = 0;
-      if (cursor) {
-        startIndex = invoices.findIndex(i => i.id === cursor) + 1;
-      }
-      const paged = invoices.slice(startIndex, startIndex + parsedLimit + 1);
-      const hasMore = paged.length > parsedLimit;
-      const data = hasMore ? paged.slice(0, -1) : paged;
-      const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : null;
-      
-      res.json({ data, nextCursor, hasMore });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch invoices" });
-    }
-  });
-
-  app.get("/api/invoices/:id", async (req, res) => {
-    try {
-      const invoice = await storage.getInvoice(req.params.id);
-      if (!invoice) return res.status(404).json({ error: "Invoice not found" });
-      res.json(invoice);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch invoice" });
-    }
-  });
+  // ==================== INVOICES (MUTATIONS ONLY - GET moved to billing.routes.ts) ====================
 
   app.post("/api/invoices", async (req, res) => {
     try {
@@ -3605,26 +3559,7 @@ export async function registerRoutes(
     }
   });
 
-  // ==================== PAYMENTS ====================
-  app.get("/api/payments", async (req, res) => {
-    try {
-      const customerId = req.query.customerId as string | undefined;
-      const payments = await storage.getPayments(customerId);
-      res.json(payments);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch payments" });
-    }
-  });
-
-  app.get("/api/payments/:id", async (req, res) => {
-    try {
-      const payment = await storage.getPayment(req.params.id);
-      if (!payment) return res.status(404).json({ error: "Payment not found" });
-      res.json(payment);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch payment" });
-    }
-  });
+  // ==================== PAYMENTS (MUTATIONS ONLY - GET moved to billing.routes.ts) ====================
 
   app.post("/api/payments", async (req, res) => {
     try {
@@ -6702,27 +6637,7 @@ export async function registerRoutes(
     }
   });
 
-  // ==================== FX RATES ====================
-
-  app.get("/api/fx-rates", async (req, res) => {
-    try {
-      const quoteCurrency = req.query.quoteCurrency as string | undefined;
-      const rates = await storage.getFxRates(quoteCurrency);
-      res.json(rates);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch FX rates" });
-    }
-  });
-
-  app.get("/api/fx-rates/latest/:currency", async (req, res) => {
-    try {
-      const rate = await storage.getLatestFxRate(req.params.currency);
-      if (!rate) return res.status(404).json({ error: "FX rate not found" });
-      res.json(rate);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch FX rate" });
-    }
-  });
+  // ==================== FX RATES (MUTATIONS ONLY - GET moved to billing.routes.ts) ====================
 
   app.post("/api/fx-rates", async (req, res) => {
     try {
