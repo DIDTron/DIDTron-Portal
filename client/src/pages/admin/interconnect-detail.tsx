@@ -120,15 +120,33 @@ const defaultCodecs: Codec[] = [
 
 export default function InterconnectDetailPage() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const [, wholesaleParams] = useRoute("/admin/wholesale/partners/:carrierId/interconnects/:interconnectId");
-  const [, softswitchParams] = useRoute("/admin/softswitch/carriers/:carrierId/interconnects/:interconnectId");
+  const [, navigate] = useLocation();
+  const [, wholesaleParams] = useRoute("/admin/wholesale/partners/:carrierId/interconnects/:interconnectId/:tab?");
+  const [, softswitchParams] = useRoute("/admin/softswitch/carriers/:carrierId/interconnects/:interconnectId/:tab?");
   const params = wholesaleParams || softswitchParams;
   const carrierId = params?.carrierId;
   const interconnectId = params?.interconnectId;
+  const tabFromUrl = params?.tab || "details";
   const isSoftswitchRoute = !!softswitchParams;
 
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  
+  // Sync tab state when URL changes (e.g., browser back/forward)
+  useEffect(() => {
+    if (tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  // Navigate when tab changes - update URL path like Digitalk
+  const handleTabChange = (newTab: string) => {
+    if (newTab === activeTab) return;
+    const basePath = isSoftswitchRoute 
+      ? `/admin/softswitch/carriers/${carrierId}/interconnects/${interconnectId}`
+      : `/admin/wholesale/partners/${carrierId}/interconnects/${interconnectId}`;
+    navigate(`${basePath}/${newTab}`);
+    setActiveTab(newTab);
+  };
   const [isEditing, setIsEditing] = useState(false);
   
   const [showAddServiceDialog, setShowAddServiceDialog] = useState(false);
@@ -428,9 +446,7 @@ export default function InterconnectDetailPage() {
     supplierBuyRates: "",
   });
 
-  useEffect(() => {
-    setActiveTab("details");
-  }, [interconnectId]);
+  // REMOVED: Don't reset tab on interconnectId change - let URL be source of truth
 
   useEffect(() => {
     if (interconnect) {
@@ -448,10 +464,19 @@ export default function InterconnectDetailPage() {
         supplierBuyRates: interconnect.supplierBuyRates || "",
       });
       
-      const firstTab = getTabsForDirection(interconnect.direction || "both")[0]?.id || "details";
-      setActiveTab(firstTab);
+      // Only set tab if URL tab is not valid for current direction
+      const validTabs = getTabsForDirection(interconnect.direction || "both");
+      const isValidTab = validTabs.some(t => t.id === tabFromUrl);
+      if (!isValidTab) {
+        const firstTab = validTabs[0]?.id || "details";
+        // Navigate to valid tab instead of just setting state
+        const basePath = isSoftswitchRoute 
+          ? `/admin/softswitch/carriers/${carrierId}/interconnects/${interconnectId}`
+          : `/admin/wholesale/partners/${carrierId}/interconnects/${interconnectId}`;
+        navigate(`${basePath}/${firstTab}`);
+      }
     }
-  }, [interconnect]);
+  }, [interconnect, tabFromUrl, isSoftswitchRoute, carrierId, interconnectId, navigate]);
 
   // Sync IP addresses from backend
   useEffect(() => {
@@ -952,7 +977,7 @@ export default function InterconnectDetailPage() {
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={() => setLocation(isSoftswitchRoute ? `/admin/softswitch/carriers/${carrierId}` : `/admin/wholesale/partners/${carrierId}`)} 
+            onClick={() => navigate(isSoftswitchRoute ? `/admin/softswitch/carriers/${carrierId}` : `/admin/wholesale/partners/${carrierId}`)} 
             data-testid="button-back"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -961,14 +986,14 @@ export default function InterconnectDetailPage() {
             <div className="text-sm text-muted-foreground flex items-center gap-2">
               <span 
                 className="cursor-pointer hover:underline text-primary"
-                onClick={() => setLocation("/admin/softswitch/carriers")}
+                onClick={() => navigate("/admin/softswitch/carriers")}
               >
                 Carrier Management
               </span>
               <span>/</span>
               <span 
                 className="cursor-pointer hover:underline text-primary"
-                onClick={() => setLocation(isSoftswitchRoute ? `/admin/softswitch/carriers/${carrierId}` : `/admin/wholesale/partners/${carrierId}`)}
+                onClick={() => navigate(isSoftswitchRoute ? `/admin/softswitch/carriers/${carrierId}` : `/admin/wholesale/partners/${carrierId}`)}
               >
                 {carrier?.name || "Carrier"}
               </span>
@@ -983,7 +1008,7 @@ export default function InterconnectDetailPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col overflow-hidden">
         <div className="border-b px-4 overflow-x-auto">
           <TabsList className="h-12 w-max">
             {tabs.map((tab) => (

@@ -277,7 +277,7 @@ export default function AdminLayout() {
                 <Route path="/admin/codecs" component={CodecsPage} />
                 <Route path="/admin/channel-plans" component={ChannelPlansPage} />
                 <Route path="/admin/wholesale/partners" component={PartnersPage} />
-                <Route path="/admin/wholesale/partners/:partnerId/interconnects/:interconnectId" component={InterconnectDetailPage} />
+                <Route path="/admin/wholesale/partners/:carrierId/interconnects/:interconnectId/:tab?" component={InterconnectDetailPage} />
                 <Route path="/admin/wholesale/partners/:id" component={CarrierDetailPage} />
                 <Route path="/admin/rate-cards/customer" component={CustomerRatesPage} />
                 <Route path="/admin/rate-cards/carrier" component={CarrierRatesPage} />
@@ -326,7 +326,7 @@ export default function AdminLayout() {
                 <Route path="/admin/ai-voice/settings" component={AiVoiceSettingsPage} />
                 <Route path="/admin/ai-voice/assignments" component={AiVoiceAssignmentsPage} />
                 <Route path="/admin/softswitch/carriers" component={SoftswitchCarriersPage} />
-                <Route path="/admin/softswitch/carriers/:id/interconnects/:interconnectId" component={InterconnectDetailPage} />
+                <Route path="/admin/softswitch/carriers/:id/interconnects/:interconnectId/:tab?" component={InterconnectDetailPage} />
                 <Route path="/admin/softswitch/carriers/:id" component={CarrierDetailPage} />
                 <Route path="/admin/softswitch/rating/customer-plans" component={CustomerRatingPlansPage} />
                 <Route path="/admin/softswitch/rating/customer-plans/:id" component={RatingPlanDetailPage} />
