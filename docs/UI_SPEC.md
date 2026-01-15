@@ -642,7 +642,7 @@ Generated from repo reality (2026-01-15). This is the authoritative reference fo
 |-------------|-------|-----------|----------------|----------------|---------------------|
 | `system-status.routes.ts` | 690 | 17 | list, detail, command | Health checks, performance metrics | Verified: auth guard present |
 | `auth.routes.ts` | 183 | 4 | command | OIDC login/logout | Public by design |
-| `jobs.routes.ts` | 187 | 13 | list, command | Job stats, retry operations | Unknown (needs verification) |
+| `jobs.routes.ts` | 187 | 13 | list, command | Job stats, retry operations | UNPROTECTED (BUG — must fix) |
 | `files.routes.ts` | 180 | 13 | CRUD, list | File template uploads | Verified: auth guard present |
 | `az-destinations.routes.ts` | 443 | 11 | CRUD, bulk, list | Bulk import, CSV export | Verified: auth guard present |
 | `dids.routes.ts` | 181 | 13 | CRUD, list | DID countries, providers, inventory | Verified: auth guard present |

@@ -1074,3 +1074,26 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
    - `sip-tester.routes.ts`: Verified: auth guard present (uses `req.session.userId`)
 
 **Evidence**: grep for session/userId/isAuthenticated patterns in each route file.
+
+
+---
+
+## 2026-01-15: jobs.routes.ts Auth Verification — SECURITY BUG FOUND
+
+**Decision**: Verified middleware coverage for jobs.routes.ts and discovered a security bug.
+
+**DOC TARGET**: docs/UI_SPEC.md → Module Map (Atlas) → PART 2
+
+**Finding**: jobs.routes.ts endpoints are UNPROTECTED (no auth middleware)
+
+**Evidence**:
+- `server/routes/jobs.routes.ts` (lines 1-188): No `req.session`, `req.user`, or auth middleware
+- `server/routes.ts` line 20: `isAuthenticated` imported but NOT applied to jobs routes
+- `server/routes.ts` line 108: `registerJobsRoutes(app)` called without middleware
+- No global `/api/admin/*` middleware exists
+
+**Guard code checked**:
+- `server/replit_integrations/auth/replitAuth.ts` lines 133-160: `isAuthenticated` middleware exists
+- Only used in `server/replit_integrations/auth/routes.ts` line 8 for `/api/auth/user`
+
+**Resolution required**: Add auth guard to jobs.routes.ts endpoints (separate task, not in MOD scope).
