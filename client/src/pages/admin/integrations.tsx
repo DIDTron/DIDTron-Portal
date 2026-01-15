@@ -35,8 +35,23 @@ import {
   Coins,
   Copy,
   Key,
+  CheckCircle2,
+  Circle,
+  Wifi,
+  WifiOff,
+  ArrowRight,
+  ShieldCheck,
 } from "lucide-react";
 import type { Integration } from "@shared/schema";
+import { DialogDescription } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface ConnexCSStatus {
+  connected: boolean;
+  mockMode: boolean;
+  message: string;
+  tokenDaysRemaining?: number;
+}
 
 const iconMap: Record<string, React.ReactNode> = {
   phone: <Phone className="w-5 h-5" />,
@@ -115,11 +130,19 @@ export default function IntegrationsPage() {
   const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
   const [credentialValues, setCredentialValues] = useState<Record<string, string>>({});
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiKeyCopied, setApiKeyCopied] = useState(false);
 
   const { data: integrations, isLoading } = useQuery<Integration[]>({
     queryKey: ["/api/integrations"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
+  });
+
+  // Fetch ConnexCS status to show mock mode indicator
+  const { data: connexcsStatus } = useQuery<ConnexCSStatus>({
+    queryKey: ["/api/connexcs/status"],
+    staleTime: 30000,
+    enabled: editingIntegration?.provider === "connexcs",
   });
 
   const updateMutation = useMutation({
@@ -215,9 +238,10 @@ export default function IntegrationsPage() {
     
     try {
       await navigator.clipboard.writeText(apiKey);
+      setApiKeyCopied(true);
       toast({
-        title: "API Key copied to clipboard",
-        description: "You can now paste it in your applications",
+        title: "API Key copied!",
+        description: "Store it securely - you'll need it to connect to ConnexCS.",
       });
     } catch {
       toast({
@@ -324,6 +348,7 @@ export default function IntegrationsPage() {
                         setEditingIntegration(integration);
                         setCredentialValues({});
                         setApiKey(null);
+                        setApiKeyCopied(false);
                       }}
                       data-testid={`button-configure-${integration.provider}`}
                     >
@@ -351,83 +376,205 @@ export default function IntegrationsPage() {
         </div>
       ))}
 
-      <Dialog open={!!editingIntegration} onOpenChange={(open) => { if (!open) { setEditingIntegration(null); setApiKey(null); } }}>
-        <DialogContent className="max-w-md">
+      <Dialog open={!!editingIntegration} onOpenChange={(open) => { if (!open) { setEditingIntegration(null); setApiKey(null); setApiKeyCopied(false); } }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Configure {editingIntegration?.displayName}</DialogTitle>
+            <DialogDescription>
+              {editingIntegration?.provider === "connexcs" 
+                ? "Enter your ConnexCS login credentials to connect to the live API."
+                : `Configure your ${editingIntegration?.displayName} integration.`}
+            </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            {editingIntegration && credentialFields[editingIntegration.provider]?.map((field) => (
-              <div key={field.key} className="space-y-2">
-                <Label htmlFor={field.key}>{field.label}</Label>
-                <Input
-                  id={field.key}
-                  type={field.type}
-                  placeholder={editingIntegration.credentials ? "********" : `Enter ${field.label.toLowerCase()}`}
-                  value={credentialValues[field.key] || ""}
-                  onChange={(e) => setCredentialValues(prev => ({ ...prev, [field.key]: e.target.value }))}
-                  data-testid={`input-${editingIntegration.provider}-${field.key}`}
-                />
-              </div>
-            ))}
-            
-            {editingIntegration?.credentials ? (
-              <p className="text-sm text-muted-foreground">
-                Credentials are already configured. Enter new values to update them.
-              </p>
-            ) : null}
+          {/* ConnexCS-specific dialog with step indicators */}
+          {editingIntegration?.provider === "connexcs" ? (
+            <div className="space-y-5 py-2">
+              {/* Connection Status Banner */}
+              {connexcsStatus && (
+                <Alert className={connexcsStatus.mockMode ? "border-amber-500 bg-amber-500/10" : "border-green-500 bg-green-500/10"}>
+                  <div className="flex items-center gap-2">
+                    {connexcsStatus.mockMode ? (
+                      <WifiOff className="w-4 h-4 text-amber-600" />
+                    ) : (
+                      <Wifi className="w-4 h-4 text-green-600" />
+                    )}
+                    <AlertDescription className={connexcsStatus.mockMode ? "text-amber-700 dark:text-amber-400" : "text-green-700 dark:text-green-400"}>
+                      {connexcsStatus.mockMode ? (
+                        <span className="font-medium">Mock Mode - Enter credentials to connect to live API</span>
+                      ) : (
+                        <span className="font-medium">Connected to Live ConnexCS API ({connexcsStatus.tokenDaysRemaining} days remaining)</span>
+                      )}
+                    </AlertDescription>
+                  </div>
+                </Alert>
+              )}
 
-            {editingIntegration?.provider === "connexcs" && (
-              <div className="space-y-3 pt-4 border-t">
+              {/* Step 1: Credentials */}
+              <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Key className="w-4 h-4 text-muted-foreground" />
-                  <Label className="font-medium">API Key (30-day Refresh Token)</Label>
+                  {apiKey ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  )}
+                  <span className={`font-medium ${apiKey ? "text-green-600 dark:text-green-400" : ""}`}>
+                    Enter ConnexCS Login Credentials
+                  </span>
+                </div>
+                
+                <div className="ml-7 space-y-3">
+                  {credentialFields.connexcs.map((field) => (
+                    <div key={field.key} className="space-y-1.5">
+                      <Label htmlFor={field.key} className="text-sm">{field.label}</Label>
+                      <Input
+                        id={field.key}
+                        type={field.type}
+                        placeholder={editingIntegration.credentials ? "••••••••" : `Enter your ${field.label.toLowerCase()}`}
+                        value={credentialValues[field.key] || ""}
+                        onChange={(e) => setCredentialValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                        disabled={!!apiKey}
+                        data-testid={`input-connexcs-${field.key}`}
+                      />
+                    </div>
+                  ))}
+                  
+                  {!apiKey && !!editingIntegration?.credentials && (
+                    <p className="text-xs text-muted-foreground">
+                      Credentials already saved. Enter new values to update and regenerate API key.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Step 2: API Key Generation */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {apiKey ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center text-xs text-muted-foreground">2</div>
+                  )}
+                  <span className={`font-medium ${apiKey ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                    API Key Auto-Generated
+                  </span>
                 </div>
                 
                 {apiKey ? (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        readOnly
-                        value={apiKey}
-                        className="font-mono text-xs"
-                        data-testid="input-connexcs-api-key"
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handleCopyApiKey}
-                        data-testid="button-copy-api-key"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
+                  <div className="ml-7 space-y-3">
+                    {/* Prominent API Key Display Box */}
+                    <div className="p-4 rounded-lg border-2 border-green-500 bg-green-500/5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Key className="w-4 h-4 text-green-600" />
+                        <span className="text-sm font-semibold text-green-700 dark:text-green-400">Your API Key (30-day Token)</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          readOnly
+                          value={apiKey}
+                          className="font-mono text-sm bg-background"
+                          data-testid="input-connexcs-api-key"
+                        />
+                        <Button
+                          variant={apiKeyCopied ? "default" : "outline"}
+                          className={apiKeyCopied ? "bg-green-600" : ""}
+                          onClick={handleCopyApiKey}
+                          data-testid="button-copy-api-key"
+                        >
+                          {apiKeyCopied ? (
+                            <>
+                              <Check className="w-4 h-4 mr-1" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 mr-1" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                      Copy this API key now. It will not be shown again after closing this dialog.
-                    </p>
+                    
+                    <Alert className="border-amber-500 bg-amber-500/10">
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                      <AlertDescription className="text-amber-700 dark:text-amber-400 text-sm">
+                        <strong>Important:</strong> Copy this API key now and store it securely. It will not be displayed again after you close this dialog.
+                      </AlertDescription>
+                    </Alert>
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground">
-                    API Key will be auto-generated when you save your username and password.
-                  </p>
+                  <div className="ml-7">
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <ArrowRight className="w-3 h-3" />
+                      Click "Save & Generate" to create your API key
+                    </p>
+                  </div>
                 )}
               </div>
-            )}
-          </div>
+
+              {/* Step 3: Connection Verified */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {apiKey && !connexcsStatus?.mockMode ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center text-xs text-muted-foreground">3</div>
+                  )}
+                  <span className={`font-medium ${apiKey && !connexcsStatus?.mockMode ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                    Live API Connected
+                  </span>
+                </div>
+                
+                {apiKey && !connexcsStatus?.mockMode && (
+                  <div className="ml-7">
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span className="text-sm font-medium">You're connected to live ConnexCS - Not in mock mode!</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Standard dialog for other integrations */
+            <div className="space-y-4 py-4">
+              {editingIntegration && credentialFields[editingIntegration.provider]?.map((field) => (
+                <div key={field.key} className="space-y-2">
+                  <Label htmlFor={field.key}>{field.label}</Label>
+                  <Input
+                    id={field.key}
+                    type={field.type}
+                    placeholder={editingIntegration.credentials ? "********" : `Enter ${field.label.toLowerCase()}`}
+                    value={credentialValues[field.key] || ""}
+                    onChange={(e) => setCredentialValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                    data-testid={`input-${editingIntegration.provider}-${field.key}`}
+                  />
+                </div>
+              ))}
+              
+              {!!editingIntegration?.credentials && (
+                <p className="text-sm text-muted-foreground">
+                  Credentials are already configured. Enter new values to update them.
+                </p>
+              )}
+            </div>
+          )}
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingIntegration(null)}>
-              Cancel
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => { setEditingIntegration(null); setApiKey(null); setApiKeyCopied(false); }}>
+              {apiKey ? "Close" : "Cancel"}
             </Button>
-            <Button 
-              onClick={handleSaveCredentials}
-              disabled={updateMutation.isPending || Object.keys(credentialValues).length === 0}
-              data-testid="button-save-credentials"
-            >
-              {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Save Credentials
-            </Button>
+            {!apiKey && (
+              <Button 
+                onClick={handleSaveCredentials}
+                disabled={updateMutation.isPending || Object.keys(credentialValues).length === 0}
+                data-testid="button-save-credentials"
+              >
+                {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {editingIntegration?.provider === "connexcs" ? "Save & Generate API Key" : "Save Credentials"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
