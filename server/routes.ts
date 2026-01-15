@@ -12,6 +12,7 @@ import { performanceMonitor } from "./services/performance-monitor";
 import { registerSystemStatusRoutes } from "./routes/system-status.routes";
 import { registerLegacyAuthRoutes } from "./routes/auth.routes";
 import { registerJobsRoutes } from "./routes/jobs.routes";
+import { registerSipTesterRoutes } from "./routes/sip-tester.routes";
 import { z } from "zod";
 import { db } from "./db";
 import { e2eRuns, e2eResults } from "@shared/schema";
@@ -105,6 +106,9 @@ export async function registerRoutes(
 
   // ==================== JOB QUEUE ADMIN ROUTES ====================
   registerJobsRoutes(app);
+
+  // ==================== SIP TESTER ROUTES ====================
+  registerSipTesterRoutes(app);
 
   // Get logged-in user's customer profile with balance
   app.get("/api/my/profile", async (req, res) => {
