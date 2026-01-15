@@ -244,7 +244,7 @@ export function PrimarySidebar() {
         </Tooltip>
         {!isCollapsed && (
           <span 
-            className="font-semibold text-sm text-primary truncate cursor-pointer hover:underline"
+            className="font-semibold text-base text-primary truncate cursor-pointer px-2 py-1 rounded-md hover-elevate"
             onClick={() => {
               setActiveSection("dashboard");
               setActiveSubItem(null);
