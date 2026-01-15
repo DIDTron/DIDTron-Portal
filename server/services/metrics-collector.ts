@@ -440,18 +440,57 @@ class MetricsCollectorService {
   }
 
   private async checkAyrshare(): Promise<{ status: "healthy" | "degraded" | "down"; latency: number; errorRate: number; success: boolean; error?: string }> {
-    // Ayrshare doesn't have a simple health check, mark as healthy if configured
-    return { status: "healthy", latency: 0, errorRate: 0, success: true };
+    const apiKey = process.env.AYRSHARE_API_KEY;
+    if (!apiKey) {
+      return { status: "degraded", latency: 0, errorRate: 0, success: false, error: "API key not configured" };
+    }
+    try {
+      const start = Date.now();
+      const response = await fetch("https://api.ayrshare.com/api/user", {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${apiKey}` },
+      });
+      const latency = Date.now() - start;
+      return { status: response.ok ? "healthy" : "degraded", latency, errorRate: response.ok ? 0 : 50, success: response.ok };
+    } catch (err) {
+      return { status: "down", latency: 0, errorRate: 99.99, success: false, error: (err as Error).message };
+    }
   }
 
   private async checkNowPayments(): Promise<{ status: "healthy" | "degraded" | "down"; latency: number; errorRate: number; success: boolean; error?: string }> {
-    // NowPayments doesn't have a simple health check, mark as healthy if configured
-    return { status: "healthy", latency: 0, errorRate: 0, success: true };
+    const apiKey = process.env.NOWPAYMENTS_API_KEY;
+    if (!apiKey) {
+      return { status: "degraded", latency: 0, errorRate: 0, success: false, error: "API key not configured" };
+    }
+    try {
+      const start = Date.now();
+      const response = await fetch("https://api.nowpayments.io/v1/status", {
+        method: "GET",
+        headers: { "x-api-key": apiKey },
+      });
+      const latency = Date.now() - start;
+      return { status: response.ok ? "healthy" : "degraded", latency, errorRate: response.ok ? 0 : 50, success: response.ok };
+    } catch (err) {
+      return { status: "down", latency: 0, errorRate: 99.99, success: false, error: (err as Error).message };
+    }
   }
 
   private async checkOpenAI(): Promise<{ status: "healthy" | "degraded" | "down"; latency: number; errorRate: number; success: boolean; error?: string }> {
-    // OpenAI via Replit integration is always healthy if configured
-    return { status: "healthy", latency: 0, errorRate: 0, success: true };
+    const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+    if (!apiKey) {
+      return { status: "degraded", latency: 0, errorRate: 0, success: false, error: "API key not configured" };
+    }
+    try {
+      const start = Date.now();
+      const response = await fetch("https://api.openai.com/v1/models", {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${apiKey}` },
+      });
+      const latency = Date.now() - start;
+      return { status: response.ok ? "healthy" : "degraded", latency, errorRate: response.ok ? 0 : 50, success: response.ok };
+    } catch (err) {
+      return { status: "down", latency: 0, errorRate: 99.99, success: false, error: (err as Error).message };
+    }
   }
 
   private async collectPortalMetrics(collectedAt: Date): Promise<void> {
