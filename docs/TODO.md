@@ -1,35 +1,8 @@
 # DIDTron - TODO List
 
-## Current Plan ID: PLAN-2026-01-15-ADMINJOBS-AUTHFIX ✅ COMPLETE
+## Current Plan ID: PLAN-2026-01-15-MODULARIZE
 
-**Status**: Security fix complete.
-
----
-
-### Completed Tasks
-
-- [x] **SEC-01**: Protect /api/admin/jobs/* endpoints (CRITICAL)
-  - Acceptance Criteria:
-    - [x] Unauthenticated requests to /api/admin/jobs/* return 401 JSON
-    - [x] Authenticated but non-super_admin return 403 JSON
-    - [x] Authenticated super_admin returns 200 and same JSON keys as before
-    - [x] npm run check PASS
-    - [x] Playwright + Axe PASS (login.spec.ts + system-status.spec.ts, 0 skipped)
-    - [x] New Playwright test proving security: tests/admin-jobs-auth.spec.ts
-  - Files Changed:
-    - `server/routes/jobs.routes.ts` (added requireSuperAdmin middleware)
-    - `tests/admin-jobs-auth.spec.ts` (new test file)
-  - Test Output: 16 passed (login.spec.ts: 5, system-status.spec.ts: 9, admin-jobs-auth.spec.ts: 2)
-  - Runtime Proof:
-    - unauth GET /api/admin/jobs/stats => 401 {"error":"Not authenticated"}
-    - super_admin GET /api/admin/jobs/stats => 200 keys: [pending, processing, completed, failed, cancelled, successRate]
-
----
-
-## Previous Plan ID: PLAN-2026-01-14-TSCHECK-FIX ✅ COMPLETE
-
-**Status**: All TypeScript errors resolved (0 errors). TS-01, TS-02, TS-03 complete.
-**Next**: Continue PLAN-2026-01-15-MODULARIZE (MOD-08 pending)
+**Status**: Route modularization in progress. MOD-01 through MOD-07 complete. MOD-08 pending approval.
 
 ---
 
@@ -37,6 +10,8 @@
 
 | Plan ID | Status | Summary |
 |---------|--------|---------|
+| PLAN-2026-01-15-ADMINJOBS-AUTHFIX | ✅ Complete | SEC-01: Protected /api/admin/jobs/* with super_admin guard + Playwright proof |
+| PLAN-2026-01-14-TSCHECK-FIX | ✅ Complete | All TypeScript errors resolved (0 errors). TS-01, TS-02, TS-03 complete |
 | PLAN-2026-01-11-01 | ✅ Archived | Phase 1-3 Infrastructure |
 | PLAN-2026-01-11-03 | ✅ Archived | Infrastructure Hardening |
 | PLAN-2026-01-12-DBMIGRATION | ✅ Archived | PostgreSQL Migration (Stage 1-6 complete) |
