@@ -634,6 +634,8 @@ Generated from repo reality (2026-01-15). This is the authoritative reference fo
 
 ### PART 2: Backend Module Map (Code-Level)
 
+> **Atlas Freshness Note**: Last updated 2026-01-15 00:41 UTC | Last MOD included: MOD-07
+
 #### Extracted Route Modules (server/routes/*.ts)
 
 | Module File | Lines | Endpoints | Endpoint Types | Heavy Handlers | Middleware Coverage |
@@ -643,9 +645,11 @@ Generated from repo reality (2026-01-15). This is the authoritative reference fo
 | `jobs.routes.ts` | 187 | 13 | list, command | Job stats, retry operations | Auth required |
 | `files.routes.ts` | 180 | 13 | CRUD, list | File template uploads | Auth required |
 | `az-destinations.routes.ts` | 443 | 11 | CRUD, bulk, list | Bulk import, CSV export | Auth required, has pagination |
-| **index.ts** | 20 | - | Aggregator | - | - |
+| `dids.routes.ts` | 181 | 13 | CRUD, list | DID countries, providers, inventory | Auth required |
+| `sip-tester.routes.ts` | 822 | 39 | CRUD, command, list | Test configs, runs, suppliers, numbers | Auth required |
+| **index.ts** | 26 | - | Aggregator | - | - |
 
-#### Remaining in routes.ts (~9,989 lines)
+#### Remaining in routes.ts (~8,997 lines)
 
 | Section (Line Range) | Endpoints Est. | Type | Notes |
 |---------------------|----------------|------|-------|
@@ -655,7 +659,6 @@ Generated from repo reality (2026-01-15). This is the authoritative reference fo
 | **Customer AI Voice** (792-1313) | 25+ | CRUD, list | Complex, AI integration |
 | **CRM Integrations** (1314-1619) | 15+ | CRUD, sync | Integration-heavy |
 | **Customer PBX** (1620-2085) | 20+ | CRUD | Extensions, IVRs, Ring Groups, Queues |
-| **Customer SIP Tests** (2086-2366) | 10 | CRUD, command | Multi-tenant |
 | **Customer CDR Exports** (2322-2454) | 3 | list, export | BigData potential |
 | **Customer Class 4** (2367-2574) | 8 | CRUD | BigData potential |
 | **Customer Webhooks/API Keys** (2575-2789) | 8 | CRUD | Tenant-scoped |

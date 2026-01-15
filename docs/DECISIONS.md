@@ -816,6 +816,96 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 
 ---
 
+## 2026-01-15: MOD-06 DIDs Routes Modularization
+
+**Decision**: Extracted 13 DID-related endpoints from `routes.ts` to `server/routes/dids.routes.ts`.
+
+**Reason**: 
+- DIDs is an isolated, self-contained domain (countries, providers, inventory)
+- Low-risk extraction with simple CRUD operations
+- No external integrations, no heavy queries
+- Follows established MOD pattern
+
+**Changes Made**:
+1. Created `server/routes/dids.routes.ts` with `registerDidsRoutes(app)` function
+2. Updated `server/routes/index.ts` aggregator to include dids module
+3. Removed ~175 lines of DIDs code from routes.ts
+
+**Endpoints Extracted** (same URLs, no changes):
+- GET `/api/did-countries`
+- GET `/api/did-providers`
+- GET `/api/dids`
+- GET `/api/dids/:id`
+- POST `/api/dids`
+- PATCH `/api/dids/:id`
+- DELETE `/api/dids/:id`
+- GET `/api/dids/:id/settings`
+- PATCH `/api/dids/:id/settings`
+- GET `/api/dids/:id/routing`
+- PUT `/api/dids/:id/routing`
+- GET `/api/dids/search`
+- POST `/api/dids/bulk-release`
+
+**Confirmation: NO BEHAVIOR CHANGE**
+- All endpoints return identical status codes and JSON keys
+- TypeScript check: PASS
+- Playwright + Axe tests: 14 passed, 0 skipped
+
+**Files Changed**:
+- `server/routes/dids.routes.ts` (new, 181 lines)
+- `server/routes/index.ts` (updated)
+- `server/routes.ts` (removed old code)
+
+
+---
+
+## 2026-01-15: MOD-07 SIP Tester Routes Modularization
+
+**Decision**: Extracted 39 SIP tester endpoints from `routes.ts` to `server/routes/sip-tester.routes.ts`.
+
+**Reason**: 
+- SIP Tester is a large contiguous block (~821 lines)
+- Self-contained domain with test configs, runs, suppliers, numbers
+- No external integration calls, uses storage layer
+- Follows established MOD pattern
+
+**Changes Made**:
+1. Created `server/routes/sip-tester.routes.ts` with `registerSipTesterRoutes(app)` function
+2. Updated `server/routes/index.ts` aggregator to include sip-tester module
+3. Removed ~821 lines of SIP tester code from routes.ts
+4. Bug fix: Added missing import and call for `registerSipTesterRoutes(app)` in routes.ts
+
+**Endpoints Extracted** (39 total, same URLs, no changes):
+
+*Super Admin endpoints (22)*:
+- GET/POST/PATCH/DELETE `/api/sip-tests/configs/*`
+- GET/POST/DELETE `/api/sip-test-suppliers/*`
+- GET/POST/PATCH/DELETE `/api/sip-test-numbers/*`
+- GET `/api/sip-test-runs`, GET `/api/sip-test-runs/stats`
+- GET/PUT `/api/sip-test-settings`
+- GET/POST/DELETE `/api/sip-test-audio-files/*`
+- GET/POST/DELETE `/api/sip-test-profiles/*`
+
+*Customer Portal endpoints (17)*:
+- GET/POST/PATCH/DELETE `/api/my/sip-tests/*`
+- GET/PUT `/api/my/sip-test-settings`
+- POST `/api/my/sip-tests/validate`, `/api/my/sip-tests/run`
+- GET `/api/my/sip-tests/quick-test/cli-numbers`, `/api/my/sip-tests/results`
+
+**Confirmation: NO BEHAVIOR CHANGE**
+- Authenticated runtime proof via Playwright APIRequestContext
+- All endpoints return 200 application/json with correct keys
+- TypeScript check: PASS
+- Playwright + Axe tests: 14 passed, 0 skipped
+
+**Files Changed**:
+- `server/routes/sip-tester.routes.ts` (new, 822 lines)
+- `server/routes/index.ts` (updated, 26 lines)
+- `server/routes.ts` (removed old code, now ~8,997 lines)
+
+
+---
+
 ## 2026-01-15: Module Atlas Created from Repo Reality
 
 **Decision**: Generated a comprehensive "Module Atlas" documenting all modules, routes, endpoints, and database tables from actual repo files.
