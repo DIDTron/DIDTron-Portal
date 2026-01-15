@@ -225,7 +225,7 @@ export function PrimarySidebar() {
     )}>
       <div className={cn(
         "flex h-10 items-center border-b shrink-0",
-        isCollapsed ? "justify-center px-1" : "gap-2 px-3"
+        isCollapsed ? "justify-center px-1" : "gap-3 px-4"
       )}>
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
