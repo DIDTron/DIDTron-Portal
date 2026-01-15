@@ -122,7 +122,7 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-12 items-center gap-4 border-b bg-background px-4">
+    <header className="sticky top-0 z-50 flex h-12 items-center gap-4 border-b bg-background px-2">
       <div className="flex items-center gap-3 shrink-0">
         <Button
           variant="ghost"
