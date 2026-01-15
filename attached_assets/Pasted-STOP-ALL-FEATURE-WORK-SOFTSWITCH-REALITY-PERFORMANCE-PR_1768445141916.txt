@@ -1,0 +1,105 @@
+STOP ALL FEATURE WORK. SOFTSWITCH REALITY + PERFORMANCE PROOF PACK REQUIRED (NO CODE CHANGES).
+
+READ CHECK ✅ must include:
+docs/AGENT_BRIEF.md, docs/TODO.md, docs/UI_SPEC.md, docs/DECISIONS.md, docs/PERFORMANCE.md
+
+Create a docs-only plan section in docs/TODO.md:
+PLAN-YYYY-MM-DD-SOFTSWITCH-AUDIT (DOCS ONLY, NO CODE)
+
+DELIVER ONE “SOFTSWITCH REALITY + PERFORMANCE PROOF PACK” IN CHAT (NOT SUMMARY).  
+This pack must be based on repo reality + runtime measurements. No guesses.
+
+────────────────────────────────────────
+PART 0 — TRUTH VERIFICATION (MANDATORY)
+────────────────────────────────────────
+A) Confirm the Softswitch UI tree (what exists in the sidebar TODAY):
+- Paste the exact Softswitch secondary sidebar items and routes (from code: primary/secondary sidebar config files).
+- For each item: route path (wouter), TSX page file path.
+
+B) Confirm Softswitch backend boundaries TODAY:
+- List the Softswitch-related API namespaces used by those pages (actual query keys in code).
+- Confirm whether any Softswitch page triggers ConnexCS calls during page render.
+  - Proof: grep for connexcs adapter usage in request handlers + show line ranges.
+  - If ANY request handler calls ConnexCS directly, list endpoint + file path + line range.
+
+STOP if you cannot provide proofs.
+
+────────────────────────────────────────
+PART 1 — PAGE/TAB LOAD BEHAVIOR (FRONTEND PROOF)
+────────────────────────────────────────
+For THESE three pages (biggest known):
+1) client/src/pages/admin/interconnect-detail.tsx
+2) client/src/pages/admin/carrier-detail.tsx
+3) client/src/pages/admin/softswitch-rating.tsx
+
+Provide a table PER PAGE:
+- Tabs list (names)
+- For each tab: list every useQuery queryKey endpoint used
+- For each query: show whether it is gated by enabled: activeTab === 'X'
+- Show whether the page currently fetches ALL tabs on mount (YES/NO) with proof:
+  - paste the relevant useQuery blocks (small snippets) and/or grep evidence
+- Show whether tab hover prefetch exists (YES/NO) with proof (line ranges)
+
+No opinions. Proof only.
+
+────────────────────────────────────────
+PART 2 — BACKEND HOTSPOTS (RUNTIME MEASUREMENTS)
+────────────────────────────────────────
+Use existing monitoring/timing middleware + System Status tables.
+Deliver:
+
+A) Top 15 slowest endpoints in last 60 minutes (p95 + p99) with:
+- endpoint path
+- p50/p95/p99
+- avg response size (bytes)
+- request count
+- error rate
+- where handler lives (file path + line range)
+
+B) Top 15 slowest DB queries in last 60 minutes (if tracked) with:
+- query signature / table(s)
+- p95 duration
+- rows returned
+- whether index exists
+- suggested index (ONLY if missing, but do not implement)
+
+C) Any endpoint returning nested payloads (red flags):
+- identify endpoints where response includes nested arrays/objects
+- prove by showing a sample JSON shape OR code response object assembly
+
+────────────────────────────────────────
+PART 3 — DATA SHAPE & SCALE CHECKS (BIG DATA RISK)
+────────────────────────────────────────
+For each of these known heavy groups, provide the current guardrails:
+- /api/softswitch/rating/* (supplier/customer rates)
+- /api/rate-cards/:id/rates
+- /api/cdrs and any softswitch CDR/rerating endpoints
+- /api/carriers and /api/carriers/:id
+
+For each:
+- Is cursor pagination present? (YES/NO)
+- Is max limit enforced server-side? (YES/NO)
+- Does list endpoint return minimal fields only? (YES/NO)
+- Does any endpoint return “all rows”? (YES/NO)
+Provide proof: handler snippet + line range.
+
+────────────────────────────────────────
+PART 4 — INTEGRITY CHECK (NO FALSE CLAIMS)
+────────────────────────────────────────
+A) Confirm extracted route modules list in server/routes/ (actual file list).
+B) Confirm routes.ts remaining line count using wc -l output.
+C) Confirm Module Atlas exists in docs/UI_SPEC.md and is updated to include last accepted MOD.
+Paste the Atlas PART 2 Extracted Route Modules table verbatim.
+
+────────────────────────────────────────
+PART 5 — PM RECOMMENDATION (BASED ON EVIDENCE ONLY)
+────────────────────────────────────────
+After Parts 0–4, propose ONLY:
+- Top 3 fixes to make Softswitch fast (ordered by impact).
+Each fix must include:
+- exact page(s) + endpoint(s) it touches
+- why it’s slow (refer to your measurements)
+- what the fix changes (tab gating, endpoint split, pagination, read model, etc.)
+- acceptance criteria (p95 targets + tests)
+
+STOP after delivering the full Proof Pack. No code changes. No new plans executed.

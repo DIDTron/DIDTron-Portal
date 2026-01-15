@@ -1,8 +1,43 @@
 # DIDTron - TODO List
 
-## Current Plan ID: PLAN-2026-01-15-MODULARIZE
+## Current Plan ID: PLAN-2026-01-15-SOFTSWITCH-AUDIT
 
-**Status**: Route modularization in progress. MOD-01 through MOD-08 complete. routes.ts reduced from 8997 to 8912 lines.
+**Status**: ✅ Complete - Softswitch Reality + Performance Proof Pack delivered. No code changes, grep-evidence-only audit.
+
+---
+
+## PLAN-2026-01-15-SOFTSWITCH-AUDIT: Softswitch Reality + Performance Proof Pack
+
+**Objective**: Deliver a docs-only audit of the Softswitch module with grep-based evidence proving module structure, query patterns, and ConnexCS integration.
+
+### Completed Tasks
+
+- [x] **AUDIT-01**: Generate Softswitch Reality + Performance Proof Pack
+  - Deliverable: `docs/SOFTSWITCH_PROOF_PACK.md`
+  - Evidence: grep-based line numbers, wc -l outputs, ls -la outputs
+  - Status: ✅ Complete
+
+### Deliverables
+
+| Part | Content | Status |
+|------|---------|--------|
+| Part 0 | Truth Verification (ls, wc -l outputs) | ✅ |
+| Part 1 | Sidebar → Route → Page File Mapping | ✅ |
+| Part 2 | Per-Tab Query Mapping with enabled gating | ✅ |
+| Part 3 | Prefetch Configuration Evidence | ✅ |
+| Part 4 | Runtime Metrics Status | ✅ (empty data noted) |
+| Part 5 | ConnexCS Integration Mapping | ✅ |
+| Part 6 | API Endpoint Inventory | ✅ |
+| Part 7 | Violations Summary | ✅ |
+| Part 8 | Recommendations | ✅ |
+
+### Violations Identified
+
+| ID | File | Violation | Fix Required |
+|----|------|-----------|--------------|
+| V-01 | `softswitch-rating.tsx` | 4 queries with NO enabled flags | Add tab-based enabled |
+| V-02 | Rating endpoints | No cursor pagination | Add cursor params |
+| V-03 | `interconnect-detail.tsx` | 2 dropdown queries lack enabled | Add enabled flags |
 
 ---
 
@@ -10,6 +45,8 @@
 
 | Plan ID | Status | Summary |
 |---------|--------|---------|
+| PLAN-2026-01-15-SOFTSWITCH-AUDIT | ✅ Complete | Softswitch Reality + Performance Proof Pack (docs-only, grep evidence) |
+| PLAN-2026-01-15-MODULARIZE | ✅ Complete | MOD-01→08: Route modularization, routes.ts 8997→8912 lines |
 | PLAN-2026-01-15-ADMINJOBS-AUTHFIX | ✅ Complete | SEC-01: Protected /api/admin/jobs/* with super_admin guard + Playwright proof |
 | PLAN-2026-01-14-TSCHECK-FIX | ✅ Complete | All TypeScript errors resolved (0 errors). TS-01, TS-02, TS-03 complete |
 | PLAN-2026-01-11-01 | ✅ Archived | Phase 1-3 Infrastructure |
