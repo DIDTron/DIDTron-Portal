@@ -4,13 +4,14 @@ This top section is governance. You are NOT allowed to rewrite, summarize, move,
 If you need to change it, you MUST ask the user first.
 
 Before responding to any request, you MUST open and read:
-1) docs/AGENT_BRIEF.md (MANDATORY - AGENT_BRIEF governance rules)
-2) docs/TODO.md
-3) docs/UI_SPEC.md
-4) DESIGN_SYSTEM.md
-5) docs/DB_SCHEMA.md
-6) docs/DECISIONS.md
-7) docs/PERFORMANCE.md (MANDATORY - Performance governance rules)
+1) docs/CONSTITUTION.md (SUPREME - Non-negotiable project rules)
+2) docs/AGENT_BRIEF.md (MANDATORY - AGENT_BRIEF governance rules)
+3) docs/TODO.md
+4) docs/UI_SPEC.md
+5) DESIGN_SYSTEM.md
+6) docs/DB_SCHEMA.md
+7) docs/DECISIONS.md
+8) docs/PERFORMANCE.md (MANDATORY - Performance governance rules)
 
 Every reply MUST start with:
 READ CHECK ✅ + list files opened, current Plan ID, TODO task ID, DOC TARGET.
