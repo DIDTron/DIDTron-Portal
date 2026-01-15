@@ -20,7 +20,6 @@ export interface NavSection {
 }
 
 export const navSections: NavSection[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, defaultRoute: "/admin" },
   { id: "voip", label: "VoIP", icon: Phone, defaultRoute: "/admin/pops" },
   { id: "wholesale-partners", label: "Wholesale", icon: Building2, defaultRoute: "/admin/wholesale/partners" },
   { id: "rate-cards", label: "Rate Cards", icon: Receipt, defaultRoute: "/admin/rate-cards/customer" },
@@ -226,35 +225,40 @@ export function PrimarySidebar() {
     )}>
       <div className={cn(
         "flex h-10 items-center border-b shrink-0",
-        isCollapsed ? "justify-center px-1" : "px-2"
+        isCollapsed ? "justify-center px-1" : "gap-2 px-3"
       )}>
-        {isCollapsed ? (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={togglePrimarySidebarCollapsed}
-                aria-label="Expand primary sidebar"
-                data-testid="toggle-primary-sidebar-collapsed"
-                className="h-8 w-8"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Expand sidebar</TooltipContent>
-          </Tooltip>
-        ) : (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={togglePrimarySidebarCollapsed}
-            aria-label="Collapse primary sidebar"
-            data-testid="toggle-primary-sidebar-collapsed"
-            className="h-8 w-8"
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={togglePrimarySidebarCollapsed}
+              aria-label={isCollapsed ? "Expand primary sidebar" : "Collapse primary sidebar"}
+              data-testid="toggle-primary-sidebar-collapsed"
+              className="shrink-0 h-8 w-8"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          {isCollapsed && <TooltipContent side="right">Dashboard</TooltipContent>}
+        </Tooltip>
+        {!isCollapsed && (
+          <span 
+            className="font-semibold text-sm text-primary truncate cursor-pointer hover:underline"
+            onClick={() => {
+              setActiveSection("dashboard");
+              setActiveSubItem(null);
+              openTab({
+                id: "dashboard",
+                label: "Dashboard",
+                route: "/admin",
+              });
+              setLocation("/admin");
+            }}
+            data-testid="nav-dashboard-header"
           >
-            <Menu className="h-4 w-4" />
-          </Button>
+            Dashboard
+          </span>
         )}
       </div>
       
