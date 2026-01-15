@@ -287,6 +287,7 @@ export interface IStorage {
   getCarriersWithCursor(cursor: string | null, limit: number): Promise<Carrier[]>;
   getCarrier(id: string): Promise<Carrier | undefined>;
   getCarrierByCode(code: string): Promise<Carrier | undefined>;
+  getCarrierByShortId(shortId: number): Promise<Carrier | undefined>;
   resolveCarrier(identifier: string): Promise<Carrier | undefined>;
   createCarrier(carrier: InsertCarrier): Promise<Carrier>;
   updateCarrier(id: string, data: Partial<InsertCarrier>): Promise<Carrier | undefined>;
@@ -349,6 +350,7 @@ export interface IStorage {
   getCarrierInterconnects(carrierId: string): Promise<CarrierInterconnect[]>;
   getCarrierInterconnect(id: string): Promise<CarrierInterconnect | undefined>;
   getCarrierInterconnectByShortCode(shortCode: string): Promise<CarrierInterconnect | undefined>;
+  getCarrierInterconnectByShortId(shortId: number): Promise<CarrierInterconnect | undefined>;
   resolveCarrierInterconnect(identifier: string): Promise<CarrierInterconnect | undefined>;
   createCarrierInterconnect(interconnect: InsertCarrierInterconnect): Promise<CarrierInterconnect>;
   updateCarrierInterconnect(id: string, data: Partial<InsertCarrierInterconnect>): Promise<CarrierInterconnect | undefined>;
@@ -360,6 +362,7 @@ export interface IStorage {
   getInterconnectServices(interconnectId: string): Promise<CarrierService[]>;
   getCarrierService(id: string): Promise<CarrierService | undefined>;
   getCarrierServiceByShortCode(shortCode: string): Promise<CarrierService | undefined>;
+  getCarrierServiceByShortId(shortId: number): Promise<CarrierService | undefined>;
   resolveCarrierService(identifier: string): Promise<CarrierService | undefined>;
   createCarrierService(service: InsertCarrierService): Promise<CarrierService>;
   updateCarrierService(id: string, data: Partial<InsertCarrierService>): Promise<CarrierService | undefined>;
@@ -1387,10 +1390,20 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getCarrierByShortId(shortId: number): Promise<Carrier | undefined> {
+    const results = await db.select().from(carriersTable).where(eq(carriersTable.shortId, shortId));
+    return results[0];
+  }
+
   async resolveCarrier(identifier: string): Promise<Carrier | undefined> {
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidPattern.test(identifier)) {
       return this.getCarrier(identifier);
+    }
+    const shortIdNum = parseInt(identifier, 10);
+    if (!isNaN(shortIdNum) && identifier === String(shortIdNum)) {
+      const byShortId = await this.getCarrierByShortId(shortIdNum);
+      if (byShortId) return byShortId;
     }
     return this.getCarrierByCode(identifier);
   }
@@ -1796,10 +1809,20 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getCarrierInterconnectByShortId(shortId: number): Promise<CarrierInterconnect | undefined> {
+    const results = await db.select().from(carrierInterconnectsTable).where(eq(carrierInterconnectsTable.shortId, shortId));
+    return results[0];
+  }
+
   async resolveCarrierInterconnect(identifier: string): Promise<CarrierInterconnect | undefined> {
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidPattern.test(identifier)) {
       return this.getCarrierInterconnect(identifier);
+    }
+    const shortIdNum = parseInt(identifier, 10);
+    if (!isNaN(shortIdNum) && identifier === String(shortIdNum)) {
+      const byShortId = await this.getCarrierInterconnectByShortId(shortIdNum);
+      if (byShortId) return byShortId;
     }
     return this.getCarrierInterconnectByShortCode(identifier);
   }
@@ -1857,10 +1880,20 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getCarrierServiceByShortId(shortId: number): Promise<CarrierService | undefined> {
+    const results = await db.select().from(carrierServicesTable).where(eq(carrierServicesTable.shortId, shortId));
+    return results[0];
+  }
+
   async resolveCarrierService(identifier: string): Promise<CarrierService | undefined> {
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidPattern.test(identifier)) {
       return this.getCarrierService(identifier);
+    }
+    const shortIdNum = parseInt(identifier, 10);
+    if (!isNaN(shortIdNum) && identifier === String(shortIdNum)) {
+      const byShortId = await this.getCarrierServiceByShortId(shortIdNum);
+      if (byShortId) return byShortId;
     }
     return this.getCarrierServiceByShortCode(identifier);
   }

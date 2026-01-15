@@ -2284,7 +2284,7 @@ function InterconnectsTab({
                     <TableCell>
                       <span 
                         className="font-medium text-primary cursor-pointer hover:underline"
-                        onClick={() => setLocation(isSoftswitchRoute ? `/admin/softswitch/carriers/${carrierId}/interconnects/${ic.id}` : `/admin/wholesale/partners/${carrierId}/interconnects/${ic.id}`)}
+                        onClick={() => setLocation(isSoftswitchRoute ? `/admin/softswitch/carriers/${carrier?.shortId ?? carrierId}/interconnects/${ic.shortId ?? ic.id}` : `/admin/wholesale/partners/${carrier?.shortId ?? carrierId}/interconnects/${ic.shortId ?? ic.id}`)}
                         data-testid={`link-interconnect-${ic.id}`}
                       >
                         {ic.name}

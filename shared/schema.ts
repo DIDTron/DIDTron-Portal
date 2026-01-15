@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, decimal, jsonb, pgEnum, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, decimal, jsonb, pgEnum, index, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -193,6 +193,7 @@ export const customerGroups = pgTable("customer_groups", {
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   firstName: text("first_name"),
@@ -293,6 +294,7 @@ export const customerKyc = pgTable("customer_kyc", {
 
 export const carriers = pgTable("carriers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
   partnerType: carrierPartnerTypeEnum("partner_type").default("bilateral"),
@@ -369,6 +371,7 @@ export const carriers = pgTable("carriers", {
 
 export const carrierInterconnects = pgTable("carrier_interconnects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   shortCode: text("short_code").unique(),
   carrierId: varchar("carrier_id").references(() => carriers.id).notNull(),
   name: text("name").notNull(),
@@ -399,6 +402,7 @@ export const carrierInterconnects = pgTable("carrier_interconnects", {
 // Carrier Services - THE KEY LINKAGE: Interconnect → Rating Plan + Routing Plan
 export const carrierServices = pgTable("carrier_services", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   shortCode: text("short_code").unique(),
   carrierId: varchar("carrier_id").references(() => carriers.id).notNull(),
   interconnectId: varchar("interconnect_id").references(() => carrierInterconnects.id).notNull(),
@@ -952,6 +956,7 @@ export const routeGroupAssignments = pgTable("route_group_assignments", {
 
 export const rateCards = pgTable("rate_cards", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   name: text("name").notNull(),
   code: text("code").notNull(),
   type: rateCardTypeEnum("type").default("provider"),
@@ -3085,7 +3090,7 @@ export const insertEmPublishHistorySchema = createInsertSchema(emPublishHistory)
 
 export const insertCustomerCategorySchema = createInsertSchema(customerCategories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerGroupSchema = createInsertSchema(customerGroups).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, shortId: true, createdAt: true, updatedAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true }).partial({
   accountNumber: true,
   balance: true,
@@ -3114,9 +3119,9 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({ id: tru
   status: true,
   billingType: true,
 });
-export const insertCarrierSchema = createInsertSchema(carriers).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCarrierInterconnectSchema = createInsertSchema(carrierInterconnects).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCarrierServiceSchema = createInsertSchema(carrierServices).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCarrierSchema = createInsertSchema(carriers).omit({ id: true, shortId: true, createdAt: true, updatedAt: true });
+export const insertCarrierInterconnectSchema = createInsertSchema(carrierInterconnects).omit({ id: true, shortId: true, createdAt: true, updatedAt: true });
+export const insertCarrierServiceSchema = createInsertSchema(carrierServices).omit({ id: true, shortId: true, createdAt: true, updatedAt: true });
 export const insertServiceMatchListSchema = createInsertSchema(serviceMatchLists).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierContactSchema = createInsertSchema(carrierContacts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCarrierCreditAlertSchema = createInsertSchema(carrierCreditAlerts).omit({ id: true, createdAt: true, updatedAt: true });
@@ -3151,7 +3156,7 @@ export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id:
 export const insertWebhookSchema = createInsertSchema(webhooks).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertWebhookDeliverySchema = createInsertSchema(webhookDeliveries).omit({ id: true, createdAt: true });
 export const insertCustomerApiKeySchema = createInsertSchema(customerApiKeys).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertRateCardSchema = createInsertSchema(rateCards).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRateCardSchema = createInsertSchema(rateCards).omit({ id: true, shortId: true, createdAt: true, updatedAt: true });
 export const insertRateCardRateSchema = createInsertSchema(rateCardRates).omit({ id: true, createdAt: true });
 
 export const insertInterconnectIpAddressSchema = createInsertSchema(interconnectIpAddresses).omit({ id: true, createdAt: true, updatedAt: true });

@@ -621,7 +621,7 @@ export function SoftswitchCarriersPage() {
                 <FixedColumnTableRow key={carrier.id} data-testid={`row-carrier-${carrier.id}`}>
                   <FixedColumnTableCell fixed={true} className="font-medium min-w-[200px]">
                     <div className="flex items-center justify-between w-full">
-                      <Link href={`/admin/softswitch/carriers/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
+                      <Link href={`/admin/softswitch/carriers/${carrier.shortId ?? carrier.id}`} className="text-primary hover:underline" data-testid={`link-carrier-${carrier.id}`}>
                         {carrier.name}
                       </Link>
                       <Badge 
@@ -744,12 +744,12 @@ export function SoftswitchCarriersPage() {
               return (
                 <FixedColumnTableRow key={interconnect.id} data-testid={`row-interconnect-${interconnect.id}`}>
                   <FixedColumnTableCell fixed={true} className="font-medium min-w-[120px]">
-                    <Link href={`/admin/softswitch/carriers/${carrier?.code || interconnect.carrierId}`} className="text-primary hover:underline">
+                    <Link href={`/admin/softswitch/carriers/${carrier?.shortId ?? interconnect.carrierId}`} className="text-primary hover:underline">
                       {carrier?.name || interconnect.carrierName || "-"}
                     </Link>
                   </FixedColumnTableCell>
                   <FixedColumnTableCell>
-                    <Link href={`/admin/softswitch/carriers/${carrier?.code || interconnect.carrierId}/interconnects/${interconnect.id}`} className="text-primary hover:underline" data-testid={`link-interconnect-${interconnect.id}`}>
+                    <Link href={`/admin/softswitch/carriers/${carrier?.shortId ?? interconnect.carrierId}/interconnects/${interconnect.shortId ?? interconnect.id}`} className="text-primary hover:underline" data-testid={`link-interconnect-${interconnect.id}`}>
                       {interconnect.name}
                     </Link>
                   </FixedColumnTableCell>
@@ -843,12 +843,12 @@ export function SoftswitchCarriersPage() {
                 <TableRow key={service.id} data-testid={`row-service-${service.id}`}>
                   <TableCell className="font-medium">{service.name}</TableCell>
                   <TableCell>
-                    <Link href={`/admin/softswitch/carriers/${carrier?.code || service.carrierId}`} className="text-primary hover:underline">
+                    <Link href={`/admin/softswitch/carriers/${carrier?.shortId ?? service.carrierId}`} className="text-primary hover:underline">
                       {carrier?.name || service.carrierName || "-"}
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/admin/interconnects/${interconnect?.shortCode || service.interconnectId}`} className="text-primary hover:underline">
+                    <Link href={`/admin/softswitch/carriers/${carrier?.shortId ?? service.carrierId}/interconnects/${interconnect?.shortId ?? service.interconnectId}`} className="text-primary hover:underline">
                       {interconnect?.name || service.interconnectName || "-"}
                     </Link>
                   </TableCell>

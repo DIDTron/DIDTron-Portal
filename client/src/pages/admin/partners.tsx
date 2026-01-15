@@ -565,7 +565,7 @@ export default function PartnersPage() {
                       >
                         <FixedColumnTableCell fixed={true} className="font-medium min-w-[180px]">
                           <div className="flex items-center justify-between gap-4">
-                            <Link href={`/admin/wholesale/partners/${carrier.code || carrier.id}`} className="text-primary hover:underline" data-testid={`link-partner-${carrier.id}`}>
+                            <Link href={`/admin/wholesale/partners/${carrier.shortId ?? carrier.id}`} className="text-primary hover:underline" data-testid={`link-partner-${carrier.id}`}>
                               {carrier.name}
                             </Link>
                             <Badge 
