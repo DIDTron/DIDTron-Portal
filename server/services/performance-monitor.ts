@@ -23,6 +23,18 @@ interface PerformanceViolation {
   endpoint?: string;
 }
 
+interface RequestTiming {
+  endpoint: string;
+  durationMs: number;
+  timestamp: Date;
+}
+
+interface QueryTiming {
+  query: string;
+  durationMs: number;
+  timestamp: Date;
+}
+
 const DEFAULT_BUDGET: PerformanceBudget = {
   apiResponseTime: 500,
   queryExecutionTime: 200,
@@ -35,6 +47,10 @@ class PerformanceMonitorService {
   private lastAlertTime: Date | null = null;
   private alertCooldownMs = 15 * 60 * 1000;
   private adminEmail: string | null = null;
+  
+  private apiTimings: RequestTiming[] = [];
+  private queryTimings: QueryTiming[] = [];
+  private maxTimings = 1000;
 
   constructor() {
     this.budget = { ...DEFAULT_BUDGET };
@@ -54,6 +70,11 @@ class PerformanceMonitorService {
   }
 
   recordApiResponseTime(endpoint: string, durationMs: number) {
+    this.apiTimings.push({ endpoint, durationMs, timestamp: new Date() });
+    if (this.apiTimings.length > this.maxTimings) {
+      this.apiTimings = this.apiTimings.slice(-this.maxTimings);
+    }
+    
     if (durationMs > this.budget.apiResponseTime) {
       this.recordViolation({
         metric: "API Response Time",
@@ -67,6 +88,11 @@ class PerformanceMonitorService {
   }
 
   recordQueryExecutionTime(query: string, durationMs: number) {
+    this.queryTimings.push({ query: query.substring(0, 100), durationMs, timestamp: new Date() });
+    if (this.queryTimings.length > this.maxTimings) {
+      this.queryTimings = this.queryTimings.slice(-this.maxTimings);
+    }
+    
     if (durationMs > this.budget.queryExecutionTime) {
       this.recordViolation({
         metric: "Query Execution Time",
@@ -77,6 +103,66 @@ class PerformanceMonitorService {
         endpoint: query.substring(0, 100),
       });
     }
+  }
+  
+  getApiTimings(windowMs: number = 15 * 60 * 1000): RequestTiming[] {
+    const cutoff = Date.now() - windowMs;
+    return this.apiTimings.filter(t => t.timestamp.getTime() >= cutoff);
+  }
+  
+  getQueryTimings(windowMs: number = 15 * 60 * 1000): QueryTiming[] {
+    const cutoff = Date.now() - windowMs;
+    return this.queryTimings.filter(t => t.timestamp.getTime() >= cutoff);
+  }
+  
+  getApiP95(windowMs: number = 15 * 60 * 1000): number {
+    const timings = this.getApiTimings(windowMs);
+    if (timings.length === 0) return 0;
+    const sorted = timings.map(t => t.durationMs).sort((a, b) => a - b);
+    const p95Index = Math.floor(sorted.length * 0.95);
+    return sorted[Math.min(p95Index, sorted.length - 1)];
+  }
+  
+  getQueryP95(windowMs: number = 15 * 60 * 1000): number {
+    const timings = this.getQueryTimings(windowMs);
+    if (timings.length === 0) return 0;
+    const sorted = timings.map(t => t.durationMs).sort((a, b) => a - b);
+    const p95Index = Math.floor(sorted.length * 0.95);
+    return sorted[Math.min(p95Index, sorted.length - 1)];
+  }
+  
+  getTopEndpoints(limit: number = 10, windowMs: number = 15 * 60 * 1000): Array<{endpoint: string; count: number; avgMs: number}> {
+    const timings = this.getApiTimings(windowMs);
+    const byEndpoint = new Map<string, number[]>();
+    for (const t of timings) {
+      if (!byEndpoint.has(t.endpoint)) byEndpoint.set(t.endpoint, []);
+      byEndpoint.get(t.endpoint)!.push(t.durationMs);
+    }
+    return Array.from(byEndpoint.entries())
+      .map(([endpoint, durations]) => ({
+        endpoint,
+        count: durations.length,
+        avgMs: durations.reduce((a, b) => a + b, 0) / durations.length,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  }
+  
+  getSlowEndpoints(limit: number = 10, windowMs: number = 15 * 60 * 1000): Array<{endpoint: string; p95: number; count: number}> {
+    const timings = this.getApiTimings(windowMs);
+    const byEndpoint = new Map<string, number[]>();
+    for (const t of timings) {
+      if (!byEndpoint.has(t.endpoint)) byEndpoint.set(t.endpoint, []);
+      byEndpoint.get(t.endpoint)!.push(t.durationMs);
+    }
+    return Array.from(byEndpoint.entries())
+      .map(([endpoint, durations]) => {
+        const sorted = durations.sort((a, b) => a - b);
+        const p95Index = Math.floor(sorted.length * 0.95);
+        return { endpoint, p95: sorted[Math.min(p95Index, sorted.length - 1)], count: durations.length };
+      })
+      .sort((a, b) => b.p95 - a.p95)
+      .slice(0, limit);
   }
 
   recordMemoryUsage(usageMb: number) {

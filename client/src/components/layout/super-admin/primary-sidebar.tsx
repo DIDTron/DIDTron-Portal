@@ -156,8 +156,11 @@ export function PrimarySidebar() {
     staleTime: 30000,
   });
   
-  const activeAlertCount = (alertData?.stats?.criticalCount || 0) + (alertData?.stats?.warningCount || 0);
+  const criticalCount = alertData?.stats?.criticalCount || 0;
+  const warningCount = alertData?.stats?.warningCount || 0;
+  const activeAlertCount = criticalCount + warningCount;
   const isAlertDataReady = !isAlertLoading && !isAlertError && alertData !== undefined;
+  const alertSeverity: "critical" | "warning" | "healthy" = criticalCount > 0 ? "critical" : warningCount > 0 ? "warning" : "healthy";
 
   const orderedSections = useMemo(() => {
     if (primarySectionOrder.length === 0) {
@@ -310,7 +313,13 @@ export function PrimarySidebar() {
               >
                 <Server className="h-5 w-5" />
                 {activeAlertCount > 0 ? (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white" data-testid="badge-system-alerts">
+                  <span 
+                    className={cn(
+                      "absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium text-white",
+                      alertSeverity === "critical" ? "bg-red-500" : "bg-amber-500"
+                    )} 
+                    data-testid="badge-system-alerts"
+                  >
                     {activeAlertCount > 9 ? "9+" : activeAlertCount}
                   </span>
                 ) : isAlertDataReady ? (
@@ -328,7 +337,7 @@ export function PrimarySidebar() {
           <div 
             className={cn(
               "flex items-center justify-between gap-3 px-3 py-2 rounded-md text-sm cursor-pointer hover-elevate",
-              activeAlertCount > 0 ? "text-red-500" : isAlertDataReady ? "text-green-500" : "text-sidebar-foreground"
+              alertSeverity === "critical" ? "text-red-500" : alertSeverity === "warning" ? "text-amber-500" : isAlertDataReady ? "text-green-500" : "text-sidebar-foreground"
             )}
             data-testid="nav-section-system-status"
             onClick={() => {
@@ -347,7 +356,14 @@ export function PrimarySidebar() {
               <span className="whitespace-nowrap">System Status</span>
             </div>
             {activeAlertCount > 0 ? (
-              <Badge variant="destructive" className="h-5 min-w-5 text-xs px-1.5" data-testid="badge-system-alerts">
+              <Badge 
+                variant={alertSeverity === "critical" ? "destructive" : "outline"} 
+                className={cn(
+                  "h-5 min-w-5 text-xs px-1.5",
+                  alertSeverity === "warning" && "bg-amber-500 text-white border-amber-500"
+                )} 
+                data-testid="badge-system-alerts"
+              >
                 {activeAlertCount > 99 ? "99+" : activeAlertCount}
               </Badge>
             ) : isAlertDataReady ? (

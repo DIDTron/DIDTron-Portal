@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { STALE_TIME, keepPreviousData, queryClient, apiRequest } from "@/lib/queryClient";
 import { Search, Bell, LogOut, Cloud, CloudOff, Loader2, Menu, AlertTriangle, AlertCircle, Info, CheckCircle, ExternalLink } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useBrandingStore } from "@/stores/branding-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,8 +82,12 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
     },
   });
 
-  const activeAlertCount = (alertsData?.stats?.criticalCount || 0) + (alertsData?.stats?.warningCount || 0) + (alertsData?.stats?.infoCount || 0);
+  const criticalCount = alertsData?.stats?.criticalCount || 0;
+  const warningCount = alertsData?.stats?.warningCount || 0;
+  const infoCount = alertsData?.stats?.infoCount || 0;
+  const activeAlertCount = criticalCount + warningCount + infoCount;
   const recentAlerts = alertsData?.alerts?.slice(0, 5) || [];
+  const alertSeverity: "critical" | "warning" | "info" | "none" = criticalCount > 0 ? "critical" : warningCount > 0 ? "warning" : infoCount > 0 ? "info" : "none";
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
@@ -199,7 +204,14 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
             <Button variant="ghost" size="icon" className="relative" aria-label="Notifications" data-testid="button-notifications">
               <Bell className="h-4 w-4" />
               {activeAlertCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]" variant="destructive">
+                <Badge 
+                  className={cn(
+                    "absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]",
+                    alertSeverity === "warning" && "bg-amber-500 border-amber-500",
+                    alertSeverity === "info" && "bg-blue-500 border-blue-500"
+                  )} 
+                  variant={alertSeverity === "critical" ? "destructive" : "secondary"}
+                >
                   {activeAlertCount > 9 ? "9+" : activeAlertCount}
                 </Badge>
               )}
@@ -209,7 +221,14 @@ export function GlobalHeader({ userEmail, onLogout }: GlobalHeaderProps) {
             <DropdownMenuLabel className="flex items-center justify-between">
               <span>System Alerts</span>
               {activeAlertCount > 0 && (
-                <Badge variant="destructive" className="text-xs">
+                <Badge 
+                  variant={alertSeverity === "critical" ? "destructive" : "secondary"} 
+                  className={cn(
+                    "text-xs",
+                    alertSeverity === "warning" && "bg-amber-500 text-white border-amber-500",
+                    alertSeverity === "info" && "bg-blue-500 text-white border-blue-500"
+                  )}
+                >
                   {activeAlertCount} active
                 </Badge>
               )}

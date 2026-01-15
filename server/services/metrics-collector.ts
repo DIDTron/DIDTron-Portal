@@ -134,26 +134,30 @@ class MetricsCollectorService {
 
   private async collectApiMetrics(collectedAt: Date): Promise<void> {
     try {
-      const stats = performanceMonitor.getStats();
-      const recentViolations = performanceMonitor.getRecentViolations(100);
-
-      const apiViolations = recentViolations.filter(v => v.metric === "API Response Time");
-      const latencies = apiViolations.map(v => v.actual).sort((a, b) => a - b);
+      const windowMs = 15 * 60 * 1000;
+      const apiTimings = performanceMonitor.getApiTimings(windowMs);
+      const p95 = performanceMonitor.getApiP95(windowMs);
+      const topEndpoints = performanceMonitor.getTopEndpoints(10, windowMs);
+      const slowEndpoints = performanceMonitor.getSlowEndpoints(20, windowMs);
       
-      const p95Index = Math.floor(latencies.length * 0.95);
+      const latencies = apiTimings.map(t => t.durationMs).sort((a, b) => a - b);
       const p99Index = Math.floor(latencies.length * 0.99);
 
       const metrics: ApiMetrics = {
-        requestCount15m: 0,
-        p95LatencyMs: latencies[p95Index] || 0,
+        requestCount15m: apiTimings.length,
+        p95LatencyMs: p95,
         p99LatencyMs: latencies[p99Index] || 0,
         errorRate5xx: 0,
         errorRate4xx: 0,
-        topEndpoints: [],
-        slowEndpoints: apiViolations.slice(0, 20).map(v => ({
-          endpoint: v.endpoint || "unknown",
-          p95: v.actual,
-          count: 1,
+        topEndpoints: topEndpoints.map(e => ({
+          endpoint: e.endpoint,
+          count: e.count,
+          avgLatency: Math.round(e.avgMs),
+        })),
+        slowEndpoints: slowEndpoints.map(e => ({
+          endpoint: e.endpoint,
+          p95: e.p95,
+          count: e.count,
         })),
         errorEndpoints: [],
       };
@@ -166,27 +170,29 @@ class MetricsCollectorService {
 
   private async collectDatabaseMetrics(collectedAt: Date): Promise<void> {
     try {
-      const stats = performanceMonitor.getStats();
-      const recentViolations = performanceMonitor.getRecentViolations(100);
-
-      const queryViolations = recentViolations.filter(v => v.metric === "Query Execution Time");
-      const latencies = queryViolations.map(v => v.actual).sort((a, b) => a - b);
-
-      const p95Index = Math.floor(latencies.length * 0.95);
+      const windowMs = 15 * 60 * 1000;
+      const queryTimings = performanceMonitor.getQueryTimings(windowMs);
+      const p95 = performanceMonitor.getQueryP95(windowMs);
+      
+      const latencies = queryTimings.map(t => t.durationMs).sort((a, b) => a - b);
       const p99Index = Math.floor(latencies.length * 0.99);
 
       const metrics: DatabaseMetrics = {
-        p95LatencyMs: latencies[p95Index] || 0,
+        p95LatencyMs: p95,
         p99LatencyMs: latencies[p99Index] || 0,
         poolUsed: 0,
         poolTotal: 20,
         poolSaturation: 0,
-        slowQueryCount: queryViolations.length,
-        slowQueries: queryViolations.slice(0, 10).map(v => ({
-          query: v.endpoint || "unknown",
-          durationMs: v.actual,
-          timestamp: v.timestamp,
-        })),
+        slowQueryCount: queryTimings.filter(t => t.durationMs > 200).length,
+        slowQueries: queryTimings
+          .filter(t => t.durationMs > 200)
+          .sort((a, b) => b.durationMs - a.durationMs)
+          .slice(0, 10)
+          .map(t => ({
+            query: t.query,
+            durationMs: t.durationMs,
+            timestamp: t.timestamp,
+          })),
       };
 
       await this.storeSnapshot("database", metrics, collectedAt);
@@ -477,12 +483,14 @@ class MetricsCollectorService {
 
   private async checkOpenAI(): Promise<{ status: "healthy" | "degraded" | "down"; latency: number; errorRate: number; success: boolean; error?: string }> {
     const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+    const baseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
     if (!apiKey) {
       return { status: "degraded", latency: 0, errorRate: 0, success: false, error: "API key not configured" };
     }
     try {
       const start = Date.now();
-      const response = await fetch("https://api.openai.com/v1/models", {
+      // Use Replit's proxy base URL for health check
+      const response = await fetch(`${baseUrl}/models`, {
         method: "GET",
         headers: { "Authorization": `Bearer ${apiKey}` },
       });
