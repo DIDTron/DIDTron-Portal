@@ -426,7 +426,7 @@ export default function IntegrationsPage() {
       ))}
 
       <Dialog open={!!editingIntegration} onOpenChange={(open) => { if (!open) { setEditingIntegration(null); setApiKey(null); setApiKeyCopied(false); setTestResult(null); setShowRawResponse(false); } }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configure {editingIntegration?.displayName}</DialogTitle>
             <DialogDescription>
