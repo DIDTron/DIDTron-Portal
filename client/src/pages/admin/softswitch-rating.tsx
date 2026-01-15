@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation, Link } from "wouter";
 import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -1207,6 +1208,8 @@ const periodOptions: { value: RateInboxPeriod; label: string }[] = [
 ];
 
 export function SupplierRatingPlansPage() {
+  const [, navigate] = useLocation();
+  
   // Helper to read URL params for tab navigation
   const getUrlParams = () => {
     const params = new URLSearchParams(window.location.search);
@@ -1339,7 +1342,7 @@ export function SupplierRatingPlansPage() {
       setNewSupplierPlanName("");
       setNewSupplierPlanCurrency("USD");
       if (data?.id) {
-        window.location.href = `/admin/softswitch/rating/supplier-plans/${data.id}`;
+        navigate(`/admin/softswitch/rating/supplier-plans/${data.id}`);
       }
     },
     onError: () => {
@@ -1432,11 +1435,11 @@ export function SupplierRatingPlansPage() {
       return;
     }
     if (actionId === "create-business-rule") {
-      window.location.href = "/admin/softswitch/rating/business-rule/new";
+      navigate("/admin/softswitch/rating/business-rule/new");
       return;
     }
     if (actionId === "add-template") {
-      window.location.href = "/admin/softswitch/rating/supplier-rating/import-template/new";
+      navigate("/admin/softswitch/rating/supplier-rating/import-template/new");
       return;
     }
     if (actionId === "delete-all-templates") {
@@ -2392,9 +2395,9 @@ export function SupplierRatingPlansPage() {
                       <TableCell className="text-sm">{item.plan}</TableCell>
                       <TableCell className="text-sm">{item.supplier}</TableCell>
                       <TableCell>
-                        <a href={`/admin/softswitch/rating/import-job/${item.importJob}`} className="text-primary hover:underline text-sm" data-testid={`link-import-job-${item.id}`}>
+                        <Link href={`/admin/softswitch/rating/import-job/${item.importJob}`} className="text-primary hover:underline text-sm" data-testid={`link-import-job-${item.id}`}>
                           {item.importJob}
-                        </a>
+                        </Link>
                       </TableCell>
                       <TableCell>
                         <Badge 
@@ -2722,13 +2725,13 @@ export function SupplierRatingPlansPage() {
                   paginatedImportTemplates.map((template) => (
                     <TableRow key={template.id} data-testid={`row-import-template-${template.id}`}>
                       <TableCell>
-                        <a 
+                        <Link 
                           href={`/admin/softswitch/rating/supplier-rating/import-template/${template.id}`}
                           className="text-primary hover:underline font-medium"
                           data-testid={`link-import-template-${template.id}`}
                         >
                           {template.name}
-                        </a>
+                        </Link>
                         {template.description && (
                           <p className="text-sm text-muted-foreground mt-0.5">{template.description}</p>
                         )}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { 
   Cloud, 
   CloudOff, 
@@ -56,6 +57,7 @@ interface SQLQueryResult {
 }
 
 export default function ConnexCSStatusPage() {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [sqlQuery, setSqlQuery] = useState("SELECT * FROM cdr WHERE dt > DATE_SUB(NOW(), INTERVAL 1 DAY) LIMIT 10");
   const [queryResult, setQueryResult] = useState<SQLQueryResult | null>(null);
@@ -391,7 +393,7 @@ export default function ConnexCSStatusPage() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => window.location.href = "/admin/settings/integrations"}
+              onClick={() => navigate("/admin/settings/integrations")}
               data-testid="button-configure-credentials"
             >
               <Key className="h-4 w-4 mr-2" />
