@@ -1051,3 +1051,26 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - `server/routes/index.ts` — RESTORED (removed registerBillingRoutes)
 
 **Governance Lesson**: No MOD task may begin until explicitly approved by user. This applies even after previous MOD tasks are architect-approved.
+
+
+---
+
+## 2026-01-15: Atlas PART 2 Updated with Exact Counts and Middleware Verification
+
+**Decision**: Updated Atlas PART 2 (Backend Module Map) with exact routes.ts line count and middleware coverage verification status.
+
+**DOC TARGET**: docs/UI_SPEC.md → Module Map (Atlas) → PART 2
+
+**Changes**:
+1. Replaced "~8,997 lines" with exact count: 8997 lines (from `wc -l server/routes.ts`)
+2. Updated Atlas Freshness Note with exact timestamp, last MOD, and exact line count
+3. Verified middleware coverage for each extracted module via grep:
+   - `system-status.routes.ts`: Verified: auth guard present (uses `req.session?.userId`)
+   - `auth.routes.ts`: Public by design (login/logout endpoints)
+   - `jobs.routes.ts`: Unknown (needs verification) - no session checks found in endpoints
+   - `files.routes.ts`: Verified: auth guard present (uses `req.session?.userId`)
+   - `az-destinations.routes.ts`: Verified: auth guard present (uses `req.session?.userId`)
+   - `dids.routes.ts`: Verified: auth guard present (uses `req.session?.userId`)
+   - `sip-tester.routes.ts`: Verified: auth guard present (uses `req.session.userId`)
+
+**Evidence**: grep for session/userId/isAuthenticated patterns in each route file.

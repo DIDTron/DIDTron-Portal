@@ -634,22 +634,22 @@ Generated from repo reality (2026-01-15). This is the authoritative reference fo
 
 ### PART 2: Backend Module Map (Code-Level)
 
-> **Atlas Freshness Note**: Last updated 2026-01-15 00:41 UTC | Last MOD included: MOD-07
+> **Atlas Freshness Note**: Last updated 2026-01-15 00:46 UTC | Last MOD included: MOD-07 | routes.ts: 8997 lines
 
 #### Extracted Route Modules (server/routes/*.ts)
 
 | Module File | Lines | Endpoints | Endpoint Types | Heavy Handlers | Middleware Coverage |
 |-------------|-------|-----------|----------------|----------------|---------------------|
-| `system-status.routes.ts` | 690 | 17 | list, detail, command | Health checks, performance metrics | Auth required |
-| `auth.routes.ts` | 183 | 4 | command | OIDC login/logout | None (public) |
-| `jobs.routes.ts` | 187 | 13 | list, command | Job stats, retry operations | Auth required |
-| `files.routes.ts` | 180 | 13 | CRUD, list | File template uploads | Auth required |
-| `az-destinations.routes.ts` | 443 | 11 | CRUD, bulk, list | Bulk import, CSV export | Auth required, has pagination |
-| `dids.routes.ts` | 181 | 13 | CRUD, list | DID countries, providers, inventory | Auth required |
-| `sip-tester.routes.ts` | 822 | 39 | CRUD, command, list | Test configs, runs, suppliers, numbers | Auth required |
+| `system-status.routes.ts` | 690 | 17 | list, detail, command | Health checks, performance metrics | Verified: auth guard present |
+| `auth.routes.ts` | 183 | 4 | command | OIDC login/logout | Public by design |
+| `jobs.routes.ts` | 187 | 13 | list, command | Job stats, retry operations | Unknown (needs verification) |
+| `files.routes.ts` | 180 | 13 | CRUD, list | File template uploads | Verified: auth guard present |
+| `az-destinations.routes.ts` | 443 | 11 | CRUD, bulk, list | Bulk import, CSV export | Verified: auth guard present |
+| `dids.routes.ts` | 181 | 13 | CRUD, list | DID countries, providers, inventory | Verified: auth guard present |
+| `sip-tester.routes.ts` | 822 | 39 | CRUD, command, list | Test configs, runs, suppliers, numbers | Verified: auth guard present |
 | **index.ts** | 26 | - | Aggregator | - | - |
 
-#### Remaining in routes.ts (~8,997 lines)
+#### Remaining in routes.ts (8997 lines)
 
 | Section (Line Range) | Endpoints Est. | Type | Notes |
 |---------------------|----------------|------|-------|
