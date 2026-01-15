@@ -8,6 +8,9 @@ import { registerDidsRoutes } from "./dids.routes";
 import { registerSipTesterRoutes } from "./sip-tester.routes";
 import { registerBillingRoutes } from "./billing.routes";
 import { registerSoftswitchRoutes } from "./softswitch.routes";
+import { registerPortalAiVoiceRoutes } from "./portal-ai-voice.routes";
+import { registerPortalPbxRoutes } from "./portal-pbx.routes";
+import { registerPortalCrmRoutes } from "./portal-crm.routes";
 
 export function registerAllRoutes(app: Express) {
   registerSystemStatusRoutes(app);
@@ -19,6 +22,9 @@ export function registerAllRoutes(app: Express) {
   registerSipTesterRoutes(app);
   registerBillingRoutes(app);
   registerSoftswitchRoutes(app);
+  registerPortalAiVoiceRoutes(app);
+  registerPortalPbxRoutes(app);
+  registerPortalCrmRoutes(app);
 }
 
 export { registerSystemStatusRoutes } from "./system-status.routes";
@@ -30,3 +36,6 @@ export { registerDidsRoutes } from "./dids.routes";
 export { registerSipTesterRoutes } from "./sip-tester.routes";
 export { registerBillingRoutes } from "./billing.routes";
 export { registerSoftswitchRoutes } from "./softswitch.routes";
+export { registerPortalAiVoiceRoutes } from "./portal-ai-voice.routes";
+export { registerPortalPbxRoutes } from "./portal-pbx.routes";
+export { registerPortalCrmRoutes } from "./portal-crm.routes";
