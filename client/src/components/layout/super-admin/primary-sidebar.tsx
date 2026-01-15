@@ -235,7 +235,7 @@ export function PrimarySidebar() {
               onClick={togglePrimarySidebarCollapsed}
               aria-label={isCollapsed ? "Expand primary sidebar" : "Collapse primary sidebar"}
               data-testid="toggle-primary-sidebar-collapsed"
-              className="shrink-0 h-8 w-8"
+              className="shrink-0 h-8 w-8 -ml-1"
             >
               <Menu className="h-4 w-4" />
             </Button>
