@@ -14,6 +14,7 @@ import { registerLegacyAuthRoutes } from "./routes/auth.routes";
 import { registerJobsRoutes } from "./routes/jobs.routes";
 import { registerSipTesterRoutes } from "./routes/sip-tester.routes";
 import { registerBillingRoutes } from "./routes/billing.routes";
+import { registerSoftswitchRoutes } from "./routes/softswitch.routes";
 import { z } from "zod";
 import { db } from "./db";
 import { e2eRuns, e2eResults } from "@shared/schema";
@@ -113,6 +114,9 @@ export async function registerRoutes(
 
   // ==================== BILLING READ-ONLY ROUTES ====================
   registerBillingRoutes(app);
+
+  // ==================== SOFTSWITCH ROUTES ====================
+  registerSoftswitchRoutes(app);
 
   // Get logged-in user's customer profile with balance
   app.get("/api/my/profile", async (req, res) => {
@@ -4484,13 +4488,22 @@ export async function registerRoutes(
 
   app.get("/api/connexcs/servers", async (req, res) => {
     try {
+      const cacheKey = CACHE_KEYS.connexcsServers();
+      const cached = await getCached<any>(cacheKey);
+      if (cached) {
+        return res.json({ ...cached, fromCache: true });
+      }
+      
       const servers = await connexcsTools.getServers(storage);
-      res.json({
+      const response = {
         success: true,
         data: servers,
         count: servers.length,
         mockMode: connexcsTools.isMockMode(),
-      });
+      };
+      
+      await setCache(cacheKey, response, CACHE_TTL.CONNEXCS_DROPDOWNS);
+      res.json(response);
     } catch (error) {
       res.status(500).json({
         success: false,

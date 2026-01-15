@@ -155,12 +155,13 @@ export default function SupplierRatingPlanDetailPage() {
     staleTime: STALE_TIME.DETAIL,
   });
 
-  const { data: rates = [], isLoading: ratesLoading, refetch: refetchRates } = useQuery<SupplierRatingPlanRate[]>({
+  const { data: ratesResponse, isLoading: ratesLoading, refetch: refetchRates } = useQuery<{ items: SupplierRatingPlanRate[], nextCursor: string | null }>({
     queryKey: [`/api/softswitch/rating/supplier-plans/${planId}/rates`],
     enabled: !!planId,
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
   });
+  const rates = ratesResponse?.items ?? [];
 
   const createRateMutation = useMutation({
     mutationFn: async (data: any) => {

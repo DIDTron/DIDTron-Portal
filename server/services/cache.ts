@@ -7,6 +7,7 @@ const CACHE_TTL = {
   SYSTEM_OVERVIEW: 60,      // 60 seconds for system status overview metrics
   SYSTEM_ALERTS: 30,        // 30 seconds for active alerts (need fresher data)
   SYSTEM_HEALTH: 60,        // 60 seconds for health checks
+  CONNEXCS_DROPDOWNS: 90,   // 90 seconds for ConnexCS dropdown data (per CONSTITUTION RULE 4)
 };
 
 export async function getCached<T>(key: string): Promise<T | null> {
@@ -66,6 +67,7 @@ export const CACHE_KEYS = {
   systemAlertCount: () => `system:alert:count`,
   systemHealthChecks: () => `system:health:checks`,
   systemMetricsLatest: (type: string) => `system:metrics:${type}:latest`,
+  connexcsServers: () => `connexcs:servers`,
 };
 
 export { CACHE_TTL };

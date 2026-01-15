@@ -258,8 +258,17 @@ export function registerSoftswitchRoutes(app: Express) {
     try {
       const plan = await storage.resolveCustomerRatingPlan(req.params.planId);
       if (!plan) return res.status(404).json({ error: "Rating plan not found" });
-      const rates = await storage.getRatingPlanRates(plan.id);
-      res.json(rates);
+      
+      const { parseCursorParams, buildCursorResponse } = await import("../utils/pagination");
+      const { cursor, limit } = parseCursorParams({
+        cursor: req.query.cursor as string,
+        limit: parseInt(req.query.limit as string) || 100,
+        maxLimit: 500,
+      });
+      
+      const results = await storage.getRatingPlanRatesWithCursor(plan.id, cursor, limit + 1);
+      const response = buildCursorResponse(results, limit);
+      res.json(response);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch rating plan rates" });
     }
@@ -482,8 +491,17 @@ export function registerSoftswitchRoutes(app: Express) {
     try {
       const plan = await storage.resolveSupplierRatingPlan(req.params.planId);
       if (!plan) return res.status(404).json({ error: "Supplier rating plan not found" });
-      const rates = await storage.getSupplierRatingPlanRates(plan.id);
-      res.json(rates);
+      
+      const { parseCursorParams, buildCursorResponse } = await import("../utils/pagination");
+      const { cursor, limit } = parseCursorParams({
+        cursor: req.query.cursor as string,
+        limit: parseInt(req.query.limit as string) || 100,
+        maxLimit: 500,
+      });
+      
+      const results = await storage.getSupplierRatingPlanRatesWithCursor(plan.id, cursor, limit + 1);
+      const response = buildCursorResponse(results, limit);
+      res.json(response);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch supplier rating plan rates" });
     }

@@ -304,6 +304,7 @@ export interface IStorage {
 
   // Customer Rating Plan Rates
   getRatingPlanRates(ratingPlanId: string): Promise<CustomerRatingPlanRate[]>;
+  getRatingPlanRatesWithCursor(ratingPlanId: string, cursor: string | null, limit: number): Promise<CustomerRatingPlanRate[]>;
   getRatingPlanRate(id: string): Promise<CustomerRatingPlanRate | undefined>;
   createRatingPlanRate(rate: InsertCustomerRatingPlanRate): Promise<CustomerRatingPlanRate>;
   updateRatingPlanRate(id: string, data: Partial<InsertCustomerRatingPlanRate>): Promise<CustomerRatingPlanRate | undefined>;
@@ -326,6 +327,7 @@ export interface IStorage {
 
   // Supplier Rating Plan Rates
   getSupplierRatingPlanRates(ratingPlanId: string): Promise<SupplierRatingPlanRate[]>;
+  getSupplierRatingPlanRatesWithCursor(ratingPlanId: string, cursor: string | null, limit: number): Promise<SupplierRatingPlanRate[]>;
   getSupplierRatingPlanRate(id: string): Promise<SupplierRatingPlanRate | undefined>;
   createSupplierRatingPlanRate(rate: InsertSupplierRatingPlanRate): Promise<SupplierRatingPlanRate>;
   updateSupplierRatingPlanRate(id: string, data: Partial<InsertSupplierRatingPlanRate>): Promise<SupplierRatingPlanRate | undefined>;
@@ -1485,6 +1487,24 @@ export class MemStorage implements IStorage {
       .orderBy(customerRatingPlanRatesTable.zone);
   }
 
+  async getRatingPlanRatesWithCursor(ratingPlanId: string, cursor: string | null, limit: number): Promise<CustomerRatingPlanRate[]> {
+    if (cursor) {
+      return await db.select()
+        .from(customerRatingPlanRatesTable)
+        .where(and(
+          eq(customerRatingPlanRatesTable.ratingPlanId, ratingPlanId),
+          gt(customerRatingPlanRatesTable.id, cursor)
+        ))
+        .orderBy(asc(customerRatingPlanRatesTable.id))
+        .limit(limit);
+    }
+    return await db.select()
+      .from(customerRatingPlanRatesTable)
+      .where(eq(customerRatingPlanRatesTable.ratingPlanId, ratingPlanId))
+      .orderBy(asc(customerRatingPlanRatesTable.id))
+      .limit(limit);
+  }
+
   async getRatingPlanRate(id: string): Promise<CustomerRatingPlanRate | undefined> {
     const results = await db.select().from(customerRatingPlanRatesTable)
       .where(eq(customerRatingPlanRatesTable.id, id));
@@ -1581,6 +1601,24 @@ export class MemStorage implements IStorage {
     return await db.select().from(supplierRatingPlanRatesTable)
       .where(eq(supplierRatingPlanRatesTable.ratingPlanId, ratingPlanId))
       .orderBy(supplierRatingPlanRatesTable.zone);
+  }
+
+  async getSupplierRatingPlanRatesWithCursor(ratingPlanId: string, cursor: string | null, limit: number): Promise<SupplierRatingPlanRate[]> {
+    if (cursor) {
+      return await db.select()
+        .from(supplierRatingPlanRatesTable)
+        .where(and(
+          eq(supplierRatingPlanRatesTable.ratingPlanId, ratingPlanId),
+          gt(supplierRatingPlanRatesTable.id, cursor)
+        ))
+        .orderBy(asc(supplierRatingPlanRatesTable.id))
+        .limit(limit);
+    }
+    return await db.select()
+      .from(supplierRatingPlanRatesTable)
+      .where(eq(supplierRatingPlanRatesTable.ratingPlanId, ratingPlanId))
+      .orderBy(asc(supplierRatingPlanRatesTable.id))
+      .limit(limit);
   }
 
   async getSupplierRatingPlanRate(id: string): Promise<SupplierRatingPlanRate | undefined> {
