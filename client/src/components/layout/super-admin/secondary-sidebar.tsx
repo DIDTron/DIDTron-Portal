@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Menu, GripVertical, ChevronDown } from "lucide-react";
 import {
   Server, Layers, Radio, CreditCard, Building2, Globe, Building,
@@ -428,7 +429,8 @@ export function SecondarySidebar() {
     setActiveSubItem, 
     openTab,
     secondarySidebarOpen,
-    toggleSecondarySidebar,
+    secondarySidebarCollapsed,
+    toggleSecondarySidebarCollapsed,
     sectionItemOrder,
     setSectionItemOrder
   } = useSuperAdminTabs();
@@ -509,55 +511,105 @@ export function SecondarySidebar() {
     setLocation(item.route);
   };
 
+  const isCollapsed = secondarySidebarCollapsed;
+
   return (
-    <div className="flex flex-col h-full w-48 border-r bg-sidebar shrink-0">
-      <div className="flex h-10 items-center gap-2 px-3 border-b">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleSecondarySidebar}
-          className="shrink-0"
-          aria-label="Menu"
-          data-testid="toggle-secondary-sidebar"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-        <span className="font-semibold text-sm text-sidebar-foreground truncate">{config.title}</span>
+    <div className={cn(
+      "flex flex-col h-full border-r bg-sidebar shrink-0 transition-all duration-200",
+      isCollapsed ? "w-14" : "w-48"
+    )}>
+      <div className={cn(
+        "flex h-10 items-center border-b shrink-0",
+        isCollapsed ? "justify-center px-1" : "gap-2 px-3"
+      )}>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSecondarySidebarCollapsed}
+              className="shrink-0 h-8 w-8"
+              aria-label={isCollapsed ? "Expand secondary sidebar" : "Collapse secondary sidebar"}
+              data-testid="toggle-secondary-sidebar-collapsed"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          {isCollapsed && <TooltipContent side="right">{config.title}</TooltipContent>}
+        </Tooltip>
+        {!isCollapsed && (
+          <span className="font-semibold text-sm text-sidebar-foreground truncate">{config.title}</span>
+        )}
       </div>
       
       <ScrollArea className="flex-1">
-        <nav className="py-2 px-1 space-y-0.5">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={orderedItems.map((i) => i.id)}
-              strategy={verticalListSortingStrategy}
+        <nav className={cn("py-2 space-y-0.5", isCollapsed ? "px-1" : "px-1")}>
+          {isCollapsed ? (
+            orderedItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSubItem === item.id || 
+                (item.children && item.children.some(c => activeSubItem === c.id || location === c.route));
+              return (
+                <Tooltip key={item.id} delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={cn(
+                        "flex items-center justify-center p-2 rounded-md cursor-pointer",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : "text-sidebar-foreground hover-elevate"
+                      )}
+                      data-testid={`nav-item-${item.id}`}
+                      onClick={() => {
+                        if (item.children) {
+                          handleItemClick(item.children[0]);
+                        } else {
+                          handleItemClick(item);
+                        }
+                      }}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="font-medium">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              {orderedItems.map((item) => (
-                item.children ? (
-                  <SortableCollapsibleItem
-                    key={item.id}
-                    item={item}
-                    activeSubItem={activeSubItem}
-                    onChildClick={handleItemClick}
-                    onHover={handleHoverPrefetch}
-                    location={location}
-                  />
-                ) : (
-                  <SortableSubItem
-                    key={item.id}
-                    item={item}
-                    isActive={activeSubItem === item.id}
-                    onClick={() => handleItemClick(item)}
-                    onHover={handleHoverPrefetch}
-                  />
-                )
-              ))}
-            </SortableContext>
-          </DndContext>
+              <SortableContext
+                items={orderedItems.map((i) => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {orderedItems.map((item) => (
+                  item.children ? (
+                    <SortableCollapsibleItem
+                      key={item.id}
+                      item={item}
+                      activeSubItem={activeSubItem}
+                      onChildClick={handleItemClick}
+                      onHover={handleHoverPrefetch}
+                      location={location}
+                    />
+                  ) : (
+                    <SortableSubItem
+                      key={item.id}
+                      item={item}
+                      isActive={activeSubItem === item.id}
+                      onClick={() => handleItemClick(item)}
+                      onHover={handleHoverPrefetch}
+                    />
+                  )
+                ))}
+              </SortableContext>
+            </DndContext>
+          )}
         </nav>
       </ScrollArea>
     </div>

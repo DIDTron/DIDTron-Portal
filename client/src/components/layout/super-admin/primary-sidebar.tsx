@@ -1,9 +1,10 @@
 import { useLocation } from "wouter";
-import { LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Bot, Network, Cpu, Globe, Building2, GripVertical, Cog, Receipt, Phone, Check } from "lucide-react";
+import { LayoutDashboard, Server, Users, CreditCard, Settings, Megaphone, FileText, BarChart3, Shield, Bot, Network, Cpu, Globe, Building2, GripVertical, Cog, Receipt, Phone, Check, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSuperAdminTabs, type WorkspaceTab } from "@/stores/super-admin-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -132,6 +133,7 @@ export function PrimarySidebar() {
     setActiveSubItem,
     primarySidebarOpen,
     primarySidebarCollapsed,
+    togglePrimarySidebarCollapsed,
     openSecondarySidebar,
     primarySectionOrder,
     setPrimarySectionOrder,
@@ -222,6 +224,39 @@ export function PrimarySidebar() {
       "flex flex-col h-full border-r bg-sidebar shrink-0 transition-all duration-200",
       isCollapsed ? "w-14" : "w-48"
     )}>
+      <div className={cn(
+        "flex h-10 items-center border-b shrink-0",
+        isCollapsed ? "justify-center px-1" : "px-2"
+      )}>
+        {isCollapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={togglePrimarySidebarCollapsed}
+                aria-label="Expand primary sidebar"
+                data-testid="toggle-primary-sidebar-collapsed"
+                className="h-8 w-8"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Expand sidebar</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={togglePrimarySidebarCollapsed}
+            aria-label="Collapse primary sidebar"
+            data-testid="toggle-primary-sidebar-collapsed"
+            className="h-8 w-8"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
       
       <ScrollArea className="flex-1">
         <nav className={cn(

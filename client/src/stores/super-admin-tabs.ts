@@ -17,6 +17,7 @@ interface SuperAdminTabsState {
   primarySidebarOpen: boolean;
   primarySidebarCollapsed: boolean;
   secondarySidebarOpen: boolean;
+  secondarySidebarCollapsed: boolean;
   primarySectionOrder: string[];
   sectionItemOrder: Record<string, string[]>;
   openTab: (tab: WorkspaceTab) => void;
@@ -31,6 +32,7 @@ interface SuperAdminTabsState {
   togglePrimarySidebar: () => void;
   togglePrimarySidebarCollapsed: () => void;
   toggleSecondarySidebar: () => void;
+  toggleSecondarySidebarCollapsed: () => void;
   toggleBothSidebars: () => void;
   openSecondarySidebar: () => void;
   setPrimarySectionOrder: (order: string[]) => void;
@@ -47,6 +49,7 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
       primarySidebarOpen: true,
       primarySidebarCollapsed: false,
       secondarySidebarOpen: true,
+      secondarySidebarCollapsed: false,
       primarySectionOrder: [],
       sectionItemOrder: {},
 
@@ -146,6 +149,11 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
         set({ secondarySidebarOpen: !secondarySidebarOpen });
       },
 
+      toggleSecondarySidebarCollapsed: () => {
+        const { secondarySidebarCollapsed } = get();
+        set({ secondarySidebarCollapsed: !secondarySidebarCollapsed });
+      },
+
       toggleBothSidebars: () => {
         const { primarySidebarOpen, secondarySidebarOpen } = get();
         // If either sidebar is open, close both; otherwise open both
@@ -153,7 +161,8 @@ export const useSuperAdminTabs = create<SuperAdminTabsState>()(
         set({ 
           primarySidebarOpen: !shouldClose,
           secondarySidebarOpen: !shouldClose,
-          primarySidebarCollapsed: false
+          primarySidebarCollapsed: false,
+          secondarySidebarCollapsed: false
         });
       },
 
