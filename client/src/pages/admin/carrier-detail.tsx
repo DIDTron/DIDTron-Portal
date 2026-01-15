@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { queryClient, apiRequest, STALE_TIME, keepPreviousData } from "@/lib/queryClient";
@@ -77,51 +77,82 @@ export default function CarrierDetailPage() {
 
   const [supplierBalanceError, setSupplierBalanceError] = useState("");
 
+  // PERFORMANCE: Carrier data always needed for header
   const { data: carrier, isLoading } = useQuery<Carrier>({
     queryKey: ["/api/carriers", carrierId],
     enabled: !!carrierId,
     staleTime: STALE_TIME.DETAIL,
   });
 
+  // PERFORMANCE: Currencies needed for details/accounting tabs
   const { data: currencies } = useQuery<Currency[]>({
     queryKey: ["/api/currencies"],
     staleTime: STALE_TIME.STATIC,
-    enabled: !!carrierId,
+    enabled: !!carrierId && (activeTab === "details" || activeTab === "accounting"),
   });
 
+  // PERFORMANCE: Interconnects ONLY when interconnects tab is active
   const { data: interconnects } = useQuery<CarrierInterconnect[]>({
     queryKey: ["/api/carriers", carrierId, "interconnects"],
-    enabled: !!carrierId,
+    enabled: !!carrierId && activeTab === "interconnects",
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
   });
 
+  // PERFORMANCE: Contacts ONLY when contacts tab is active
   const { data: contacts } = useQuery<CarrierContact[]>({
     queryKey: ["/api/carriers", carrierId, "contacts"],
-    enabled: !!carrierId,
+    enabled: !!carrierId && activeTab === "contacts",
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
   });
 
+  // PERFORMANCE: Credit alerts ONLY when alerts tab is active
   const { data: creditAlerts } = useQuery<CarrierCreditAlert[]>({
     queryKey: ["/api/carriers", carrierId, "credit-alerts"],
-    enabled: !!carrierId,
+    enabled: !!carrierId && activeTab === "alerts",
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
   });
 
+  // PERFORMANCE: Email templates ONLY when alerts tab is active
   const { data: emailTemplates } = useQuery<EmailTemplate[]>({
     queryKey: ["/api/email-templates"],
     staleTime: STALE_TIME.STATIC,
-    enabled: !!carrierId,
+    enabled: !!carrierId && activeTab === "alerts",
   });
 
+  // PERFORMANCE: Users ONLY when contacts tab is active
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/users"],
     staleTime: STALE_TIME.LIST,
     placeholderData: keepPreviousData,
-    enabled: !!carrierId,
+    enabled: !!carrierId && activeTab === "contacts",
   });
+
+  // PERFORMANCE: Prefetch tab data on hover for instant tab switches
+  const prefetchTab = useCallback((tabId: string) => {
+    if (!carrierId) return;
+    const prefetchMap: Record<string, Array<{ queryKey: (string | undefined)[]; staleTime: number }>> = {
+      interconnects: [
+        { queryKey: ["/api/carriers", carrierId, "interconnects"], staleTime: STALE_TIME.LIST },
+      ],
+      contacts: [
+        { queryKey: ["/api/carriers", carrierId, "contacts"], staleTime: STALE_TIME.LIST },
+        { queryKey: ["/api/users"], staleTime: STALE_TIME.LIST },
+      ],
+      alerts: [
+        { queryKey: ["/api/carriers", carrierId, "credit-alerts"], staleTime: STALE_TIME.LIST },
+        { queryKey: ["/api/email-templates"], staleTime: STALE_TIME.STATIC },
+      ],
+      accounting: [
+        { queryKey: ["/api/currencies"], staleTime: STALE_TIME.STATIC },
+      ],
+    };
+    prefetchMap[tabId]?.forEach(({ queryKey, staleTime }) => {
+      queryClient.prefetchQuery({ queryKey, staleTime });
+    });
+  }, [carrierId]);
 
   const [formData, setFormData] = useState({
     customerAccountNumber: "",
@@ -649,10 +680,10 @@ export default function CarrierDetailPage() {
         <div className="border-b px-4">
           <TabsList className="h-12">
             <TabsTrigger value="details" data-testid="tab-details">Carrier Details</TabsTrigger>
-            <TabsTrigger value="interconnects" data-testid="tab-interconnects">Interconnects</TabsTrigger>
-            <TabsTrigger value="contacts" data-testid="tab-contacts">Contact Details</TabsTrigger>
-            <TabsTrigger value="accounting" data-testid="tab-accounting">Accounting Details</TabsTrigger>
-            <TabsTrigger value="alerts" data-testid="tab-alerts">Credit Alerts</TabsTrigger>
+            <TabsTrigger value="interconnects" data-testid="tab-interconnects" onMouseEnter={() => prefetchTab("interconnects")}>Interconnects</TabsTrigger>
+            <TabsTrigger value="contacts" data-testid="tab-contacts" onMouseEnter={() => prefetchTab("contacts")}>Contact Details</TabsTrigger>
+            <TabsTrigger value="accounting" data-testid="tab-accounting" onMouseEnter={() => prefetchTab("accounting")}>Accounting Details</TabsTrigger>
+            <TabsTrigger value="alerts" data-testid="tab-alerts" onMouseEnter={() => prefetchTab("alerts")}>Credit Alerts</TabsTrigger>
           </TabsList>
         </div>
 
