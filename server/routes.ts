@@ -427,6 +427,69 @@ export async function registerRoutes(
     }
   });
 
+  // Generate API Key (JWT refresh token) for ConnexCS using connexcs-tools service
+  app.post("/api/integrations/:id/generate-api-key", async (req, res) => {
+    try {
+      const integration = await storage.getIntegration(req.params.id);
+      if (!integration) return res.status(404).json({ error: "Integration not found" });
+      
+      if (integration.provider !== "connexcs") {
+        return res.status(400).json({ error: "API key generation only available for ConnexCS" });
+      }
+      
+      const creds = integration.credentials as { username?: string; password?: string; refreshToken?: string } | null;
+      if (!creds?.username || !creds?.password) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Username and password must be configured first" 
+        });
+      }
+      
+      // Use connexcs-tools service to generate the API key
+      const result = await connexcsTools.generateApiKey(storage);
+      
+      if (!result.success || !result.apiKey) {
+        return res.json({ 
+          success: false, 
+          error: result.error || "Failed to generate API key" 
+        });
+      }
+      
+      const { apiKey, daysRemaining } = result;
+      
+      // Store the refresh token in credentials
+      await storage.updateIntegration(req.params.id, {
+        credentials: { ...creds, refreshToken: apiKey },
+        status: "connected",
+        lastTestedAt: new Date(),
+        testResult: `API Key generated - valid for ${daysRemaining} days`
+      });
+      
+      // Log the action
+      await storage.createAuditLog({
+        action: "generate_api_key",
+        tableName: "integrations",
+        recordId: req.params.id,
+        newValues: { provider: "connexcs", tokenGenerated: true, daysRemaining }
+      });
+      
+      console.log(`[ConnexCS] API Key (refresh token) generated via connexcs-tools - ${daysRemaining} days validity`);
+      
+      res.json({ 
+        success: true, 
+        apiKey,
+        daysRemaining,
+        message: `API Key generated successfully - valid for ${daysRemaining} days`
+      });
+    } catch (error: any) {
+      console.error("[ConnexCS] Failed to generate API key:", error.message);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to generate API key" 
+      });
+    }
+  });
+
   app.post("/api/integrations/:id/enable", async (req, res) => {
     try {
       const integration = await storage.updateIntegration(req.params.id, {

@@ -33,6 +33,8 @@ import {
   RefreshCw,
   Loader2,
   Coins,
+  Copy,
+  Key,
 } from "lucide-react";
 import type { Integration } from "@shared/schema";
 
@@ -112,6 +114,8 @@ export default function IntegrationsPage() {
   const { toast } = useToast();
   const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
   const [credentialValues, setCredentialValues] = useState<Record<string, string>>({});
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isGeneratingApiKey, setIsGeneratingApiKey] = useState(false);
 
   const { data: integrations, isLoading } = useQuery<Integration[]>({
     queryKey: ["/api/integrations"],
@@ -185,6 +189,57 @@ export default function IntegrationsPage() {
       id: editingIntegration.id,
       data: { credentials }
     });
+  };
+
+  const handleGenerateApiKey = async () => {
+    if (!editingIntegration || editingIntegration.provider !== "connexcs") return;
+    
+    setIsGeneratingApiKey(true);
+    try {
+      const res = await apiRequest("POST", `/api/integrations/${editingIntegration.id}/generate-api-key`);
+      const data = await res.json();
+      
+      if (data.success && data.apiKey) {
+        setApiKey(data.apiKey);
+        queryClient.invalidateQueries({ queryKey: ["/api/integrations"] });
+        toast({
+          title: "API Key generated successfully",
+          description: `Token valid for ${data.daysRemaining || 30} days. Copy it now - it won't be shown again.`,
+        });
+      } else {
+        toast({
+          title: "Failed to generate API Key",
+          description: data.error || "Please check your username and password",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to generate API Key",
+        description: "Please verify your credentials and try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingApiKey(false);
+    }
+  };
+
+  const handleCopyApiKey = async () => {
+    if (!apiKey) return;
+    
+    try {
+      await navigator.clipboard.writeText(apiKey);
+      toast({
+        title: "API Key copied to clipboard",
+        description: "You can now paste it in your applications",
+      });
+    } catch {
+      toast({
+        title: "Failed to copy",
+        description: "Please select and copy manually",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: string | null) => {
@@ -282,6 +337,7 @@ export default function IntegrationsPage() {
                       onClick={() => {
                         setEditingIntegration(integration);
                         setCredentialValues({});
+                        setApiKey(null);
                       }}
                       data-testid={`button-configure-${integration.provider}`}
                     >
@@ -309,7 +365,7 @@ export default function IntegrationsPage() {
         </div>
       ))}
 
-      <Dialog open={!!editingIntegration} onOpenChange={(open) => !open && setEditingIntegration(null)}>
+      <Dialog open={!!editingIntegration} onOpenChange={(open) => { if (!open) { setEditingIntegration(null); setApiKey(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Configure {editingIntegration?.displayName}</DialogTitle>
@@ -335,6 +391,66 @@ export default function IntegrationsPage() {
                 Credentials are already configured. Enter new values to update them.
               </p>
             ) : null}
+
+            {editingIntegration?.provider === "connexcs" && (
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <Key className="w-4 h-4 text-muted-foreground" />
+                  <Label className="font-medium">API Key (30-day Refresh Token)</Label>
+                </div>
+                
+                {apiKey ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        readOnly
+                        value={apiKey}
+                        className="font-mono text-xs"
+                        data-testid="input-connexcs-api-key"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleCopyApiKey}
+                        data-testid="button-copy-api-key"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Copy this API key now. It will not be shown again after closing this dialog.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Button
+                      variant="secondary"
+                      onClick={handleGenerateApiKey}
+                      disabled={isGeneratingApiKey || !editingIntegration.credentials}
+                      className="w-full"
+                      data-testid="button-generate-api-key"
+                    >
+                      {isGeneratingApiKey ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Key className="w-4 h-4 mr-2" />
+                          Generate API Key
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      {editingIntegration.credentials 
+                        ? "Generate a 30-day JWT refresh token using your saved credentials. This exits mock mode and enables real ConnexCS API access."
+                        : "Save your username and password first, then generate the API key."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           <DialogFooter>

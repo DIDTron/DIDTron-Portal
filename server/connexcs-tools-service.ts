@@ -622,6 +622,43 @@ class ConnexCSToolsService {
     }
   }
 
+  // Generate and return the API Key (refresh token) for UI display
+  async generateApiKey(storage: StorageInterface): Promise<{
+    success: boolean;
+    apiKey?: string;
+    daysRemaining?: number;
+    error?: string;
+  }> {
+    await this.loadCredentialsFromStorage(storage);
+
+    if (!this.credentials?.username || !this.credentials?.password) {
+      return {
+        success: false,
+        error: "Username and password must be configured first",
+      };
+    }
+
+    try {
+      // Force generate a new refresh token (don't use cached one)
+      this.credentials.refreshToken = undefined;
+      
+      const refreshToken = await this.getRefreshToken(storage);
+      const { daysRemaining } = this.checkTokenExpiration(refreshToken);
+
+      return {
+        success: true,
+        apiKey: refreshToken,
+        daysRemaining,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
   async getStatus(storage: StorageInterface): Promise<ConnexCSStatus> {
     await this.loadCredentialsFromStorage(storage);
 
