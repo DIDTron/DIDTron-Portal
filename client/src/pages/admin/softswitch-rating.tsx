@@ -841,13 +841,13 @@ export function CustomerRatingPlansPage() {
                     paginatedPlans.map((plan) => (
                       <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
                         <TableCell>
-                          <a 
-                            href={`/admin/softswitch/rating/customer-plans/${plan.shortCode || plan.id}`}
+                          <Link 
+                            href={`/admin/softswitch/rating/customer-plans/${plan.shortId ?? plan.id}`}
                             className="text-primary hover:underline" 
                             data-testid={`link-plan-${plan.id}`}
                           >
                             {plan.name}
-                          </a>
+                          </Link>
                         </TableCell>
                         <TableCell>{plan.currency}</TableCell>
                         <TableCell>
@@ -982,6 +982,7 @@ const supplierRatingTabActions: Record<SupplierRatingTab, TabAction[]> = {
 
 interface SupplierRatingPlanAPI {
   id: string;
+  shortId: number | null;
   shortCode: string | null;
   name: string;
   carrierId: string | null;
@@ -1341,8 +1342,8 @@ export function SupplierRatingPlansPage() {
       setShowAddSupplierPlanDialog(false);
       setNewSupplierPlanName("");
       setNewSupplierPlanCurrency("USD");
-      if (data?.id) {
-        navigate(`/admin/softswitch/rating/supplier-plans/${data.id}`);
+      if (data?.shortId || data?.id) {
+        navigate(`/admin/softswitch/rating/supplier-plans/${data.shortId ?? data.id}`);
       }
     },
     onError: () => {
@@ -1546,13 +1547,13 @@ export function SupplierRatingPlansPage() {
                 paginatedPlans.map((plan) => (
                   <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
                     <TableCell>
-                      <a 
-                        href={`/admin/softswitch/rating/supplier-plans/${plan.id}`}
+                      <Link 
+                        href={`/admin/softswitch/rating/supplier-plans/${plan.shortId ?? plan.id}`}
                         className="text-primary hover:underline" 
                         data-testid={`link-plan-${plan.id}`}
                       >
                         {plan.name}
-                      </a>
+                      </Link>
                     </TableCell>
                     <TableCell className="max-w-[200px] truncate" title={plan.carrierId || undefined}>
                       {plan.carrierId || "-"}

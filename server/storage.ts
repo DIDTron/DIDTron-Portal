@@ -298,6 +298,7 @@ export interface IStorage {
   getCustomerRatingPlansWithCursor(cursor: string | null, limit: number): Promise<CustomerRatingPlan[]>;
   getCustomerRatingPlan(id: string): Promise<CustomerRatingPlan | undefined>;
   getCustomerRatingPlanByShortCode(shortCode: string): Promise<CustomerRatingPlan | undefined>;
+  getCustomerRatingPlanByShortId(shortId: number): Promise<CustomerRatingPlan | undefined>;
   resolveCustomerRatingPlan(identifier: string): Promise<CustomerRatingPlan | undefined>;
   createCustomerRatingPlan(plan: InsertCustomerRatingPlan): Promise<CustomerRatingPlan>;
   updateCustomerRatingPlan(id: string, data: Partial<InsertCustomerRatingPlan>): Promise<CustomerRatingPlan | undefined>;
@@ -321,6 +322,7 @@ export interface IStorage {
   getSupplierRatingPlansWithCursor(cursor: string | null, limit: number): Promise<SupplierRatingPlan[]>;
   getSupplierRatingPlan(id: string): Promise<SupplierRatingPlan | undefined>;
   getSupplierRatingPlanByShortCode(shortCode: string): Promise<SupplierRatingPlan | undefined>;
+  getSupplierRatingPlanByShortId(shortId: number): Promise<SupplierRatingPlan | undefined>;
   resolveSupplierRatingPlan(identifier: string): Promise<SupplierRatingPlan | undefined>;
   createSupplierRatingPlan(plan: InsertSupplierRatingPlan): Promise<SupplierRatingPlan>;
   updateSupplierRatingPlan(id: string, data: Partial<InsertSupplierRatingPlan>): Promise<SupplierRatingPlan | undefined>;
@@ -426,6 +428,8 @@ export interface IStorage {
   // Routes
   getRoutes(): Promise<Route[]>;
   getRoute(id: string): Promise<Route | undefined>;
+  getRouteByShortId(shortId: number): Promise<Route | undefined>;
+  resolveRoute(identifier: string): Promise<Route | undefined>;
   createRoute(route: InsertRoute): Promise<Route>;
   updateRoute(id: string, data: Partial<InsertRoute>): Promise<Route | undefined>;
   deleteRoute(id: string): Promise<boolean>;
@@ -1455,10 +1459,21 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getCustomerRatingPlanByShortId(shortId: number): Promise<CustomerRatingPlan | undefined> {
+    const results = await db.select().from(customerRatingPlansTable).where(eq(customerRatingPlansTable.shortId, shortId));
+    return results[0];
+  }
+
   async resolveCustomerRatingPlan(identifier: string): Promise<CustomerRatingPlan | undefined> {
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidPattern.test(identifier)) {
       return this.getCustomerRatingPlan(identifier);
+    }
+    // Try numeric shortId
+    const numericId = parseInt(identifier, 10);
+    if (!isNaN(numericId) && numericId > 0) {
+      const byShortId = await this.getCustomerRatingPlanByShortId(numericId);
+      if (byShortId) return byShortId;
     }
     return this.getCustomerRatingPlanByShortCode(identifier);
   }
@@ -1573,9 +1588,22 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getSupplierRatingPlanByShortId(shortId: number): Promise<SupplierRatingPlan | undefined> {
+    const results = await db.select().from(supplierRatingPlansTable).where(eq(supplierRatingPlansTable.shortId, shortId));
+    return results[0];
+  }
+
   async resolveSupplierRatingPlan(identifier: string): Promise<SupplierRatingPlan | undefined> {
-    const byId = await this.getSupplierRatingPlan(identifier);
-    if (byId) return byId;
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return this.getSupplierRatingPlan(identifier);
+    }
+    // Try numeric shortId
+    const numericId = parseInt(identifier, 10);
+    if (!isNaN(numericId) && numericId > 0) {
+      const byShortId = await this.getSupplierRatingPlanByShortId(numericId);
+      if (byShortId) return byShortId;
+    }
     return await this.getSupplierRatingPlanByShortCode(identifier);
   }
 
@@ -2194,6 +2222,23 @@ export class MemStorage implements IStorage {
   async getRoute(id: string): Promise<Route | undefined> {
     const results = await db.select().from(routesTable).where(eq(routesTable.id, id));
     return results[0];
+  }
+
+  async getRouteByShortId(shortId: number): Promise<Route | undefined> {
+    const results = await db.select().from(routesTable).where(eq(routesTable.shortId, shortId));
+    return results[0];
+  }
+
+  async resolveRoute(identifier: string): Promise<Route | undefined> {
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return this.getRoute(identifier);
+    }
+    const numericId = parseInt(identifier, 10);
+    if (!isNaN(numericId) && numericId > 0) {
+      return this.getRouteByShortId(numericId);
+    }
+    return this.getRoute(identifier);
   }
 
   async createRoute(route: InsertRoute): Promise<Route> {

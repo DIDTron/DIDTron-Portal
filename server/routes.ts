@@ -4851,6 +4851,16 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/routes/:id", async (req, res) => {
+    try {
+      const route = await storage.resolveRoute(req.params.id);
+      if (!route) return res.status(404).json({ error: "Route not found" });
+      res.json(route);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch route" });
+    }
+  });
+
   app.post("/api/routes", async (req, res) => {
     try {
       const parsed = insertRouteSchema.safeParse(req.body);
@@ -4886,10 +4896,11 @@ export async function registerRoutes(
 
   app.patch("/api/routes/:id", async (req, res) => {
     try {
-      const oldRoute = await storage.getRoute(req.params.id);
-      const route = await storage.updateRoute(req.params.id, req.body);
+      const oldRoute = await storage.resolveRoute(req.params.id);
+      if (!oldRoute) return res.status(404).json({ error: "Route not found" });
+      const route = await storage.updateRoute(oldRoute.id, req.body);
       if (!route) return res.status(404).json({ error: "Route not found" });
-      await auditService.logWithRequest(req, "update", "routes", req.params.id, oldRoute as Record<string, unknown>, route as Record<string, unknown>);
+      await auditService.logWithRequest(req, "update", "routes", oldRoute.id, oldRoute as Record<string, unknown>, route as Record<string, unknown>);
       res.json(route);
     } catch (error) {
       res.status(500).json({ error: "Failed to update route" });
@@ -4898,16 +4909,16 @@ export async function registerRoutes(
 
   app.delete("/api/routes/:id", async (req, res) => {
     try {
-      const oldRoute = await storage.getRoute(req.params.id);
+      const oldRoute = await storage.resolveRoute(req.params.id);
       if (!oldRoute) return res.status(404).json({ error: "Route not found" });
       
       // Move to trash before deleting
-      await auditService.moveToTrash("routes", req.params.id, oldRoute as Record<string, unknown>, req.session?.userId);
+      await auditService.moveToTrash("routes", oldRoute.id, oldRoute as Record<string, unknown>, req.session?.userId);
       
-      const deleted = await storage.deleteRoute(req.params.id);
+      const deleted = await storage.deleteRoute(oldRoute.id);
       if (!deleted) return res.status(404).json({ error: "Route not found" });
       
-      await auditService.logWithRequest(req, "delete", "routes", req.params.id, oldRoute as Record<string, unknown>, null);
+      await auditService.logWithRequest(req, "delete", "routes", oldRoute.id, oldRoute as Record<string, unknown>, null);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete route" });

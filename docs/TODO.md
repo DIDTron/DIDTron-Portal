@@ -1,6 +1,69 @@
 # DIDTron - TODO List
 
-## Current Plan ID: PLAN-2026-01-15-SOFTSWITCH-PERF
+## Current Plan ID: PLAN-2026-01-15-SHORTID
+
+**Status**: 🔄 In Progress - Extending Digitalk-style shortId to all platform entities.
+
+---
+
+## PLAN-2026-01-15-SHORTID: Platform-Wide Short ID Implementation
+
+**Objective**: Extend Digitalk-style permanent numeric shortId to all platform entities. IDs are serial, auto-increment, never recycle (even after delete/restore), and use hierarchical structure where appropriate.
+
+### Completed Tasks
+
+- [x] **SID-01**: Core Softswitch entities (carriers, carrier_interconnects, carrier_services)
+  - Added `shortId` serial columns with UNIQUE constraint
+  - Added `getByShortId` storage methods
+  - Added resolver methods accepting shortId, UUID, or code
+  - Updated frontend navigation to use shortId with fallbacks
+  - Status: ✅ Complete (architect reviewed)
+
+### Completed Tasks (continued)
+
+- [x] **SID-02**: Rating Plans (customer_rating_plans, supplier_rating_plans)
+  - Added `shortId` serial columns with UNIQUE constraint
+  - Added `getByShortId` storage methods
+  - Updated resolver methods to check numeric shortId
+  - Updated frontend navigation to use shortId with fallbacks
+  - Fixed wouter Link usage (CONSTITUTION Rule 8)
+  - Status: ✅ Complete
+
+### In Progress Tasks
+
+- [ ] **SID-03**: Routing entities (routes, route_groups)
+  - Add `shortId` serial columns
+  - Add resolver methods
+  - Update frontend navigation
+
+- [ ] **SID-04**: Customer entities (customers)
+  - Add `shortId` serial column
+  - Add resolver method
+  - Update frontend navigation
+
+- [ ] **SID-05**: DID entities (dids, did_providers)
+  - Add `shortId` serial columns
+  - Add resolver methods
+  - Update frontend navigation
+
+- [ ] **SID-06**: PBX entities (extensions, ivrs, ring_groups, queues, sip_trunks)
+  - Add `shortId` serial columns
+  - Add resolver methods
+  - Update frontend navigation
+
+- [ ] **SID-07**: AI Voice entities (ai_voice_agents, ai_voice_campaigns)
+  - Add `shortId` serial columns
+  - Add resolver methods
+  - Update frontend navigation
+
+- [ ] **SID-08**: Billing entities (invoices, payments, credit_notes)
+  - Add hierarchical shortId (carrierID + 5 digits)
+  - Add resolver methods
+  - Update frontend navigation
+
+---
+
+## PLAN-2026-01-15-SOFTSWITCH-PERF (ARCHIVED)
 
 **Status**: ✅ Complete - All Softswitch performance optimizations applied.
 

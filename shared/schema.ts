@@ -612,6 +612,7 @@ export const interconnectMonitoringSettings = pgTable("interconnect_monitoring_s
 
 export const customerRatingPlans = pgTable("customer_rating_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   shortCode: text("short_code").unique(),
   name: text("name").notNull(),
   currency: text("currency").notNull().default("USD"),
@@ -684,6 +685,7 @@ export type CustomerRatingPlanRate = typeof customerRatingPlanRates.$inferSelect
 
 export const supplierRatingPlans = pgTable("supplier_rating_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   shortCode: text("short_code").unique(),
   name: text("name").notNull(),
   carrierId: varchar("carrier_id").references(() => carriers.id),
@@ -908,6 +910,7 @@ export const channelPlanAssignments = pgTable("channel_plan_assignments", {
 
 export const routes = pgTable("routes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   name: text("name").notNull(),
   prefix: text("prefix").notNull(),
   destination: text("destination"),
@@ -934,6 +937,7 @@ export const routeAssignments = pgTable("route_assignments", {
 
 export const routeGroups = pgTable("route_groups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
   description: text("description"),
