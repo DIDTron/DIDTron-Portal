@@ -1,6 +1,21 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
+import { storage } from "../storage";
+
+const requireSuperAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req.session as any)?.userId;
+  if (!userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  const user = await storage.getUser(userId);
+  if (!user || user.role !== "super_admin") {
+    return res.status(403).json({ error: "Forbidden: Super Admin access required" });
+  }
+  next();
+};
 
 export function registerJobsRoutes(app: Express) {
+  app.use("/api/admin/jobs", requireSuperAdmin);
+
   app.get("/api/admin/jobs/stats", async (req, res) => {
     try {
       const { getJobStats } = await import("../job-queue");

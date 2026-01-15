@@ -1097,3 +1097,43 @@ The original scope was routes.ts (11 errors) + job-queue.ts (9 errors) = 20 erro
 - Only used in `server/replit_integrations/auth/routes.ts` line 8 for `/api/auth/user`
 
 **Resolution required**: Add auth guard to jobs.routes.ts endpoints (separate task, not in MOD scope).
+
+
+---
+
+## 2026-01-15: Secured /api/admin/jobs endpoints
+
+**Decision**: Added auth + role guard to jobs.routes.ts endpoints to fix critical security vulnerability.
+
+**DOC TARGET**: docs/UI_SPEC.md → Module Map (Atlas) → PART 2, docs/TODO.md
+
+**Problem**: All 13 /api/admin/jobs/* endpoints were publicly accessible without authentication.
+
+**Solution**: Added `requireSuperAdmin` middleware at the top of registerJobsRoutes():
+```typescript
+const requireSuperAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req.session as any)?.userId;
+  if (!userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  const user = await storage.getUser(userId);
+  if (!user || user.role !== "super_admin") {
+    return res.status(403).json({ error: "Forbidden: Super Admin access required" });
+  }
+  next();
+};
+
+app.use("/api/admin/jobs", requireSuperAdmin);
+```
+
+**Files Changed**:
+- `server/routes/jobs.routes.ts` (lines 1-16: added middleware)
+- `tests/admin-jobs-auth.spec.ts` (new: security test)
+
+**Verification**:
+- npm run check: PASS
+- Playwright tests: 16 passed (login: 5, system-status: 9, admin-jobs-auth: 2)
+- Unauthenticated GET /api/admin/jobs/stats => 401
+- Authenticated super_admin GET /api/admin/jobs/stats => 200
+
+**Atlas Update**: jobs.routes.ts middleware coverage changed from "UNPROTECTED (BUG)" to "Verified: auth + super_admin guard present".

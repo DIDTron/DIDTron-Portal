@@ -1,0 +1,60 @@
+EMERGENCY SECURITY FIX — MUST DO NOW (NO DRIFT)
+
+READ CHECK ✅ must include:
+docs/AGENT_BRIEF.md, docs/TODO.md, docs/UI_SPEC.md, docs/DECISIONS.md, docs/PERFORMANCE.md
+(Do NOT skip any.)
+
+REQUEST INTAKE (MANDATORY):
+DOC TARGET: docs/TODO.md
+1) Search docs/TODO.md for any existing task about “jobs endpoints auth / admin jobs security / /api/admin/jobs”.
+2) If it exists: update that task (NO duplicates).
+3) If it does not exist: create a new Plan ID and task:
+   Plan ID: PLAN-2026-01-15-ADMINJOBS-AUTHFIX
+   Task ID: SEC-01 — Protect /api/admin/jobs/* endpoints (CRITICAL)
+   Acceptance Criteria:
+   - Unauthenticated requests to /api/admin/jobs/* return 401 JSON
+   - Authenticated but non-super_admin return 403 JSON
+   - Authenticated super_admin returns 200 and same JSON keys as before
+   - npm run check PASS
+   - Playwright + Axe PASS (login.spec.ts + system-status.spec.ts, 0 skipped)
+   - Add one new Playwright test proving security:
+     (a) unauthenticated GET /api/admin/jobs/stats => 401
+     (b) authenticated super_admin GET /api/admin/jobs/stats => 200
+   - WRITEBACK:
+     * docs/TODO.md task checked off with file paths + test output
+     * docs/DECISIONS.md append-only entry titled:
+       “2026-01-15: Secured /api/admin/jobs endpoints”
+     * docs/UI_SPEC.md Atlas PART 2 row updated:
+       jobs.routes.ts middleware coverage becomes “Verified: auth + super_admin guard present”
+
+IMPLEMENTATION RULES (STRICT — NO REFACTOR):
+- You are NOT allowed to redesign endpoints, change URLs, or reorganize storage/services.
+- Only add the missing auth/role guard for the jobs module.
+- Use the SAME AUTH MECHANISM already used by the Super Admin portal and existing endpoints (the one that makes login.spec.ts pass).
+- DO NOT switch these endpoints to Replit OIDC middleware unless the existing portal auth already uses it.
+- Reuse existing guard helpers (requireAuth/requireSessionUser/requireSuperAdmin/etc.). Do NOT invent a new auth system.
+- Apply guard ONLY to /api/admin/jobs/*.
+  Preferred minimal pattern inside server/routes/jobs.routes.ts:
+  - Add a single middleware for the prefix BEFORE defining the endpoints, e.g.:
+    app.use("/api/admin/jobs", <existing-auth-guard>, <existing-super-admin-guard>);
+  - Then leave the 13 endpoints untouched.
+
+PROOF REQUIRED IN STOP REPORT (same message after fix):
+A) Files changed (exact paths)
+B) Guard proof:
+   - paste the exact middleware snippet you applied + file path + line ranges
+C) Runtime proof (no guessing):
+   - show 2 curl results (status + top-level keys only):
+     * unauth GET http://127.0.0.1:5000/api/admin/jobs/stats => 401 + JSON keys
+     * authenticated super_admin => 200 + JSON keys
+D) Tests:
+   - paste exact commands + results:
+     npm run check
+     npx playwright test tests/login.spec.ts tests/system-status.spec.ts --reporter=list
+     npx playwright test tests/admin-jobs-auth.spec.ts --reporter=list
+E) Docs writeback:
+   - paste the exact TODO task section you checked off
+   - paste the DECISIONS entry you appended
+   - paste the updated Atlas row for jobs.routes.ts
+
+STOP after SEC-01 is fully done. Do NOT start MOD-08 or any other task until this is accepted.
