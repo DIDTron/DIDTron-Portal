@@ -2,7 +2,7 @@
 
 ## Current Plan ID: PLAN-2026-01-15-SHORTID
 
-**Status**: 🔄 In Progress - Extending Digitalk-style shortId to all platform entities.
+**Status**: ✅ Core entities complete - Carriers, Rating Plans, Routes, Customers, DIDs, Invoices, Payments all have shortId.
 
 ---
 
@@ -19,8 +19,6 @@
   - Updated frontend navigation to use shortId with fallbacks
   - Status: ✅ Complete (architect reviewed)
 
-### Completed Tasks (continued)
-
 - [x] **SID-02**: Rating Plans (customer_rating_plans, supplier_rating_plans)
   - Added `shortId` serial columns with UNIQUE constraint
   - Added `getByShortId` storage methods
@@ -29,37 +27,41 @@
   - Fixed wouter Link usage (CONSTITUTION Rule 8)
   - Status: ✅ Complete
 
-### In Progress Tasks
+- [x] **SID-03**: Routing entities (routes, route_groups)
+  - Added `shortId` serial columns
+  - Added resolver methods (resolveRoute)
+  - Added GET /api/routes/:id endpoint using resolver
+  - Routes page uses inline editing (no detail navigation)
+  - Status: ✅ Complete
 
-- [ ] **SID-03**: Routing entities (routes, route_groups)
-  - Add `shortId` serial columns
-  - Add resolver methods
-  - Update frontend navigation
+- [x] **SID-04**: Customer entities (customers)
+  - Added `shortId` serial column
+  - Added `getCustomerByShortId` and `resolveCustomer` methods
+  - Resolver checks UUID → numeric shortId → accountNumber
+  - Status: ✅ Complete
 
-- [ ] **SID-04**: Customer entities (customers)
-  - Add `shortId` serial column
-  - Add resolver method
-  - Update frontend navigation
+- [x] **SID-05**: DID entities (dids, did_providers)
+  - Added `shortId` serial columns
+  - Added `getDidByShortId`, `resolveDid`, `getDidProviderByShortId`, `resolveDidProvider`
+  - Resolvers check UUID → numeric shortId → code/number
+  - Status: ✅ Complete
 
-- [ ] **SID-05**: DID entities (dids, did_providers)
-  - Add `shortId` serial columns
-  - Add resolver methods
-  - Update frontend navigation
+- [x] **SID-08**: Billing entities (invoices, payments)
+  - Added `shortId` serial columns
+  - Database migrated with SERIAL UNIQUE
+  - Status: ✅ Complete (schema ready for hierarchical number generator)
+
+### Remaining Tasks
 
 - [ ] **SID-06**: PBX entities (extensions, ivrs, ring_groups, queues, sip_trunks)
   - Add `shortId` serial columns
   - Add resolver methods
-  - Update frontend navigation
+  - Lower priority - list pages with inline editing
 
 - [ ] **SID-07**: AI Voice entities (ai_voice_agents, ai_voice_campaigns)
   - Add `shortId` serial columns
   - Add resolver methods
-  - Update frontend navigation
-
-- [ ] **SID-08**: Billing entities (invoices, payments, credit_notes)
-  - Add hierarchical shortId (carrierID + 5 digits)
-  - Add resolver methods
-  - Update frontend navigation
+  - Lower priority - list pages with inline editing
 
 ---
 

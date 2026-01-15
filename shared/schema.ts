@@ -1362,6 +1362,7 @@ export const callRecordings = pgTable("call_recordings", {
 
 export const payments = pgTable("payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   customerId: varchar("customer_id").references(() => customers.id).notNull(),
   amount: decimal("amount", { precision: 12, scale: 4 }).notNull(),
   currency: text("currency").default("USD"),
@@ -1376,6 +1377,7 @@ export const payments = pgTable("payments", {
 
 export const invoices = pgTable("invoices", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   customerId: varchar("customer_id").references(() => customers.id).notNull(),
   invoiceNumber: text("invoice_number").notNull().unique(),
   amount: decimal("amount", { precision: 12, scale: 4 }).notNull(),
