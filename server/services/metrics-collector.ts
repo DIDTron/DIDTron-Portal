@@ -340,7 +340,14 @@ class MetricsCollectorService {
         { name: "openai", checkFn: this.checkOpenAI.bind(this) },
       ];
 
-      for (const { name, checkFn } of integrationChecks) {
+      for (let i = 0; i < integrationChecks.length; i++) {
+        const { name, checkFn } = integrationChecks[i];
+        
+        // Add 500ms buffer between each integration check to prevent API overload
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         const result = await checkFn();
         
         // Update or insert integration health record
