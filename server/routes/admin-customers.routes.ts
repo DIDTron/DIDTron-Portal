@@ -278,9 +278,11 @@ export function registerAdminCustomersRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/supplier-import-templates/:id", async (req, res) => {
+  app.get("/api/supplier-import-templates/:shortId", async (req, res) => {
     try {
-      const [template] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
+      const shortId = parseInt(req.params.shortId, 10);
+      if (isNaN(shortId)) return res.status(400).json({ error: "Invalid template ID" });
+      const [template] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.shortId, shortId));
       if (!template) return res.status(404).json({ error: "Import template not found" });
       res.json(template);
     } catch (error) {
@@ -301,13 +303,15 @@ export function registerAdminCustomersRoutes(app: Express): void {
     }
   });
 
-  app.patch("/api/supplier-import-templates/:id", async (req, res) => {
+  app.patch("/api/supplier-import-templates/:shortId", async (req, res) => {
     try {
-      const [existing] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
+      const shortId = parseInt(req.params.shortId, 10);
+      if (isNaN(shortId)) return res.status(400).json({ error: "Invalid template ID" });
+      const [existing] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.shortId, shortId));
       if (!existing) return res.status(404).json({ error: "Import template not found" });
       const [template] = await db.update(supplierImportTemplates)
         .set({ ...req.body, updatedAt: new Date() })
-        .where(eq(supplierImportTemplates.id, req.params.id))
+        .where(eq(supplierImportTemplates.shortId, shortId))
         .returning();
       res.json(template);
     } catch (error) {
@@ -316,11 +320,13 @@ export function registerAdminCustomersRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/supplier-import-templates/:id", async (req, res) => {
+  app.delete("/api/supplier-import-templates/:shortId", async (req, res) => {
     try {
-      const [existing] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
+      const shortId = parseInt(req.params.shortId, 10);
+      if (isNaN(shortId)) return res.status(400).json({ error: "Invalid template ID" });
+      const [existing] = await db.select().from(supplierImportTemplates).where(eq(supplierImportTemplates.shortId, shortId));
       if (!existing) return res.status(404).json({ error: "Import template not found" });
-      await db.delete(supplierImportTemplates).where(eq(supplierImportTemplates.id, req.params.id));
+      await db.delete(supplierImportTemplates).where(eq(supplierImportTemplates.shortId, shortId));
       res.status(204).send();
     } catch (error) {
       console.error("[SupplierImportTemplates] Error deleting template:", error);

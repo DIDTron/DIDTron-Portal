@@ -1318,8 +1318,8 @@ export function SupplierRatingPlansPage() {
   
   // Delete import template mutation
   const deleteImportTemplateMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/supplier-import-templates/${id}`);
+    mutationFn: async (shortId: number) => {
+      await apiRequest("DELETE", `/api/supplier-import-templates/${shortId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplier-import-templates"] });
@@ -2724,12 +2724,12 @@ export function SupplierRatingPlansPage() {
                   </TableRow>
                 ) : (
                   paginatedImportTemplates.map((template) => (
-                    <TableRow key={template.id} data-testid={`row-import-template-${template.id}`}>
+                    <TableRow key={template.id} data-testid={`row-import-template-${template.shortId}`}>
                       <TableCell>
                         <Link 
-                          href={`/admin/softswitch/rating/supplier-rating/import-template/${template.id}`}
+                          href={`/admin/softswitch/rating/supplier-rating/import-template/${template.shortId}`}
                           className="text-primary hover:underline font-medium"
-                          data-testid={`link-import-template-${template.id}`}
+                          data-testid={`link-import-template-${template.shortId}`}
                         >
                           {template.name}
                         </Link>
@@ -2752,9 +2752,9 @@ export function SupplierRatingPlansPage() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => deleteImportTemplateMutation.mutate(template.id)}
+                          onClick={() => deleteImportTemplateMutation.mutate(template.shortId)}
                           disabled={deleteImportTemplateMutation.isPending}
-                          data-testid={`button-delete-import-template-${template.id}`}
+                          data-testid={`button-delete-import-template-${template.shortId}`}
                         >
                           Delete
                         </Button>

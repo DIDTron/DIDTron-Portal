@@ -1013,6 +1013,7 @@ export const rateCardAssignments = pgTable("rate_card_assignments", {
 
 export const supplierImportTemplates = pgTable("supplier_import_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortId: serial("short_id").unique(),
   name: text("name").notNull(),
   description: text("description"),
   
@@ -1057,6 +1058,7 @@ export const supplierImportTemplates = pgTable("supplier_import_templates", {
 
 export const insertSupplierImportTemplateSchema = createInsertSchema(supplierImportTemplates).omit({
   id: true,
+  shortId: true,
   createdAt: true,
   updatedAt: true,
 });
