@@ -611,10 +611,10 @@ class MetricsCollectorService {
         const portalStats = storeStats[portalType];
         
         // Determine health status based on P95 threshold
-        let healthStatus: "healthy" | "degraded" | "critical" = "healthy";
+        let healthStatus: "healthy" | "degraded" | "down" = "healthy";
         if (portalStats.transitionP95 > BUDGET_THRESHOLDS.portalRouteP95.critical) {
-          healthStatus = "critical";
-        } else if (portalStats.transitionP95 > BUDGET_THRESHOLDS.portalRouteP95.warning) {
+          healthStatus = "down";
+        } else if (portalStats.transitionP95 > BUDGET_THRESHOLDS.portalRouteP95.warn) {
           healthStatus = "degraded";
         }
 
@@ -644,7 +644,7 @@ class MetricsCollectorService {
           "portalRouteP95",
           portalStats.transitionP95,
           {
-            warn: BUDGET_THRESHOLDS.portalRouteP95.warning,
+            warn: BUDGET_THRESHOLDS.portalRouteP95.warn,
             critical: BUDGET_THRESHOLDS.portalRouteP95.critical,
             higherIsBad: true,
           },
