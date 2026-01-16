@@ -1312,8 +1312,9 @@ function AuditTab() {
 export default function SystemStatusPage() {
   const [isLive, setIsLive] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { data: overview, refetch, isFetching } = useQuery<OverviewData>({
+  const { data: overview, isFetching } = useQuery<OverviewData>({
     queryKey: ["/api/system/overview"],
     refetchInterval: isLive ? 30000 : false,
     staleTime: STALE_TIME.REALTIME,
@@ -1327,6 +1328,32 @@ export default function SystemStatusPage() {
     },
   });
 
+  // Refresh ALL system metrics
+  const handleRefreshAll = async () => {
+    setIsRefreshing(true);
+    try {
+      // Invalidate all system-related queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/system/overview"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/system/performance"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/system/health"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/system/api-metrics"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/system/database-metrics"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/system/job-metrics"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/system/cache-metrics"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/system/integrations"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/system/alerts"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/system/audit-logs"] }),
+      ]);
+      
+      // Force refresh the overview with cache bypass
+      const data = await fetch("/api/system/overview?force=true").then(r => r.json());
+      queryClient.setQueryData(["/api/system/overview"], data);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
@@ -1336,6 +1363,8 @@ export default function SystemStatusPage() {
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
+
+  const showRefreshSpinner = isRefreshing || isFetching;
 
   return (
     <div className="p-6 space-y-4">
@@ -1359,18 +1388,12 @@ export default function SystemStatusPage() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={async () => {
-              // Force refresh bypasses server cache
-              await queryClient.invalidateQueries({ queryKey: ["/api/system/overview"] });
-              await fetch("/api/system/overview?force=true").then(r => r.json()).then(data => {
-                queryClient.setQueryData(["/api/system/overview"], data);
-              });
-            }}
-            disabled={isFetching}
+            onClick={handleRefreshAll}
+            disabled={showRefreshSpinner}
             data-testid="button-refresh"
           >
-            <RefreshCw className={cn("h-4 w-4 mr-2", isFetching && "animate-spin")} />
-            Refresh
+            <RefreshCw className={cn("h-4 w-4 mr-2", showRefreshSpinner && "animate-spin")} />
+            {isRefreshing ? "Refreshing..." : "Refresh"}
           </Button>
           <Button 
             variant="outline" 
