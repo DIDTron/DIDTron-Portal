@@ -721,5 +721,142 @@ export function registerSystemStatusRoutes(app: Express) {
     }
   });
 
+  /**
+   * Portal Metrics Endpoint - receives batched metrics from client-side hook
+   * Stores route transition times and JS errors for aggregation
+   */
+  app.post("/api/portal-metrics", async (req: Request, res: Response) => {
+    try {
+      const { routeTransitions, jsErrors, portalType } = req.body;
+
+      if (!portalType || !["super_admin", "customer", "marketing"].includes(portalType)) {
+        return res.status(400).json({ error: "Invalid portal type" });
+      }
+
+      // Record route transitions to in-memory store for aggregation
+      if (Array.isArray(routeTransitions) && routeTransitions.length > 0) {
+        for (const transition of routeTransitions) {
+          portalMetricsStore.recordTransition(portalType, transition.durationMs);
+        }
+      }
+
+      // Record JS errors to in-memory store
+      if (Array.isArray(jsErrors) && jsErrors.length > 0) {
+        for (const error of jsErrors) {
+          portalMetricsStore.recordError(portalType, error.message);
+        }
+      }
+
+      res.json({ success: true, received: { transitions: routeTransitions?.length || 0, errors: jsErrors?.length || 0 } });
+    } catch (error) {
+      console.error("[SystemStatus] Error processing portal metrics:", error);
+      res.status(500).json({ error: "Failed to process portal metrics" });
+    }
+  });
+
+  /**
+   * Get portal metrics statistics
+   */
+  app.get("/api/system/portal-stats", async (req: Request, res: Response) => {
+    try {
+      const stats = portalMetricsStore.getStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("[SystemStatus] Error fetching portal stats:", error);
+      res.status(500).json({ error: "Failed to fetch portal stats" });
+    }
+  });
+
   console.log("[SystemStatus] API routes registered");
 }
+
+/**
+ * In-memory store for portal metrics aggregation
+ * Collects route transition times and JS errors from client-side
+ */
+class PortalMetricsStore {
+  private transitions: Record<string, number[]> = {
+    super_admin: [],
+    customer: [],
+    marketing: [],
+  };
+  private errors: Record<string, string[]> = {
+    super_admin: [],
+    customer: [],
+    marketing: [],
+  };
+  private lastReset = new Date();
+  private readonly maxEntries = 1000;
+
+  recordTransition(portalType: string, durationMs: number) {
+    if (!this.transitions[portalType]) {
+      this.transitions[portalType] = [];
+    }
+    this.transitions[portalType].push(durationMs);
+    if (this.transitions[portalType].length > this.maxEntries) {
+      this.transitions[portalType] = this.transitions[portalType].slice(-this.maxEntries);
+    }
+  }
+
+  recordError(portalType: string, message: string) {
+    if (!this.errors[portalType]) {
+      this.errors[portalType] = [];
+    }
+    this.errors[portalType].push(message);
+    if (this.errors[portalType].length > this.maxEntries) {
+      this.errors[portalType] = this.errors[portalType].slice(-this.maxEntries);
+    }
+  }
+
+  getP95(portalType: string): number {
+    const durations = this.transitions[portalType] || [];
+    if (durations.length === 0) return 0;
+    const sorted = [...durations].sort((a, b) => a - b);
+    const p95Index = Math.floor(sorted.length * 0.95);
+    return sorted[p95Index] || 0;
+  }
+
+  getP99(portalType: string): number {
+    const durations = this.transitions[portalType] || [];
+    if (durations.length === 0) return 0;
+    const sorted = [...durations].sort((a, b) => a - b);
+    const p99Index = Math.floor(sorted.length * 0.99);
+    return sorted[p99Index] || 0;
+  }
+
+  getErrorCount(portalType: string, windowMs: number = 15 * 60 * 1000): number {
+    return (this.errors[portalType] || []).length;
+  }
+
+  getStats() {
+    return {
+      super_admin: {
+        transitionP95: this.getP95("super_admin"),
+        transitionP99: this.getP99("super_admin"),
+        errorCount: this.getErrorCount("super_admin"),
+        transitionCount: this.transitions.super_admin?.length || 0,
+      },
+      customer: {
+        transitionP95: this.getP95("customer"),
+        transitionP99: this.getP99("customer"),
+        errorCount: this.getErrorCount("customer"),
+        transitionCount: this.transitions.customer?.length || 0,
+      },
+      marketing: {
+        transitionP95: this.getP95("marketing"),
+        transitionP99: this.getP99("marketing"),
+        errorCount: this.getErrorCount("marketing"),
+        transitionCount: this.transitions.marketing?.length || 0,
+      },
+      lastReset: this.lastReset,
+    };
+  }
+
+  reset() {
+    this.transitions = { super_admin: [], customer: [], marketing: [] };
+    this.errors = { super_admin: [], customer: [], marketing: [] };
+    this.lastReset = new Date();
+  }
+}
+
+export const portalMetricsStore = new PortalMetricsStore();

@@ -55,3 +55,32 @@ function extractQueryText(query: any): string {
 };
 
 export const db = drizzle(pool, { schema });
+
+/**
+ * Get real database pool statistics
+ * Uses node-postgres Pool's built-in stats: totalCount, idleCount, waitingCount
+ */
+export function getPoolStats(): {
+  totalCount: number;
+  idleCount: number;
+  waitingCount: number;
+  maxConnections: number;
+  usedCount: number;
+  saturation: number;
+} {
+  const totalCount = pool.totalCount;
+  const idleCount = pool.idleCount;
+  const waitingCount = pool.waitingCount;
+  const maxConnections = 20; // Configured max in pool settings above
+  const usedCount = totalCount - idleCount;
+  const saturation = maxConnections > 0 ? usedCount / maxConnections : 0;
+  
+  return {
+    totalCount,
+    idleCount,
+    waitingCount,
+    maxConnections,
+    usedCount,
+    saturation,
+  };
+}

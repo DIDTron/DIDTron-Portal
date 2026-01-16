@@ -676,6 +676,33 @@ export async function reclaimStuckJobs(maxProcessingMinutes = 10): Promise<numbe
   return queue.reclaimStuckJobs(maxProcessingMinutes);
 }
 
+/**
+ * Get running jobs with their age for stuck job detection
+ * Returns jobs that are currently processing along with how long they've been running
+ */
+export async function getRunningJobsWithAge(): Promise<Array<{
+  id: number;
+  type: DIDTronJobType;
+  startedAt: Date | null;
+  updatedAt: Date;
+  ageMs: number;
+}>> {
+  const queue = getJobQueue();
+  const runningJobs = await queue.getJobsByStatus("processing", 100, 0) as JobRecord<DIDTronPayloadMap, DIDTronJobType>[];
+  const now = Date.now();
+  
+  return runningJobs.map(job => {
+    const startTime = job.startedAt ? new Date(job.startedAt).getTime() : new Date(job.updatedAt).getTime();
+    return {
+      id: job.id,
+      type: job.jobType,
+      startedAt: job.startedAt ? new Date(job.startedAt) : null,
+      updatedAt: new Date(job.updatedAt),
+      ageMs: now - startTime,
+    };
+  });
+}
+
 export const JOB_TYPE_LABELS: Record<DIDTronJobType, string> = {
   rate_card_import: "Rate Card Import",
   rate_card_export: "Rate Card Export",

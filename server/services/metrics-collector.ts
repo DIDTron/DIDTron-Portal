@@ -1,8 +1,12 @@
-import { db } from "../db";
+import { db, getPoolStats } from "../db";
 import { metricsSnapshots, integrationHealth, jobMetrics, portalMetrics } from "../../shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { getJobStats, getJobs } from "../job-queue";
+import { getJobStats, getJobs, getRunningJobsWithAge } from "../job-queue";
 import { performanceMonitor } from "./performance-monitor";
+import { cacheStats } from "./cache";
+import { r2Stats } from "./r2-storage";
+import { budgetEngine, BUDGET_THRESHOLDS } from "./budget-engine";
+import { portalMetricsStore } from "../routes/system-status.routes";
 
 export type MetricsSnapshotType = "api" | "database" | "redis" | "r2" | "job_queue" | "integration" | "portal" | "storage";
 
@@ -55,7 +59,7 @@ interface JobQueueMetrics {
 
 interface IntegrationMetrics {
   name: string;
-  status: "healthy" | "degraded" | "down";
+  status: "healthy" | "degraded" | "down" | "not_configured";
   latencyP95: number;
   errorRate: number;
   lastSuccessAt: Date | null;
@@ -177,12 +181,15 @@ class MetricsCollectorService {
       const latencies = queryTimings.map(t => t.durationMs).sort((a, b) => a - b);
       const p99Index = Math.floor(latencies.length * 0.99);
 
+      // Get REAL pool stats from node-postgres Pool
+      const poolStats = getPoolStats();
+
       const metrics: DatabaseMetrics = {
         p95LatencyMs: p95,
         p99LatencyMs: latencies[p99Index] || 0,
-        poolUsed: 0,
-        poolTotal: 20,
-        poolSaturation: 0,
+        poolUsed: poolStats.usedCount,
+        poolTotal: poolStats.maxConnections,
+        poolSaturation: Math.round(poolStats.saturation * 100) / 100,
         slowQueryCount: queryTimings.filter(t => t.durationMs > 200).length,
         slowQueries: queryTimings
           .filter(t => t.durationMs > 200)
@@ -195,6 +202,26 @@ class MetricsCollectorService {
           })),
       };
 
+      // Evaluate pool saturation with Budget Engine (hysteresis)
+      budgetEngine.evaluate(
+        "db_pool_saturation",
+        poolStats.saturation,
+        BUDGET_THRESHOLDS.dbPoolSaturation,
+        undefined,
+        { poolUsed: poolStats.usedCount, poolTotal: poolStats.maxConnections, waitingCount: poolStats.waitingCount }
+      );
+
+      // Evaluate waiting connections
+      if (poolStats.waitingCount > 0) {
+        budgetEngine.evaluate(
+          "db_pool_waiting",
+          poolStats.waitingCount,
+          BUDGET_THRESHOLDS.dbPoolWaiting,
+          undefined,
+          { waitingCount: poolStats.waitingCount }
+        );
+      }
+
       await this.storeSnapshot("database", metrics, collectedAt);
     } catch (error) {
       console.error("[MetricsCollector] Error collecting database metrics:", error);
@@ -205,7 +232,6 @@ class MetricsCollectorService {
     try {
       let latencyMs = 0;
       let connected = false;
-      let cacheHitRate = 0;
 
       try {
         const { getRedisClient } = await import("./redis-session");
@@ -217,21 +243,33 @@ class MetricsCollectorService {
           await redisClient.ping();
           latencyMs = Date.now() - start;
           connected = true;
-
-          // Note: Upstash Redis doesn't support the INFO command
-          // Cache hit rate tracking would require custom implementation
-          cacheHitRate = 0;
         }
       } catch (err) {
         console.log("[MetricsCollector] Redis not available:", err);
       }
 
+      // Get REAL cache hit rate from cacheStats
+      const stats = cacheStats.getStats();
+      const hitRate = stats.hitRate;
+
       const metrics: RedisMetrics = {
         p95LatencyMs: latencyMs,
-        cacheHitRate: Math.round(cacheHitRate * 100) / 100,
+        cacheHitRate: Math.round(hitRate * 100) / 100,
         rateLimitRejections: 0,
         connected,
       };
+
+      // Evaluate cache hit rate with Budget Engine (hysteresis)
+      // Only evaluate if we have enough operations to be meaningful
+      if (stats.total >= 10) {
+        budgetEngine.evaluate(
+          "redis_hit_rate",
+          hitRate,
+          BUDGET_THRESHOLDS.redisHitRate,
+          undefined,
+          { hits: stats.hits, misses: stats.misses, total: stats.total }
+        );
+      }
 
       await this.storeSnapshot("redis", metrics, collectedAt);
     } catch (error) {
@@ -242,8 +280,6 @@ class MetricsCollectorService {
   private async collectR2Metrics(collectedAt: Date): Promise<void> {
     try {
       let latencyMs = 0;
-      let uploadErrors = 0;
-      let downloadErrors = 0;
 
       try {
         const { isR2Available, listFiles } = await import("./r2-storage");
@@ -251,25 +287,35 @@ class MetricsCollectorService {
         if (isR2Available()) {
           // Measure list operation latency
           const start = Date.now();
-          const result = await listFiles("");
+          await listFiles("");
           latencyMs = Date.now() - start;
-          
-          if (!result.success) {
-            downloadErrors = 1;
-          }
         }
       } catch (err) {
         console.log("[MetricsCollector] R2 not available:", err);
-        downloadErrors = 1;
       }
+
+      // Get REAL R2 stats from r2Stats
+      const stats = r2Stats.getStats();
 
       const metrics: R2Metrics = {
         p95LatencyMs: latencyMs,
-        uploadErrors,
-        downloadErrors,
+        uploadErrors: stats.upload.fail,
+        downloadErrors: stats.download.fail,
         lastExportFile: null,
         lastExportTime: null,
       };
+
+      // Evaluate R2 error rate with Budget Engine (hysteresis)
+      // Only evaluate if we have enough operations to be meaningful
+      if (stats.total >= 5) {
+        budgetEngine.evaluate(
+          "r2_error_rate",
+          stats.errorRate,
+          BUDGET_THRESHOLDS.r2ErrorRate,
+          undefined,
+          { totalSuccess: stats.totalSuccess, totalFail: stats.totalFail, errorRate: stats.errorRate }
+        );
+      }
 
       await this.storeSnapshot("r2", metrics, collectedAt);
     } catch (error) {
@@ -305,16 +351,31 @@ class MetricsCollectorService {
         oldestJobAge = Math.floor((now.getTime() - new Date(oldest.createdAt).getTime()) / 1000);
       }
 
+      // REAL stuck jobs detection: running jobs with age > threshold
+      // Default threshold: 10 minutes, import/rerating: 60 minutes
+      const stuckJobCount = await this.countStuckJobs();
+
       const metrics: JobQueueMetrics = {
         queuedJobs: stats.pending,
         runningJobs: stats.processing,
         failedJobs15m,
         failedJobs24h,
         oldestJobAge,
-        stuckJobCount: 0,
+        stuckJobCount,
         successRate: stats.successRate,
         jobsByType: [],
       };
+
+      // Evaluate stuck jobs with Budget Engine (hysteresis)
+      if (stuckJobCount > 0) {
+        budgetEngine.evaluate(
+          "stuck_jobs",
+          stuckJobCount,
+          BUDGET_THRESHOLDS.stuckJobs,
+          undefined,
+          { stuckJobCount }
+        );
+      }
 
       await this.storeSnapshot("job_queue", metrics, collectedAt);
 
@@ -325,12 +386,41 @@ class MetricsCollectorService {
         failedCount15m: failedJobs15m,
         failedCount24h: failedJobs24h,
         oldestJobAge,
-        stuckJobCount: 0,
+        stuckJobCount,
         averageDuration: 0,
         collectedAt,
       });
     } catch (error) {
       console.error("[MetricsCollector] Error collecting job queue metrics:", error);
+    }
+  }
+
+  /**
+   * Count stuck jobs - running jobs that have exceeded their time threshold
+   * Default: 10 minutes, import/rerating jobs: 60 minutes
+   */
+  private async countStuckJobs(): Promise<number> {
+    try {
+      const defaultThresholdMs = 10 * 60 * 1000; // 10 minutes
+      const longJobThresholdMs = 60 * 60 * 1000; // 60 minutes for imports/rerating
+
+      // Get running jobs with their age from job queue
+      const runningJobs = await getRunningJobsWithAge();
+
+      let stuckCount = 0;
+      for (const job of runningJobs) {
+        const isLongJob = job.type.includes("import") || job.type.includes("rerat") || job.type.includes("sync");
+        const threshold = isLongJob ? longJobThresholdMs : defaultThresholdMs;
+        
+        if (job.ageMs > threshold) {
+          stuckCount++;
+        }
+      }
+
+      return stuckCount;
+    } catch (error) {
+      console.error("[MetricsCollector] Error counting stuck jobs:", error);
+      return 0;
     }
   }
 
@@ -515,28 +605,51 @@ class MetricsCollectorService {
   private async collectPortalMetrics(collectedAt: Date): Promise<void> {
     try {
       const portals: Array<"super_admin" | "customer" | "marketing"> = ["super_admin", "customer", "marketing"];
+      const storeStats = portalMetricsStore.getStats();
 
       for (const portalType of portals) {
+        const portalStats = storeStats[portalType];
+        
+        // Determine health status based on P95 threshold
+        let healthStatus: "healthy" | "degraded" | "critical" = "healthy";
+        if (portalStats.transitionP95 > BUDGET_THRESHOLDS.portalRouteP95.critical) {
+          healthStatus = "critical";
+        } else if (portalStats.transitionP95 > BUDGET_THRESHOLDS.portalRouteP95.warning) {
+          healthStatus = "degraded";
+        }
+
         const metrics: PortalMetrics = {
           type: portalType,
-          routeTransitionP95: 0,
-          routeTransitionP99: 0,
-          jsErrorCount: 0,
+          routeTransitionP95: portalStats.transitionP95,
+          routeTransitionP99: portalStats.transitionP99,
+          jsErrorCount: portalStats.errorCount,
           assetLoadFailures: 0,
-          healthStatus: "healthy",
+          healthStatus,
         };
 
         await this.storeSnapshot("portal", metrics, collectedAt);
 
         await db.insert(portalMetrics).values({
           portalType,
-          routeTransitionP95: 0,
-          routeTransitionP99: 0,
-          jsErrorCount: 0,
+          routeTransitionP95: portalStats.transitionP95,
+          routeTransitionP99: portalStats.transitionP99,
+          jsErrorCount: portalStats.errorCount,
           assetLoadFailures: 0,
-          healthStatus: "healthy",
+          healthStatus,
           collectedAt,
         });
+
+        // Evaluate portal route P95 against budget thresholds with hysteresis
+        budgetEngine.evaluate(
+          "portalRouteP95",
+          portalStats.transitionP95,
+          {
+            warn: BUDGET_THRESHOLDS.portalRouteP95.warning,
+            critical: BUDGET_THRESHOLDS.portalRouteP95.critical,
+            higherIsBad: true,
+          },
+          `portal_${portalType}`
+        );
       }
     } catch (error) {
       console.error("[MetricsCollector] Error collecting portal metrics:", error);
