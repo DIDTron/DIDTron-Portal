@@ -1,0 +1,93 @@
+TASK: Implement missing System Status metrics WITH reusable Budget Engine (NO DRIFT)
+
+Goal:
+Replace mocked/default metrics with real measurements and enforce budgets consistently.
+
+PART 0 — BUDGET ENGINE (MUST BE DONE FIRST)
+Create a reusable “budget evaluation” helper used by ALL metrics:
+
+For each metric snapshot:
+1) compute current value (p95, rate, count, ratio)
+2) compare to thresholds (WARN + CRITICAL)
+3) record a violation with:
+   - metricName
+   - actual
+   - threshold
+   - severity ("warn" | "critical")
+   - endpoint (optional)
+   - timestamp
+   - details (optional JSON)
+4) HYSTERESIS / SPAM CONTROL:
+   - A breach is recorded ONLY if it happens for N consecutive intervals (N=2 default)
+   - Auto-clear ONLY if metric is under threshold for 2 consecutive intervals
+   - Store counters/state per metric key (metricName + endpoint) in memory OR DB
+
+Proof required:
+- Show the helper file path + code block + how it is called from at least 2 metrics
+- Show in logs that a single spike does NOT create a violation, but 2 consecutive spikes do
+
+PART 1 — IMPLEMENT THESE METRICS (REAL, NOT PLACEHOLDERS)
+
+1) DB POOL SATURATION
+Measure:
+- usedConnections, idleConnections, totalConnections, waitingCount (if available)
+Compute:
+- used = total - idle
+- saturation = used / maxConnections (if max is available; otherwise compute ratio vs configured pool size)
+Budgets:
+- WARN if saturation >= 0.70 for 2 intervals
+- CRITICAL if saturation >= 0.85 for 2 intervals
+- CRITICAL if waitingCount > 0 for 2 intervals
+
+2) REDIS HIT RATE
+Wrap cache get/set helpers to count:
+- hits, misses
+Compute:
+- hitRate = hits / (hits + misses)
+Budgets:
+- WARN if hitRate < 0.60 for 2 intervals
+- CRITICAL if hitRate < 0.30 for 2 intervals
+
+3) R2 ERROR COUNTS
+Wrap R2 operations (upload/download/delete):
+- count ok/fail per op
+Compute:
+- failRate = fail / (ok + fail)
+Budgets:
+- WARN if failRate > 1% over last 15 minutes (use rolling window or last N intervals)
+- CRITICAL if failRate > 5%
+- CRITICAL immediately (2 intervals) on auth/permission errors
+
+4) STUCK JOBS
+Define stuck rule:
+- running job with now - updatedAt > threshold
+Thresholds:
+- default jobs: 10 minutes
+- import/rerating: 60 minutes
+Budgets:
+- WARN if stuckJobs >= 1 for 2 intervals
+- CRITICAL if stuckJobs >= 3 for 2 intervals
+- CRITICAL if any job stuck > 2x threshold
+
+5) PORTAL METRICS (CLIENT)
+Client:
+- route transition timing (start on navigation, end on render/idle)
+- capture JS errors (window.onerror, unhandledrejection)
+Send batched to backend:
+- POST /api/portal-metrics (rate limit)
+Backend:
+- aggregate p95 transition time + error count per 15 min
+Budgets:
+- WARN if route p95 > 1500ms for 2 intervals
+- CRITICAL if p95 > 3000ms for 2 intervals
+- WARN if JS errors > 1/min
+- CRITICAL if JS errors > 5/min
+
+OUTPUT FORMAT (MANDATORY)
+A) Files changed (list)
+B) Exact code diff snippets (file + line numbers)
+C) Proof:
+   - System Status shows real values (not placeholder)
+   - At least 2 violation examples showing hysteresis works (1 spike no violation, 2 spikes violation)
+D) STOP and wait for "APPROVED"
+Begin.
